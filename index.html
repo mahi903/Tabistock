@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tabistock｜学生のリアルな旅程をストックする</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="header">
+    <a href="index.html" class="logo">Tabistock</a>
+<div class="header-actions">
+  <form class="header-search" action="search.html" method="get">
+    <input type="text" name="q" placeholder="旅先・キーワードで検索">
+    <button type="submit">検索</button>
+  </form>
+   <button class="header-filter-btn" id="filterOpen" type="button">☰</button>
+  </div>
+  </header>
+   <div class="filter-drawer" id="filterDrawer">
+  <div class="filter-drawer-header">
+    <h3>条件で絞り込む</h3>
+    <button id="filterClose">×</button>
+  </div>
+  <div class="result-filter-bar">
+    <select name="country">
+      <option value="">国・地域</option>
+      <option value="mongolia">モンゴル</option>
+      <option value="korea">韓国</option>
+      <option value="thai">タイ</option>
+    </select>
+
+    <select name="budget">
+      <option value="">予算</option>
+      <option value="10">〜10万円</option>
+      <option value="20">〜20万円</option>
+      <option value="30">〜30万円</option>
+    </select>
+
+    <select name="days">
+      <option value="">日数</option>
+      <option value="daytrip">日帰り</option>
+      <option value="1night">1泊</option>
+      <option value="3-5">3〜5日</option>
+      <option value="1w">1週間</option>
+      <option value="2w">2週間</option>
+      <option value="3w-plus">3週間以上</option>
+    </select>
+
+    <select name="style">
+      <option value="">スタイル</option>
+      <option value="solo">1人旅</option>
+      <option value="friends">友達と</option>
+      <option value="nature">自然・絶景</option>
+      <option value="city">都市・街歩き</option>
+    </select>
+
+    <button id="drawer-filter-btn">絞り込む</button>
+  </div>
+</div>
+<div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <main>
+    <section class="hero">
+      <p class="badge">学生・若者のための旅程データベース</p>
+
+      <h1>
+        若者のリアルな旅を、一つの場所に。
+      </h1>
+
+      <p class="lead">
+        Tabistockは、大学生や若者が実際に行った旅のルート・費用・日数・失敗談を共有するサイトです。
+        国・予算・日数・旅スタイルから、自分にも真似できる旅を探せます。
+      </p>
+
+      <div class="buttons">
+        <a href="#search" class="primary-button">旅程を探す</a>
+        <a href="#" class="secondary-button">旅程を投稿する</a>
+      </div>
+    </section>
+
+    <section class="introduction fade-in">
+        <p class="introductionlabel">Introduction</p>
+        <h2>Tabistockについて</h2>
+       <div class="intro-message">
+  <p class="intro-lead">
+    旅を、消費で終わらせない。
+  </p>
+
+  <p class="intro-text">
+    「自分に合った旅をしたい」。旅行を計画する時、誰もがこう思うはずです。友達と、カップルで、一人旅で、などなど。特に学生や若者は、使える金額も限られていることは多いはずです。
+    </p>
+    <p class="intro-text">
+       SNSには、数々の情報源があります。YouTube、TikTok、note、各種まとめサイトなど。でももし、他の旅人の旅程、費用、移動手段、旅の小ネタ、が同じフォーマットでまとめられていたとしたら？これが<span class="intro">Tabistock</span>です。
+    <span class="marker">Tabistockは、若者が実際に行った旅の旅程・費用・移動手段・現地の空気感などが記録され、そして共有される旅のストックサイトです。</span>
+  </p>
+  <p class="intro-text">
+    国、予算、日数、旅のスタイル、これら条件をもとに旅を検索し、過去に旅人が記録したリアルな旅を見ることができます。と同時に、自分の旅の記録を共有することもできます。
+    SNSでは流れてしまう旅の記憶を、次の誰かの旅のヒントとして残していく。
+    そんな旅のプラットフォームを目指しています。
+  </p>
+</div>
+    </section>
+
+    <div class="travel-cycle">
+  <div class="cycle-item">
+    <h3>旅を検索</h3>
+    <p>旅の条件を絞り、自分の理想に近い旅を見つける。</p>
+  </div>
+
+  <div class="cycle-arrow">→</div>
+
+  <div class="cycle-item">
+    <h3>旅に出る</h3>
+    <p>実際の旅程を参考にしながら、自分だけの旅をつくる。</p>
+  </div>
+
+  <div class="cycle-arrow">→</div>
+
+  <div class="cycle-item">
+    <h3>旅を記録</h3>
+    <p>経験を残して、次の誰かの旅のヒントにする。</p>
+  </div>
+</div>
+
+<p class="cycle-note">
+  旅の記録が、また次の誰かの旅につながっていく。
+</p>
+
+   <section class="founder-section fade-in">
+  <p class="founderlabel">Founder</p>
+  <h2>管理人</h2>
+
+  <div class="founder-card">
+    <div class="founder-photo-wrap">
+      <img src="images/founder.jpg" class="founder-photo" alt="飯野真優">
+    </div>
+
+    <div class="founder-content">
+      <p class="founder-lead">
+        飯野真優 / Iino Mahiro
+      </p>
+
+      <p class="founder-text">
+        京都大学工学部に在学しながら、休学・留学等せずにこれまで20以上の国と地域に渡航してきました。
+      </p>
+
+      <p class="founder-text">
+        SNS上の観光地のきれいな写真や動画だけでなく、実際にかかった費用、移動の大変さ、現地で感じた空気感まで含めて、次の旅人の参考になる記録を共有できるプラットフォームを目指し、Tabistockを開設しました。
+      </p>
+    </div>
+  </div>
+</section>
+
+    <section id="search" class="search-area fade-in">
+      <p>Search</p>
+      <h2>旅を探す</h2>
+<div class="search-grid">
+     <div class="search-card filter-toggle">
+  <h3>国から探す</h3>
+  <p>地域でまとめても、国ごとに分けても。</p>
+
+ <div class="filter-panel country-panel">
+
+  <div class="filter-group">
+    <label class="region-label">
+      <input type="checkbox" data-filter="region" value="east-asia">
+      東アジア
+    </label>
+    <div class="country-list">
+      <label><input type="checkbox" data-filter="country" value="korea"> 韓国</label>
+      <label><input type="checkbox" data-filter="country" value="mongolia"> モンゴル</label>
+    </div>
+  </div>
+
+  <div class="filter-group">
+    <label class="region-label">
+      <input type="checkbox" data-filter="region" value="southeast-asia">
+      東南アジア
+    </label>
+    <div class="country-list">
+      <label><input type="checkbox" data-filter="country" value="thai"> タイ</label>
+      <label><input type="checkbox" data-filter="country" value="cambodia"> カンボジア</label>
+      <label><input type="checkbox" data-filter="country" value="vietnam"> ベトナム</label>
+      <label><input type="checkbox" data-filter="country" value="malaysia"> マレーシア</label>
+      <label><input type="checkbox" data-filter="country" value="singapore"> シンガポール</label>
+      <label><input type="checkbox" data-filter="country" value="indonesia"> インドネシア</label>
+      <label><input type="checkbox" data-filter="country" value="philippines"> フィリピン</label>
+    </div>
+  </div>
+
+  <div class="filter-group">
+    <label class="region-label">
+      <input type="checkbox" data-filter="region" value="central-asia">
+      中央アジア
+    </label>
+    <div class="country-list">
+      <label><input type="checkbox" data-filter="country" value="kazakhstan"> カザフスタン</label>
+      <label><input type="checkbox" data-filter="country" value="kyrgyzstan"> キルギス</label>
+      <label><input type="checkbox" data-filter="country" value="uzbekistan"> ウズベキスタン</label>
+    </div>
+  </div>
+
+  <div class="filter-group">
+    <label class="region-label">
+      <input type="checkbox" data-filter="region" value="west-asia">
+      西アジア
+    </label>
+    <div class="country-list">
+      <label><input type="checkbox" data-filter="country" value="turkey"> トルコ</label>
+      <label><input type="checkbox" data-filter="country" value="qatar"> カタール</label>
+      <label><input type="checkbox" data-filter="country" value="UAE"> アラブ首長国連邦</label>
+    </div>
+  </div>
+
+  <div class="filter-group">
+    <label class="region-label">
+      <input type="checkbox" data-filter="region" value="europe">
+      ヨーロッパ
+    </label>
+    <div class="country-list">
+      <label><input type="checkbox" data-filter="country" value="finland"> フィンランド</label>
+      <label><input type="checkbox" data-filter="country" value="sweden"> スウェーデン</label>
+      <label><input type="checkbox" data-filter="country" value="norway"> ノルウェー</label>
+      <label><input type="checkbox" data-filter="country" value="estonia"> エストニア</label>
+      <label><input type="checkbox" data-filter="country" value="latvia"> ラトビア</label>
+      <label><input type="checkbox" data-filter="country" value="lithuania"> リトアニア</label>
+      <label><input type="checkbox" data-filter="country" value="croatia"> クロアチア</label>
+      <label><input type="checkbox" data-filter="country" value="austria"> オーストリア</label>
+      <label><input type="checkbox" data-filter="country" value="hungary"> ハンガリー</label>
+      <label><input type="checkbox" data-filter="country" value="slovakia"> スロバキア</label>
+    </div>
+  </div>
+
+  <div class="filter-group">
+    <label class="region-label">
+      <input type="checkbox" data-filter="region" value="north-america">
+      北アメリカ
+    </label>
+    <div class="country-list">
+      <label><input type="checkbox" data-filter="country" value="usa"> アメリカ</label>
+      <label><input type="checkbox" data-filter="country" value="canada"> カナダ</label>
+      <label><input type="checkbox" data-filter="country" value="mexico"> メキシコ</label>
+    </div>
+  </div>
+
+  <div class="filter-group">
+    <label class="region-label">
+      <input type="checkbox" data-filter="region" value="south-america">
+      南アメリカ
+    </label>
+    <div class="country-list">
+      <label><input type="checkbox" data-filter="country" value="peru"> ペルー</label>
+      <label><input type="checkbox" data-filter="country" value="bolivia"> ボリビア</label>
+      <label><input type="checkbox" data-filter="country" value="chile"> チリ</label>
+      <label><input type="checkbox" data-filter="country" value="argentina"> アルゼンチン</label>
+      <label><input type="checkbox" data-filter="country" value="brazil"> ブラジル</label>
+    </div>
+  </div>
+
+  <div class="filter-group">
+    <label class="region-label">
+      <input type="checkbox" data-filter="region" value="africa">
+      アフリカ
+    </label>
+    <div class="country-list">
+      <label><input type="checkbox" data-filter="country" value="morocco"> モロッコ</label>
+      <label><input type="checkbox" data-filter="country" value="egypt"> エジプト</label>
+      <label><input type="checkbox" data-filter="country" value="kenya"> ケニア</label>
+      <label><input type="checkbox" data-filter="country" value="south-africa"> 南アフリカ</label>
+    </div>
+  </div>
+
+  <div class="filter-group">
+    <label class="region-label">
+      <input type="checkbox" data-filter="region" value="oceania">
+      オセアニア
+    </label>
+    <div class="country-list">
+      <label><input type="checkbox" data-filter="country" value="australia"> オーストラリア</label>
+      <label><input type="checkbox" data-filter="country" value="new-zealand"> ニュージーランド</label>
+    </div>
+  </div>
+
+</div>
+</div>
+        <div class="search-card filter-toggle">
+          <h3>予算で探す</h3>
+          <p>10万円以下、20万円以下、30万円以下など。</p>
+          <div class="filter-panel">
+    <label><input type="checkbox" data-filter="budget" value="10"> 〜10万円</label>
+<label><input type="checkbox" data-filter="budget" value="20"> 〜20万円</label>
+<label><input type="checkbox" data-filter="budget" value="30"> 〜30万円</label>
+<label><input type="checkbox" data-filter="budget" value="40"> 〜40万円</label>
+<label><input type="checkbox" data-filter="budget" value="50"> 〜50万円</label>
+<label><input type="checkbox" data-filter="budget" value="50plus"> 50万円以上</label>
+        </div>
+        </div>
+
+        <div class="search-card filter-toggle">
+          <h3>日数で探す</h3>
+          <p>週末旅、5泊6日、2週間、3週間以上の旅まで。</p>
+          <div class="filter-panel">
+  <label><input type="checkbox" data-filter="days" value="daytrip"> 日帰り</label>
+  <label><input type="checkbox" data-filter="days" value="1night"> 1泊</label>
+  <label><input type="checkbox" data-filter="days" value="3-5"> 3〜5日</label>
+  <label><input type="checkbox" data-filter="days" value="1w"> 1週間</label>
+  <label><input type="checkbox" data-filter="days" value="2w"> 2週間</label>
+  <label><input type="checkbox" data-filter="days" value="3w-plus"> 3週間以上</label>
+  </div>
+        </div>
+
+        <div class="search-card filter-toggle">
+          <h3>旅スタイル</h3>
+          <p>1人旅、バックパッカー、友達旅、現地ツアー利用。</p>
+          <div class="filter-panel">
+  <div class="style-section">
+    <p class="filter-subtitle">誰と行くか</p>
+    <label><input type="checkbox" data-filter="style" value="solo"> 1人旅</label>
+    <label><input type="checkbox" data-filter="style" value="friends"> 友達と</label>
+    <label><input type="checkbox" data-filter="style" value="family"> 家族と</label>
+    <label><input type="checkbox" data-filter="style" value="backpacker"> バックパッカー</label>
+    <label><input type="checkbox" data-filter="style" value="girls"> 女子旅</label>
+    <label><input type="checkbox" data-filter="style" value="couple"> カップル</label>
+  </div>
+
+  <div class="style-section style-section-border">
+    <p class="filter-subtitle">旅のスタイル</p>
+    <label><input type="checkbox" data-filter="style" value="nature"> 自然・絶景</label>
+    <label><input type="checkbox" data-filter="style" value="city"> 都市・街歩き</label>
+    <label><input type="checkbox" data-filter="style" value="local"> 現地体験</label>
+    <label><input type="checkbox" data-filter="style" value="round-trip"> 周遊</label>
+  </div>
+</div>
+  </div>
+        </div>
+      </div>
+      <div class="filter-submit-wrap">
+  <button class="filter-search-btn">検索する</button>
+</div>
+    </div>
+    </section>
+
+    <section id="trips" class="trips fade-in">
+      <div class="section-title">
+        <p>New Routes</p>
+        <h2>新着旅程</h2>
+      </div>
+
+      <div class="trip-grid">
+        <a href="./articles/mongolia.html" class="trip-card">
+          <div class="trip-image"
+                style="background-image:
+                 linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.12)),
+                 url('./images/mongolia.jpg');">
+        </div>
+          <div class="trip-content">
+            <p class="country">Mongolia</p>
+            <h3>モンゴル5泊6日｜大学生ひとり旅｜総額15万円</h3>
+            <p>ゴビ砂漠、バヤンザグ、ヨリーンアム渓谷、ゲル泊を巡る冒険旅。</p>
+            <div class="tags">
+              <span>15万円前後</span>
+              <span>ひとり旅</span>
+              <span>自然旅</span>
+            </div>
+          </div>
+        </a>
+
+        <article class="trip-card">
+          <div
+  class="trip-image"
+  style="background-image:
+    linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.12)),
+    url('./images/cambodia.jpg');">
+</div>
+          <div class="trip-content">
+            <p class="country">Thailand / Cambodia</p>
+            <h3>タイ・カンボジアひとり旅｜アンコールワットを巡る旅</h3>
+            <p>東南アジアを低予算で巡る、学生向けのひとり旅ルート。</p>
+            <div class="tags">
+              <span>東南アジア</span>
+              <span>世界遺産</span>
+              <span>低予算</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="trip-card">
+          <div
+  class="trip-image"
+  style="background-image:
+    linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.12)),
+    url('./images/europe.jpg');">
+</div>
+          <div class="trip-content">
+            <p class="country">Europe</p>
+            <h3>ヨーロッパ周遊｜学生が巡る中欧・東欧ルート</h3>
+            <p>複数国をバスや鉄道でつなぐ、学生向けヨーロッパ周遊旅。</p>
+            <div class="tags">
+              <span>周遊旅</span>
+              <span>学生旅</span>
+              <span>複数国</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="concept">
+      <h2>旅情報を、もっと探しやすく。</h2>
+      <p>
+        現在は実際に旅をした学生・若者の旅程を中心に掲載しており、随時新しい旅程を募集しています！
+        今後は誰でも自由に投稿やコメントができるようなサービスを実装していきます。
+      </p>
+    </section>
+  </main>
+
+<script>
+
+const filterCards = document.querySelectorAll(".filter-toggle");
+  const searchArea = document.querySelector(".search-area");
+
+  filterCards.forEach(card => {
+    card.addEventListener("click", (e) => {
+      if (
+        e.target.closest(".filter-panel") ||
+        e.target.closest("label") ||
+        e.target.closest("input")
+      ) return;
+
+      card.classList.toggle("active");
+
+      const hasActiveCard = document.querySelector(".search-card.active");
+      searchArea.classList.toggle("filters-open", !!hasActiveCard);
+    });
+  });
+
+const searchBtn = document.querySelector(".filter-submit-wrap .filter-search-btn");
+
+ if(searchBtn){searchBtn.addEventListener("click", () => {
+    const checkedInputs = document.querySelectorAll(".filter-panel input:checked");
+    const params = new URLSearchParams();
+
+    checkedInputs.forEach(input => {
+      params.append(input.dataset.filter, input.value);
+    });
+
+    window.location.href = `search.html?${params.toString()}`;
+  });
+ }
+
+const fadeElements = document.querySelectorAll('.fade-in');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('show');
+      }
+    });
+  }, {
+    threshold: 0.40
+  });
+
+  fadeElements.forEach(el => observer.observe(el));
+
+</script>
+<script>
+const filterOpen = document.getElementById("filterOpen");
+const filterClose = document.getElementById("filterClose");
+const filterDrawer = document.getElementById("filterDrawer");
+const drawerOverlay = document.getElementById("drawerOverlay");
+
+console.log(filterOpen, filterClose, filterDrawer, drawerOverlay);
+
+if (filterOpen && filterClose && filterDrawer && drawerOverlay) {
+  filterOpen.addEventListener("click", () => {
+    filterDrawer.classList.add("active");
+    drawerOverlay.classList.add("active");
+  });
+
+  filterClose.addEventListener("click", () => {
+    filterDrawer.classList.remove("active");
+    drawerOverlay.classList.remove("active");
+  });
+
+  drawerOverlay.addEventListener("click", () => {
+    filterDrawer.classList.remove("active");
+    drawerOverlay.classList.remove("active");
+  });
+}
+
+const drawerFilterBtns = document.querySelectorAll("#drawer-filter-btn");
+drawerFilterBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const drawer = btn.closest(".filter-drawer");
+    const selects = drawer.querySelectorAll("select");
+    const params = new URLSearchParams();
+
+    selects.forEach(select => {
+      if (select.value) {
+        params.append(select.name, select.value);
+      }
+    });
+
+    window.location.href = `search.html?${params.toString()}`;
+  });
+});
+</script>
+
+</body>
+</html>
