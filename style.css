@@ -507,6 +507,32 @@ a {
 }
 
 /*新着旅程*/
+/* 新着旅程 自動スクロール */
+.trip-grid.auto-scroll {
+  display: flex;
+  gap: 24px;
+  width: max-content;
+  animation: scrollTrips 28s linear infinite;
+}
+
+.trip-grid.auto-scroll .trip-card {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.trips {
+  overflow: hidden;
+}
+
+@keyframes scrollTrips {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 .trip-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
