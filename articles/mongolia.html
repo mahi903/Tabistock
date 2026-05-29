@@ -63,12 +63,21 @@
 
 <main class="article-page">
   <section class="article-hero">
+    <div class="hero-carousel">
     <div class="hero-images">
     <img src="../images/mongolia/hero1.jpg" alt="モンゴルの草原">
     <img src="../images/mongolia/hero2.jpg" alt="モンゴルの砂丘">
     <img src="../images/mongolia/hero3.jpg" alt="モンゴルの渓谷">
     <img src="../images/mongolia/hero4.jpg" alt="モンゴルのゲル">
   </div>
+
+  <div class="hero-dots">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
   <div class="hero-text">
     <h1>モンゴル5泊6日｜大学生ひとり旅</h1>
 
@@ -359,6 +368,18 @@ drawerFilterBtns.forEach(btn => {
     window.location.href = `../search.html?${params.toString()}`;
   });
 });
+</script>
+<script>
+  const slider = document.querySelector(".hero-images");
+  const dots = document.querySelectorAll(".hero-dots span");
+
+  slider.addEventListener("scroll", () => {
+    const index = Math.round(slider.scrollLeft / slider.clientWidth);
+
+    dots.forEach((dot, i) => {
+      dot.classList.toggle("active", i === index);
+    });
+  });
 </script>
 </body>
 </html>
