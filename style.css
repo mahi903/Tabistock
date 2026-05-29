@@ -617,6 +617,30 @@ a {
    Mongolia article page
 ========================= */
 
+.mobile-main-image {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-main-image {
+    display: block;
+    width: 100%;
+    margin-bottom: 28px;
+  }
+
+  .mobile-main-image img {
+    width: 100%;
+    height: 240px;
+    object-fit: cover;
+    border-radius: 28px;
+    display: block;
+  }
+
+  .hero-images {
+    display: none;
+  }
+}
+
 .article-hero {
   max-width: 1180px;
   margin: 36px auto 56px;
