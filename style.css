@@ -1254,17 +1254,6 @@ a {
     padding: 12px;
   }
 }
-@media (max-width: 768px) {
-  .info-grid {
-    align-items: flex-start;
-  }
-
-  .info-card,
-  .itinerary-card {
-    height: auto;
-    align-self: flex-start;
-  }
-}
 
 .info-grid,
 .day-grid {
