@@ -1163,6 +1163,39 @@ a {
   font-size: 15px;
   color: #111827;
 }
+/* =========================
+   利用サービスカード：2カラム表示・複数サービスは右側で改行
+========================= */
+
+.services-card .service-item {
+  display: grid;
+  grid-template-columns: 32% 1fr;
+  column-gap: 16px;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px dashed #d9d9d9;
+}
+
+.services-card .service-item:last-child {
+  border-bottom: none;
+}
+
+.services-card .service-label {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: #5f6b80;
+}
+
+.services-card .service-item strong {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: #172033;
+  text-align: right;
+}
 
 @media (max-width: 768px) {
   .info-grid {
@@ -1292,7 +1325,7 @@ a {
 
 .day-grid {
   margin-top: 48px;
-  margin-bottom: 100px;
+  margin-bottom: 32px;
   display: grid;
   gap: 20px;
 }
@@ -1486,6 +1519,70 @@ a {
 .photo-slider::-webkit-scrollbar-thumb {
   background: #d8b98c;
   border-radius: 999px;
+}
+
+/* =========================
+   投稿者Tips欄：セクション全体
+========================= */
+
+.tips-section {
+  max-width: 1200px;
+  margin: 32px auto 80px;
+  padding: 0 32px;
+  box-sizing: border-box;
+  margin-top: 32px;
+}
+
+/* =========================
+   投稿者Tips欄：文章カード
+========================= */
+
+.tips-card {
+  background: #fffaf2;
+  border-radius: 32px;
+  padding: 48px;
+  box-sizing: border-box;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.04);
+}
+
+.tips-card h2 {
+  margin: 0 0 24px;
+  font-size: 25px;
+  line-height: 1.4;
+  color: #111827;
+}
+
+.tips-text {
+  margin: 0;
+  font-size: 17px;
+  line-height: 2;
+  color: #172033;
+}
+
+/* =========================
+   スマホ：投稿者Tips欄の余白・文字サイズ調整
+========================= */
+
+@media (max-width: 768px) {
+  .tips-section {
+    margin: 32px auto 64px;
+    padding: 0 22px;
+  }
+
+  .tips-card {
+    border-radius: 28px;
+    padding: 32px 24px;
+  }
+
+  .tips-card h2 {
+    margin-bottom: 18px;
+    font-size: 20px;
+  }
+
+  .tips-text {
+    font-size: 14px;
+    line-height: 1.9;
+  }
 }
 
 @media (max-width: 900px) {
