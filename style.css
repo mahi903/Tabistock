@@ -1376,6 +1376,48 @@ a {
   }
 }
 
+/* スマホ横スクロール防止 */
+@media (max-width: 768px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .day-grid,
+  .day-card,
+  .day-content,
+  .day-text,
+  .photo-slider {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .day-card {
+    padding: 18px;
+    margin-inline: 0;
+  }
+
+  .day-text p {
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .photo-slider {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+  }
+
+  .photo-slider img {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 16px;
+  }
+}
 
 
 .photo-slider {
