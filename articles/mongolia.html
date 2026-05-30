@@ -152,9 +152,19 @@
     <strong>¥10,000</strong>
   </div>
 
+  <div class="cost-row">
+    <span>eSIM</span>
+    <strong>¥0</strong>
+  </div>
+
+  <div class="cost-row">
+    <span>お土産</span>
+    <strong>¥3,000</strong>
+  </div>
+
   <div class="cost-total">
     <span>合計</span>
-    <strong>約¥151,000</strong>
+    <strong>約¥154,000</strong>
   </div>
 </div>
 
@@ -274,9 +284,14 @@
 </div>
 </article>
 <article class="day-card">
-  <div class="day-text">
+  <button class="day-toggle">
     <span class="day-label">DAY 3. 4/2</span>
-    <h2>バヤンザグ・砂丘・渓谷を巡る</h2>
+    <span class="day-title">バヤンザグ・砂丘・渓谷を巡る</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
     <p>
       宿の方とWhatsappでやりとりし、事前に1DAYツアーを手配してもらっていた。おじさん1人と僕。舗装されていない道路を突き進み、最初に辿り着いたのはヨリーンアム渓谷。滝が凍っており見応えがある。<br><br>次は砂丘。本当は有名なホンゴル砂丘に行きたかったのだが、遠かったので断念。
       風が強かった。小規模でありながらゴビ砂漠を味わえた。<br><br>お次はバヤンザグ。オレンジ色の崖。絶景すぎた。日の入りだとより美しいらしい。こちらも人が誰もいなかった。<br><br>夜ダランザドガドに戻り。現金支払い50万トゥグルグ（2.5万円くらい）。実際ゴビ砂漠周辺（南モンゴル）あたりのツアーは1人15万円くらいするものもあるので、かなりお得だった。
@@ -288,12 +303,18 @@
     <img src="../images/mongolia/day3-2.jpg" alt="">
     <img src="../images/mongolia/day3-3.jpg" alt="">
   </div>
+  </div>
 </article>
 
 <article class="day-card">
-  <div class="day-text">
+  <button class="day-toggle">
     <span class="day-label">DAY 4. 4/3</span>
-    <h2>ウランバートルへ戻る</h2>
+    <span class="day-title">ウランバートルへ戻る</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
     <p>
       行きと同じ人に送ってもらう。往復1000km以上あるのに往復6000円ほどだった。安すぎる。ウランバートル到着後、羊肉は避けてバーガーキングに行ってしまった。その後タクシーで市内に戻りホテルにチェックイン。韓国人のオーナーだった。
     </p>
@@ -304,12 +325,18 @@
     <img src="../images/mongolia/day4-2.jpg" alt="">
     <img src="../images/mongolia/day4-3.jpg" alt="">
   </div>
+  </div>
 </article>
 
 <article class="day-card">
-  <div class="day-text">
+  <button class="day-toggle">
     <span class="day-label">DAY 5. 4/4</span>
-    <h2>テレルジ国立公園・ゲル泊</h2>
+    <span class="day-title">テレルジ国立公園・ゲル泊</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
     <p>
       Get your Guideで5000円でテレルジ国立公園の有名観光地、市内の観光地を巡ってくれるツアーがあり直前予約。到着後は自由行動という形で、思いのまま見て回ることができた。<br><br>その後はついに遊牧民ゲルホームステイ。
       ガイドの方がホテル前まで迎えに来てくれ、140km/hで1時間半。一家とご挨拶。夜ご飯を作ってくれ、夜は満天の星空。外は-10℃にまで冷え込んだが、ゲルの中は意外と暖かい。
@@ -321,12 +348,18 @@
     <img src="../images/mongolia/day5-2.jpg" alt="">
     <img src="../images/mongolia/day5-3.jpg" alt="">
   </div>
+  </div>
 </article>
 
 <article class="day-card">
-  <div class="day-text">
+  <button class="day-toggle">
     <span class="day-label">DAY 6. 4/5-6</span>
-    <h2>ソウル経由で帰国</h2>
+    <span class="day-title">ソウル経由で帰国</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
     <p>
       早朝に起き、日の出を見る。朝ごはんをいただき、家畜の世話をお手伝い。10時ごろには残念ながらお別れ。現地支払いで34000円。1人だったので高かったが、モンゴルでしかできない経験ができた。<br><br>
       空港まで送迎してもらう。昼過ぎにウランバートルを出発し、夕方ソウル着。12時間ほどのトランジットをパラダイスシティで過ごす。翌日大阪着。
@@ -338,6 +371,7 @@
     <img src="../images/mongolia/day6-2.jpg" alt="">
     <img src="../images/mongolia/day6-3.jpg" alt="">
   </div>
+  </divws>
 </article>
 </section>
 <script>
@@ -408,7 +442,7 @@ drawerFilterBtns.forEach(btn => {
 
       card.classList.toggle("is-open");
 
-      icon.textContent = card.classList.contains("is-open") ? "−" : "＋";
+      icon.textContent = card.classList.contains("is-open") ? "-" : "+";
     });
   });
 </script>
