@@ -1295,27 +1295,130 @@ a {
   box-shadow: 0 18px 45px rgba(30, 40, 50, 0.08);
 }
 
-.day-label {
-  display: inline-block;
-  margin-bottom: 12px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  color: #b88b5a;
+/* =========================
+   DAY accordion / mobile only
+========================= */
+
+/* PC：今まで通り全部表示 */
+.day-content {
+  display: block;
 }
 
-.day-text h2 {
-  font-size: 28px;
-  margin-bottom: 18px;
-  color: #111827;
+.day-toggle {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0;
 }
 
-.day-text p {
-  font-size: 16px;
-  line-height: 1.9;
-  color: #334155;
+.day-icon {
+  display: none;
 }
 
+/* スマホ：開閉式 */
+@media (max-width: 768px) {
+  .day-card {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .day-toggle {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 12px;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .day-label {
+    grid-column: 1;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8a6f4d;
+    letter-spacing: 0.04em;
+  }
+
+  .day-title {
+    grid-column: 1;
+    font-size: 16px;
+    line-height: 1.45;
+    font-weight: 700;
+    color: #2f2418;
+    margin: 0;
+  }
+
+  .day-icon {
+    display: block;
+    grid-column: 2;
+    grid-row: 1 / 3;
+    font-size: 22px;
+    line-height: 1;
+    color: #8a6f4d;
+  }
+
+  .day-content {
+    display: none;
+    margin-top: 16px;
+  }
+
+  .day-card.is-open .day-content {
+    display: block;
+  }
+
+  .day-text p {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .photo-slider {
+    margin-top: 14px;
+  }
+}
+/* スマホ横スクロール防止 */
+@media (max-width: 768px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .article-page,
+  .article-hero,
+  .day-grid,
+  .day-card,
+  .day-content,
+  .day-text,
+  .photo-slider {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .day-card {
+    padding: 18px;
+    margin-inline: 0;
+  }
+
+  .day-text p {
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .photo-slider {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+  }
+
+  .photo-slider img {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 16px;
+  }
+}
 
 
 .photo-slider {
