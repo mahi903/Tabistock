@@ -1255,6 +1255,31 @@ a {
   }
 }
 
+/* =========================
+   スマホ：費用・旅程・航空券カードを横スクロールで中央寄せ
+========================= */
+@media (max-width: 768px) {
+  .info-grid {
+    display: flex;
+    overflow-x: auto;
+    gap: 18px;
+    padding: 0 22px 36px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .info-card {
+    flex: 0 0 86%;
+    scroll-snap-align: center;
+  }
+
+  .info-grid::before,
+  .info-grid::after {
+    content: "";
+    flex: 0 0 7%;
+  }
+}
+/**/
+
 .info-grid,
 .day-grid {
   max-width: 1200px;
