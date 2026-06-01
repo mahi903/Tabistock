@@ -9,16 +9,23 @@
 </head>
 
 <body>
-  <header class="header">
-    <a href="../index.html" class="logo">Tabistock</a>
-<div class="header-actions">
-  <form class="header-search" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="旅先・キーワードで検索">
-    <button type="submit">検索</button>
-  </form>
-   <button class="header-filter-btn" id="filterOpen" type="button">☰</button>
-  </div>
+  <header class="hd" id="hd">
+    <a class="logo" href="../index.html">Tabistock</a>
+    <div class="hd-r">
+      <form class="hd-search" action="../search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
+      <button class="burger" id="burger" aria-label="メニューを開く"><span></span><span></span><span></span></button>
+    </div>
   </header>
+  <div class="ovl" id="ovl"></div>
+  <nav class="drawer" id="drawer">
+    <button class="dclose" id="dclose" aria-label="閉じる">×</button>
+    <form class="dsearch" action="../search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
+    <a class="dlink" href="../index.html#about">Tabistockとは<em>ABOUT</em></a>
+    <a class="dlink" href="../filter.html">旅を探す<em>SEARCH</em></a>
+    <a class="dlink" href="../index.html#routes">新着旅程<em>ROUTES</em></a>
+    <a class="dlink" href="../index.html#founder">管理人<em>FOUNDER</em></a>
+    <div class="dcta"><a class="btn btn-p" href="#">旅程を投稿する →</a></div>
+  </nav>
    <div class="filter-drawer" id="filterDrawer">
   <div class="filter-drawer-header">
     <h3>条件で絞り込む</h3>
@@ -555,5 +562,19 @@ drawerFilterBtns.forEach(btn => {
     });
   });
 </script>
+  <script>
+  (function(){
+    var hd=document.getElementById('hd');
+    if(hd)addEventListener('scroll',function(){hd.classList.toggle('scrolled',scrollY>40)});
+    var burger=document.getElementById('burger'),nav=document.getElementById('drawer'),ovl=document.getElementById('ovl'),dc=document.getElementById('dclose');
+    if(burger&&nav&&ovl){
+      var t=function(o){burger.classList.toggle('open',o);nav.classList.toggle('open',o);ovl.classList.toggle('open',o);document.body.style.overflow=o?'hidden':''};
+      burger.addEventListener('click',function(){t(!nav.classList.contains('open'))});
+      ovl.addEventListener('click',function(){t(false)});
+      if(dc)dc.addEventListener('click',function(){t(false)});
+      nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){t(false)})});
+    }
+  })();
+  </script>
 </body>
 </html>

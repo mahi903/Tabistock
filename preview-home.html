@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tabistock｜学生・若者のための旅程データベース</title>
-<meta name="description" content="学生・若者が実際に行った旅のルート・費用・日数・失敗談を、同じフォーマットで共有する旅程データベース。国・予算・日数・スタイルから、自分にも真似できる旅を探せます。">
+<title>Tabistock｜デザイン案プレビュー</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@600;700;900&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#f6efe4;
@@ -190,15 +189,9 @@ a{color:inherit;text-decoration:none}
 .foot h2{font-size:clamp(28px,4vw,48px);font-weight:900;line-height:1.3;margin-bottom:18px}
 .foot h2 em{font-style:normal;color:#ffd9a0}
 .foot p{color:rgba(255,255,255,.7);max-width:520px;margin:0 auto 32px;line-height:1.9}
-.foot-copy{margin-top:40px;font-size:12px;color:rgba(255,255,255,.4);letter-spacing:.05em}
 
 /* ===== responsive ===== */
 @media(max-width:860px){
-  .hero h1{font-size:clamp(27px,7vw,40px)}
-  .stats{flex-wrap:nowrap;gap:6px;padding:32px 4%}
-  .stat{flex:1;min-width:0}
-  .stat b{font-size:clamp(22px,7vw,34px)}
-  .stat span{font-size:10px;letter-spacing:.02em}
   .pillars{flex-direction:column}
   .cyc-arrow{width:100%;height:40px}
   .cyc-arrow::before{content:"↓"}
@@ -219,9 +212,9 @@ a{color:inherit;text-decoration:none}
 
 <!-- HEADER -->
 <header class="hd" id="hd">
-  <a class="logo" href="index.html">Tabistock</a>
+  <a class="logo">Tabistock</a>
   <div class="hd-r">
-    <form class="hd-search" action="search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
+    <form class="hd-search"><input placeholder="旅先・キーワードで検索"><button>⌕</button></form>
     <button class="burger" id="burger" aria-label="メニューを開く"><span></span><span></span><span></span></button>
   </div>
 </header>
@@ -230,12 +223,12 @@ a{color:inherit;text-decoration:none}
 <div class="ovl" id="ovl"></div>
 <nav class="drawer" id="drawer">
   <button class="dclose" id="dclose" aria-label="閉じる">×</button>
-  <form class="dsearch" action="search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
+  <form class="dsearch"><input placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
   <a class="dlink" href="#about">Tabistockとは<em>ABOUT</em></a>
-  <a class="dlink" href="filter.html">旅を探す<em>SEARCH</em></a>
+  <a class="dlink" href="#search">旅を探す<em>SEARCH</em></a>
   <a class="dlink" href="#routes">新着旅程<em>ROUTES</em></a>
   <a class="dlink" href="#founder">管理人<em>FOUNDER</em></a>
-  <div class="dcta"><a class="btn btn-p" href="#">旅程を投稿する →</a></div>
+  <div class="dcta"><a class="btn btn-p">旅程を投稿する →</a></div>
 </nav>
 
 <!-- HERO -->
@@ -246,8 +239,8 @@ a{color:inherit;text-decoration:none}
     <h1 class="up d2">若者のリアルな旅を、<br><em>一つの場所に。</em></h1>
     <p class="lead up d3">ルート・費用・日数・失敗談まで。実際に行った旅を同じフォーマットで。<br>国・予算・日数・スタイルから、自分にも真似できる旅が見つかる。</p>
     <div class="cta up d4">
-      <a class="btn btn-p" href="#search">旅程を探す →</a>
-      <a class="btn btn-g" href="#">旅程を投稿する</a>
+      <a class="btn btn-p">旅程を探す →</a>
+      <a class="btn btn-g">旅程を投稿する</a>
     </div>
   </div>
   <div class="scroll-cue">SCROLL<span></span></div>
@@ -286,26 +279,26 @@ a{color:inherit;text-decoration:none}
     <p style="color:var(--muted);line-height:1.8">4つの切り口から、自分にぴったりの旅程へ。</p>
   </div>
   <div class="scards">
-    <a class="scard sc1 rv" href="filter.html#fc-country"><span class="num">01</span><h3>国から探す</h3><p>地域でも、国ごとでも。</p></a>
-    <a class="scard sc2 rv" href="filter.html#fc-budget"><span class="num">02</span><h3>予算で探す</h3><p>〜10万 / 20万 / 30万…</p></a>
-    <a class="scard sc3 rv" href="filter.html#fc-days"><span class="num">03</span><h3>日数で探す</h3><p>週末旅から3週間以上まで。</p></a>
-    <a class="scard sc4 rv" href="filter.html#fc-style"><span class="num">04</span><h3>スタイル</h3><p>1人旅・友達・現地体験など。</p></a>
+    <div class="scard sc1 rv"><span class="num">01</span><h3>国から探す</h3><p>地域でも、国ごとでも。</p></div>
+    <div class="scard sc2 rv"><span class="num">02</span><h3>予算で探す</h3><p>〜10万 / 20万 / 30万…</p></div>
+    <div class="scard sc3 rv"><span class="num">03</span><h3>日数で探す</h3><p>週末旅から3週間以上まで。</p></div>
+    <div class="scard sc4 rv"><span class="num">04</span><h3>スタイル</h3><p>1人旅・友達・現地体験など。</p></div>
   </div>
-  <div class="search-cta rv"><a class="btn btn-p" style="background:var(--green)" href="filter.html">条件を選んで検索する →</a></div>
+  <div class="search-cta rv"><a class="btn btn-p" style="background:var(--green)">条件を選んで検索する →</a></div>
 </section>
 
 <!-- ROUTES (BENTO) -->
 <section class="section" id="routes">
   <div class="routes-head">
     <div class="rv"><p class="eyebrow">New Routes</p><h2>新着旅程</h2></div>
-    <a class="more rv" href="search.html">すべて見る →</a>
+    <a class="more rv">すべて見る →</a>
   </div>
   <div class="bento">
-    <a class="tile big-tile rv" href="articles/mongolia.html"><img src="images/mongolia.jpg" alt="モンゴル"><div class="tile-c"><span class="ctry">MONGOLIA</span><h3>モンゴル5泊6日｜大学生ひとり旅｜総額15万円</h3><div class="tg"><span>15万円前後</span><span>ひとり旅</span><span>自然旅</span></div></div></a>
-    <a class="tile rv" href="articles/cambodia.html"><img src="images/cambodia.jpg" alt="タイ・カンボジア"><div class="tile-c"><span class="ctry">THAI / CAMBODIA</span><h3>アンコールワットを巡る旅</h3><div class="tg"><span>低予算</span><span>世界遺産</span></div></div></a>
-    <a class="tile rv" href="articles/europe.html"><img src="images/europe.jpg" alt="ヨーロッパ"><div class="tile-c"><span class="ctry">EUROPE</span><h3>中欧・東欧 周遊ルート</h3><div class="tg"><span>周遊</span><span>複数国</span></div></div></a>
-    <a class="tile wide-tile rv" href="articles/turkey01.html"><img src="images/turkey01.jpg" alt="トルコ"><div class="tile-c"><span class="ctry">TURKEY</span><h3>トルコ縦断｜カッパドキアと絶景の街</h3><div class="tg"><span>絶景</span><span>街歩き</span></div></div></a>
-    <a class="tile rv" href="articles/australia01.html"><img src="images/australia01.jpg" alt="オーストラリア"><div class="tile-c"><span class="ctry">AUSTRALIA</span><h3>オーストラリア東海岸</h3><div class="tg"><span>自然</span><span>都市</span></div></div></a>
+    <a class="tile big-tile rv"><img src="images/mongolia.jpg"><div class="tile-c"><span class="ctry">MONGOLIA</span><h3>モンゴル5泊6日｜大学生ひとり旅｜総額15万円</h3><div class="tg"><span>15万円前後</span><span>ひとり旅</span><span>自然旅</span></div></div></a>
+    <a class="tile rv"><img src="images/cambodia.jpg"><div class="tile-c"><span class="ctry">THAI / CAMBODIA</span><h3>アンコールワットを巡る旅</h3><div class="tg"><span>低予算</span><span>世界遺産</span></div></div></a>
+    <a class="tile rv"><img src="images/europe.jpg"><div class="tile-c"><span class="ctry">EUROPE</span><h3>中欧・東欧 周遊ルート</h3><div class="tg"><span>周遊</span><span>複数国</span></div></div></a>
+    <a class="tile wide-tile rv"><img src="images/turkey01.jpg"><div class="tile-c"><span class="ctry">TURKEY</span><h3>トルコ縦断｜カッパドキアと絶景の街</h3><div class="tg"><span>絶景</span><span>街歩き</span></div></div></a>
+    <a class="tile rv"><img src="images/australia01.jpg"><div class="tile-c"><span class="ctry">AUSTRALIA</span><h3>オーストラリア東海岸</h3><div class="tg"><span>自然</span><span>都市</span></div></div></a>
   </div>
 </section>
 
@@ -325,8 +318,7 @@ a{color:inherit;text-decoration:none}
 <section class="foot">
   <h2 class="serif">あなたの旅も、<br><em>次の誰かのヒントに。</em></h2>
   <p>SNSで流れてしまう旅の記憶を、Tabistockにストックしませんか。</p>
-  <a class="btn btn-p" href="#">旅程を投稿する →</a>
-  <p class="foot-copy">© 2026 Tabistock</p>
+  <a class="btn btn-p">旅程を投稿する →</a>
 </section>
 
 <script>

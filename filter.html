@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>条件を絞る｜Tabistock</title>
+<meta name="description" content="国・予算・日数・旅スタイルから条件を選んで、自分にも真似できる旅程を絞り込みます。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6efe4;
+  --ink:#1b2330;
+  --green:#1f6f5b;
+  --green-d:#175243;
+  --terra:#e2683b;
+  --sand:#e9dcc6;
+  --muted:#6c7787;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Noto Sans JP",-apple-system,sans-serif;color:var(--ink);background:var(--bg);overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+
+/* ===== HEADER ===== */
+.hd{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:20px 6%;transition:.4s ease}
+.hd.scrolled{background:rgba(246,239,228,.85);backdrop-filter:blur(16px);padding:14px 6%;box-shadow:0 6px 24px rgba(0,0,0,.06)}
+.hd .logo{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;font-size:28px;font-weight:900;letter-spacing:-0.04em;color:#fff;transition:color .4s}
+.hd.scrolled .logo{color:#1f6f5b}
+.hd-r{display:flex;align-items:center;gap:14px}
+.hd-search{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:8px 8px 8px 16px;transition:.4s}
+.hd.scrolled .hd-search{background:#fff;border-color:#e7ddcb}
+.hd-search input{background:none;border:none;outline:none;color:#fff;width:150px;font-size:13px}
+.hd.scrolled .hd-search input{color:var(--ink)}
+.hd-search input::placeholder{color:rgba(255,255,255,.8)}
+.hd.scrolled .hd-search input::placeholder{color:var(--muted)}
+.hd-search button{border:none;border-radius:999px;background:var(--green);color:#fff;width:34px;height:34px;cursor:pointer;font-size:14px}
+
+/* ===== HAMBURGER ===== */
+.burger{display:none;flex-direction:column;justify-content:center;gap:5px;width:44px;height:44px;border:none;background:none;cursor:pointer;padding:0}
+.burger span{display:block;width:24px;height:2px;background:#fff;margin:0 auto;border-radius:2px;transition:.3s}
+.hd.scrolled .burger span{background:#1b2330}
+.burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.burger.open span:nth-child(2){opacity:0}
+.burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.ovl{position:fixed;inset:0;background:rgba(15,20,28,.45);z-index:60;opacity:0;pointer-events:none;transition:.3s}
+.ovl.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:-90%;width:84%;max-width:360px;height:100%;background:var(--bg);z-index:70;padding:80px 26px 28px;transition:right .35s cubic-bezier(.2,.7,.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 50px rgba(0,0,0,.2)}
+.drawer.open{right:0}
+.drawer .dclose{position:absolute;top:20px;right:20px;border:none;background:none;font-size:28px;line-height:1;cursor:pointer;color:var(--ink)}
+.drawer .dsearch{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #e7ddcb;border-radius:999px;padding:7px 7px 7px 16px;margin-bottom:10px}
+.drawer .dsearch input{border:none;outline:none;background:none;flex:1;font-size:14px}
+.drawer .dsearch button{border:none;border-radius:999px;background:var(--green);color:#fff;width:34px;height:34px;cursor:pointer;flex-shrink:0}
+.drawer a.dlink{padding:16px 4px;font-size:17px;font-weight:700;border-bottom:1px solid #e7ddcb;display:flex;justify-content:space-between;align-items:center}
+.drawer a.dlink em{font-style:normal;font-family:"Manrope",sans-serif;font-size:12px;letter-spacing:.1em;color:var(--terra)}
+.drawer .dcta{margin-top:auto;padding-top:22px}
+.drawer .dcta .btn{width:100%;justify-content:center}
+
+.btn{padding:16px 30px;border-radius:999px;font-weight:800;font-size:15px;cursor:pointer;transition:.25s;display:inline-flex;align-items:center;gap:10px;border:none}
+.btn-p{background:var(--terra);color:#fff}
+.btn-p:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(226,104,59,.5)}
+
+/* ===== MINI HERO ===== */
+.fhero{position:relative;padding:150px 6% 70px;background:linear-gradient(150deg,#1f6f5b,#2f9e7f);color:#fff;overflow:hidden}
+.fhero::after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.07)}
+.fhero .eyebrow{font-family:"Manrope",sans-serif;font-weight:800;letter-spacing:.22em;font-size:12px;text-transform:uppercase;color:#ffd9a0}
+.fhero h1{font-size:clamp(28px,4.4vw,46px);font-weight:900;letter-spacing:-.02em;margin:12px 0 10px}
+.fhero p{color:rgba(255,255,255,.9);font-size:15px;line-height:1.8;max-width:560px}
+
+/* ===== FILTER BODY ===== */
+.fwrap{max-width:1000px;margin:0 auto;padding:46px 6% 40px}
+.fcard{background:#fff;border:1px solid #ece2d0;border-radius:20px;margin-bottom:16px;overflow:hidden;transition:box-shadow .3s}
+.fcard.active{box-shadow:0 18px 40px rgba(27,35,48,.08)}
+.fcard-head{padding:24px 28px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.fcard-head .ft{display:flex;align-items:center;gap:16px}
+.fcard-head .fnum{font-family:"Manrope",sans-serif;font-weight:800;font-size:15px;color:var(--terra);letter-spacing:.04em}
+.fcard-head h3{font-size:18px;font-weight:800}
+.fcard-head .fhint{font-size:12px;color:var(--muted);margin-top:3px}
+.fcard-head .chev{flex-shrink:0;width:22px;height:22px;color:var(--muted);transition:transform .35s}
+.fcard.active .chev{transform:rotate(180deg);color:var(--green)}
+.fcount{font-size:11px;font-weight:800;color:#fff;background:var(--green);border-radius:999px;padding:3px 9px;display:none}
+.fcount.show{display:inline-block}
+.fpanel{max-height:0;overflow:hidden;transition:max-height .45s cubic-bezier(.2,.7,.2,1)}
+.fpanel-in{padding:0 28px 28px}
+
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chips label{display:inline-flex;align-items:center;border:1px solid #ddd2bf;border-radius:999px;padding:9px 17px;font-size:13.5px;cursor:pointer;transition:.2s;background:#faf6ee;user-select:none}
+.chips label:hover{border-color:var(--green);color:var(--green)}
+.chips label input{display:none}
+.chips label:has(input:checked){background:var(--green);color:#fff;border-color:var(--green)}
+
+.region-block{padding:18px 0;border-bottom:1px dashed #ece2d0}
+.region-block:last-child{border-bottom:none}
+.region-block .region-label{display:inline-flex;align-items:center;border:1.5px solid var(--terra);color:var(--terra);border-radius:999px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;margin-bottom:12px;user-select:none}
+.region-block .region-label input{display:none}
+.region-block .region-label:has(input:checked){background:var(--terra);color:#fff}
+.country-list{display:flex;flex-wrap:wrap;gap:9px}
+
+.style-section + .style-section{margin-top:22px;padding-top:22px;border-top:1px dashed #ece2d0}
+.style-section .sub{font-size:12.5px;font-weight:800;color:var(--muted);letter-spacing:.04em;margin-bottom:12px}
+
+/* ===== STICKY SUBMIT BAR ===== */
+.fbar{position:sticky;bottom:0;z-index:30;display:flex;align-items:center;justify-content:center;gap:14px;padding:16px 6%;background:rgba(246,239,228,.94);backdrop-filter:blur(12px);border-top:1px solid #e7ddcb}
+.fbar .selsum{font-size:13px;color:var(--muted);font-weight:600}
+.fbar .selsum b{color:var(--green);font-weight:800}
+.fbar .reset{background:none;border:none;color:var(--muted);font-size:13px;text-decoration:underline;cursor:pointer}
+.fbar .go{background:var(--green);color:#fff}
+.fbar .go:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(31,111,91,.4)}
+
+@media(max-width:860px){
+  .hd-search{display:none}
+  .burger{display:flex}
+  .fhero{padding:120px 6% 50px}
+  .fcard-head{padding:20px 20px}
+  .fpanel-in{padding:0 20px 24px}
+  .fbar{flex-wrap:wrap;gap:10px}
+  .fbar .selsum{order:-1;width:100%;text-align:center}
+  .fbar .go{flex:1;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hd" id="hd">
+  <a class="logo" href="index.html">Tabistock</a>
+  <div class="hd-r">
+    <form class="hd-search" action="search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
+    <button class="burger" id="burger" aria-label="メニューを開く"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<!-- MOBILE DRAWER -->
+<div class="ovl" id="ovl"></div>
+<nav class="drawer" id="drawer">
+  <button class="dclose" id="dclose" aria-label="閉じる">×</button>
+  <form class="dsearch" action="search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
+  <a class="dlink" href="index.html#about">Tabistockとは<em>ABOUT</em></a>
+  <a class="dlink" href="filter.html">旅を探す<em>SEARCH</em></a>
+  <a class="dlink" href="index.html#routes">新着旅程<em>ROUTES</em></a>
+  <a class="dlink" href="index.html#founder">管理人<em>FOUNDER</em></a>
+  <div class="dcta"><a class="btn btn-p" href="#">旅程を投稿する →</a></div>
+</nav>
+
+<!-- MINI HERO -->
+<section class="fhero">
+  <p class="eyebrow">Search Routes</p>
+  <h1>条件を絞って、旅を探す</h1>
+  <p>国・予算・日数・旅スタイルから選ぶだけ。条件を選んで「この条件で検索」を押すと、当てはまる旅程の一覧が表示されます。</p>
+</section>
+
+<!-- FILTER -->
+<div class="fwrap">
+
+  <!-- 国から探す -->
+  <section class="fcard" id="fc-country">
+    <div class="fcard-head">
+      <div class="ft">
+        <span class="fnum">01</span>
+        <div><h3>国・地域から探す <span class="fcount"></span></h3><p class="fhint">地域でまとめても、国ごとに分けても。</p></div>
+      </div>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="fpanel"><div class="fpanel-in">
+
+      <div class="region-block">
+        <label class="region-label"><input type="checkbox" data-filter="region" value="east-asia">東アジア</label>
+        <div class="country-list chips">
+          <label><input type="checkbox" data-filter="country" value="korea">韓国</label>
+          <label><input type="checkbox" data-filter="country" value="mongolia">モンゴル</label>
+        </div>
+      </div>
+
+      <div class="region-block">
+        <label class="region-label"><input type="checkbox" data-filter="region" value="southeast-asia">東南アジア</label>
+        <div class="country-list chips">
+          <label><input type="checkbox" data-filter="country" value="thai">タイ</label>
+          <label><input type="checkbox" data-filter="country" value="cambodia">カンボジア</label>
+          <label><input type="checkbox" data-filter="country" value="vietnam">ベトナム</label>
+          <label><input type="checkbox" data-filter="country" value="malaysia">マレーシア</label>
+          <label><input type="checkbox" data-filter="country" value="singapore">シンガポール</label>
+          <label><input type="checkbox" data-filter="country" value="indonesia">インドネシア</label>
+          <label><input type="checkbox" data-filter="country" value="philippines">フィリピン</label>
+        </div>
+      </div>
+
+      <div class="region-block">
+        <label class="region-label"><input type="checkbox" data-filter="region" value="central-asia">中央アジア</label>
+        <div class="country-list chips">
+          <label><input type="checkbox" data-filter="country" value="kazakhstan">カザフスタン</label>
+          <label><input type="checkbox" data-filter="country" value="kyrgyzstan">キルギス</label>
+          <label><input type="checkbox" data-filter="country" value="uzbekistan">ウズベキスタン</label>
+        </div>
+      </div>
+
+      <div class="region-block">
+        <label class="region-label"><input type="checkbox" data-filter="region" value="west-asia">西アジア</label>
+        <div class="country-list chips">
+          <label><input type="checkbox" data-filter="country" value="turkey">トルコ</label>
+          <label><input type="checkbox" data-filter="country" value="qatar">カタール</label>
+          <label><input type="checkbox" data-filter="country" value="UAE">アラブ首長国連邦</label>
+        </div>
+      </div>
+
+      <div class="region-block">
+        <label class="region-label"><input type="checkbox" data-filter="region" value="europe">ヨーロッパ</label>
+        <div class="country-list chips">
+          <label><input type="checkbox" data-filter="country" value="finland">フィンランド</label>
+          <label><input type="checkbox" data-filter="country" value="sweden">スウェーデン</label>
+          <label><input type="checkbox" data-filter="country" value="norway">ノルウェー</label>
+          <label><input type="checkbox" data-filter="country" value="estonia">エストニア</label>
+          <label><input type="checkbox" data-filter="country" value="latvia">ラトビア</label>
+          <label><input type="checkbox" data-filter="country" value="lithuania">リトアニア</label>
+          <label><input type="checkbox" data-filter="country" value="croatia">クロアチア</label>
+          <label><input type="checkbox" data-filter="country" value="austria">オーストリア</label>
+          <label><input type="checkbox" data-filter="country" value="hungary">ハンガリー</label>
+          <label><input type="checkbox" data-filter="country" value="slovakia">スロバキア</label>
+        </div>
+      </div>
+
+      <div class="region-block">
+        <label class="region-label"><input type="checkbox" data-filter="region" value="north-america">北アメリカ</label>
+        <div class="country-list chips">
+          <label><input type="checkbox" data-filter="country" value="usa">アメリカ</label>
+          <label><input type="checkbox" data-filter="country" value="canada">カナダ</label>
+          <label><input type="checkbox" data-filter="country" value="mexico">メキシコ</label>
+        </div>
+      </div>
+
+      <div class="region-block">
+        <label class="region-label"><input type="checkbox" data-filter="region" value="south-america">南アメリカ</label>
+        <div class="country-list chips">
+          <label><input type="checkbox" data-filter="country" value="peru">ペルー</label>
+          <label><input type="checkbox" data-filter="country" value="bolivia">ボリビア</label>
+          <label><input type="checkbox" data-filter="country" value="chile">チリ</label>
+          <label><input type="checkbox" data-filter="country" value="argentina">アルゼンチン</label>
+          <label><input type="checkbox" data-filter="country" value="brazil">ブラジル</label>
+        </div>
+      </div>
+
+      <div class="region-block">
+        <label class="region-label"><input type="checkbox" data-filter="region" value="africa">アフリカ</label>
+        <div class="country-list chips">
+          <label><input type="checkbox" data-filter="country" value="morocco">モロッコ</label>
+          <label><input type="checkbox" data-filter="country" value="egypt">エジプト</label>
+          <label><input type="checkbox" data-filter="country" value="kenya">ケニア</label>
+          <label><input type="checkbox" data-filter="country" value="south-africa">南アフリカ</label>
+        </div>
+      </div>
+
+      <div class="region-block">
+        <label class="region-label"><input type="checkbox" data-filter="region" value="oceania">オセアニア</label>
+        <div class="country-list chips">
+          <label><input type="checkbox" data-filter="country" value="australia">オーストラリア</label>
+          <label><input type="checkbox" data-filter="country" value="new-zealand">ニュージーランド</label>
+        </div>
+      </div>
+
+    </div></div>
+  </section>
+
+  <!-- 予算で探す -->
+  <section class="fcard" id="fc-budget">
+    <div class="fcard-head">
+      <div class="ft">
+        <span class="fnum">02</span>
+        <div><h3>予算で探す <span class="fcount"></span></h3><p class="fhint">総額の上限から選ぶ。</p></div>
+      </div>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="fpanel"><div class="fpanel-in">
+      <div class="chips">
+        <label><input type="checkbox" data-filter="budget" value="10">〜10万円</label>
+        <label><input type="checkbox" data-filter="budget" value="20">〜20万円</label>
+        <label><input type="checkbox" data-filter="budget" value="30">〜30万円</label>
+        <label><input type="checkbox" data-filter="budget" value="40">〜40万円</label>
+        <label><input type="checkbox" data-filter="budget" value="50">〜50万円</label>
+        <label><input type="checkbox" data-filter="budget" value="50plus">50万円以上</label>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 日数で探す -->
+  <section class="fcard" id="fc-days">
+    <div class="fcard-head">
+      <div class="ft">
+        <span class="fnum">03</span>
+        <div><h3>日数で探す <span class="fcount"></span></h3><p class="fhint">週末旅から3週間以上まで。</p></div>
+      </div>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="fpanel"><div class="fpanel-in">
+      <div class="chips">
+        <label><input type="checkbox" data-filter="days" value="daytrip">日帰り</label>
+        <label><input type="checkbox" data-filter="days" value="1night">1泊</label>
+        <label><input type="checkbox" data-filter="days" value="3-5">3〜5日</label>
+        <label><input type="checkbox" data-filter="days" value="1w">1週間</label>
+        <label><input type="checkbox" data-filter="days" value="2w">2週間</label>
+        <label><input type="checkbox" data-filter="days" value="3w-plus">3週間以上</label>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- 旅スタイル -->
+  <section class="fcard" id="fc-style">
+    <div class="fcard-head">
+      <div class="ft">
+        <span class="fnum">04</span>
+        <div><h3>旅スタイル <span class="fcount"></span></h3><p class="fhint">誰と、どんな旅をするか。</p></div>
+      </div>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="fpanel"><div class="fpanel-in">
+      <div class="style-section">
+        <p class="sub">誰と行くか</p>
+        <div class="chips">
+          <label><input type="checkbox" data-filter="style" value="solo">1人旅</label>
+          <label><input type="checkbox" data-filter="style" value="friends">友達と</label>
+          <label><input type="checkbox" data-filter="style" value="family">家族と</label>
+          <label><input type="checkbox" data-filter="style" value="backpacker">バックパッカー</label>
+          <label><input type="checkbox" data-filter="style" value="girls">女子旅</label>
+          <label><input type="checkbox" data-filter="style" value="couple">カップル</label>
+        </div>
+      </div>
+      <div class="style-section">
+        <p class="sub">旅のスタイル</p>
+        <div class="chips">
+          <label><input type="checkbox" data-filter="style" value="nature">自然・絶景</label>
+          <label><input type="checkbox" data-filter="style" value="city">都市・街歩き</label>
+          <label><input type="checkbox" data-filter="style" value="local">現地体験</label>
+          <label><input type="checkbox" data-filter="style" value="round-trip">周遊</label>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+</div>
+
+<!-- STICKY SUBMIT -->
+<div class="fbar">
+  <span class="selsum"><b id="selN">0</b> 件の条件を選択中</span>
+  <button class="reset" id="reset">リセット</button>
+  <button class="btn go" id="go">この条件で検索 →</button>
+</div>
+
+<script>
+// header scroll
+const hd=document.getElementById('hd');
+addEventListener('scroll',()=>hd.classList.toggle('scrolled',scrollY>40));
+// mobile drawer
+const burger=document.getElementById('burger'),drawer=document.getElementById('drawer'),ovl=document.getElementById('ovl'),dclose=document.getElementById('dclose');
+function toggleD(open){burger.classList.toggle('open',open);drawer.classList.toggle('open',open);ovl.classList.toggle('open',open);document.body.style.overflow=open?'hidden':''}
+burger.addEventListener('click',()=>toggleD(!drawer.classList.contains('open')));
+ovl.addEventListener('click',()=>toggleD(false));
+dclose.addEventListener('click',()=>toggleD(false));
+drawer.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>toggleD(false)));
+
+// accordion
+const cards=document.querySelectorAll('.fcard');
+function openCard(card,open){
+  const panel=card.querySelector('.fpanel');
+  card.classList.toggle('active',open);
+  panel.style.maxHeight=open?panel.scrollHeight+'px':'0px';
+}
+cards.forEach(card=>{
+  card.querySelector('.fcard-head').addEventListener('click',()=>openCard(card,!card.classList.contains('active')));
+});
+// keep open panel sized correctly when inner checkboxes change layout
+function refreshHeights(){cards.forEach(c=>{if(c.classList.contains('active')){const p=c.querySelector('.fpanel');p.style.maxHeight=p.scrollHeight+'px'}})}
+addEventListener('resize',refreshHeights);
+
+// open card matching URL hash (from index.html entry points)
+const hash=location.hash.replace('#','');
+const target=hash?document.getElementById(hash):document.getElementById('fc-country');
+if(target&&target.classList.contains('fcard')){openCard(target,true);} else {openCard(cards[0],true);}
+
+// selection count + per-card badges
+const selN=document.getElementById('selN');
+function updateCount(){
+  let total=0;
+  cards.forEach(card=>{
+    const n=card.querySelectorAll('input:checked').length;
+    total+=n;
+    const badge=card.querySelector('.fcount');
+    if(badge){badge.textContent=n;badge.classList.toggle('show',n>0)}
+  });
+  selN.textContent=total;
+  refreshHeights();
+}
+document.querySelectorAll('.fcard input').forEach(i=>i.addEventListener('change',updateCount));
+updateCount();
+
+// reset
+document.getElementById('reset').addEventListener('click',()=>{
+  document.querySelectorAll('.fcard input:checked').forEach(i=>i.checked=false);
+  updateCount();
+});
+
+// submit -> search.html?params
+document.getElementById('go').addEventListener('click',()=>{
+  const checked=document.querySelectorAll('.fcard input:checked');
+  const params=new URLSearchParams();
+  checked.forEach(i=>params.append(i.dataset.filter,i.value));
+  window.location.href='search.html'+(params.toString()?('?'+params.toString()):'');
+});
+</script>
+</body>
+</html>
