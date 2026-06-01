@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>トルコ&ギリシャ7泊8日｜Tabistock</title>
   <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-<body>
 
 <body>
   <header class="header">
@@ -16,29 +16,112 @@
     <input type="text" name="q" placeholder="旅先・キーワードで検索">
     <button type="submit">検索</button>
   </form>
-   <button class="header-filter-btn" id="filterOpen">☰</button>
+   <button class="header-filter-btn" id="filterOpen" type="button">☰</button>
   </div>
   </header>
+   <div class="filter-drawer" id="filterDrawer">
+  <div class="filter-drawer-header">
+    <h3>条件で絞り込む</h3>
+    <button id="filterClose">×</button>
+  </div>
+  <div class="result-filter-bar">
+    <select name="country">
+      <option value="">国・地域</option>
+      <option value="mongolia">モンゴル</option>
+      <option value="korea">韓国</option>
+      <option value="thai">タイ</option>
+    </select>
+
+    <select name="budget">
+      <option value="">予算</option>
+      <option value="10">〜10万円</option>
+      <option value="20">〜20万円</option>
+      <option value="30">〜30万円</option>
+    </select>
+
+    <select name="days">
+      <option value="">日数</option>
+      <option value="daytrip">日帰り</option>
+      <option value="1night">1泊</option>
+      <option value="3-5">3〜5日</option>
+      <option value="1w">1週間</option>
+      <option value="2w">2週間</option>
+      <option value="3w-plus">3週間以上</option>
+    </select>
+
+    <select name="style">
+      <option value="">スタイル</option>
+      <option value="solo">1人旅</option>
+      <option value="friends">友達と</option>
+      <option value="nature">自然・絶景</option>
+      <option value="city">都市・街歩き</option>
+    </select>
+
+    <button id="drawer-filter-btn">絞り込む</button>
+  </div>
+</div>
+<div class="drawer-overlay" id="drawerOverlay"></div>
 
 <main class="article-page">
-
   <section class="article-hero">
-    <div class="hero-text">
-      <p class="label">学生・若者のための旅程データベース</p>
-      <h1>トルコ&ギリシャ7泊8日｜大学生旅</h1>
-      <p>
-        大学生2人旅。東京羽田発。イスタンブール、カッパドキアを巡る。
-      </p>
-    </div>
-
+    <div class="hero-carousel">
     <div class="hero-images">
-      <img src="../images/turkey01/" alt="モンゴルの草原">
-      <img src="../images/turkey01/" alt="モンゴルの砂丘">
-      <img src="../images/turkey01/" alt="モンゴルの渓谷">
-      <img src="../images/turkey01/" alt="モンゴルのゲル">
-    </div>
-  </section>
+    <img src="../images/turkey02/hero1.jpg" alt="トルコ・ギリシャの風景1">
+    <img src="../images/turkey02/hero2.jpg" alt="トルコ・ギリシャの風景2">
+    <img src="../images/turkey02/hero3.jpg" alt="トルコ・ギリシャの風景3">
+    <img src="../images/turkey02/hero4.jpg" alt="トルコ・ギリシャの風景4">
+  </div>
 
+  <div class="hero-dots">
+    <span></span>
+    <span></span>
+    <span></span>
+    <span></span>
+  </div>
+</div>
+  <div class="hero-text">
+    <h1>トルコ&ギリシャ7泊8日｜周遊旅</h1>
+
+    <p class="hero-lead">
+      イスタンブール・アテネの世界遺産を巡る周遊旅。（ここに旅の概要を記入）
+    </p>
+     <div class="hero-basic-info">
+  <div>
+    <span>通貨</span>
+    <strong>トルコリラ / ユーロ</strong>
+  </div>
+  <div>
+    <span>言語</span>
+    <strong>トルコ語 / ギリシャ語</strong>
+  </div>
+  <div>
+    <span>治安</span>
+    <strong>比較的安全</strong>
+  </div>
+</div>
+<div class="hero-info">
+      <div>
+        <span>旅行時期</span>
+        <strong>（記入）</strong>
+      </div>
+      <div>
+        <span >旅の難易度</span>
+        <strong>★★★☆☆</strong>
+      </div>
+      <div>
+        <span>投稿者</span>
+        <strong>（記入）</strong>
+      </div>
+    </div>
+    <div class="hero-tags">
+      <span>トルコ</span>
+      <span>ギリシャ</span>
+      <span>~30万円</span>
+      <span>世界遺産</span>
+      <span>遺跡</span>
+    </div>
+  </div>
+</section>
 </main>
 
 <section class="info-grid">
@@ -46,204 +129,433 @@
   <h2>費用内訳</h2>
 
   <div class="cost-row">
-    <span>航空券（往復、国内線）</span>
-    <strong>¥</strong>
+    <span>航空券（往復）</span>
+    <strong>¥—</strong>
   </div>
 
   <div class="cost-row">
     <span>宿泊（7泊）</span>
-    <strong>¥</strong>
+    <strong>¥—</strong>
   </div>
 
   <div class="cost-row">
     <span>現地ツアー</span>
-    <strong>¥64,000</strong>
+    <strong>¥—</strong>
   </div>
 
   <div class="cost-row">
     <span>現地交通</span>
-    <strong>¥7,000</strong>
+    <strong>¥—</strong>
   </div>
 
   <div class="cost-row">
     <span>食費</span>
-    <strong>¥10,000</strong>
+    <strong>¥—</strong>
+  </div>
+
+  <div class="cost-row">
+    <span>eSIM</span>
+    <strong>¥—</strong>
+  </div>
+
+  <div class="cost-row">
+    <span>お土産</span>
+    <strong>¥—</strong>
   </div>
 
   <div class="cost-total">
     <span>合計</span>
-    <strong>約¥151,000</strong>
+    <strong>約¥—</strong>
   </div>
 </div>
 
-  <div class="itinerary-card">
+  <div class="info-card itinerary-card">
   <h2>旅程</h2>
 
   <div class="timeline">
     <div class="timeline-item">
       <span class="day">DAY 1</span>
-      <p>上海経由でウランバートルへ</p>
+      <p>（記入）</p>
     </div>
 
     <div class="timeline-item">
       <span class="day">DAY 2</span>
-      <p>ダランザドガドへ移動</p>
+      <p>（記入）</p>
     </div>
 
     <div class="timeline-item">
       <span class="day">DAY 3</span>
-      <p>バヤンザグ・砂丘・渓谷を巡る</p>
+      <p>（記入）</p>
     </div>
 
     <div class="timeline-item">
       <span class="day">DAY 4</span>
-      <p>ウランバートルへ戻る</p>
+      <p>（記入）</p>
     </div>
 
     <div class="timeline-item">
       <span class="day">DAY 5</span>
-      <p>テレルジ国立公園・ゲル泊</p>
+      <p>（記入）</p>
     </div>
 
     <div class="timeline-item">
       <span class="day">DAY 6</span>
-      <p>ソウル経由で帰国</p>
+      <p>（記入）</p>
+    </div>
+
+    <div class="timeline-item">
+      <span class="day">DAY 7</span>
+      <p>（記入）</p>
+    </div>
+
+    <div class="timeline-item">
+      <span class="day">DAY 8</span>
+      <p>（記入）</p>
     </div>
   </div>
 </div>
+
 <div class="info-card flight-card">
   <h2>航空券</h2>
 
   <div class="flight-route">
     <span class="flight-label">往路</span>
-    <h3>大阪 → 上海 → ウランバートル</h3>
-    <p>Spring Airlines</p>
+    <h3>東京 → （経由） → イスタンブール</h3>
+    <p>（航空会社を記入）</p>
   </div>
 
   <div class="flight-route">
     <span class="flight-label">復路</span>
-    <h3>ウランバートル → ソウル → 大阪</h3>
-    <p>Jeju Air / Peach</p>
+    <h3>アテネ → （経由） → 東京</h3>
+    <p>（航空会社を記入）</p>
   </div>
 
   <div class="flight-meta">
     <div>
       <span>予約時期</span>
-      <strong>出発の約2ヶ月前</strong>
+      <strong>（記入）</strong>
     </div>
     <div>
       <span>予約サイト</span>
-      <strong>Trip.com</strong>
+      <strong>（記入）</strong>
     </div>
   </div>
 
   <div class="cost-total">
     <span>航空券合計</span>
-    <strong>約¥60,000</strong>
+    <strong>約¥—</strong>
+  </div>
+</div>
+
+<div class="info-card services-card">
+  <h2>利用サービス</h2>
+
+  <div class="service-item">
+    <span class="service-label">宿泊</span>
+    <strong>（記入）</strong>
+  </div>
+
+  <div class="service-item">
+    <span class="service-label">現地ツアー</span>
+    <strong>（記入）</strong>
+  </div>
+
+  <div class="service-item">
+    <span class="service-label">eSIM</span>
+    <strong>（記入）</strong>
+  </div>
+
+  <div class="service-item">
+    <span class="service-label">地図・交通</span>
+    <strong>（記入）</strong>
+  </div>
+
+  <div class="service-item">
+    <span class="service-label">決済</span>
+    <strong>（記入）</strong>
+  </div>
+
+  <div class="service-item">
+    <span class="service-label">その他</span>
+    <strong>（記入）</strong>
   </div>
 </div>
 </section>
 <section class="day-grid">
 
   <article class="day-card">
+      <button class="day-toggle">
+    <span class="day-label">DAY 1.</span>
+    <span class="day-title">（タイトルを記入）</span>
+    <span class="day-icon">+</span>
+  </button>
+
+  <div class="day-content">
     <div class="day-text">
-      <span class="day-label">DAY 1. 3/30-31</span>
-      <h2>上海経由でウランバートルへ</h2>
-      <p>
-        3月30日の22時半、関西国際空港を出発し、翌真夜中上海着。空港泊をする人が多く、ソファやベンチは埋まっている。なんとかスペースを見つけて夜を明かす。Trip.comの無料券でラウンジを利用。
-        <br><br>早朝出発。お昼にチンギスハーン国際空港着。ATMで現金を下ろし、バスに乗って市内へ。700円くらいだった。外は5℃くらい。寒すぎる。
-        <br><br>市内は予想以上に都会。ビルが立ち並ぶ。メイン広場スフバートル広場到着。街のコンビニは韓国系のNice to CU。ホテルにチェックインし、散策してレストランに入る。マトンのステーキとポテト。美味しいけど油がすごい!
-      </p>
+      <p>（ここに本文を記入）</p>
     </div>
 
     <div class="photo-slider">
-      <img src="../images/mongolia/day1-1.jpg" alt="">
-      <img src="../images/mongolia/day1-2.jpg" alt="">
-      <img src="../images/mongolia/day1-3.jpg" alt="">
-      <img src="../images/mongolia/day1-4.jpg" alt="">
+      <img src="../images/turkey02/day1-1.jpg" alt="">
+      <img src="../images/turkey02/day1-2.jpg" alt="">
+      <img src="../images/turkey02/day1-3.jpg" alt="">
     </div>
+  </div>
   </article>
+
 <article class="day-card">
-  <div class="day-text">
-    <span class="day-label">DAY 2. 4/1</span>
-    <h2>ダランザドガドへ移動</h2>
-    <p>バスや乗合いバンの発着点、ドラゴンバスターミナルへバスで向かう。渋滞がひどい。Whatsappで事前に手配していたため、バンはすぐ見つかる。しかし一定人数乗せないと採算が取れないため、人を集めるために長時間待機、、。
-      <br><br>やっとお客さんが三人集まり、ダランザドガドまで500kmのドライブ。英語は通じず、電波もないので持参した日本語モンゴル語辞典で会話する。窓からは壮大な景色。草原、家畜の群れ、日の入り。圧倒される。約8時間揺られ、23時ごろ到着。バックパッカーハウスだったっぽいが、閑散期なのか自分1人だけだった。ラッキー。
-    </p>
+  <button class="day-toggle">
+    <span class="day-label">DAY 2.</span>
+    <span class="day-title">（タイトルを記入）</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
+    <p>（ここに本文を記入）</p>
   </div>
 
   <div class="photo-slider">
-    <img src="../images/mongolia/day2-1.jpg" alt="">
-    <img src="../images/mongolia/day2-2.jpg" alt="">
-    <img src="../images/mongolia/day2-3.jpg" alt="">
+    <img src="../images/turkey02/day2-1.jpg" alt="">
+    <img src="../images/turkey02/day2-2.jpg" alt="">
+    <img src="../images/turkey02/day2-3.jpg" alt="">
   </div>
-</article>
-<article class="day-card">
-  <div class="day-text">
-    <span class="day-label">DAY 3. 4/2</span>
-    <h2>バヤンザグ・砂丘・渓谷を巡る</h2>
-    <p>
-      宿の方とWhatsappでやりとりし、事前に1DAYツアーを手配してもらっていた。おじさん1人と僕。舗装されていない道路を突き進み、最初に辿り着いたのはヨリーンアム渓谷。滝が凍っており見応えがある。<br><br>次は砂丘。本当は有名なホンゴル砂丘に行きたかったのだが、遠かったので断念。
-      風が強かった。小規模でありながらゴビ砂漠を味わえた。<br><br>お次はバヤンザグ。オレンジ色の崖。絶景すぎた。日の入りだとより美しいらしい。こちらも人が誰もいなかった。<br><br>夜ダランザドガドに戻り。現金支払い50万トゥグルグ（2.5万円くらい）。実際ゴビ砂漠周辺（南モンゴル）あたりのツアーは1人15万円くらいするものもあるので、かなりお得だった。
-    </p>
-  </div>
-
-  <div class="photo-slider">
-    <img src="../images/mongolia/day3-1.jpg" alt="">
-    <img src="../images/mongolia/day3-2.jpg" alt="">
-    <img src="../images/mongolia/day3-3.jpg" alt="">
-  </div>
+</div>
 </article>
 
 <article class="day-card">
-  <div class="day-text">
-    <span class="day-label">DAY 4. 4/3</span>
-    <h2>ウランバートルへ戻る</h2>
-    <p>
-      行きと同じ人に送ってもらう。往復1000km以上あるのに往復6000円ほどだった。安すぎる。ウランバートル到着後、羊肉は避けてバーガーキングに行ってしまった。その後タクシーで市内に戻りホテルにチェックイン。韓国人のオーナーだった。
-    </p>
+  <button class="day-toggle">
+    <span class="day-label">DAY 3.</span>
+    <span class="day-title">（タイトルを記入）</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
+    <p>（ここに本文を記入）</p>
   </div>
 
   <div class="photo-slider">
-    <img src="../images/mongolia/day4-1.jpg" alt="">
-    <img src="../images/mongolia/day4-2.jpg" alt="">
-    <img src="../images/mongolia/day4-3.jpg" alt="">
+    <img src="../images/turkey02/day3-1.jpg" alt="">
+    <img src="../images/turkey02/day3-2.jpg" alt="">
+    <img src="../images/turkey02/day3-3.jpg" alt="">
+  </div>
   </div>
 </article>
 
 <article class="day-card">
-  <div class="day-text">
-    <span class="day-label">DAY 5. 4/4</span>
-    <h2>テレルジ国立公園・ゲル泊</h2>
-    <p>
-      Get your Guideで5000円でテレルジ国立公園の有名観光地、市内の観光地を巡ってくれるツアーがあり直前予約。到着後は自由行動という形で、思いのまま見て回ることができた。<br><br>その後はついに遊牧民ゲルホームステイ。
-      ガイドの方がホテル前まで迎えに来てくれ、140km/hで1時間半。一家とご挨拶。夜ご飯を作ってくれ、夜は満天の星空。外は-10℃にまで冷え込んだが、ゲルの中は意外と暖かい。
-    </p>
+  <button class="day-toggle">
+    <span class="day-label">DAY 4.</span>
+    <span class="day-title">（タイトルを記入）</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
+    <p>（ここに本文を記入）</p>
   </div>
 
   <div class="photo-slider">
-    <img src="../images/mongolia/day5-1.jpg" alt="">
-    <img src="../images/mongolia/day5-2.jpg" alt="">
-    <img src="../images/mongolia/day5-3.jpg" alt="">
+    <img src="../images/turkey02/day4-1.jpg" alt="">
+    <img src="../images/turkey02/day4-2.jpg" alt="">
+    <img src="../images/turkey02/day4-3.jpg" alt="">
+  </div>
   </div>
 </article>
 
 <article class="day-card">
-  <div class="day-text">
-    <span class="day-label">DAY 6. 4/5-6</span>
-    <h2>ソウル経由で帰国</h2>
-    <p>
-      早朝に起き、日の出を見る。朝ごはんをいただき、家畜の世話をお手伝い。10時ごろには残念ながらお別れ。現地支払いで34000円。1人だったので高かったが、モンゴルでしかできない経験ができた。<br><br>
-      空港まで送迎してもらう。昼過ぎにウランバートルを出発し、夕方ソウル着。12時間ほどのトランジットをパラダイスシティで過ごす。翌日大阪着。
-    </p>
+  <button class="day-toggle">
+    <span class="day-label">DAY 5.</span>
+    <span class="day-title">（タイトルを記入）</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
+    <p>（ここに本文を記入）</p>
   </div>
 
   <div class="photo-slider">
-    <img src="../images/mongolia/day6-1.jpg" alt="">
-    <img src="../images/mongolia/day6-2.jpg" alt="">
-    <img src="../images/mongolia/day6-3.jpg" alt="">
+    <img src="../images/turkey02/day5-1.jpg" alt="">
+    <img src="../images/turkey02/day5-2.jpg" alt="">
+    <img src="../images/turkey02/day5-3.jpg" alt="">
+  </div>
+  </div>
+</article>
+
+<article class="day-card">
+  <button class="day-toggle">
+    <span class="day-label">DAY 6.</span>
+    <span class="day-title">（タイトルを記入）</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
+    <p>（ここに本文を記入）</p>
+  </div>
+
+  <div class="photo-slider">
+    <img src="../images/turkey02/day6-1.jpg" alt="">
+    <img src="../images/turkey02/day6-2.jpg" alt="">
+    <img src="../images/turkey02/day6-3.jpg" alt="">
+  </div>
+  </div>
+</article>
+
+<article class="day-card">
+  <button class="day-toggle">
+    <span class="day-label">DAY 7.</span>
+    <span class="day-title">（タイトルを記入）</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
+    <p>（ここに本文を記入）</p>
+  </div>
+
+  <div class="photo-slider">
+    <img src="../images/turkey02/day7-1.jpg" alt="">
+    <img src="../images/turkey02/day7-2.jpg" alt="">
+    <img src="../images/turkey02/day7-3.jpg" alt="">
+  </div>
+  </div>
+</article>
+
+<article class="day-card">
+  <button class="day-toggle">
+    <span class="day-label">DAY 8.</span>
+    <span class="day-title">（タイトルを記入）</span>
+    <span class="day-icon">+</span>
+    </button>
+
+    <div class="day-content">
+    <div class="day-text">
+    <p>（ここに本文を記入）</p>
+  </div>
+
+  <div class="photo-slider">
+    <img src="../images/turkey02/day8-1.jpg" alt="">
+    <img src="../images/turkey02/day8-2.jpg" alt="">
+    <img src="../images/turkey02/day8-3.jpg" alt="">
+  </div>
   </div>
 </article>
 </section>
+<section class="tips-section">
+  <div class="tips-card">
+    <h2>投稿者のコメント</h2>
+
+    <p class="tips-text">（ここに旅のアドバイスや注意点を記入）</p>
+  </div>
+</section>
+
+
+<section class="author-card">
+  <img src="../images/authors/mahiro.jpg" alt="投稿者アイコン" class="author-icon">
+
+  <div class="author-info">
+    <p class="author-label">執筆者</p>
+    <h2>（記入）</h2>
+    <p>（プロフィールを記入）</p>
+  </div>
+  <div class="author-socials">
+  <a href="#" target="_blank" class="author-social">
+    <i class="fa-brands fa-instagram"></i>
+  </a>
+</div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <h2>Tabistock</h2>
+    <p>学生・若者のリアルな旅程を集める旅行プラットフォーム。</p>
+
+    <div class="footer-links">
+      <a href="../index.html">トップ</a>
+      <a href="#">旅程を検索する</a>
+      <a href="#">旅程を投稿する</a>
+      <br>
+      <a href="https://www.instagram.com/mahiro.9.3/" target="_blank" class="author-social">
+    <i class="fa-brands fa-instagram"></i>
+  </a>
+    </div>
+
+    <small>© 2026 Tabistock</small>
+  </div>
+</footer>
+<script>
+const filterOpen = document.getElementById("filterOpen");
+const filterClose = document.getElementById("filterClose");
+const filterDrawer = document.getElementById("filterDrawer");
+const drawerOverlay = document.getElementById("drawerOverlay");
+
+if (filterOpen && filterClose && filterDrawer && drawerOverlay) {
+  filterOpen.addEventListener("click", () => {
+    filterDrawer.classList.add("active");
+    drawerOverlay.classList.add("active");
+  });
+
+  filterClose.addEventListener("click", () => {
+    filterDrawer.classList.remove("active");
+    drawerOverlay.classList.remove("active");
+  });
+
+  drawerOverlay.addEventListener("click", () => {
+    filterDrawer.classList.remove("active");
+    drawerOverlay.classList.remove("active");
+  });
+}
+
+const drawerFilterBtns = document.querySelectorAll("#drawer-filter-btn");
+drawerFilterBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const drawer = btn.closest(".filter-drawer");
+    const selects = drawer.querySelectorAll("select");
+    const params = new URLSearchParams();
+
+    selects.forEach(select => {
+      if (select.value) {
+        params.append(select.name, select.value);
+      }
+    });
+
+    window.location.href = `../search.html?${params.toString()}`;
+  });
+});
+</script>
+<script>
+  const slider = document.querySelector(".hero-images");
+  const dots = document.querySelectorAll(".hero-dots span");
+
+  if (slider) {
+    slider.addEventListener("scroll", () => {
+      const index = Math.round(slider.scrollLeft / slider.clientWidth);
+
+      dots.forEach((dot, i) => {
+        dot.classList.toggle("active", i === index);
+      });
+    });
+  }
+</script>
+<script>
+  const dayCards = document.querySelectorAll(".day-card");
+
+  dayCards.forEach(card => {
+    const toggle = card.querySelector(".day-toggle");
+    const icon = card.querySelector(".day-icon");
+
+    if (!toggle || !icon) return;
+
+    toggle.addEventListener("click", () => {
+      if (window.innerWidth > 768) return;
+
+      card.classList.toggle("is-open");
+
+      icon.textContent = card.classList.contains("is-open") ? "-" : "+";
+    });
+  });
+</script>
 </body>
 </html>
