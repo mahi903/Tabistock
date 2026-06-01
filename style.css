@@ -1,10 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Manrope:wght@500;700;800&display=swap');
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Yu Gothic", sans-serif;
+  font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Yu Gothic", sans-serif;
   color: #182033;
   background: #f7f1e8;
 }
@@ -62,6 +64,7 @@ a {
 }
 
 .logo {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Yu Gothic", sans-serif;
   font-size: 28px;
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -1928,6 +1931,8 @@ a {
     z-index: 1000;
     padding: 28px 24px;
     transition: right 0.3s ease;
+    overflow-y: auto;
+    box-sizing: border-box;
   }
 
   .filter-drawer.active {
@@ -2111,17 +2116,6 @@ a {
   }
 
   .header-search {
-    display: flex;
-    flex: 1;
-  }
-
-  .header-search input {
-    width: 170px;
-    height: 38px;
-    font-size: 12px;
-  }
-
-  .header-search button {
     display: none;
   }
 
@@ -2178,6 +2172,21 @@ a {
   cursor: pointer;
 }
 
+.result-filter-bar input {
+  min-width: 150px;
+  padding: 11px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #f9fafb;
+  color: #111827;
+  font-weight: 700;
+}
+
+.result-filter-bar input::placeholder {
+  color: #9aa5b1;
+  font-weight: 600;
+}
+
 .result-filter-bar button {
   border: none;
   border-radius: 999px;
@@ -2201,6 +2210,7 @@ a {
     gap: 10px;
   }
 
+  .result-filter-bar input,
   .result-filter-bar select,
   .result-filter-bar button {
     width: 100%;

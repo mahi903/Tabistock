@@ -25,11 +25,67 @@
     <button id="filterClose">×</button>
   </div>
   <div class="result-filter-bar">
+    <input type="text" name="q" placeholder="旅先・キーワードで検索">
+
     <select name="country">
       <option value="">国・地域</option>
-      <option value="mongolia">モンゴル</option>
-      <option value="korea">韓国</option>
-      <option value="thai">タイ</option>
+      <optgroup label="東アジア">
+        <option value="korea">韓国</option>
+        <option value="mongolia">モンゴル</option>
+      </optgroup>
+      <optgroup label="東南アジア">
+        <option value="thai">タイ</option>
+        <option value="cambodia">カンボジア</option>
+        <option value="vietnam">ベトナム</option>
+        <option value="malaysia">マレーシア</option>
+        <option value="singapore">シンガポール</option>
+        <option value="indonesia">インドネシア</option>
+        <option value="philippines">フィリピン</option>
+      </optgroup>
+      <optgroup label="中央アジア">
+        <option value="kazakhstan">カザフスタン</option>
+        <option value="kyrgyzstan">キルギス</option>
+        <option value="uzbekistan">ウズベキスタン</option>
+      </optgroup>
+      <optgroup label="西アジア">
+        <option value="turkey">トルコ</option>
+        <option value="qatar">カタール</option>
+        <option value="UAE">アラブ首長国連邦</option>
+      </optgroup>
+      <optgroup label="ヨーロッパ">
+        <option value="finland">フィンランド</option>
+        <option value="sweden">スウェーデン</option>
+        <option value="norway">ノルウェー</option>
+        <option value="estonia">エストニア</option>
+        <option value="latvia">ラトビア</option>
+        <option value="lithuania">リトアニア</option>
+        <option value="croatia">クロアチア</option>
+        <option value="austria">オーストリア</option>
+        <option value="hungary">ハンガリー</option>
+        <option value="slovakia">スロバキア</option>
+      </optgroup>
+      <optgroup label="北アメリカ">
+        <option value="usa">アメリカ</option>
+        <option value="canada">カナダ</option>
+        <option value="mexico">メキシコ</option>
+      </optgroup>
+      <optgroup label="南アメリカ">
+        <option value="peru">ペルー</option>
+        <option value="bolivia">ボリビア</option>
+        <option value="chile">チリ</option>
+        <option value="argentina">アルゼンチン</option>
+        <option value="brazil">ブラジル</option>
+      </optgroup>
+      <optgroup label="アフリカ">
+        <option value="morocco">モロッコ</option>
+        <option value="egypt">エジプト</option>
+        <option value="kenya">ケニア</option>
+        <option value="south-africa">南アフリカ</option>
+      </optgroup>
+      <optgroup label="オセアニア">
+        <option value="australia">オーストラリア</option>
+        <option value="new-zealand">ニュージーランド</option>
+      </optgroup>
     </select>
 
     <select name="budget">
@@ -37,6 +93,9 @@
       <option value="10">〜10万円</option>
       <option value="20">〜20万円</option>
       <option value="30">〜30万円</option>
+      <option value="40">〜40万円</option>
+      <option value="50">〜50万円</option>
+      <option value="50plus">50万円以上</option>
     </select>
 
     <select name="days">
@@ -51,13 +110,23 @@
 
     <select name="style">
       <option value="">スタイル</option>
-      <option value="solo">1人旅</option>
-      <option value="friends">友達と</option>
-      <option value="nature">自然・絶景</option>
-      <option value="city">都市・街歩き</option>
+      <optgroup label="誰と行くか">
+        <option value="solo">1人旅</option>
+        <option value="friends">友達と</option>
+        <option value="family">家族と</option>
+        <option value="backpacker">バックパッカー</option>
+        <option value="girls">女子旅</option>
+        <option value="couple">カップル</option>
+      </optgroup>
+      <optgroup label="旅のスタイル">
+        <option value="nature">自然・絶景</option>
+        <option value="city">都市・街歩き</option>
+        <option value="local">現地体験</option>
+        <option value="round-trip">周遊</option>
+      </optgroup>
     </select>
 
-    <button id="drawer-filter-btn">絞り込む</button>
+    <button id="drawer-filter-btn">検索する</button>
   </div>
 </div>
 <div class="drawer-overlay" id="drawerOverlay"></div>
@@ -486,10 +555,14 @@ const drawerFilterBtns = document.querySelectorAll("#drawer-filter-btn");
 drawerFilterBtns.forEach(btn => {
   btn.addEventListener("click", () => {
     const drawer = btn.closest(".filter-drawer");
-    const selects = drawer.querySelectorAll("select");
     const params = new URLSearchParams();
 
-    selects.forEach(select => {
+    const keywordInput = drawer.querySelector('input[name="q"]');
+    if (keywordInput && keywordInput.value.trim()) {
+      params.append("q", keywordInput.value.trim());
+    }
+
+    drawer.querySelectorAll("select").forEach(select => {
       if (select.value) {
         params.append(select.name, select.value);
       }
