@@ -1603,7 +1603,7 @@ a {
 
 .tips-section {
   max-width: 1200px;
-  margin: 32px auto 80px;
+  margin: 32px auto 40px;
   padding: 0 32px;
   box-sizing: border-box;
   margin-top: 32px;
@@ -1641,7 +1641,7 @@ a {
 
 @media (max-width: 768px) {
   .tips-section {
-    margin: 32px auto 64px;
+    margin: 32px auto 32px;
     padding: 0 22px;
   }
 
@@ -1710,46 +1710,49 @@ a {
 
 .author-card {
   max-width: 1100px;
-  margin: 40px auto 80px;
-  padding: 32px;
+  margin: 28px auto 72px;
+  padding: 22px 24px;
   background: #ffffff;
-  border-radius: 28px;
+  border-radius: 22px;
   display: flex;
-  gap: 24px;
+  gap: 18px;
   align-items: center;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.04);
 }
 
 .author-icon {
-  width: 96px;
-  height: 96px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
 }
 
 .author-label {
-  margin: 0 0 6px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #8a6f4d;
+  margin: 0 0 3px;
+  font-family: "Manrope", sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: #c2873f;
 }
 
 .author-info h2 {
-  margin: 0 0 10px;
-  font-size: 20px;
+  margin: 0 0 5px;
+  font-size: 17px;
   color: #111827;
 }
 
 .author-info p {
   margin: 0;
-  font-size: 15px;
-  line-height: 1.8;
-  color: #374151;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #4b5563;
 }
 @media (max-width: 768px) {
   .author-card {
-    margin: 32px 22px 64px;
+    margin: 24px 22px 56px;
   }
 }
 
@@ -1759,13 +1762,13 @@ a {
 
 .author-socials {
   display: flex;
-  gap: 16px;
-  margin-top: 14px;
+  gap: 14px;
+  margin-top: 10px;
 }
 
 .author-social {
   color: #8b9195;
-  font-size: 26px;
+  font-size: 22px;
   text-decoration: none;
   transition: 0.2s;
 }
@@ -1780,12 +1783,12 @@ a {
 
 .article-actions {
   max-width: 1100px;
-  margin: 8px auto 0;
+  margin: 0 auto;
   padding: 0 32px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 12px;
 }
 
@@ -1893,13 +1896,19 @@ a {
   .article-actions { padding: 0 22px; }
   .action-like, .action-share { padding: 11px 18px; font-size: 14px; }
 
-  .author-card { flex-wrap: wrap; }
-  .author-info { flex: 1 1 60%; }
+  .author-card {
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 18px 20px;
+  }
+  .author-icon { width: 60px; height: 60px; }
+  .author-info { flex: 1 1 0; min-width: 0; }
   .author-follow {
-    width: 100%;
-    justify-content: center;
-    margin-left: 0;
-    margin-top: 4px;
+    width: auto;
+    margin-left: 78px;
+    margin-top: 12px;
+    padding: 9px 20px;
+    font-size: 14px;
   }
 }
 
