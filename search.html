@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>検索結果 | Tabistock</title>
+  <title>旅を検索｜国・予算・日数・スタイルから探す｜Tabistock</title>
+  <meta name="description" content="国・予算・日数・旅スタイルから、学生・若者のリアルな旅程を検索。条件に合う旅の実費・ルート・日数をまとめて探せます。">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#1f6f5b">
   <link rel="stylesheet" href="style.css">
   <style>
     /* header floats transparently over the green hero, solid on scroll */
@@ -33,7 +39,11 @@
       <select id="d-country">
         <option value="">すべての国・地域</option>
         <optgroup label="東アジア">
+          <option value="japan">日本</option>
           <option value="korea">韓国</option>
+          <option value="china">中国</option>
+          <option value="taiwan">台湾</option>
+          <option value="hongkong">香港</option>
           <option value="mongolia">モンゴル</option>
         </optgroup>
         <optgroup label="東南アジア">
@@ -44,6 +54,15 @@
           <option value="singapore">シンガポール</option>
           <option value="indonesia">インドネシア</option>
           <option value="philippines">フィリピン</option>
+        </optgroup>
+        <optgroup label="南アジア">
+          <option value="india">インド</option>
+          <option value="nepal">ネパール</option>
+          <option value="srilanka">スリランカ</option>
+          <option value="bhutan">ブータン</option>
+          <option value="maldives">モルディブ</option>
+          <option value="pakistan">パキスタン</option>
+          <option value="bangladesh">バングラデシュ</option>
         </optgroup>
         <optgroup label="中央アジア">
           <option value="kazakhstan">カザフスタン</option>
@@ -66,6 +85,21 @@
           <option value="austria">オーストリア</option>
           <option value="hungary">ハンガリー</option>
           <option value="slovakia">スロバキア</option>
+          <option value="france">フランス</option>
+          <option value="uk">イギリス</option>
+          <option value="italy">イタリア</option>
+          <option value="spain">スペイン</option>
+          <option value="germany">ドイツ</option>
+          <option value="netherlands">オランダ</option>
+          <option value="switzerland">スイス</option>
+          <option value="portugal">ポルトガル</option>
+          <option value="greece">ギリシャ</option>
+          <option value="czech">チェコ</option>
+          <option value="poland">ポーランド</option>
+          <option value="belgium">ベルギー</option>
+          <option value="ireland">アイルランド</option>
+          <option value="denmark">デンマーク</option>
+          <option value="iceland">アイスランド</option>
         </optgroup>
         <optgroup label="北アメリカ">
           <option value="usa">アメリカ</option>
@@ -149,7 +183,11 @@
     <select name="country">
       <option value="">国・地域</option>
       <optgroup label="東アジア">
+        <option value="japan">日本</option>
         <option value="korea">韓国</option>
+        <option value="china">中国</option>
+        <option value="taiwan">台湾</option>
+        <option value="hongkong">香港</option>
         <option value="mongolia">モンゴル</option>
       </optgroup>
       <optgroup label="東南アジア">
@@ -160,6 +198,15 @@
         <option value="singapore">シンガポール</option>
         <option value="indonesia">インドネシア</option>
         <option value="philippines">フィリピン</option>
+      </optgroup>
+      <optgroup label="南アジア">
+        <option value="india">インド</option>
+        <option value="nepal">ネパール</option>
+        <option value="srilanka">スリランカ</option>
+        <option value="bhutan">ブータン</option>
+        <option value="maldives">モルディブ</option>
+        <option value="pakistan">パキスタン</option>
+        <option value="bangladesh">バングラデシュ</option>
       </optgroup>
       <optgroup label="中央アジア">
         <option value="kazakhstan">カザフスタン</option>
@@ -182,6 +229,21 @@
         <option value="austria">オーストリア</option>
         <option value="hungary">ハンガリー</option>
         <option value="slovakia">スロバキア</option>
+        <option value="france">フランス</option>
+        <option value="uk">イギリス</option>
+        <option value="italy">イタリア</option>
+        <option value="spain">スペイン</option>
+        <option value="germany">ドイツ</option>
+        <option value="netherlands">オランダ</option>
+        <option value="switzerland">スイス</option>
+        <option value="portugal">ポルトガル</option>
+        <option value="greece">ギリシャ</option>
+        <option value="czech">チェコ</option>
+        <option value="poland">ポーランド</option>
+        <option value="belgium">ベルギー</option>
+        <option value="ireland">アイルランド</option>
+        <option value="denmark">デンマーク</option>
+        <option value="iceland">アイスランド</option>
       </optgroup>
       <optgroup label="北アメリカ">
         <option value="usa">アメリカ</option>
@@ -446,6 +508,22 @@
     </div>
   </a>
           </div>
+
+  <div class="no-results">
+    <div class="no-results-icon">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"></circle>
+        <polygon points="15.5 8.5 10.5 10.5 8.5 15.5 13.5 13.5 15.5 8.5" fill="currentColor" stroke="none"></polygon>
+      </svg>
+    </div>
+    <h3>条件に合う旅程が見つかりませんでした</h3>
+    <p>選んだ国や条件の旅程がまだ少ないようです。<br>条件をゆるめるか、すべての旅程から探してみてください。</p>
+    <div class="no-results-actions">
+      <a href="search.html" class="nr-btn nr-btn-p">すべての旅程を見る</a>
+      <a href="filter.html" class="nr-btn nr-btn-s">条件を選び直す</a>
+    </div>
+  </div>
+
 <script>
 const filterOpen = document.getElementById("filterOpen");
 const filterClose = document.getElementById("filterClose");

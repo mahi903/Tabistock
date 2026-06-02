@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Tabistock｜学生・若者のための旅程データベース</title>
 <meta name="description" content="学生・若者が実際に行った旅のルート・費用・日数・失敗談を、同じフォーマットで共有する旅程データベース。国・予算・日数・スタイルから、自分にも真似できる旅を探せます。">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#1f6f5b">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
@@ -146,16 +151,17 @@ a{color:inherit;text-decoration:none}
 .search-head{text-align:center;max-width:680px;margin:0 auto 50px}
 .search-head h2{font-size:clamp(28px,3.6vw,40px);font-weight:900;margin:14px 0}
 .scards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:1080px;margin:0 auto}
-.scard{position:relative;border-radius:20px;padding:30px 24px;overflow:hidden;cursor:pointer;color:#fff;min-height:190px;display:flex;flex-direction:column;justify-content:flex-end;transition:.35s}
-.scard::after{content:"";position:absolute;inset:0;background:inherit;transition:.5s}
-.scard:hover{transform:translateY(-6px)}
-.scard .num{position:absolute;top:18px;right:22px;font-family:"Manrope",sans-serif;font-weight:800;font-size:42px;opacity:.25}
-.scard h3{font-size:21px;z-index:1;margin-bottom:6px}
-.scard p{font-size:13px;opacity:.92;z-index:1;line-height:1.6}
-.sc1{background:linear-gradient(150deg,#1f6f5b,#2f9e7f)}
-.sc2{background:linear-gradient(150deg,#e2683b,#f0995a)}
-.sc3{background:linear-gradient(150deg,#3a6ea5,#5b9bd5)}
-.sc4{background:linear-gradient(150deg,#7a5cc0,#a98be0)}
+.scard{position:relative;border-radius:20px;padding:30px 24px;overflow:hidden;cursor:pointer;color:#fff;min-height:190px;display:flex;flex-direction:column;justify-content:flex-end;transition:.35s;background-size:cover;background-position:center}
+.scard::after{content:"";position:absolute;inset:0;transition:.5s}
+.scard:hover{transform:translateY(-6px);box-shadow:0 22px 44px rgba(27,35,48,.22)}
+.scard:hover::after{opacity:.66}
+.scard .num{position:absolute;top:18px;right:22px;font-family:"Manrope",sans-serif;font-weight:800;font-size:42px;opacity:.3;z-index:1}
+.scard h3{font-size:21px;z-index:1;margin-bottom:6px;position:relative}
+.scard p{font-size:13px;opacity:.92;z-index:1;line-height:1.6;position:relative}
+.sc1::after{background:linear-gradient(150deg,rgba(31,111,91,.9),rgba(47,158,127,.74))}
+.sc2::after{background:linear-gradient(150deg,rgba(226,104,59,.9),rgba(240,153,90,.74))}
+.sc3::after{background:linear-gradient(150deg,rgba(58,110,165,.9),rgba(91,155,213,.74))}
+.sc4::after{background:linear-gradient(150deg,rgba(122,92,192,.9),rgba(169,139,224,.74))}
 .search-cta{text-align:center;margin-top:40px}
 
 /* ===== BENTO ROUTES ===== */
@@ -291,10 +297,10 @@ a{color:inherit;text-decoration:none}
     <p style="color:var(--muted);line-height:1.8">4つの切り口から、自分にぴったりの旅程へ。</p>
   </div>
   <div class="scards">
-    <a class="scard sc1 rv" href="filter.html#fc-country"><span class="num">01</span><h3>国から探す</h3><p>地域でも、国ごとでも。</p></a>
-    <a class="scard sc2 rv" href="filter.html#fc-budget"><span class="num">02</span><h3>予算で探す</h3><p>〜10万 / 20万 / 30万…</p></a>
-    <a class="scard sc3 rv" href="filter.html#fc-days"><span class="num">03</span><h3>日数で探す</h3><p>週末旅から3週間以上まで。</p></a>
-    <a class="scard sc4 rv" href="filter.html#fc-style"><span class="num">04</span><h3>スタイル</h3><p>1人旅・友達・現地体験など。</p></a>
+    <a class="scard sc1 rv" href="filter.html#fc-country" style="background-image:url('images/europe.jpg')"><span class="num">01</span><h3>国から探す</h3><p>地域でも、国ごとでも。</p></a>
+    <a class="scard sc2 rv" href="filter.html#fc-budget" style="background-image:url('images/cambodia.jpg')"><span class="num">02</span><h3>予算で探す</h3><p>〜10万 / 20万 / 30万…</p></a>
+    <a class="scard sc3 rv" href="filter.html#fc-days" style="background-image:url('images/mongolia.jpg')"><span class="num">03</span><h3>日数で探す</h3><p>週末旅から3週間以上まで。</p></a>
+    <a class="scard sc4 rv" href="filter.html#fc-style" style="background-image:url('images/turkey02.jpg')"><span class="num">04</span><h3>スタイル</h3><p>1人旅・友達・現地体験など。</p></a>
   </div>
   <div class="search-cta rv"><a class="btn btn-p" style="background:var(--green)" href="filter.html">条件を選んで検索する →</a></div>
 </section>
@@ -316,7 +322,7 @@ a{color:inherit;text-decoration:none}
 <!-- FOUNDER (compact) -->
 <section class="section" id="founder" style="padding-top:0">
   <div class="founder rv">
-    <img src="images/founder.jpg" alt="飯野真優">
+    <img src="images/founder.jpg" alt="Tabistock 創設者 飯野真優" loading="lazy" decoding="async">
     <div>
       <p class="fl">FOUNDER</p>
       <h3>飯野真優 / Iino Mahiro</h3>
