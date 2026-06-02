@@ -1646,18 +1646,40 @@ a {
   }
 
   .tips-card {
-    border-radius: 28px;
-    padding: 32px 24px;
+    position: relative;
+    background: #fff;
+    border: 1px solid #ece2d0;
+    border-left: 4px solid #1f6f5b;
+    border-radius: 22px;
+    padding: 28px 22px;
+    overflow: hidden;
+  }
+
+  .tips-card::before {
+    content: "\201C";
+    position: absolute;
+    top: 2px; right: 20px;
+    font-family: Georgia, serif;
+    font-size: 76px;
+    line-height: 1;
+    color: #1f6f5b;
+    opacity: .1;
+  }
+
+  .tips-eyebrow {
+    font-size: 11px;
+    margin-bottom: 6px;
   }
 
   .tips-card h2 {
-    margin-bottom: 18px;
-    font-size: 20px;
+    margin-bottom: 14px;
+    font-size: 19px;
   }
 
   .tips-text {
     font-size: 14px;
     line-height: 1.9;
+    position: relative;
   }
 }
 
