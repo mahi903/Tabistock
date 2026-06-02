@@ -18,14 +18,119 @@
   </header>
   <div class="ovl" id="ovl"></div>
   <nav class="drawer" id="drawer">
-    <button class="dclose" id="dclose" aria-label="閉じる">×</button>
-    <form class="dsearch" action="../search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
+  <button class="dclose" id="dclose" aria-label="閉じる">×</button>
+  <p class="dtitle">旅を検索</p>
+  <input class="dq" id="dq" placeholder="旅先・キーワードで検索">
+  <div class="dfilter">
+    <label class="dfield">国・地域
+      <select id="d-country">
+        <option value="">すべての国・地域</option>
+        <optgroup label="東アジア">
+          <option value="korea">韓国</option>
+          <option value="mongolia">モンゴル</option>
+        </optgroup>
+        <optgroup label="東南アジア">
+          <option value="thai">タイ</option>
+          <option value="cambodia">カンボジア</option>
+          <option value="vietnam">ベトナム</option>
+          <option value="malaysia">マレーシア</option>
+          <option value="singapore">シンガポール</option>
+          <option value="indonesia">インドネシア</option>
+          <option value="philippines">フィリピン</option>
+        </optgroup>
+        <optgroup label="中央アジア">
+          <option value="kazakhstan">カザフスタン</option>
+          <option value="kyrgyzstan">キルギス</option>
+          <option value="uzbekistan">ウズベキスタン</option>
+        </optgroup>
+        <optgroup label="西アジア">
+          <option value="turkey">トルコ</option>
+          <option value="qatar">カタール</option>
+          <option value="UAE">アラブ首長国連邦</option>
+        </optgroup>
+        <optgroup label="ヨーロッパ">
+          <option value="finland">フィンランド</option>
+          <option value="sweden">スウェーデン</option>
+          <option value="norway">ノルウェー</option>
+          <option value="estonia">エストニア</option>
+          <option value="latvia">ラトビア</option>
+          <option value="lithuania">リトアニア</option>
+          <option value="croatia">クロアチア</option>
+          <option value="austria">オーストリア</option>
+          <option value="hungary">ハンガリー</option>
+          <option value="slovakia">スロバキア</option>
+        </optgroup>
+        <optgroup label="北アメリカ">
+          <option value="usa">アメリカ</option>
+          <option value="canada">カナダ</option>
+          <option value="mexico">メキシコ</option>
+        </optgroup>
+        <optgroup label="南アメリカ">
+          <option value="peru">ペルー</option>
+          <option value="bolivia">ボリビア</option>
+          <option value="chile">チリ</option>
+          <option value="argentina">アルゼンチン</option>
+          <option value="brazil">ブラジル</option>
+        </optgroup>
+        <optgroup label="アフリカ">
+          <option value="morocco">モロッコ</option>
+          <option value="egypt">エジプト</option>
+          <option value="kenya">ケニア</option>
+          <option value="south-africa">南アフリカ</option>
+        </optgroup>
+        <optgroup label="オセアニア">
+          <option value="australia">オーストラリア</option>
+          <option value="new-zealand">ニュージーランド</option>
+        </optgroup>
+      </select>
+    </label>
+    <label class="dfield">予算
+      <select id="d-budget">
+        <option value="">予算を選ばない</option>
+        <option value="10">〜10万円</option>
+        <option value="20">〜20万円</option>
+        <option value="30">〜30万円</option>
+        <option value="40">〜40万円</option>
+        <option value="50">〜50万円</option>
+        <option value="50plus">50万円以上</option>
+      </select>
+    </label>
+    <label class="dfield">日数
+      <select id="d-days">
+        <option value="">日数を選ばない</option>
+        <option value="daytrip">日帰り</option>
+        <option value="1night">1泊</option>
+        <option value="3-5">3〜5日</option>
+        <option value="1w">1週間</option>
+        <option value="2w">2週間</option>
+        <option value="3w-plus">3週間以上</option>
+      </select>
+    </label>
+    <label class="dfield">旅スタイル
+      <select id="d-style">
+        <option value="">スタイルを選ばない</option>
+        <option value="solo">1人旅</option>
+        <option value="friends">友達と</option>
+        <option value="family">家族と</option>
+        <option value="backpacker">バックパッカー</option>
+        <option value="girls">女子旅</option>
+        <option value="couple">カップル</option>
+        <option value="nature">自然・絶景</option>
+        <option value="city">都市・街歩き</option>
+        <option value="local">現地体験</option>
+        <option value="round-trip">周遊</option>
+      </select>
+    </label>
+  </div>
+  <button class="btn btn-p dgo" id="dGo" type="button">この条件で検索 →</button>
+  <div class="dnav">
     <a class="dlink" href="../index.html#about">Tabistockとは<em>ABOUT</em></a>
-    <a class="dlink" href="../filter.html">旅を探す<em>SEARCH</em></a>
+    <a class="dlink" href="../index.html#search">旅を探す<em>SEARCH</em></a>
     <a class="dlink" href="../index.html#routes">新着旅程<em>ROUTES</em></a>
     <a class="dlink" href="../index.html#founder">管理人<em>FOUNDER</em></a>
-    <div class="dcta"><a class="btn btn-p" href="#">旅程を投稿する →</a></div>
-  </nav>
+  </div>
+  <div class="dcta"><a class="btn btn-g" href="#">旅程を投稿する</a></div>
+</nav>
    <div class="filter-drawer" id="filterDrawer">
   <div class="filter-drawer-header">
     <h3>条件で絞り込む</h3>
@@ -621,6 +726,23 @@ drawerFilterBtns.forEach(btn => {
       if(dc)dc.addEventListener('click',function(){t(false)});
       nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){t(false)})});
     }
+  })();
+  </script>
+  <script>
+  (function(){
+    var dGo=document.getElementById('dGo'),dq=document.getElementById('dq');
+    function go(){
+      var p=new URLSearchParams();
+      if(dq&&dq.value.trim())p.append('q',dq.value.trim());
+      ['country','budget','days','style'].forEach(function(k){
+        var el=document.getElementById('d-'+k);
+        if(el&&el.value)p.append(k,el.value);
+      });
+      var qs=p.toString();
+      window.location.href='../search.html'+(qs?('?'+qs):'');
+    }
+    if(dGo)dGo.addEventListener('click',go);
+    if(dq)dq.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();go();}});
   })();
   </script>
 </body>

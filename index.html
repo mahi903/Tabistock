@@ -75,14 +75,15 @@ a{color:inherit;text-decoration:none}
 .drawer .dsearch button{border:none;border-radius:999px;background:var(--green);color:#fff;width:34px;height:34px;cursor:pointer;flex-shrink:0}
 .drawer a.dlink{padding:16px 4px;font-size:17px;font-weight:700;border-bottom:1px solid #e7ddcb;display:flex;justify-content:space-between;align-items:center}
 .drawer a.dlink em{font-style:normal;font-family:"Manrope",sans-serif;font-size:12px;letter-spacing:.1em;color:var(--terra)}
-.drawer .dcta{margin-top:auto;padding-top:22px}
+.drawer .dcta{margin-top:auto;padding-top:22px;display:flex;flex-direction:column;gap:10px}
 .drawer .dcta .btn{width:100%;justify-content:center}
+.drawer .btn-g{background:transparent;color:var(--green);border:1.5px solid var(--green);backdrop-filter:none}
+.drawer .btn-g:hover{background:var(--green);color:#fff}
 
 /* ===== HERO ===== */
 .hero{position:relative;height:100vh;min-height:620px;display:flex;align-items:flex-end;overflow:hidden}
-.hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;
-  animation:kb 18s ease-in-out infinite alternate;will-change:transform}
-@keyframes kb{from{transform:scale(1.05)}to{transform:scale(1.18) translateY(-10px)}}
+.hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;background-attachment:fixed;animation:kb 26s ease-in-out infinite alternate}
+@keyframes kb{from{background-position:center 35%}to{background-position:center 65%}}
 .hero::after{content:"";position:absolute;inset:0;
   background:linear-gradient(180deg,rgba(15,20,28,.55) 0%,rgba(15,20,28,.15) 38%,rgba(15,20,28,.78) 100%)}
 .hero-inner{position:relative;z-index:2;padding:0 6% 9vh;color:#fff;max-width:1000px}
@@ -232,10 +233,13 @@ a{color:inherit;text-decoration:none}
   <button class="dclose" id="dclose" aria-label="閉じる">×</button>
   <form class="dsearch" action="search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
   <a class="dlink" href="#about">Tabistockとは<em>ABOUT</em></a>
-  <a class="dlink" href="filter.html">旅を探す<em>SEARCH</em></a>
+  <a class="dlink" href="#search">旅を探す<em>SEARCH</em></a>
   <a class="dlink" href="#routes">新着旅程<em>ROUTES</em></a>
   <a class="dlink" href="#founder">管理人<em>FOUNDER</em></a>
-  <div class="dcta"><a class="btn btn-p" href="#">旅程を投稿する →</a></div>
+  <div class="dcta">
+    <a class="btn btn-p" href="filter.html">旅程を探す →</a>
+    <a class="btn btn-g" href="#">旅程を投稿する</a>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -305,7 +309,6 @@ a{color:inherit;text-decoration:none}
     <a class="tile rv" href="articles/cambodia.html"><img src="images/cambodia.jpg" alt="タイ・カンボジア"><div class="tile-c"><span class="ctry">THAI / CAMBODIA</span><h3>アンコールワットを巡る旅</h3><div class="tg"><span>低予算</span><span>世界遺産</span></div></div></a>
     <a class="tile rv" href="articles/europe.html"><img src="images/europe.jpg" alt="ヨーロッパ"><div class="tile-c"><span class="ctry">EUROPE</span><h3>中欧・東欧 周遊ルート</h3><div class="tg"><span>周遊</span><span>複数国</span></div></div></a>
     <a class="tile wide-tile rv" href="articles/turkey01.html"><img src="images/turkey01.jpg" alt="トルコ"><div class="tile-c"><span class="ctry">TURKEY</span><h3>トルコ縦断｜カッパドキアと絶景の街</h3><div class="tg"><span>絶景</span><span>街歩き</span></div></div></a>
-    <a class="tile rv" href="articles/australia01.html"><img src="images/australia01.jpg" alt="オーストラリア"><div class="tile-c"><span class="ctry">AUSTRALIA</span><h3>オーストラリア東海岸</h3><div class="tg"><span>自然</span><span>都市</span></div></div></a>
   </div>
 </section>
 

@@ -33,7 +33,7 @@ a {
 .burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
 .ovl{position:fixed;inset:0;background:rgba(15,20,28,.45);z-index:60;opacity:0;pointer-events:none;transition:.3s}
 .ovl.open{opacity:1;pointer-events:auto}
-.drawer{position:fixed;top:0;right:-90%;width:84%;max-width:360px;height:100%;background:#f6efe4;z-index:70;padding:80px 26px 28px;transition:right .35s cubic-bezier(.2,.7,.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 50px rgba(0,0,0,.2)}
+.drawer{position:fixed;top:0;right:-90%;width:84%;max-width:360px;height:100%;background:#f6efe4;z-index:70;padding:80px 26px 28px;transition:right .35s cubic-bezier(.2,.7,.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 50px rgba(0,0,0,.2);overflow-y:auto}
 .drawer.open{right:0}
 .drawer .dclose{position:absolute;top:20px;right:20px;border:none;background:none;font-size:28px;line-height:1;cursor:pointer;color:#1b2330}
 .drawer .dsearch{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #e7ddcb;border-radius:999px;padding:7px 7px 7px 16px;margin-bottom:10px}
@@ -41,11 +41,21 @@ a {
 .drawer .dsearch button{border:none;border-radius:999px;background:#1f6f5b;color:#fff;width:34px;height:34px;cursor:pointer;flex-shrink:0}
 .drawer a.dlink{padding:16px 4px;font-size:17px;font-weight:700;border-bottom:1px solid #e7ddcb;display:flex;justify-content:space-between;align-items:center;color:#182033}
 .drawer a.dlink em{font-style:normal;font-family:"Manrope",sans-serif;font-size:12px;letter-spacing:.1em;color:#e2683b}
-.drawer .dcta{margin-top:auto;padding-top:22px}
+.drawer .dcta{margin-top:auto;padding-top:22px;display:flex;flex-direction:column;gap:10px}
+.drawer .btn-g{background:transparent;color:#1f6f5b;border:1.5px solid #1f6f5b}
+.drawer .btn-g:hover{background:#1f6f5b;color:#fff}
 .hd .btn,.drawer .btn{padding:16px 30px;border-radius:999px;font-weight:800;font-size:15px;cursor:pointer;transition:.25s;display:inline-flex;align-items:center;gap:10px;border:none}
 .hd .btn-p,.drawer .btn-p{background:#e2683b;color:#fff}
 .hd .btn-p:hover,.drawer .btn-p:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(226,104,59,.5)}
 .drawer .dcta .btn{width:100%;justify-content:center}
+.drawer .dtitle{font-size:18px;font-weight:800;margin:0 0 12px;color:#1b2330}
+.drawer .dq{width:100%;padding:12px 16px;border:1px solid #e7ddcb;border-radius:999px;background:#fff;font-size:14px;outline:none;font-family:inherit;margin-bottom:14px;color:#182033}
+.drawer .dfilter{display:flex;flex-direction:column;gap:11px;margin-bottom:16px}
+.drawer .dfield{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#6c7787}
+.drawer .dfield select{font-size:14px;color:#182033;padding:11px 14px;border:1px solid #e7ddcb;border-radius:12px;background:#fff;font-family:inherit;cursor:pointer}
+.drawer .dgo{width:100%;justify-content:center}
+.drawer .dnav{margin-top:18px;border-top:1px solid #e7ddcb}
+.drawer .dnav a.dlink{font-size:15px;padding:13px 4px}
 @media (max-width:768px){
   .hd-search{display:none}
   .burger{display:flex}
