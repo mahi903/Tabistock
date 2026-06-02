@@ -1,0 +1,5 @@
+# 画像最適化時の元画像バックアップ（リポジトリには含めない）
+**/_original/
+
+# macOS / iCloud
+.DS_Store
