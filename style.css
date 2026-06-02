@@ -1798,6 +1798,216 @@ a {
   color: #9ca3af;
 }
 
+/* =========================
+   記事ページ：ブランド統一リフレッシュ
+========================= */
+
+/* ヒーローの editorial eyebrow */
+.hero-eyebrow{
+  font-family:"Manrope",sans-serif;
+  font-weight:800;
+  letter-spacing:.2em;
+  font-size:12px;
+  text-transform:uppercase;
+  color:#c2873f;
+  margin:0 0 14px;
+}
+
+/* セクション導入見出し（eyebrow + タイトル） */
+.section-intro{
+  max-width:1200px;
+  margin:64px auto 6px;
+  padding:0 32px;
+  box-sizing:border-box;
+}
+.section-intro .eyebrow{
+  font-family:"Manrope",sans-serif;
+  font-weight:800;
+  letter-spacing:.22em;
+  font-size:12px;
+  text-transform:uppercase;
+  color:#c2873f;
+  margin:0 0 8px;
+}
+.section-intro h2{
+  font-size:26px;
+  line-height:1.4;
+  color:#172033;
+  margin:0;
+  font-weight:900;
+  letter-spacing:-.01em;
+}
+.section-intro p{
+  margin:10px 0 0;
+  font-size:14px;
+  line-height:1.8;
+  color:#5f6b80;
+}
+@media (max-width:768px){
+  .section-intro{margin:40px auto 2px;padding:0 22px;}
+  .section-intro h2{font-size:20px;}
+  .section-intro p{font-size:13px;}
+  .hero-eyebrow{font-size:11px;margin-bottom:10px;}
+}
+
+/* アクセントカラーをブランドグリーンへ統一 */
+.info-card strong{color:#1f6f5b;}
+.cost-total{background:#eef5f1;}
+.cost-total span{color:#1f6f5b;}
+.cost-total strong{color:#1f6f5b;}
+
+/* 情報カード見出しに小さなアクセントバー */
+.info-card h2,
+.itinerary-card h2{
+  position:relative;
+  padding-left:15px;
+}
+.info-card h2::before,
+.itinerary-card h2::before{
+  content:"";
+  position:absolute;
+  left:0; top:50%;
+  transform:translateY(-50%);
+  width:5px; height:20px;
+  border-radius:999px;
+  background:#1f6f5b;
+}
+
+/* タイムライン・ラベル類をグリーン基調へ */
+.timeline::before{background:#cfe3d9;}
+.timeline-item::before{border-color:#1f6f5b;}
+.day{color:#1f6f5b;}
+.flight-label{color:#c2873f;}
+.day-label{color:#c2873f;}
+.photo-slider::-webkit-scrollbar-thumb{background:#1f6f5b;}
+
+/* DAYカード：PCでのラベル/タイトル/本文を整える */
+@media (min-width:769px){
+  .day-card .day-label{
+    display:block;
+    font-family:"Manrope",sans-serif;
+    font-weight:800;
+    letter-spacing:.08em;
+    font-size:13px;
+    color:#c2873f;
+    margin-bottom:8px;
+  }
+  .day-card .day-title{
+    display:block;
+    font-size:22px;
+    line-height:1.45;
+    font-weight:800;
+    color:#172033;
+    margin-bottom:18px;
+  }
+  .day-text p{
+    font-size:15px;
+    line-height:2;
+    color:#374151;
+  }
+}
+
+/* PC：ヒーロー写真を左カラム全体にフィット＋全体をコンパクトに */
+@media (min-width:901px){
+  .article-hero{
+    grid-template-columns:1fr 0.85fr;
+    align-items:stretch;
+    min-height:auto;
+    margin:28px auto 44px;
+  }
+  .hero-text{grid-column:1; grid-row:1;}
+  .hero-carousel{grid-column:2; grid-row:1; position:relative; overflow:hidden;}
+  .hero-images{position:absolute; inset:0; height:100%; width:100%; margin:0; max-width:none; border-radius:0;}
+  .hero-images img{height:100%; width:100%;}
+  .hero-text{padding:26px 40px; justify-content:flex-start;}
+  .hero-text h1{font-size:23px;margin-bottom:10px;}
+  .hero-lead{font-size:13px;line-height:1.65;margin-bottom:12px;}
+  .hero-basic-info{margin:2px 0 10px;padding:5px;}
+  .hero-basic-info div{padding:6px 14px;}
+  .hero-info{margin-bottom:10px;gap:10px;}
+  .hero-info div{padding:9px 14px;}
+  .hero-info span{margin-bottom:2px;}
+  .hero-tags span{padding:6px 11px;}
+
+  /* 概要カード4枚を 4列・コンパクト・下揃え */
+  .info-grid{grid-template-columns:repeat(4,1fr); gap:16px; align-items:stretch;}
+  .info-card,
+  .itinerary-card{
+    padding:22px 20px;
+    border-radius:18px;
+    display:flex;
+    flex-direction:column;
+  }
+  .info-card h2,
+  .itinerary-card h2{font-size:17px; margin-bottom:14px; padding-left:13px;}
+  .info-card h2::before,
+  .itinerary-card h2::before{height:17px; width:4px;}
+  .cost-row{padding:10px 0; font-size:13px;}
+  .cost-row span{font-size:13px;}
+  .cost-row strong{font-size:14px;}
+  /* 合計ボックスはカード下端へ */
+  .cost-total{padding:13px 15px; margin-top:auto;}
+  .cost-total span{font-size:13px;}
+  .cost-total strong{font-size:18px;}
+  /* タイムライン：丸と縦線の中心を揃える */
+  .timeline{padding-left:24px;}
+  .timeline::before{left:8px; width:2px; bottom:26px;}
+  .timeline-item{margin-bottom:15px; padding-left:6px;}
+  .timeline-item:last-child{margin-bottom:0;}
+  .timeline-item::before{left:-24px; top:5px; width:12px; height:12px;}
+  .timeline-item p{font-size:13.5px; line-height:1.5;}
+  .day{font-size:10px;}
+  .flight-route{padding:14px 0;}
+  .flight-route h3{font-size:15px; line-height:1.45;}
+  .flight-route p{font-size:12.5px;}
+  .flight-meta{grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; margin-bottom:16px;}
+  .flight-meta div{padding:11px 12px;}
+  .flight-meta strong{font-size:13px;}
+  .services-card .service-item{padding:11px 0; column-gap:10px;}
+  .services-card .service-label{font-size:13px;}
+  .services-card .service-item strong{font-size:13px;}
+}
+
+/* フッターのロゴをヘッダーと同じフォントに揃える */
+.footer-inner h2{
+  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;
+  letter-spacing:-0.04em;
+}
+
+/* 投稿者コメント欄：editorial な引用カードへ */
+.tips-eyebrow{
+  font-family:"Manrope",sans-serif;
+  font-weight:800;
+  letter-spacing:.2em;
+  font-size:12px;
+  text-transform:uppercase;
+  color:#c2873f;
+  margin:0 0 8px;
+}
+@media (min-width:769px){
+  .tips-card{
+    position:relative;
+    background:#fff;
+    border:1px solid #ece2d0;
+    border-left:5px solid #1f6f5b;
+    border-radius:24px;
+    padding:44px 52px;
+    box-shadow:0 14px 34px rgba(34,40,49,.06);
+    overflow:hidden;
+  }
+  .tips-card::before{
+    content:"\201C";
+    position:absolute;
+    top:6px; right:40px;
+    font-family:Georgia,serif;
+    font-size:110px;
+    line-height:1;
+    color:#1f6f5b;
+    opacity:.1;
+  }
+  .tips-card h2{font-size:22px;margin:0 0 18px;}
+}
+
 @media (max-width: 768px) {
   .header {
     padding: 18px 6%;
