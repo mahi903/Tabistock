@@ -163,6 +163,7 @@ a{color:inherit;text-decoration:none}
 <div class="ovl" id="ovl"></div>
 <nav class="drawer" id="drawer">
   <button class="dclose" id="dclose" aria-label="閉じる">×</button>
+  <div id="authStatus" class="auth-status"></div>
   <p class="dtitle">旅を検索</p>
   <input class="dq" id="dq" placeholder="旅先・キーワードで検索">
   <div class="dfilter">
@@ -301,7 +302,7 @@ a{color:inherit;text-decoration:none}
     <a class="dlink" href="index.html#routes">新着旅程<em>ROUTES</em></a>
     <a class="dlink" href="index.html#founder">管理人<em>FOUNDER</em></a>
   </div>
-  <div class="dcta"><a class="btn btn-g" href="#">旅程を投稿する</a></div>
+  <div class="dcta"><a class="btn btn-g" href="post.html">旅程を投稿する</a></div>
 </nav>
 
 <!-- MINI HERO -->
@@ -615,5 +616,6 @@ document.getElementById('go').addEventListener('click',()=>{
     if(dq)dq.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();go();}});
   })();
   </script>
+  <script type="module" src="./auth-status.js"></script>
 </body>
 </html>

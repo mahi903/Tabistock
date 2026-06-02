@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ログイン / 会員登録｜Tabistock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;color:#182033;background:#f7f1e8;min-height:100vh}
+  a{color:#1f6f5b}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:18px 6%}
+  .logo{font-size:26px;font-weight:900;letter-spacing:-0.04em;color:#1f6f5b;text-decoration:none}
+  .wrap{max-width:440px;margin:30px auto 60px;padding:0 20px}
+  .card{background:#fff;border:1px solid #e7ddcb;border-radius:18px;padding:28px 26px;box-shadow:0 10px 30px rgba(0,0,0,.05)}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:#6c7787;font-size:13px;margin:0 0 22px}
+  .tabs{display:flex;gap:8px;margin-bottom:22px}
+  .tabs button{flex:1;padding:11px;border:1px solid #e7ddcb;background:#faf6ee;border-radius:999px;font-weight:700;font-size:14px;cursor:pointer;color:#6c7787;font-family:inherit}
+  .tabs button.on{background:#1f6f5b;color:#fff;border-color:#1f6f5b}
+  label{display:block;font-size:12px;font-weight:700;color:#6c7787;margin:14px 0 6px}
+  input{width:100%;padding:12px 14px;border:1px solid #e7ddcb;border-radius:12px;font-size:15px;font-family:inherit;outline:none;background:#fff;color:#182033}
+  input:focus{border-color:#1f6f5b}
+  .hint{font-size:11px;color:#9aa2af;margin:5px 0 0}
+  .btn{width:100%;margin-top:20px;padding:13px;border:none;border-radius:999px;background:#e2683b;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+  .btn:disabled{opacity:.55;cursor:default}
+  .msg{margin-top:16px;font-size:13px;padding:11px 14px;border-radius:10px;display:none}
+  .msg.err{display:block;background:#fdecec;color:#b53d3d;border:1px solid #f3c9c9}
+  .msg.ok{display:block;background:#e9f5ef;color:#1f6f5b;border:1px solid #bfe3d3}
+  .hide{display:none}
+  .me{background:#fff;border:1px solid #e7ddcb;border-radius:18px;padding:26px;text-align:center}
+  .me .nick{font-size:20px;font-weight:800;margin:6px 0}
+  .me .email{color:#6c7787;font-size:13px;margin:0 0 18px}
+  .me .actions{display:flex;flex-direction:column;gap:10px}
+  .me .actions a,.me .actions button{display:block;width:100%;padding:13px;border-radius:999px;font-size:15px;font-weight:800;text-decoration:none;cursor:pointer;font-family:inherit;border:none}
+  .a-main{background:#e2683b;color:#fff}
+  .a-ghost{background:#faf6ee;color:#1f6f5b;border:1.5px solid #1f6f5b !important}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-top:8px}
+  .badge.warn{background:#fff3e6;color:#c4691f}
+  .badge.ok{background:#e9f5ef;color:#1f6f5b}
+</style>
+</head>
+<body>
+  <div class="top">
+    <a class="logo" href="./index.html">Tabistock</a>
+    <a href="./index.html" style="font-size:13px;text-decoration:none;color:#6c7787">← トップへ</a>
+  </div>
+
+  <div class="wrap">
+    <!-- 未ログイン -->
+    <div class="card" id="authCard">
+      <h1 id="formTitle">ログイン</h1>
+      <p class="sub">旅程を投稿するにはアカウントが必要です。</p>
+
+      <div class="tabs">
+        <button id="tabLogin" class="on" type="button">ログイン</button>
+        <button id="tabSignup" type="button">新規登録</button>
+      </div>
+
+      <!-- ニックネーム（登録時のみ） -->
+      <div id="nickWrap" class="hide">
+        <label for="nickname">ニックネーム（投稿者名）</label>
+        <input id="nickname" type="text" autocomplete="nickname" placeholder="例：mahiro">
+        <p class="hint">記事に表示される名前です。半角英数字推奨（あとで記事のID生成にも使います）。</p>
+      </div>
+
+      <label for="email">メールアドレス</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+
+      <label for="password">パスワード</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="6文字以上">
+
+      <button class="btn" id="submitBtn" type="button">ログイン</button>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <!-- ログイン済み -->
+    <div class="me hide" id="meCard">
+      <p style="margin:0;color:#6c7787;font-size:13px">ログイン中</p>
+      <p class="nick" id="meNick">—</p>
+      <p class="email" id="meEmail">—</p>
+      <div id="verifyBadge"></div>
+      <div class="actions" style="margin-top:18px">
+        <a class="a-main" href="./post.html">旅程を投稿する</a>
+        <button class="a-ghost" id="logoutBtn" type="button">ログアウト</button>
+      </div>
+      <p class="hint" id="uidLine" style="margin-top:16px;word-break:break-all"></p>
+    </div>
+  </div>
+
+<script type="module">
+import { auth, db } from "./firebase-config.js";
+import {
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
+  onAuthStateChanged, updateProfile, sendEmailVerification
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const $ = id => document.getElementById(id);
+let mode = "login"; // login | signup
+
+function setMode(m){
+  mode = m;
+  $("tabLogin").classList.toggle("on", m==="login");
+  $("tabSignup").classList.toggle("on", m==="signup");
+  $("nickWrap").classList.toggle("hide", m!=="signup");
+  $("formTitle").textContent = m==="login" ? "ログイン" : "新規登録";
+  $("submitBtn").textContent = m==="login" ? "ログイン" : "登録する";
+  $("password").autocomplete = m==="login" ? "current-password" : "new-password";
+  showMsg("", "");
+}
+$("tabLogin").onclick = () => setMode("login");
+$("tabSignup").onclick = () => setMode("signup");
+
+function showMsg(text, kind){
+  const el = $("msg");
+  el.className = "msg" + (kind ? " "+kind : "");
+  el.textContent = text;
+}
+
+function jpError(code){
+  const map = {
+    "auth/invalid-email": "メールアドレスの形式が正しくありません。",
+    "auth/missing-password": "パスワードを入力してください。",
+    "auth/weak-password": "パスワードは6文字以上にしてください。",
+    "auth/email-already-in-use": "このメールアドレスは既に登録されています。ログインしてください。",
+    "auth/invalid-credential": "メールアドレスかパスワードが違います。",
+    "auth/user-not-found": "アカウントが見つかりません。新規登録してください。",
+    "auth/wrong-password": "パスワードが違います。",
+    "auth/too-many-requests": "試行回数が多すぎます。しばらく待ってから再度お試しください。",
+    "auth/network-request-failed": "通信エラーです。接続を確認してください。"
+  };
+  return map[code] || ("エラー：" + code);
+}
+
+$("submitBtn").onclick = async () => {
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  const nickname = $("nickname").value.trim();
+  if(!email || !password){ showMsg("メールアドレスとパスワードを入力してください。", "err"); return; }
+  if(mode==="signup" && !nickname){ showMsg("ニックネームを入力してください。", "err"); return; }
+
+  $("submitBtn").disabled = true;
+  showMsg(mode==="login" ? "ログイン中…" : "登録中…", "ok");
+  try{
+    if(mode==="signup"){
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: nickname });
+      await setDoc(doc(db, "users", cred.user.uid), {
+        nickname, email, createdAt: serverTimestamp()
+      });
+      try { await sendEmailVerification(cred.user); } catch(e){}
+      showMsg("登録できました。確認メールを送信しました。", "ok");
+    }else{
+      await signInWithEmailAndPassword(auth, email, password);
+    }
+  }catch(err){
+    showMsg(jpError(err.code), "err");
+  }finally{
+    $("submitBtn").disabled = false;
+  }
+};
+
+$("logoutBtn").onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, async (user) => {
+  if(user){
+    // プロフィール取得（nickname）
+    let nick = user.displayName || "";
+    try{
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if(snap.exists() && snap.data().nickname) nick = snap.data().nickname;
+    }catch(e){}
+    $("authCard").classList.add("hide");
+    $("meCard").classList.remove("hide");
+    $("meNick").textContent = nick || "(名前未設定)";
+    $("meEmail").textContent = user.email;
+    $("uidLine").textContent = "UID: " + user.uid;
+    $("verifyBadge").innerHTML = user.emailVerified
+      ? '<span class="badge ok">メール確認済み</span>'
+      : '<span class="badge warn">メール未確認（受信ボックスを確認）</span>';
+  }else{
+    $("meCard").classList.add("hide");
+    $("authCard").classList.remove("hide");
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    // 管理者判定：admins/{uid} ドキュメントが存在すれば管理者
+    // （あなたのUIDを Firebase コンソールで admins コレクションに手動追加する）
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // ---- ユーザープロフィール ----
+    match /users/{uid} {
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if request.auth.uid == uid || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ---- 管理者リスト（コンソールからのみ編集） ----
+    match /admins/{uid} {
+      allow read:  if isAdmin();
+      allow write: if false;
+    }
+
+    // ---- 記事 ----
+    match /articles/{articleId} {
+
+      // 公開記事は誰でも閲覧可。下書き/承認待ちは本人と管理者のみ。
+      allow read: if resource.data.status == 'published'
+                  || (isSignedIn() && resource.data.authorId == request.auth.uid)
+                  || isAdmin();
+
+      // 作成：ログイン必須・自分を著者にする・status は必ず 'pending'
+      allow create: if isSignedIn()
+                    && request.resource.data.authorId == request.auth.uid
+                    && request.resource.data.status == 'pending';
+
+      // 更新：管理者は何でも可（承認＝status変更を含む）。
+      //       著者は自分の記事を編集可。ただし status は自分で変えられない。
+      allow update: if isAdmin()
+                    || (isSignedIn()
+                        && resource.data.authorId == request.auth.uid
+                        && request.resource.data.authorId == request.auth.uid
+                        && request.resource.data.status == resource.data.status);
+
+      // 削除：管理者、または自分の記事
+      allow delete: if isAdmin()
+                    || (isSignedIn() && resource.data.authorId == request.auth.uid);
+    }
+  }
+}

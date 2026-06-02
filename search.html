@@ -45,6 +45,7 @@
   <div class="ovl" id="ovl"></div>
   <nav class="drawer" id="drawer">
   <button class="dclose" id="dclose" aria-label="閉じる">×</button>
+  <div id="authStatus" class="auth-status"></div>
   <p class="dtitle">旅を検索</p>
   <input class="dq" id="dq" placeholder="旅先・キーワードで検索">
   <div class="dfilter">
@@ -183,7 +184,7 @@
     <a class="dlink" href="index.html#routes">新着旅程<em>ROUTES</em></a>
     <a class="dlink" href="index.html#founder">管理人<em>FOUNDER</em></a>
   </div>
-  <div class="dcta"><a class="btn btn-g" href="#">旅程を投稿する</a></div>
+  <div class="dcta"><a class="btn btn-g" href="post.html">旅程を投稿する</a></div>
 </nav>
    <div class="filter-drawer" id="filterDrawer">
   <div class="filter-drawer-header">
@@ -477,6 +478,30 @@
       </div>
       <div class="trip-grid">
 
+  <a href="./articles/mahiro0001.html"
+     class="trip-card"
+     data-country="korea"
+     data-days="3-5"
+     data-budget="10"
+     data-style="friends city"
+     data-region="east-asia">
+    <div class="trip-image"
+         style="background-image:
+    linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.12)),url('./images/mahiro0001.jpg');">
+    </div>
+    <div class="trip-content">
+      <p class="country">Korea</p>
+      <h3>韓国2泊3日｜ショッピングと街ブラ</h3>
+      <p>明洞で服を大量購入</p>
+
+      <div class="tags">
+        <span>〜10万円</span>
+        <span>友達旅</span>
+        <span>街歩き</span>
+      </div>
+    </div>
+  </a>
+
   <a href="./articles/mongolia.html"
      class="trip-card"
      data-country="mongolia"
@@ -692,6 +717,7 @@ drawerFilterBtns.forEach(btn => {
 });
 </script>
 <script>
+function runSearchFilter(){
     const params = new URLSearchParams(window.location.search);
   const tripCards = document.querySelectorAll(".trip-card");
   const noResults = document.querySelector(".no-results");
@@ -808,6 +834,9 @@ if (filter === "budget") {
     const clear = document.getElementById("fsClear");
     if (clear) clear.addEventListener("click", () => { window.location.href = "search.html"; });
   })();
+}
+window.runSearchFilter = runSearchFilter;
+runSearchFilter();
     </script>
   <script>
   (function(){
@@ -840,4 +869,29 @@ if (filter === "budget") {
     if(dq)dq.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();go();}});
   })();
   </script>
+  <!-- DBの公開記事を自動表示（既存の手書きカードはそのまま下に残す＝段階移行） -->
+  <script type="module">
+    import { db } from "./firebase-config.js";
+    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { renderCard } from "./tabistock-render.js";
+
+    const grid = document.querySelector(".trip-grid");
+    if (grid) {
+      try {
+        const qy = query(collection(db, "articles"), where("status", "==", "published"));
+        const snap = await getDocs(qy);
+        const docs = [];
+        snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
+        docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        if (docs.length) {
+          grid.insertAdjacentHTML("afterbegin", docs.map(renderCard).join("\n"));
+        }
+      } catch (err) {
+        console.error("記事の読み込みに失敗:", err);
+      }
+      // カード追加後にフィルタ（件数・絞り込み・チップ）を再実行
+      if (window.runSearchFilter) window.runSearchFilter();
+    }
+  </script>
+  <script type="module" src="./auth-status.js"></script>
 </body>

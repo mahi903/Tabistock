@@ -252,6 +252,7 @@ a{color:inherit;text-decoration:none}
 <div class="ovl" id="ovl"></div>
 <nav class="drawer" id="drawer">
   <button class="dclose" id="dclose" aria-label="閉じる">×</button>
+  <div id="authStatus" class="auth-status"></div>
   <form class="dsearch" action="search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
   <a class="dlink" href="#about">Tabistockとは<em>ABOUT</em></a>
   <a class="dlink" href="#search">旅を探す<em>SEARCH</em></a>
@@ -259,7 +260,7 @@ a{color:inherit;text-decoration:none}
   <a class="dlink" href="#founder">管理人<em>FOUNDER</em></a>
   <div class="dcta">
     <a class="btn btn-p" href="filter.html">旅程を探す →</a>
-    <a class="btn btn-g" href="#">旅程を投稿する</a>
+    <a class="btn btn-g" href="post.html">旅程を投稿する</a>
   </div>
 </nav>
 
@@ -272,7 +273,7 @@ a{color:inherit;text-decoration:none}
     <p class="lead up d3">ルート・費用・日数・失敗談まで。実際に行った旅を同じフォーマットで。<br>国・予算・日数・スタイルから、自分にも真似できる旅が見つかる。</p>
     <div class="cta up d4">
       <a class="btn btn-p" href="#search">旅程を探す →</a>
-      <a class="btn btn-g" href="#">旅程を投稿する</a>
+      <a class="btn btn-g" href="post.html">旅程を投稿する</a>
     </div>
   </div>
   <div class="scroll-cue">SCROLL<span></span></div>
@@ -349,7 +350,7 @@ a{color:inherit;text-decoration:none}
 <section class="foot">
   <h2 class="serif">あなたの旅も、<br><em>次の誰かのヒントに。</em></h2>
   <p>SNSで流れてしまう旅の記憶を、Tabistockにストックしませんか。</p>
-  <a class="btn btn-p" href="#">旅程を投稿する →</a>
+  <a class="btn btn-p" href="post.html">旅程を投稿する →</a>
   <p class="foot-copy">© 2026 Tabistock</p>
 </section>
 
@@ -381,5 +382,6 @@ document.querySelectorAll('.rv').forEach((el,i)=>{el.style.transitionDelay=(i%4*
 const cio=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){const el=e.target,t=+el.dataset.count;let n=0;const step=Math.max(1,t/40);const id=setInterval(()=>{n+=step;if(n>=t){n=t;clearInterval(id)}el.textContent=Math.floor(n)},28);cio.unobserve(el)}}),{threshold:.5});
 document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
 </script>
+  <script type="module" src="./auth-status.js"></script>
 </body>
 </html>

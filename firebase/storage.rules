@@ -1,0 +1,23 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 記事用の画像： articles/{articleId}/{fileName}
+    match /articles/{articleId}/{fileName} {
+      // 画像は公開（サイト訪問者が見られる必要があるため）
+      allow read: if true;
+
+      // アップロードはログインユーザーのみ。5MB以下・画像形式に限定。
+      allow write: if isSignedIn()
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+
+      // 削除はログインユーザー（運用上は管理者が記事ごと整理）
+      allow delete: if isSignedIn();
+    }
+  }
+}

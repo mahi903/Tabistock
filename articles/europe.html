@@ -38,6 +38,7 @@
   <div class="ovl" id="ovl"></div>
   <nav class="drawer" id="drawer">
   <button class="dclose" id="dclose" aria-label="閉じる">×</button>
+  <div id="authStatus" class="auth-status"></div>
   <p class="dtitle">旅を検索</p>
   <input class="dq" id="dq" placeholder="旅先・キーワードで検索">
   <div class="dfilter">
@@ -176,7 +177,7 @@
     <a class="dlink" href="../index.html#routes">新着旅程<em>ROUTES</em></a>
     <a class="dlink" href="../index.html#founder">管理人<em>FOUNDER</em></a>
   </div>
-  <div class="dcta"><a class="btn btn-g" href="#">旅程を投稿する</a></div>
+  <div class="dcta"><a class="btn btn-g" href="../post.html">旅程を投稿する</a></div>
 </nav>
    <div class="filter-drawer" id="filterDrawer">
   <div class="filter-drawer-header">
@@ -808,7 +809,7 @@
     <div class="footer-links">
       <a href="../index.html">トップ</a>
       <a href="#">旅程を検索する</a>
-      <a href="#">旅程を投稿する</a>
+      <a href="../post.html">旅程を投稿する</a>
       <br>
       <a href="https://www.instagram.com/mahiro.9.3/" target="_blank" class="author-social">
     <i class="fa-brands fa-instagram"></i>
@@ -971,5 +972,6 @@ drawerFilterBtns.forEach(btn => {
     }
   })();
   </script>
+  <script type="module" src="../auth-status.js"></script>
 </body>
 </html>
