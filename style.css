@@ -2360,11 +2360,13 @@ a {
   max-width:1180px;
   margin:0 auto;
   display:grid;
-  grid-template-columns:290px minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr) 290px;
   gap:32px;
   align-items:start;
 }
+.results-main{grid-column:1}
 .filter-side{
+  grid-column:2;
   position:sticky;
   top:90px;
   background:#fff;
