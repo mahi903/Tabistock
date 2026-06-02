@@ -1902,12 +1902,14 @@ a {
     padding: 18px 20px;
   }
   .author-icon { width: 60px; height: 60px; }
-  .author-info { flex: 1 1 0; min-width: 0; }
+  .author-info { flex: 1 1 auto; min-width: 0; }
   .author-follow {
-    width: auto;
-    margin-left: 78px;
-    margin-top: 12px;
-    padding: 9px 20px;
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+    margin-top: 14px;
+    padding: 10px 20px;
     font-size: 14px;
   }
 }
