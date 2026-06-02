@@ -1759,19 +1759,148 @@ a {
 
 .author-socials {
   display: flex;
-  gap: 18px;
-  margin-top: 16px;
+  gap: 16px;
+  margin-top: 14px;
 }
 
 .author-social {
   color: #8b9195;
-  font-size: 34px;
+  font-size: 26px;
   text-decoration: none;
   transition: 0.2s;
 }
 
 .author-social:hover {
   color: #E1306C;
+}
+
+/* =========================
+   記事アクション：いいね・共有
+========================= */
+
+.article-actions {
+  max-width: 1100px;
+  margin: 8px auto 0;
+  padding: 0 32px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.action-like,
+.action-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 12px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform .15s ease, background .2s ease, color .2s ease, border-color .2s ease;
+}
+
+.action-like {
+  background: #fff;
+  border: 1.5px solid #e7ddcb;
+  color: #5a6066;
+}
+
+.action-like i { font-size: 17px; color: #c2873f; transition: .2s; }
+.action-like .like-count { font-variant-numeric: tabular-nums; }
+.action-like:hover { border-color: #c2873f; }
+
+.action-like.liked {
+  background: #fff1f3;
+  border-color: #f3b9c2;
+  color: #e03e63;
+}
+.action-like.liked i { color: #e03e63; }
+
+.action-share {
+  background: #1f6f5b;
+  border: 1.5px solid #1f6f5b;
+  color: #fff;
+}
+.action-share i { font-size: 15px; }
+.action-share:hover { background: #185645; border-color: #185645; }
+
+.action-like:active,
+.action-share:active { transform: scale(.96); }
+
+/* =========================
+   執筆者カード：フォローボタン
+========================= */
+
+.author-follow {
+  margin-left: auto;
+  align-self: center;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: #1f6f5b;
+  color: #fff;
+  border: 1.5px solid #1f6f5b;
+  cursor: pointer;
+  transition: transform .15s ease, background .2s ease, color .2s ease;
+}
+.author-follow i { font-size: 13px; }
+.author-follow:hover { background: #185645; }
+.author-follow:active { transform: scale(.96); }
+.author-follow.following {
+  background: #fff;
+  color: #1f6f5b;
+}
+
+/* =========================
+   トースト通知
+========================= */
+
+.tabi-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%) translateY(12px);
+  background: #1f2a28;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease, transform .3s ease;
+  z-index: 9999;
+}
+.tabi-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 768px) {
+  .article-actions { padding: 0 22px; }
+  .action-like, .action-share { padding: 11px 18px; font-size: 14px; }
+
+  .author-card { flex-wrap: wrap; }
+  .author-info { flex: 1 1 60%; }
+  .author-follow {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+    margin-top: 4px;
+  }
 }
 
 /* =========================
