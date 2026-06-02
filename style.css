@@ -1897,19 +1897,21 @@ a {
   .action-like, .action-share { padding: 11px 18px; font-size: 14px; }
 
   .author-card {
-    flex-wrap: wrap;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
     padding: 18px 20px;
   }
-  .author-icon { width: 60px; height: 60px; }
-  .author-info { flex: 1 1 auto; min-width: 0; }
+  .author-icon { width: 54px; height: 54px; }
+  .author-info { width: 100%; }
+  .author-socials { margin-top: 8px; }
+  .author-social { font-size: 20px; }
   .author-follow {
-    flex: 1 1 100%;
-    width: 100%;
-    justify-content: center;
+    align-self: flex-start;
+    width: auto;
     margin-left: 0;
-    margin-top: 14px;
-    padding: 10px 20px;
+    margin-top: 2px;
+    padding: 9px 22px;
     font-size: 14px;
   }
 }
