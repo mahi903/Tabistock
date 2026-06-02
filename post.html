@@ -13,6 +13,14 @@
   .top{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
   h1.page{ font-size:24px; margin:0; }
   .lead{ color:var(--mut); font-size:14px; margin:4px 0 28px; }
+  .phero{ position:relative; overflow:hidden; border-radius:22px; padding:40px 34px; margin:0 0 28px; background:linear-gradient(150deg,#1f6f5b,#2f9e7f); color:#fff; }
+  .phero .eyebrow{ font-family:"Manrope",system-ui,sans-serif; letter-spacing:.22em; text-transform:uppercase; font-size:12px; font-weight:800; color:#ffd9a0; margin:0 0 10px; }
+  .phero h1{ font-size:clamp(26px,4.4vw,40px); line-height:1.2; margin:0 0 14px; color:#fff; }
+  .phero p{ color:rgba(255,255,255,.92); font-size:14px; line-height:1.8; margin:0; max-width:600px; }
+  .phero p b{ color:#fff; }
+  .phero .back{ display:inline-block; margin-top:16px; font-size:13px; font-weight:700; color:#fff; text-decoration:none; opacity:.9; }
+  .phero .back:hover{ opacity:1; }
+  @media(max-width:600px){ .phero{ padding:30px 22px; } }
   .card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:22px 22px 24px; margin-bottom:22px; }
   .card > h2{ font-size:16px; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
   .card > h2 .num{ display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:var(--green); color:#fff; border-radius:50%; font-size:12px; font-weight:800; }
@@ -62,28 +70,20 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <h1 class="page">旅程を投稿する</h1>
-    <a href="index.html" style="font-size:13px;color:var(--green-d)">← トップに戻る</a>
-  </div>
-  <p class="lead">入力するとモンゴル記事と同じフォーマットの記事ページ＋検索カードを自動生成します。写真は自動でリサイズ・圧縮され、ZIPでまとめてダウンロードされます。</p>
+  <section class="phero">
+    <p class="eyebrow">Post a Trip</p>
+    <h1>旅程を投稿する</h1>
+    <p>投稿された記事は、管理者が内容を確認・承認したあとに公開されます（あらし対策のための<b>承認制</b>です）。写真はアップロード時に自動でリサイズ・圧縮されるので、そのまま選ぶだけでOKです。</p>
+    <a class="back" href="index.html">← トップに戻る</a>
+  </section>
 
   <!-- ===== 0. 基本設定 ===== -->
   <section class="card">
     <h2><span class="num">0</span>基本設定</h2>
-    <p class="hint">投稿者と記事番号から記事IDを自動生成します。検索用メタは検索の選択肢と同じ値を使うので表記ブレは起きません。</p>
+    <p class="hint">検索用メタは検索の選択肢と同じ値を使うので表記ブレは起きません。</p>
 
-    <div class="row2">
-      <div>
-        <label class="f">投稿者ニックネーム<span class="req">必須・半角英数字</span></label>
-        <input type="text" id="author" placeholder="例：mahiro" value="mahiro" autocomplete="off">
-      </div>
-      <div>
-        <label class="f">記事番号<span class="opt">自動採番・編集可</span></label>
-        <input type="number" id="postNum" min="1" step="1" value="1">
-      </div>
-    </div>
-    <p class="hint" style="margin-top:4px">記事ID： <code id="slugPreview">mahiro0001</code>（<code id="slugPathPreview">articles/mahiro0001.html</code>）。同じ端末では生成のたび自動で次の番号になります。</p>
+    <label class="f">投稿者ニックネーム<span class="req">必須・半角英数字</span></label>
+    <input type="text" id="author" placeholder="例：mahiro" value="mahiro" autocomplete="off">
 
     <label class="f">国（複数選択可）<span class="req">必須</span></label>
     <p class="hint" style="margin:0 0 6px">周遊なら複数チェック。地域は最初に選んだ国から自動で決まります。</p>
@@ -198,12 +198,6 @@
     <textarea id="comment" placeholder="例：4月でも朝晩はかなり寒いので防寒着は必須です。英語はほとんど通じないので…"></textarea>
   </section>
 
-  <!-- ===== カード用 ===== -->
-  <section class="card">
-    <h2><span class="num">7</span>検索カードのプレビュー</h2>
-    <p class="hint">検索カードは自動生成されます。説明文は<b>リード文</b>、サムネは<b>カルーセル写真の1枚目</b>を使うので追加入力は不要です。</p>
-    <div class="note" id="metaPreview">国・予算・日数・スタイルを選ぶと、タグと検索属性のプレビューがここに表示されます。</div>
-  </section>
 </div>
 
 <div class="bar">
@@ -421,14 +415,6 @@ function previewFiles(input,container){
 }
 $('heroPhotos').addEventListener('change',()=>previewFiles($('heroPhotos'),$('heroThumbs')));
 
-// 記事ID（投稿者＋番号）自動生成
-function pad4(n){ return String(Math.max(1,parseInt(n||1,10))).padStart(4,'0'); }
-function makeSlug(){ return ($('author').value.trim()||'mahiro')+pad4($('postNum').value); }
-function refreshSlug(){ const s=makeSlug(); $('slugPreview').textContent=s; $('slugPathPreview').textContent='articles/'+s+'.html'; }
-function nextNumFor(author){ return (parseInt(localStorage.getItem('tabistock_postnum_'+author)||'0',10))+1; }
-$('author').addEventListener('input',()=>{ $('postNum').value=nextNumFor($('author').value.trim()||'mahiro'); refreshSlug(); });
-$('postNum').addEventListener('input',refreshSlug);
-$('postNum').value=nextNumFor('mahiro'); refreshSlug();
 
 /* メタ情報のプレビュー＆eyebrow自動入力 */
 function selectedCountries(){ return [...document.querySelectorAll('input[name=country]:checked')].map(c=>c.value); }
@@ -447,9 +433,10 @@ function updateMeta(){
   const cs=selectedCountries();
   const r=primaryRegion();
   const eb=cs.length?`${cinfo(cs[0]).en} · ${REGION_EN[r]}`:'';
-  $('metaPreview').innerHTML = cs.length
+  const mp=$('metaPreview');
+  if(mp){ mp.innerHTML = cs.length
     ? `英語小見出し（自動）: <code>${eb}</code><br>検索属性: <code>data-country="${cs.join(' ')}"</code> <code>data-region="${r}"</code> <code>data-budget="${$('budget').value||'-'}"</code> <code>data-days="${$('days').value||'-'}"</code> <code>data-style="${selectedStyles().join(' ')||'-'}"</code><br>タグ: ${buildTags().map(t=>'#'+t).join(' ')}`
-    : '国・予算・日数・スタイルを選ぶと、タグと検索属性のプレビューがここに表示されます。';
+    : '国・予算・日数・スタイルを選ぶと、タグと検索属性のプレビューがここに表示されます。'; }
 }
 
 /* =========================================================
@@ -482,9 +469,8 @@ async function gather(){
   });
   const costs={}; document.querySelectorAll('[data-cost]').forEach(i=>costs[i.dataset.cost]=Number(i.value||0));
   const author=$('author').value.trim()||'mahiro';
-  const postNum=Math.max(1,parseInt($('postNum').value||1,10));
   return {
-    slug:makeSlug(), author, postNum,
+    author,
     countries:cs, region:primaryRegion(),
     budget:$('budget').value, days_v:$('days').value, styles:selectedStyles(),
     title:$('title').value.trim(), lead:$('lead').value.trim(),
@@ -755,7 +741,6 @@ ${dayCards}
 
 ${FOOTER_HTML}
 ${SCRIPTS_HTML.replace('__AUTHORKEY__', esc(d.author))}
-  <script type="module" src="./auth-status.js"></script>
 </body>
 </html>`;
 }
@@ -831,7 +816,6 @@ $('jsonInput').addEventListener('change',async()=>{
   try{
     const d=JSON.parse(await f.text());
     $('author').value=d.author||'mahiro';
-    $('postNum').value=d.postNum||nextNumFor(d.author||'mahiro'); refreshSlug();
     $('title').value=d.title||'';
     $('lead').value=d.lead||''; $('dateStart').value=d.dateStart||''; $('dateEnd').value=d.dateEnd||'';
     $('currency').value=d.currency||''; $('language').value=d.language||''; $('safety').value=d.safety||'';
@@ -1389,7 +1373,6 @@ window.tabistockSubmit = async function(d, st){
     status: "pending",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-    slug: d.slug,
     countries: d.countries, region: d.region,
     budget: d.budget, days_v: d.days_v, styles: d.styles,
     title: d.title, lead: d.lead,
@@ -1401,7 +1384,6 @@ window.tabistockSubmit = async function(d, st){
   };
   await setDoc(articleRef, docData);
 
-  try { localStorage.setItem("tabistock_postnum_"+d.author, String(d.postNum)); } catch(e){}
   st.className = "status ok";
   st.textContent = "投稿しました！管理者の承認後に公開されます。（記事ID: "+id+"）";
   window.scrollTo({ top:0, behavior:"smooth" });
@@ -1428,9 +1410,9 @@ onAuthStateChanged(auth, async (user) => {
     if(nick) a.value = nick;
     a.readOnly = true;
     a.style.background = "#f0ece3";
-    if(window.refreshSlug) window.refreshSlug();
   }
 });
 </script>
+  <script type="module" src="./auth-status.js"></script>
 </body>
 </html>
