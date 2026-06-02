@@ -33,12 +33,35 @@
   .me .nick{font-size:20px;font-weight:800;margin:6px 0}
   .me .email{color:#6c7787;font-size:13px;margin:0 0 18px}
   .me .actions{display:flex;flex-direction:column;gap:10px}
-  .me .actions a,.me .actions button{display:block;width:100%;padding:13px;border-radius:999px;font-size:15px;font-weight:800;text-decoration:none;cursor:pointer;font-family:inherit;border:none}
+  .me .actions a,.me .actions button{display:block;width:100%;padding:13px;border-radius:999px;font-size:15px;font-weight:800;text-decoration:none;text-align:center;cursor:pointer;font-family:inherit;border:none}
   .a-main{background:#e2683b;color:#fff}
   .a-ghost{background:#faf6ee;color:#1f6f5b;border:1.5px solid #1f6f5b !important}
   .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-top:8px}
   .badge.warn{background:#fff3e6;color:#c4691f}
   .badge.ok{background:#e9f5ef;color:#1f6f5b}
+  /* マイページ */
+  .me{text-align:left}
+  .profile{display:flex;align-items:center;gap:16px}
+  .avatar-wrap{position:relative;flex-shrink:0}
+  .avatar{width:84px;height:84px;border-radius:50%;background:#1f6f5b;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px;font-weight:800;border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+  .avatar-edit{position:absolute;right:-2px;bottom:-2px;width:30px;height:30px;border-radius:50%;background:#e2683b;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;padding:0;line-height:1}
+  .profile .pinfo{min-width:0}
+  .profile .pinfo .nick{font-size:20px;font-weight:800;margin:0 0 2px}
+  .profile .pinfo .email{color:#6c7787;font-size:13px;margin:0;word-break:break-all}
+  .section-title{font-size:15px;font-weight:800;margin:26px 0 12px;display:flex;align-items:center;justify-content:space-between}
+  .section-title .count{font-size:12px;color:#6c7787;font-weight:700}
+  .posts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:480px){.posts{grid-template-columns:1fr}}
+  .pcard{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid #e7ddcb;border-radius:14px;overflow:hidden;transition:box-shadow .15s}
+  .pcard:hover{box-shadow:0 6px 18px rgba(0,0,0,.08)}
+  .pcard .pthumb{width:100%;height:108px;background-size:cover;background-position:center;background-color:#e7ddcb}
+  .pcard .pbody{padding:10px 12px}
+  .pcard .ptitle{font-size:13.5px;font-weight:700;margin:0 0 7px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pcard .ppill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px}
+  .s-pending{background:#fff3e6;color:#c4691f}
+  .s-published{background:#e9f5ef;color:#1f6f5b}
+  .s-rejected{background:#fdecec;color:#b53d3d}
+  .posts-empty{grid-column:1/-1;color:#6c7787;font-size:13px;text-align:center;padding:26px 16px;border:1px dashed #e7ddcb;border-radius:14px}
 </style>
 </head>
 <body>
@@ -75,29 +98,47 @@
       <div class="msg" id="msg"></div>
     </div>
 
-    <!-- ログイン済み -->
+    <!-- ログイン済み（マイページ） -->
     <div class="me hide" id="meCard">
-      <p style="margin:0;color:#6c7787;font-size:13px">ログイン中</p>
-      <p class="nick" id="meNick">—</p>
-      <p class="email" id="meEmail">—</p>
-      <div id="verifyBadge"></div>
-      <div class="actions" style="margin-top:18px">
-        <a class="a-main" href="./post.html">旅程を投稿する</a>
-        <button class="a-ghost" id="logoutBtn" type="button">ログアウト</button>
+      <div class="profile">
+        <div class="avatar-wrap">
+          <div class="avatar" id="meAvatar">—</div>
+          <button class="avatar-edit" id="avatarEditBtn" type="button" title="アイコンを変更">✎</button>
+          <input type="file" id="avatarInput" accept="image/*" class="hide">
+        </div>
+        <div class="pinfo">
+          <p class="nick" id="meNick">—</p>
+          <p class="email" id="meEmail">—</p>
+          <div id="verifyBadge"></div>
+        </div>
       </div>
-      <p class="hint" id="uidLine" style="margin-top:16px;word-break:break-all"></p>
+
+      <div class="actions" style="margin-top:18px;flex-direction:row;gap:10px">
+        <a class="a-main" href="./post.html" style="flex:1">投稿する</a>
+        <button class="a-ghost" id="logoutBtn" type="button" style="flex:1">ログアウト</button>
+      </div>
+      <div class="msg" id="avatarMsg" style="margin-top:12px"></div>
+
+      <div class="section-title">自分の投稿 <span class="count" id="postCount"></span></div>
+      <div id="myPosts" class="posts"></div>
+
+      <p class="hint" id="uidLine" style="margin-top:18px;word-break:break-all"></p>
     </div>
   </div>
 
 <script type="module">
-import { auth, db } from "./firebase-config.js";
+import { auth, db, storage } from "./firebase-config.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
   onAuthStateChanged, updateProfile, sendEmailVerification
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { ref as sRef, uploadBytes, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const $ = id => document.getElementById(id);
+const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 let mode = "login"; // login | signup
 
 function setMode(m){
@@ -164,13 +205,105 @@ $("submitBtn").onclick = async () => {
 
 $("logoutBtn").onclick = () => signOut(auth);
 
+/* ===== アイコン ===== */
+function setAvatar(url, nick){
+  const a = $("meAvatar");
+  if(url){
+    a.style.backgroundImage = `url('${url}')`;
+    a.textContent = "";
+  }else{
+    a.style.backgroundImage = "";
+    a.textContent = (String(nick||"?").trim().charAt(0) || "?").toUpperCase();
+  }
+}
+function showAvatarMsg(text, kind){
+  const el = $("avatarMsg");
+  el.className = "msg" + (kind ? " "+kind : "");
+  el.textContent = text;
+}
+// 正方形に中央クロップして縮小
+function resizeSquare(file, size){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(img.width, img.height);
+      const sx = (img.width - s)/2, sy = (img.height - s)/2;
+      const c = document.createElement("canvas");
+      c.width = size; c.height = size;
+      c.getContext("2d").drawImage(img, sx, sy, s, s, 0, 0, size, size);
+      c.toBlob(b => b ? resolve(b) : reject(new Error("画像変換に失敗しました")), "image/jpeg", 0.85);
+    };
+    img.onerror = () => reject(new Error("画像を読み込めませんでした"));
+    img.src = URL.createObjectURL(file);
+  });
+}
+$("avatarEditBtn").onclick = () => $("avatarInput").click();
+$("avatarInput").onchange = async () => {
+  const f = $("avatarInput").files[0]; if(!f) return;
+  const user = auth.currentUser; if(!user){ return; }
+  showAvatarMsg("アイコンをアップロード中…", "ok");
+  try{
+    const blob = await resizeSquare(f, 256);
+    const r = sRef(storage, `avatars/${user.uid}/avatar.jpg`);
+    await uploadBytes(r, blob, { contentType: "image/jpeg" });
+    const url = await getDownloadURL(r);
+    await updateProfile(user, { photoURL: url });
+    await setDoc(doc(db, "users", user.uid), { photoURL: url }, { merge: true });
+    setAvatar(url + (url.includes("?") ? "&" : "?") + "t=" + Date.now(), null); // キャッシュ回避
+    showAvatarMsg("アイコンを更新しました。", "ok");
+  }catch(err){
+    console.error(err);
+    showAvatarMsg("アップロードに失敗しました：" + (err.message || err), "err");
+  }finally{
+    $("avatarInput").value = "";
+  }
+};
+
+/* ===== 自分の投稿一覧 ===== */
+function renderPost(d){
+  const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
+  const sc = d.status==="published" ? "s-published" : (d.status==="rejected" ? "s-rejected" : "s-pending");
+  const sl = d.status==="published" ? "公開中" : (d.status==="rejected" ? "却下" : "承認待ち");
+  return `<a class="pcard" href="./articles/view.html?id=${esc(d.id)}">
+    <div class="pthumb" style="background-image:url('${esc(thumb)}')"></div>
+    <div class="pbody">
+      <p class="ptitle">${esc(d.title||"(無題)")}</p>
+      <span class="ppill ${sc}">${sl}</span>
+    </div>
+  </a>`;
+}
+async function loadMyPosts(uid){
+  const box = $("myPosts");
+  box.innerHTML = `<p class="posts-empty">読み込み中…</p>`;
+  try{
+    const snap = await getDocs(query(collection(db, "articles"), where("authorId", "==", uid)));
+    const docs = [];
+    snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
+    docs.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+    $("postCount").textContent = docs.length ? `${docs.length}件` : "";
+    if(!docs.length){
+      box.innerHTML = `<p class="posts-empty">まだ投稿がありません。<br><a href="./post.html">最初の旅程を投稿する →</a></p>`;
+      return;
+    }
+    box.innerHTML = docs.map(renderPost).join("");
+  }catch(err){
+    console.error(err);
+    box.innerHTML = `<p class="posts-empty">読み込みエラー：${esc(err.message||err)}</p>`;
+  }
+}
+
 onAuthStateChanged(auth, async (user) => {
   if(user){
-    // プロフィール取得（nickname）
+    // プロフィール取得（nickname / photoURL）
     let nick = user.displayName || "";
+    let photo = user.photoURL || "";
     try{
       const snap = await getDoc(doc(db, "users", user.uid));
-      if(snap.exists() && snap.data().nickname) nick = snap.data().nickname;
+      if(snap.exists()){
+        const u = snap.data();
+        if(u.nickname) nick = u.nickname;
+        if(u.photoURL) photo = u.photoURL;
+      }
     }catch(e){}
     $("authCard").classList.add("hide");
     $("meCard").classList.remove("hide");
@@ -180,6 +313,8 @@ onAuthStateChanged(auth, async (user) => {
     $("verifyBadge").innerHTML = user.emailVerified
       ? '<span class="badge ok">メール確認済み</span>'
       : '<span class="badge warn">メール未確認（受信ボックスを確認）</span>';
+    setAvatar(photo, nick);
+    loadMyPosts(user.uid);
   }else{
     $("meCard").classList.add("hide");
     $("authCard").classList.remove("hide");
