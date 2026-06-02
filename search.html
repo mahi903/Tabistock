@@ -331,47 +331,151 @@
     <p>選んだ条件に当てはまる旅程の一覧です。さらに条件を追加して、ぴったりの旅に絞り込めます。</p>
   </section>
   <section class="search-results">
-  <section class="result-filter">
-  <p class="result-filter-label">条件を追加して絞り込む</p>
+  <div class="results-layout">
 
-  <div class="result-filter-bar">
-    <select name="country">
-      <option value="">国・地域</option>
-      <option value="mongolia">モンゴル</option>
-      <option value="korea">韓国</option>
-      <option value="thai">タイ</option>
-    </select>
+    <aside class="filter-side">
+      <p class="fs-title">条件で絞り込む</p>
+      <div class="fs-field">
+        <label for="fs-country">国・地域</label>
+        <select id="fs-country" name="country">
+          <option value="">すべての国・地域</option>
+          <optgroup label="東アジア">
+            <option value="japan">日本</option>
+            <option value="korea">韓国</option>
+            <option value="china">中国</option>
+            <option value="taiwan">台湾</option>
+            <option value="hongkong">香港</option>
+            <option value="mongolia">モンゴル</option>
+          </optgroup>
+          <optgroup label="東南アジア">
+            <option value="thai">タイ</option>
+            <option value="cambodia">カンボジア</option>
+            <option value="vietnam">ベトナム</option>
+            <option value="malaysia">マレーシア</option>
+            <option value="singapore">シンガポール</option>
+            <option value="indonesia">インドネシア</option>
+            <option value="philippines">フィリピン</option>
+          </optgroup>
+          <optgroup label="南アジア">
+            <option value="india">インド</option>
+            <option value="nepal">ネパール</option>
+            <option value="srilanka">スリランカ</option>
+            <option value="bhutan">ブータン</option>
+            <option value="maldives">モルディブ</option>
+            <option value="pakistan">パキスタン</option>
+            <option value="bangladesh">バングラデシュ</option>
+          </optgroup>
+          <optgroup label="中央アジア">
+            <option value="kazakhstan">カザフスタン</option>
+            <option value="kyrgyzstan">キルギス</option>
+            <option value="uzbekistan">ウズベキスタン</option>
+          </optgroup>
+          <optgroup label="西アジア">
+            <option value="turkey">トルコ</option>
+            <option value="qatar">カタール</option>
+            <option value="UAE">アラブ首長国連邦</option>
+          </optgroup>
+          <optgroup label="ヨーロッパ">
+            <option value="finland">フィンランド</option>
+            <option value="sweden">スウェーデン</option>
+            <option value="norway">ノルウェー</option>
+            <option value="estonia">エストニア</option>
+            <option value="latvia">ラトビア</option>
+            <option value="lithuania">リトアニア</option>
+            <option value="croatia">クロアチア</option>
+            <option value="austria">オーストリア</option>
+            <option value="hungary">ハンガリー</option>
+            <option value="slovakia">スロバキア</option>
+            <option value="france">フランス</option>
+            <option value="uk">イギリス</option>
+            <option value="italy">イタリア</option>
+            <option value="spain">スペイン</option>
+            <option value="germany">ドイツ</option>
+            <option value="netherlands">オランダ</option>
+            <option value="switzerland">スイス</option>
+            <option value="portugal">ポルトガル</option>
+            <option value="greece">ギリシャ</option>
+            <option value="czech">チェコ</option>
+            <option value="poland">ポーランド</option>
+            <option value="belgium">ベルギー</option>
+            <option value="ireland">アイルランド</option>
+            <option value="denmark">デンマーク</option>
+            <option value="iceland">アイスランド</option>
+          </optgroup>
+          <optgroup label="北アメリカ">
+            <option value="usa">アメリカ</option>
+            <option value="canada">カナダ</option>
+            <option value="mexico">メキシコ</option>
+          </optgroup>
+          <optgroup label="南アメリカ">
+            <option value="peru">ペルー</option>
+            <option value="bolivia">ボリビア</option>
+            <option value="chile">チリ</option>
+            <option value="argentina">アルゼンチン</option>
+            <option value="brazil">ブラジル</option>
+          </optgroup>
+          <optgroup label="アフリカ">
+            <option value="morocco">モロッコ</option>
+            <option value="egypt">エジプト</option>
+            <option value="kenya">ケニア</option>
+            <option value="south-africa">南アフリカ</option>
+          </optgroup>
+          <optgroup label="オセアニア">
+            <option value="australia">オーストラリア</option>
+            <option value="new-zealand">ニュージーランド</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="fs-field">
+        <label for="fs-budget">予算</label>
+        <select id="fs-budget" name="budget">
+          <option value="">予算を選ばない</option>
+          <option value="10">〜10万円</option>
+          <option value="20">〜20万円</option>
+          <option value="30">〜30万円</option>
+          <option value="40">〜40万円</option>
+          <option value="50">〜50万円</option>
+          <option value="50plus">50万円以上</option>
+        </select>
+      </div>
+      <div class="fs-field">
+        <label for="fs-days">日数</label>
+        <select id="fs-days" name="days">
+          <option value="">日数を選ばない</option>
+          <option value="daytrip">日帰り</option>
+          <option value="1night">1泊</option>
+          <option value="3-5">3〜5日</option>
+          <option value="1w">1週間</option>
+          <option value="2w">2週間</option>
+          <option value="3w-plus">3週間以上</option>
+        </select>
+      </div>
+      <div class="fs-field">
+        <label for="fs-style">旅スタイル</label>
+        <select id="fs-style" name="style">
+          <option value="">スタイルを選ばない</option>
+          <option value="solo">1人旅</option>
+          <option value="friends">友達と</option>
+          <option value="family">家族と</option>
+          <option value="backpacker">バックパッカー</option>
+          <option value="girls">女子旅</option>
+          <option value="couple">カップル</option>
+          <option value="nature">自然・絶景</option>
+          <option value="city">都市・街歩き</option>
+          <option value="local">現地体験</option>
+          <option value="round-trip">周遊</option>
+        </select>
+      </div>
+      <button class="fs-apply" id="fsApply" type="button">この条件で絞り込む</button>
+      <button class="fs-clear" id="fsClear" type="button">条件をクリア</button>
+    </aside>
 
-    <select name="budget">
-      <option value="">予算</option>
-      <option value="10">〜10万円</option>
-      <option value="20">〜20万円</option>
-      <option value="30">〜30万円</option>
-    </select>
-
-    <select name="days">
-      <option value="">日数</option>
-      <option value="daytrip">日帰り</option>
-      <option value="1night">1泊</option>
-      <option value="3-5">3〜5日</option>
-      <option value="1w">1週間</option>
-      <option value="2w">2週間</option>
-      <option value="3w-plus">3週間以上</option>
-    </select>
-
-    <select name="style">
-      <option value="">スタイル</option>
-      <option value="solo">1人旅</option>
-      <option value="friends">友達と</option>
-      <option value="nature">自然・絶景</option>
-      <option value="city">都市・街歩き</option>
-    </select>
-
-    <button id="result-filter-btn">絞り込む</button>
-  </div>
-</section>
-
-  <div class="trip-grid">
+    <div class="results-main">
+      <div class="results-head">
+        <p class="results-count" id="resultsCount"></p>
+        <div class="active-filters" id="activeFilters"></div>
+      </div>
+      <div class="trip-grid">
 
   <a href="./articles/mongolia.html"
      class="trip-card"
@@ -537,6 +641,10 @@
     </div>
   </div>
 
+    </div><!-- /.results-main -->
+  </div><!-- /.results-layout -->
+  </section>
+
 <script>
 const filterOpen = document.getElementById("filterOpen");
 const filterClose = document.getElementById("filterClose");
@@ -634,23 +742,72 @@ if (filter === "budget") {
   noResults.style.display = visibleCount === 0 ? "block" : "none";
 }
 
-  const resultFilterBtn = document.querySelector("#result-filter-btn");
+  // ===== PC sidebar filter + active conditions =====
+  (function(){
+    const sideIds = { country:"fs-country", budget:"fs-budget", days:"fs-days", style:"fs-style" };
+    const known = ["country","region","budget","days","style","q"];
 
-  resultFilterBtn.addEventListener("click", () => {
-    const params = new URLSearchParams(window.location.search);
-
-    ["country", "region", "budget", "days", "style"].forEach(key => {
-      params.delete(key);
+    // reflect current params into sidebar selects
+    Object.keys(sideIds).forEach(key => {
+      const el = document.getElementById(sideIds[key]);
+      const val = params.get(key);
+      if (el && val) el.value = val;
     });
 
-    document.querySelectorAll(".result-filter-bar select").forEach(select => {
-      if (select.value) {
-        params.append(select.name, select.value);
+    // value -> label dictionary built from sidebar option texts
+    const labelOf = {};
+    Object.values(sideIds).forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.querySelectorAll("option").forEach(o => { if (o.value) labelOf[o.value] = o.textContent.trim(); });
+    });
+    const regionLabel = {"east-asia":"東アジア","southeast-asia":"東南アジア","south-asia":"南アジア","central-asia":"中央アジア","west-asia":"西アジア","europe":"ヨーロッパ","north-america":"北アメリカ","south-america":"南アメリカ","africa":"アフリカ","oceania":"オセアニア"};
+    const labelFor = (key, value) => {
+      if (key === "q") return `「${value}」`;
+      if (key === "region") return regionLabel[value] || value;
+      if (key === "budget") return labelOf[value] || `〜${value}万円`;
+      return labelOf[value] || value;
+    };
+
+    // results count
+    const countEl = document.getElementById("resultsCount");
+    const hasAny = [...params.keys()].some(k => known.includes(k));
+    if (countEl) countEl.textContent = hasAny
+      ? `条件に合う旅程：${visibleCount}件`
+      : `すべての旅程：${visibleCount}件`;
+
+    // active-filter chips (each links to a state with that one condition removed)
+    const wrap = document.getElementById("activeFilters");
+    if (wrap) {
+      const chips = [];
+      for (const [key, value] of params.entries()) {
+        if (!known.includes(key)) continue;
+        const p = new URLSearchParams();
+        for (const [k, v] of params.entries()) {
+          if (k === key && v === value) continue; // drop only this pair
+          p.append(k, v);
+        }
+        chips.push(`<a class="chip" href="search.html?${p.toString()}">${labelFor(key, value)}<span class="chip-x">×</span></a>`);
       }
-    });
+      wrap.innerHTML = chips.length
+        ? chips.join("") + `<a class="chip chip-clear" href="search.html">すべて解除</a>`
+        : "";
+    }
 
-    window.location.href = `search.html?${params.toString()}`;
-  });
+    // apply / clear
+    const apply = document.getElementById("fsApply");
+    if (apply) apply.addEventListener("click", () => {
+      const p = new URLSearchParams();
+      const q = params.get("q"); if (q) p.append("q", q);
+      Object.keys(sideIds).forEach(key => {
+        const el = document.getElementById(sideIds[key]);
+        if (el && el.value) p.append(key, el.value);
+      });
+      window.location.href = `search.html?${p.toString()}`;
+    });
+    const clear = document.getElementById("fsClear");
+    if (clear) clear.addEventListener("click", () => { window.location.href = "search.html"; });
+  })();
     </script>
   <script>
   (function(){
