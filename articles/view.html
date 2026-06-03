@@ -420,9 +420,12 @@ import { doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, ord
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { renderArticleBody, esc, para } from "../tabistock-render.js";
+import { sendNotification } from "../notify.js";
 
 const root = document.getElementById("article-root");
 const id = new URLSearchParams(location.search).get("id");
+// 通知の宛先・本文に使う（IIFEで記事読み込み後にセット）
+let articleAuthorId = null, articleTitle = "";
 
 // 管理者UIDの一覧（バッジ表示用・公開読み取り）
 const adminSet = new Set();
@@ -516,6 +519,7 @@ function wireFollow(){
         await setDoc(doc(db,"users",me,"following",target), { createdAt: serverTimestamp() });
         await setDoc(doc(db,"users",target,"followers",me), { createdAt: serverTimestamp() });
         following = true;
+        sendNotification({ toUid: target, type: "follow" });
       }
       paint();
     }catch(e){ console.error(e); }
@@ -552,7 +556,10 @@ function wireLike(){
     try{
       const ref = doc(db,"articles",id,"likes",uid);
       if(liked){ await deleteDoc(ref); liked = false; }
-      else { await setDoc(ref, { createdAt: serverTimestamp() }); liked = true; }
+      else {
+        await setDoc(ref, { createdAt: serverTimestamp() }); liked = true;
+        sendNotification({ toUid: articleAuthorId, type: "like", articleId: id, articleTitle });
+      }
       paint();
       await refreshCount();
     }catch(e){ console.error(e); }
@@ -674,6 +681,7 @@ function initComments(){
             createdAt: serverTimestamp()
           });
           inp.value = "";
+          sendNotification({ toUid: articleAuthorId, type: "comment", articleId: id, articleTitle });
           await loadComments();
         }catch(e){ console.error(e); alert("投稿できませんでした。"); }
         finally{ btn.disabled = false; }
@@ -759,6 +767,8 @@ function initRouteMap(d){
       }catch(e){ console.warn("公開プロフィールの取得に失敗:", e); }
     }
     d.authorIsAdmin = d.authorId ? adminSet.has(d.authorId) : false;
+    articleAuthorId = d.authorId || null;
+    articleTitle = d.title || "";
     document.title = (d.title || "旅程") + "｜Tabistock";
     root.innerHTML = renderArticleBody(d);
     initInteractions();

@@ -36,6 +36,15 @@ service cloud.firestore {
         allow read:  if true;
         allow write: if isSignedIn() && request.auth.uid == followerUid;
       }
+
+      // 通知。受信者（uid本人）だけが閲覧・既読更新・削除できる。
+      // 作成は「行動した人（fromUid＝自分）」が相手の通知箱に1件入れる。
+      match /notifications/{nid} {
+        allow read, update, delete: if isSignedIn() && request.auth.uid == uid;
+        allow create: if isSignedIn()
+                      && request.resource.data.fromUid == request.auth.uid
+                      && request.resource.data.type is string;
+      }
     }
 
     // ---- 公開プロフィール（名前・アイコン・自己紹介・SNSのみ／誰でも閲覧可） ----
