@@ -467,7 +467,16 @@
 
     <div class="results-main">
       <div class="results-head">
-        <p class="results-count" id="resultsCount"></p>
+        <div class="results-head-top">
+          <p class="results-count" id="resultsCount"></p>
+          <label class="sort-box">並び替え
+            <select id="sortBy">
+              <option value="new">新着順</option>
+              <option value="old">古い順</option>
+              <option value="likes">いいね順</option>
+            </select>
+          </label>
+        </div>
         <div class="active-filters" id="activeFilters"></div>
       </div>
       <div class="trip-grid">
@@ -806,6 +815,27 @@ if (filter === "budget") {
   })();
 }
 window.runSearchFilter = runSearchFilter;
+
+// ===== 並び替え（DBカードのみ。手書きの旧カードは末尾固定） =====
+function sortResultCards(){
+  const grid = document.querySelector(".trip-grid");
+  if(!grid) return;
+  const mode = (document.getElementById("sortBy") || {}).value || "new";
+  const cards = [...grid.querySelectorAll(".trip-card")];
+  const db = cards.filter(c => c.dataset.id);
+  const legacy = cards.filter(c => !c.dataset.id);
+  const num = (c, k) => Number(c.dataset[k] || 0);
+  db.sort((a, b) => {
+    if(mode === "likes") return num(b,"likes") - num(a,"likes") || num(b,"created") - num(a,"created");
+    if(mode === "old")   return num(a,"created") - num(b,"created");
+    return num(b,"created") - num(a,"created"); // new（既定）
+  });
+  [...db, ...legacy].forEach(c => grid.appendChild(c));
+}
+window.sortResultCards = sortResultCards;
+const sortSel = document.getElementById("sortBy");
+if(sortSel) sortSel.addEventListener("change", sortResultCards);
+
 runSearchFilter();
     </script>
   <script>
@@ -842,15 +872,15 @@ runSearchFilter();
   <!-- DBの公開記事を自動表示（既存の手書きカードはそのまま下に残す＝段階移行） -->
   <script type="module">
     import { db } from "./firebase-config.js";
-    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { collection, query, where, getDocs, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { renderCard } from "./tabistock-render.js";
 
     const grid = document.querySelector(".trip-grid");
     if (grid) {
+      let docs = [];
       try {
         const qy = query(collection(db, "articles"), where("status", "==", "published"));
         const snap = await getDocs(qy);
-        const docs = [];
         snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
         docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         if (docs.length) {
@@ -859,8 +889,21 @@ runSearchFilter();
       } catch (err) {
         console.error("記事の読み込みに失敗:", err);
       }
-      // カード追加後にフィルタ（件数・絞り込み・チップ）を再実行
+      // カード追加後にフィルタ（件数・絞り込み・チップ）と並び替えを再実行
       if (window.runSearchFilter) window.runSearchFilter();
+      if (window.sortResultCards) window.sortResultCards();
+
+      // いいね順のために各記事のいいね数を集計して data-likes に反映（記事が少ない今は都度集計）
+      Promise.all(docs.map(async d => {
+        try {
+          const c = await getCountFromServer(collection(db, "articles", d.id, "likes"));
+          const el = grid.querySelector(`.trip-card[data-id="${d.id}"]`);
+          if (el) el.dataset.likes = c.data().count;
+        } catch (e) { /* 集計失敗時は0のまま */ }
+      })).then(() => {
+        const sel = document.getElementById("sortBy");
+        if (sel && sel.value === "likes" && window.sortResultCards) window.sortResultCards();
+      });
     }
   </script>
   <script type="module" src="./auth-status.js"></script>

@@ -2995,7 +2995,10 @@ a {
 .fs-clear:hover{color:#1f6f5b;text-decoration:underline}
 
 .results-head{margin-bottom:20px}
-.results-count{font-size:15px;font-weight:800;color:#1b2330;margin:0 0 12px}
+.results-head-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.results-count{font-size:15px;font-weight:800;color:#1b2330;margin:0}
+.sort-box{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#6c7787;white-space:nowrap}
+.sort-box select{font-size:13px;font-weight:700;color:#1b2330;padding:7px 30px 7px 12px;border:1px solid #e7ddcb;border-radius:999px;background:#fff url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231f6f5b' d='M2 4l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 11px center;-webkit-appearance:none;appearance:none;cursor:pointer}
 .active-filters{display:flex;flex-wrap:wrap;gap:8px}
 .chip{
   display:inline-flex;

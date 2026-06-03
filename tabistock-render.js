@@ -328,11 +328,14 @@ export function renderCard(d){
   const thumb=d.thumbUrl||(d.heroUrls&&d.heroUrls[0])||'';
   return `  <a href="./articles/view.html?id=${esc(d.id)}"
      class="trip-card"
+     data-id="${esc(d.id)}"
      data-country="${esc((d.countries||[]).join(' '))}"
      data-days="${esc(d.days_v||'')}"
      data-budget="${esc(budgetAttr||'')}"
      data-style="${esc((d.styles||[]).join(' '))}"
-     data-region="${esc(d.region||'')}">
+     data-region="${esc(d.region||'')}"
+     data-created="${esc(String(d.createdAt?.seconds||0))}"
+     data-likes="0">
     <div class="trip-image"
          style="background-image:
     linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.12)),url('${esc(thumb)}');">
