@@ -412,8 +412,10 @@ drawerFilterBtns.forEach(btn => {
 
 <!-- ===== 記事をFirebaseから読み込んで描画 ===== -->
 <script type="module">
-import { db } from "../firebase-config.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { db, auth } from "../firebase-config.js";
+import { doc, getDoc, setDoc, deleteDoc, collection, getCountFromServer, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { renderArticleBody } from "../tabistock-render.js";
 
 const root = document.getElementById("article-root");
@@ -455,20 +457,8 @@ function initInteractions(){
     requestAnimationFrame(() => t.classList.add("show"));
     setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 300); }, 1800);
   };
-  const likeBtn = root.querySelector("#likeBtn"), likeCount = root.querySelector("#likeCount");
-  if(likeBtn && likeCount){
-    const lkey = "tabistock_like_" + (id||location.pathname);
-    const base = parseInt(likeCount.textContent,10)||0;
-    let liked = localStorage.getItem(lkey)==="1";
-    const render = () => {
-      likeBtn.classList.toggle("liked", liked);
-      likeBtn.setAttribute("aria-pressed", liked);
-      likeBtn.querySelector("i").className = liked ? "fa-solid fa-heart" : "fa-regular fa-heart";
-      likeCount.textContent = base + (liked?1:0);
-    };
-    render();
-    likeBtn.addEventListener("click", () => { liked=!liked; localStorage.setItem(lkey, liked?"1":"0"); render(); });
-  }
+  wireLike();
+  wireSave();
   const shareBtn = root.querySelector("#shareBtn");
   if(shareBtn){
     shareBtn.addEventListener("click", async () => {
@@ -493,6 +483,74 @@ function initInteractions(){
       localStorage.setItem(fkey, on?"1":"0"); setFollow(on);
     });
   }
+}
+
+// いいね（Firestore: articles/{id}/likes/{uid}・要ログイン）
+function wireLike(){
+  const likeBtn = root.querySelector("#likeBtn"), likeCount = root.querySelector("#likeCount");
+  if(!likeBtn || !likeCount) return;
+  const likesCol = collection(db, "articles", id, "likes");
+  let liked = false, uid = null, busy = false;
+  const paint = () => {
+    likeBtn.classList.toggle("liked", liked);
+    likeBtn.setAttribute("aria-pressed", liked);
+    likeBtn.querySelector("i").className = liked ? "fa-solid fa-heart" : "fa-regular fa-heart";
+  };
+  const refreshCount = async () => {
+    try{ const c = await getCountFromServer(likesCol); likeCount.textContent = c.data().count; }
+    catch(e){ console.warn("いいね数の取得に失敗:", e); }
+  };
+  refreshCount();
+  onAuthStateChanged(auth, async (user) => {
+    uid = user ? user.uid : null;
+    if(uid){ try{ liked = (await getDoc(doc(db,"articles",id,"likes",uid))).exists(); }catch(e){ liked=false; } }
+    else liked = false;
+    paint();
+  });
+  likeBtn.addEventListener("click", async () => {
+    if(busy) return;
+    if(!uid){ alert("いいねするにはログインが必要です。"); location.href = "../account.html"; return; }
+    busy = true;
+    try{
+      const ref = doc(db,"articles",id,"likes",uid);
+      if(liked){ await deleteDoc(ref); liked = false; }
+      else { await setDoc(ref, { createdAt: serverTimestamp() }); liked = true; }
+      paint();
+      await refreshCount();
+    }catch(e){ console.error(e); }
+    finally{ busy = false; }
+  });
+}
+
+// 保存（Firestore: users/{uid}/saves/{articleId}・要ログイン）
+function wireSave(){
+  const saveBtn = root.querySelector("#saveBtn");
+  if(!saveBtn) return;
+  let saved = false, uid = null, busy = false;
+  const paint = () => {
+    saveBtn.classList.toggle("saved", saved);
+    saveBtn.setAttribute("aria-pressed", saved);
+    saveBtn.querySelector("i").className = saved ? "fa-solid fa-bookmark" : "fa-regular fa-bookmark";
+    const sp = saveBtn.querySelector("span"); if(sp) sp.textContent = saved ? "保存済み" : "保存";
+  };
+  onAuthStateChanged(auth, async (user) => {
+    uid = user ? user.uid : null;
+    if(uid){ try{ saved = (await getDoc(doc(db,"users",uid,"saves",id))).exists(); }catch(e){ saved=false; } }
+    else saved = false;
+    paint();
+  });
+  saveBtn.addEventListener("click", async () => {
+    if(busy) return;
+    if(!uid){ alert("保存するにはログインが必要です。"); location.href = "../account.html"; return; }
+    busy = true;
+    try{
+      const ref = doc(db,"users",uid,"saves",id);
+      if(saved){ await deleteDoc(ref); saved = false; }
+      else { await setDoc(ref, { savedAt: serverTimestamp() }); saved = true; }
+      paint();
+    }catch(e){ console.error(e); }
+    finally{ busy = false; }
+  });
 }
 
 (async () => {

@@ -18,6 +18,11 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.auth.uid == uid;
       allow update: if request.auth.uid == uid || isAdmin();
       allow delete: if isAdmin();
+
+      // 保存した投稿（ブックマーク）。本人だけが読み書きできる。
+      match /saves/{articleId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
     }
 
     // ---- 公開プロフィール（名前・アイコン・自己紹介・SNSのみ／誰でも閲覧可） ----
@@ -57,6 +62,12 @@ service cloud.firestore {
       // 削除：管理者、または自分の記事
       allow delete: if isAdmin()
                     || (isSignedIn() && resource.data.authorId == request.auth.uid);
+
+      // いいね： articles/{id}/likes/{uid}。数は誰でも閲覧、付け外しは本人のみ。
+      match /likes/{likeUid} {
+        allow read: if true;
+        allow create, delete: if isSignedIn() && request.auth.uid == likeUid;
+      }
     }
   }
 }

@@ -131,6 +131,9 @@
       <div class="section-title">自分の投稿 <span class="count" id="postCount"></span></div>
       <div id="myPosts" class="posts"></div>
 
+      <div class="section-title">保存した投稿 <span class="count" id="savedCount"></span></div>
+      <div id="savedPosts" class="posts"></div>
+
       <p class="hint" id="uidLine" style="margin-top:18px;word-break:break-all"></p>
     </div>
   </div>
@@ -334,6 +337,34 @@ async function loadMyPosts(uid){
   }
 }
 
+async function loadSavedPosts(uid){
+  const box = $("savedPosts");
+  box.innerHTML = `<p class="posts-empty">読み込み中…</p>`;
+  try{
+    const savesSnap = await getDocs(collection(db, "users", uid, "saves"));
+    const entries = [];
+    savesSnap.forEach(s => entries.push({ id: s.id, savedAt: s.data().savedAt }));
+    entries.sort((a,b) => (b.savedAt?.seconds||0) - (a.savedAt?.seconds||0));
+    // 各記事を取得（公開されている／読めるものだけ表示）
+    const docs = [];
+    for(const e of entries){
+      try{
+        const a = await getDoc(doc(db, "articles", e.id));
+        if(a.exists()) docs.push({ id: a.id, ...a.data() });
+      }catch(err){ /* 読めない記事はスキップ */ }
+    }
+    $("savedCount").textContent = docs.length ? `${docs.length}件` : "";
+    if(!docs.length){
+      box.innerHTML = `<p class="posts-empty">保存した投稿はありません。<br>記事ページの「保存」ボタンでここに追加されます。</p>`;
+      return;
+    }
+    box.innerHTML = docs.map(renderPost).join("");
+  }catch(err){
+    console.error(err);
+    box.innerHTML = `<p class="posts-empty">読み込みエラー：${esc(err.message||err)}</p>`;
+  }
+}
+
 onAuthStateChanged(auth, async (user) => {
   if(user){
     // プロフィール取得（nickname / photoURL）
@@ -359,6 +390,7 @@ onAuthStateChanged(auth, async (user) => {
       : '<span class="badge warn">メール未確認（受信ボックスを確認）</span>';
     setAvatar(photo, nick);
     loadMyPosts(user.uid);
+    loadSavedPosts(user.uid);
   }else{
     $("meCard").classList.add("hide");
     $("authCard").classList.remove("hide");

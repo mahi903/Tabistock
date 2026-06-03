@@ -252,6 +252,10 @@ ${dayCards}
     <i class="fa-regular fa-heart"></i>
     <span class="like-count" id="likeCount">0</span>
   </button>
+  <button class="action-save" id="saveBtn" type="button" aria-pressed="false" aria-label="保存">
+    <i class="fa-regular fa-bookmark"></i>
+    <span>保存</span>
+  </button>
   <button class="action-share" id="shareBtn" type="button" aria-label="共有する">
     <i class="fa-solid fa-arrow-up-from-bracket"></i>
     <span>共有</span>
