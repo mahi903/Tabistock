@@ -119,6 +119,15 @@
       </div>
       <div class="msg" id="avatarMsg" style="margin-top:12px"></div>
 
+      <div class="section-title">プロフィール</div>
+      <label for="bio">ひとこと自己紹介</label>
+      <input id="bio" type="text" maxlength="60" placeholder="例：学生バックパッカー。アジア中心に旅してます">
+      <label for="instagram">Instagram（任意）</label>
+      <input id="instagram" type="text" placeholder="ユーザー名 または URL（例：mahiro.9.3）">
+      <p class="hint">ここで設定した内容が、あなたが投稿した記事の「執筆者カード」に表示されます。</p>
+      <button class="btn" id="saveProfileBtn" type="button" style="margin-top:14px">プロフィールを保存</button>
+      <div class="msg" id="profileMsg" style="margin-top:12px"></div>
+
       <div class="section-title">自分の投稿 <span class="count" id="postCount"></span></div>
       <div id="myPosts" class="posts"></div>
 
@@ -191,6 +200,9 @@ $("submitBtn").onclick = async () => {
       await setDoc(doc(db, "users", cred.user.uid), {
         nickname, email, createdAt: serverTimestamp()
       });
+      await setDoc(doc(db, "publicProfiles", cred.user.uid), {
+        nickname, createdAt: serverTimestamp()
+      }, { merge: true });
       try { await sendEmailVerification(cred.user); } catch(e){}
       showMsg("登録できました。確認メールを送信しました。", "ok");
     }else{
@@ -249,6 +261,7 @@ $("avatarInput").onchange = async () => {
     const url = await getDownloadURL(r);
     await updateProfile(user, { photoURL: url });
     await setDoc(doc(db, "users", user.uid), { photoURL: url }, { merge: true });
+    await setDoc(doc(db, "publicProfiles", user.uid), { photoURL: url }, { merge: true });
     setAvatar(url + (url.includes("?") ? "&" : "?") + "t=" + Date.now(), null); // キャッシュ回避
     showAvatarMsg("アイコンを更新しました。", "ok");
   }catch(err){
@@ -256,6 +269,35 @@ $("avatarInput").onchange = async () => {
     showAvatarMsg("アップロードに失敗しました：" + (err.message || err), "err");
   }finally{
     $("avatarInput").value = "";
+  }
+};
+
+/* ===== プロフィール（自己紹介・SNS）保存 ===== */
+function showProfileMsg(text, kind){
+  const el = $("profileMsg");
+  el.className = "msg" + (kind ? " "+kind : "");
+  el.textContent = text;
+}
+$("saveProfileBtn").onclick = async () => {
+  const user = auth.currentUser; if(!user) return;
+  const bio = $("bio").value.trim();
+  const instagram = $("instagram").value.trim();
+  $("saveProfileBtn").disabled = true;
+  showProfileMsg("保存中…", "ok");
+  try{
+    // 公開プロフィールに名前・アイコンも同期（記事カード用）
+    const pub = { bio, instagram };
+    const nick = $("meNick").textContent;
+    if(nick && nick !== "(名前未設定)") pub.nickname = nick;
+    if(user.photoURL) pub.photoURL = user.photoURL;
+    await setDoc(doc(db, "publicProfiles", user.uid), pub, { merge: true });
+    await setDoc(doc(db, "users", user.uid), { bio, instagram }, { merge: true });
+    showProfileMsg("プロフィールを保存しました。", "ok");
+  }catch(err){
+    console.error(err);
+    showProfileMsg("保存に失敗しました：" + (err.message || err), "err");
+  }finally{
+    $("saveProfileBtn").disabled = false;
   }
 };
 
@@ -303,6 +345,8 @@ onAuthStateChanged(auth, async (user) => {
         const u = snap.data();
         if(u.nickname) nick = u.nickname;
         if(u.photoURL) photo = u.photoURL;
+        $("bio").value = u.bio || "";
+        $("instagram").value = u.instagram || "";
       }
     }catch(e){}
     $("authCard").classList.add("hide");

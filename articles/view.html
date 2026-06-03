@@ -506,6 +506,19 @@ function initInteractions(){
       // 公開前でも本人/管理者はルール上読めるが、ここでは注意表示
       console.log("この記事はまだ公開（承認）されていません。status =", d.status);
     }
+    // 執筆者の公開プロフィール（アイコン・自己紹介・SNS）を反映
+    if(d.authorId){
+      try{
+        const ps = await getDoc(doc(db, "publicProfiles", d.authorId));
+        if(ps.exists()){
+          const p = ps.data();
+          if(p.nickname) d.authorNickname = p.nickname;
+          if(p.photoURL) d.authorPhotoURL = p.photoURL;
+          if(p.bio) d.authorBio = p.bio;
+          if(p.instagram) d.authorInstagram = p.instagram;
+        }
+      }catch(e){ console.warn("公開プロフィールの取得に失敗:", e); }
+    }
     document.title = (d.title || "旅程") + "｜Tabistock";
     root.innerHTML = renderArticleBody(d);
     const fb = root.querySelector("#followBtn");

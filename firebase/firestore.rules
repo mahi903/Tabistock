@@ -12,12 +12,19 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // ---- ユーザープロフィール ----
+    // ---- ユーザープロフィール（非公開・email等を含む） ----
     match /users/{uid} {
       allow read:   if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == uid;
       allow update: if request.auth.uid == uid || isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // ---- 公開プロフィール（名前・アイコン・自己紹介・SNSのみ／誰でも閲覧可） ----
+    // 記事ページの執筆者カードが未ログイン訪問者にも見せるために使う。
+    match /publicProfiles/{uid} {
+      allow read:  if true;
+      allow write: if isSignedIn() && request.auth.uid == uid;
     }
 
     // ---- 管理者リスト（コンソールからのみ編集） ----

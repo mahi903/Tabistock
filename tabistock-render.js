@@ -83,6 +83,14 @@ export function renderArticleBody(d){
   const period=fmtPeriod(d.dateStart,d.dateEnd);
   const tags=buildTags(d);
   const author=d.authorNickname||d.author||'';
+  const authorPhoto=d.authorPhotoURL||'';
+  const authorBio=d.authorBio||'旅程を投稿しています。';
+  let igUrl='';
+  if(d.authorInstagram){
+    const ig=String(d.authorInstagram).trim();
+    igUrl=/^https?:\/\//.test(ig)?ig:('https://www.instagram.com/'+ig.replace(/^@/,'')+'/');
+  }
+  const defAvatar="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e7ddcb%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2240%22%20r%3D%2218%22%20fill%3D%22%23b9ad95%22%2F%3E%3Cpath%20d%3D%22M20%2086c0-17%2013-28%2030-28s30%2011%2030%2028z%22%20fill%3D%22%23b9ad95%22%2F%3E%3C%2Fsvg%3E";
   const pc=cinfo((d.countries||[])[0]);
   const eyebrow=pc?`${pc.en} · ${REGION_EN[pc.r]}`:'';
 
@@ -251,17 +259,17 @@ ${dayCards}
 </section>
 
 <section class="author-card">
-  <img src="../images/authors/${esc(author)}.jpg" alt="投稿者アイコン" class="author-icon" onerror="this.src='../images/authors/mahiro.jpg'">
+  <img src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="投稿者アイコン" class="author-icon" onerror="this.src='${defAvatar}'">
 
   <div class="author-info">
     <p class="author-label">Author</p>
     <h2>${esc(author)}</h2>
-    <p>旅程を投稿しています。</p>
-    <div class="author-socials">
-      <a href="https://www.instagram.com/mahiro.9.3/" target="_blank" class="author-social" aria-label="Instagram">
+    <p>${esc(authorBio)}</p>
+    ${igUrl?`<div class="author-socials">
+      <a href="${esc(igUrl)}" target="_blank" rel="noopener" class="author-social" aria-label="Instagram">
         <i class="fa-brands fa-instagram"></i>
       </a>
-    </div>
+    </div>`:''}
   </div>
 
   <button class="author-follow" id="followBtn" type="button" aria-pressed="false">
