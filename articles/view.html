@@ -314,6 +314,12 @@
   <div style="padding:140px 6% 200px;text-align:center;color:#6c7787;font-size:15px">読み込み中…</div>
 </main>
 
+<section class="comments-section" id="comments" hidden>
+  <h2 class="comments-title">コメント <span id="cCount"></span></h2>
+  <div id="cForm"></div>
+  <div id="cList"></div>
+</section>
+
 <footer class="site-footer">
   <div class="footer-inner">
     <h2>Tabistock</h2>
@@ -413,10 +419,10 @@ drawerFilterBtns.forEach(btn => {
 <!-- ===== 記事をFirebaseから読み込んで描画 ===== -->
 <script type="module">
 import { db, auth } from "../firebase-config.js";
-import { doc, getDoc, setDoc, deleteDoc, collection, getCountFromServer, serverTimestamp }
+import { doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, orderBy, getCountFromServer, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { renderArticleBody } from "../tabistock-render.js";
+import { renderArticleBody, esc, para } from "../tabistock-render.js";
 
 const root = document.getElementById("article-root");
 const id = new URLSearchParams(location.search).get("id");
@@ -553,6 +559,109 @@ function wireSave(){
   });
 }
 
+// コメント（Firestore: articles/{id}/comments・閲覧は誰でも／投稿は要ログイン）
+function initComments(){
+  const section = document.getElementById("comments");
+  const cForm = document.getElementById("cForm");
+  const cList = document.getElementById("cList");
+  const cCount = document.getElementById("cCount");
+  if(!section || !cForm || !cList) return;
+  section.hidden = false;
+
+  const col = collection(db, "articles", id, "comments");
+  const defAvatar = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e7ddcb%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2240%22%20r%3D%2218%22%20fill%3D%22%23b9ad95%22%2F%3E%3Cpath%20d%3D%22M20%2086c0-17%2013-28%2030-28s30%2011%2030%2028z%22%20fill%3D%22%23b9ad95%22%2F%3E%3C%2Fsvg%3E";
+
+  let me = null, myName = "", myPhoto = "", amAdmin = false;
+
+  const fmt = (ts) => {
+    try{
+      const dt = ts && ts.toDate ? ts.toDate() : null;
+      if(!dt) return "";
+      return dt.getFullYear()+"/"+(dt.getMonth()+1)+"/"+dt.getDate();
+    }catch(e){ return ""; }
+  };
+
+  const commentHTML = (c) => {
+    const canDel = amAdmin || (me && c.authorId === me);
+    const photo = c.authorPhotoURL ? esc(c.authorPhotoURL) : defAvatar;
+    return '<div class="comment" data-cid="'+esc(c.id)+'">'
+      + '<img class="comment-avatar" src="'+photo+'" alt="" onerror="this.src=\''+defAvatar+'\'">'
+      + '<div class="comment-body">'
+      +   '<div class="comment-head">'
+      +     '<strong>'+esc(c.authorName || "ゲスト")+'</strong>'
+      +     '<span class="comment-time">'+esc(fmt(c.createdAt))+'</span>'
+      +     (canDel ? '<button class="comment-del" type="button" data-del="'+esc(c.id)+'">削除</button>' : '')
+      +   '</div>'
+      +   '<div class="comment-text">'+para(c.text || "")+'</div>'
+      + '</div></div>';
+  };
+
+  const loadComments = async () => {
+    try{
+      const qs = await getDocs(query(col, orderBy("createdAt","desc")));
+      const items = [];
+      qs.forEach(s => items.push(Object.assign({ id: s.id }, s.data())));
+      if(cCount) cCount.textContent = items.length ? "("+items.length+")" : "";
+      cList.innerHTML = items.length
+        ? items.map(commentHTML).join("")
+        : '<p class="comments-empty">まだコメントはありません。最初のコメントを書いてみましょう。</p>';
+      cList.querySelectorAll("[data-del]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          if(!confirm("このコメントを削除しますか？")) return;
+          try{
+            await deleteDoc(doc(db,"articles",id,"comments",btn.getAttribute("data-del")));
+            await loadComments();
+          }catch(e){ console.error(e); alert("削除できませんでした。"); }
+        });
+      });
+    }catch(e){ console.error(e); cList.innerHTML = '<p class="comments-empty">コメントを読み込めませんでした。</p>'; }
+  };
+
+  const renderForm = () => {
+    if(me){
+      cForm.innerHTML = '<div class="comment-form">'
+        + '<textarea id="cInput" maxlength="1000" rows="3" placeholder="コメントを書く…"></textarea>'
+        + '<div class="comment-form-foot"><button class="comment-submit" id="cSubmit" type="button">投稿する</button></div>'
+        + '</div>';
+      const inp = document.getElementById("cInput"), btn = document.getElementById("cSubmit");
+      btn.addEventListener("click", async () => {
+        const text = (inp.value || "").trim();
+        if(!text){ inp.focus(); return; }
+        btn.disabled = true;
+        try{
+          await addDoc(col, {
+            authorId: me,
+            authorName: myName || "ゲスト",
+            authorPhotoURL: myPhoto || "",
+            text,
+            createdAt: serverTimestamp()
+          });
+          inp.value = "";
+          await loadComments();
+        }catch(e){ console.error(e); alert("投稿できませんでした。"); }
+        finally{ btn.disabled = false; }
+      });
+    } else {
+      cForm.innerHTML = '<p class="comments-login">コメントするには'
+        + '<a href="../account.html">ログイン</a>が必要です。</p>';
+    }
+  };
+
+  onAuthStateChanged(auth, async (user) => {
+    me = user ? user.uid : null;
+    myName = ""; myPhoto = ""; amAdmin = false;
+    if(me){
+      try{
+        const us = await getDoc(doc(db,"users",me));
+        if(us.exists()){ const u = us.data(); myName = u.nickname || ""; myPhoto = u.photoURL || ""; }
+      }catch(e){}
+      try{ amAdmin = (await getDoc(doc(db,"admins",me))).exists(); }catch(e){ amAdmin = false; }
+    }
+    renderForm();
+    await loadComments();
+  });
+}
+
 (async () => {
   if(!id){ showError("記事IDが指定されていません。"); return; }
   try{
@@ -582,6 +691,7 @@ function wireSave(){
     const fb = root.querySelector("#followBtn");
     if(fb) fb.setAttribute("data-author", d.authorNickname || "");
     initInteractions();
+    initComments();
   }catch(err){
     console.error(err);
     showError("読み込み中にエラーが発生しました。");

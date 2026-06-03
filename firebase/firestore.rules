@@ -68,6 +68,20 @@ service cloud.firestore {
         allow read: if true;
         allow create, delete: if isSignedIn() && request.auth.uid == likeUid;
       }
+
+      // コメント： articles/{id}/comments/{commentId}。誰でも閲覧。
+      // 投稿はログインユーザー（自分を著者にする・本文1〜1000文字）。
+      // 削除は管理者またはコメント本人。編集は不可。
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+                      && request.resource.data.authorId == request.auth.uid
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() > 0
+                      && request.resource.data.text.size() <= 1000;
+        allow delete: if isAdmin()
+                      || (isSignedIn() && resource.data.authorId == request.auth.uid);
+      }
     }
   }
 }

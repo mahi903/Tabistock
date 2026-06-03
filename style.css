@@ -1939,6 +1939,147 @@ a {
 }
 
 /* =========================
+   コメント欄
+========================= */
+
+.comments-section {
+  max-width: 760px;
+  margin: 60px auto 0;
+  padding: 0 32px;
+}
+.comments-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #182033;
+  margin: 0 0 20px;
+}
+.comments-title span {
+  color: #6c7787;
+  font-size: 16px;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.comment-form {
+  background: #fff;
+  border: 1px solid #e7ddcb;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.comment-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e7ddcb;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  color: #182033;
+  resize: vertical;
+  background: #faf6ee;
+}
+.comment-form textarea:focus {
+  outline: none;
+  border-color: #1f6f5b;
+  background: #fff;
+}
+.comment-form-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.comment-submit {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  background: #1f6f5b;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 26px;
+  cursor: pointer;
+  transition: background .2s ease, transform .15s ease;
+}
+.comment-submit:hover { background: #185645; }
+.comment-submit:active { transform: scale(.96); }
+.comment-submit:disabled { opacity: .6; cursor: default; }
+
+.comments-login {
+  background: #faf6ee;
+  border: 1px dashed #e7ddcb;
+  border-radius: 14px;
+  padding: 18px 20px;
+  color: #6c7787;
+  font-size: 15px;
+  margin-bottom: 24px;
+}
+.comments-login a {
+  color: #1f6f5b;
+  font-weight: 700;
+  text-decoration: none;
+}
+.comments-login a:hover { text-decoration: underline; }
+
+.comments-empty {
+  color: #6c7787;
+  font-size: 15px;
+  padding: 16px 0;
+}
+
+.comment {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid #ece4d6;
+}
+.comment-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #e7ddcb;
+}
+.comment-body { flex: 1; min-width: 0; }
+.comment-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.comment-head strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: #182033;
+}
+.comment-time {
+  font-size: 13px;
+  color: #9aa3ad;
+}
+.comment-del {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #b53d3d;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.comment-del:hover { text-decoration: underline; }
+.comment-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #2c333d;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .comments-section { padding: 0 22px; margin-top: 48px; }
+}
+
+/* =========================
    サイト下部：フッター
 ========================= */
 
