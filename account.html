@@ -11,7 +11,7 @@
   body{margin:0;font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;color:#182033;background:#f7f1e8;min-height:100vh}
   a{color:#1f6f5b}
   .top{display:flex;align-items:center;justify-content:space-between;padding:18px 6%}
-  .logo{font-size:26px;font-weight:900;letter-spacing:-0.04em;color:#1f6f5b;text-decoration:none}
+  .logo{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;font-size:26px;font-weight:900;letter-spacing:-0.04em;color:#1f6f5b;text-decoration:none}
   .wrap{max-width:440px;margin:30px auto 60px;padding:0 20px}
   .card{background:#fff;border:1px solid #e7ddcb;border-radius:18px;padding:28px 26px;box-shadow:0 10px 30px rgba(0,0,0,.05)}
   h1{font-size:22px;margin:0 0 4px}
@@ -84,7 +84,7 @@
       <!-- ニックネーム（登録時のみ） -->
       <div id="nickWrap" class="hide">
         <label for="nickname">ニックネーム（投稿者名）</label>
-        <input id="nickname" type="text" autocomplete="nickname" placeholder="例：mahiro">
+        <input id="nickname" type="text" autocomplete="nickname">
         <p class="hint">記事に表示される名前です。半角英数字推奨（あとで記事のID生成にも使います）。</p>
       </div>
 
@@ -95,6 +95,9 @@
       <input id="password" type="password" autocomplete="current-password" placeholder="6文字以上">
 
       <button class="btn" id="submitBtn" type="button">ログイン</button>
+      <p id="forgotWrap" style="text-align:center;margin:12px 0 0;font-size:13px">
+        <a href="#" id="forgotLink" style="color:#1f6f5b;text-decoration:underline">パスワードを忘れた方</a>
+      </p>
       <div class="msg" id="msg"></div>
     </div>
 
@@ -142,7 +145,7 @@
 import { auth, db, storage } from "./firebase-config.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
-  onAuthStateChanged, updateProfile, sendEmailVerification
+  onAuthStateChanged, updateProfile, sendEmailVerification, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -161,10 +164,24 @@ function setMode(m){
   $("formTitle").textContent = m==="login" ? "ログイン" : "新規登録";
   $("submitBtn").textContent = m==="login" ? "ログイン" : "登録する";
   $("password").autocomplete = m==="login" ? "current-password" : "new-password";
+  $("forgotWrap").classList.toggle("hide", m!=="login");
   showMsg("", "");
 }
 $("tabLogin").onclick = () => setMode("login");
 $("tabSignup").onclick = () => setMode("signup");
+
+// パスワード再設定メール送信
+$("forgotLink").onclick = async (e) => {
+  e.preventDefault();
+  const email = $("email").value.trim();
+  if(!email){ showMsg("メールアドレスを入力してから「パスワードを忘れた方」を押してください。", "err"); return; }
+  try{
+    await sendPasswordResetEmail(auth, email);
+    showMsg("パスワード再設定メールを送信しました。メールをご確認ください。", "ok");
+  }catch(err){
+    showMsg(jpError(err.code), "err");
+  }
+};
 
 function showMsg(text, kind){
   const el = $("msg");
