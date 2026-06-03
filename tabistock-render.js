@@ -39,6 +39,22 @@ export const COUNTRIES = [
   {v:'kenya',jp:'ケニア',en:'Kenya',r:'africa'},{v:'south-africa',jp:'南アフリカ',en:'South Africa',r:'africa'},
   {v:'australia',jp:'オーストラリア',en:'Australia',r:'oceania'},{v:'new-zealand',jp:'ニュージーランド',en:'New Zealand',r:'oceania'},
 ];
+// 国コード -> 代表座標 [緯度, 経度]（地図ピン用・国の中心付近）
+export const COUNTRY_LL = {
+  japan:[36.2,138.25], korea:[36.5,127.85], china:[35.86,104.2], taiwan:[23.7,121.0], hongkong:[22.32,114.17], mongolia:[46.86,103.85],
+  thai:[15.0,101.0], cambodia:[12.57,104.99], vietnam:[16.0,107.5], malaysia:[4.2,101.98], singapore:[1.35,103.82], indonesia:[-2.5,118.0], philippines:[12.88,121.77],
+  india:[22.0,79.0], nepal:[28.39,84.12], srilanka:[7.87,80.77], bhutan:[27.51,90.43], maldives:[3.2,73.22], pakistan:[30.38,69.35], bangladesh:[23.68,90.36],
+  kazakhstan:[48.0,67.0], kyrgyzstan:[41.2,74.77], uzbekistan:[41.38,64.59],
+  turkey:[39.0,35.24], qatar:[25.35,51.18], UAE:[23.42,53.85],
+  finland:[64.0,26.0], sweden:[62.0,15.0], norway:[64.5,11.0], estonia:[58.6,25.0], latvia:[56.88,24.6], lithuania:[55.17,23.88],
+  croatia:[45.1,15.2], austria:[47.52,14.55], hungary:[47.16,19.5], slovakia:[48.67,19.7], france:[46.6,2.5], uk:[54.0,-2.5],
+  italy:[42.8,12.6], spain:[40.0,-3.7], germany:[51.1,10.4], netherlands:[52.13,5.29], switzerland:[46.8,8.23], portugal:[39.5,-8.0],
+  greece:[39.07,22.96], czech:[49.82,15.47], poland:[52.0,19.0], belgium:[50.5,4.47], ireland:[53.0,-8.0], denmark:[56.0,10.0], iceland:[64.96,-19.0],
+  usa:[39.5,-98.35], canada:[56.13,-106.35], mexico:[23.63,-102.55],
+  peru:[-9.19,-75.0], bolivia:[-16.29,-63.59], chile:[-35.68,-71.54], argentina:[-38.42,-63.62], brazil:[-10.0,-52.0],
+  morocco:[31.79,-7.09], egypt:[26.0,30.0], kenya:[0.02,37.9], 'south-africa':[-30.56,22.94],
+  australia:[-25.27,133.78], 'new-zealand':[-41.5,172.5]
+};
 export const REGION_JP={ "east-asia":"東アジア","southeast-asia":"東南アジア","south-asia":"南アジア","central-asia":"中央アジア","west-asia":"西アジア","europe":"ヨーロッパ","north-america":"北アメリカ","south-america":"南アメリカ","africa":"アフリカ","oceania":"オセアニア" };
 export const REGION_EN={ "east-asia":"East Asia","southeast-asia":"Southeast Asia","south-asia":"South Asia","central-asia":"Central Asia","west-asia":"West Asia","europe":"Europe","north-america":"North America","south-america":"South America","africa":"Africa","oceania":"Oceania" };
 export const BUDGETS=[{v:'10',l:'〜10万円'},{v:'20',l:'〜20万円'},{v:'30',l:'〜30万円'},{v:'40',l:'〜40万円'},{v:'50',l:'〜50万円'},{v:'50plus',l:'50万円以上'}];
