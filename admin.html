@@ -20,6 +20,7 @@
   .tabbar button.on{background:#1f6f5b;color:#fff;border-color:#1f6f5b}
   .item{display:flex;gap:16px;background:#fff;border:1px solid #e7ddcb;border-radius:16px;padding:16px;margin-bottom:14px;align-items:center}
   .thumb{width:120px;height:84px;border-radius:10px;background-size:cover;background-position:center;background-color:#e7ddcb;flex-shrink:0}
+  .u-avatar{width:56px;height:56px;border-radius:50%;background:#1f6f5b;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:800;flex-shrink:0}
   .meta{flex:1;min-width:0}
   .meta h3{margin:0 0 4px;font-size:16px}
   .meta .who{font-size:12px;color:#6c7787;margin:0 0 4px}
@@ -58,6 +59,7 @@
         <button id="tab-pending" class="on" type="button">承認待ち</button>
         <button id="tab-published" type="button">公開中</button>
         <button id="tab-rejected" type="button">却下</button>
+        <button id="tab-users" type="button" style="margin-left:auto">ユーザー</button>
       </div>
       <div id="msg"></div>
       <div id="list"><div class="empty">読み込み中…</div></div>
@@ -142,12 +144,48 @@ function bindButtons(){
   });
 }
 
-["pending","published","rejected"].forEach(t => {
+// ===== ユーザー一覧（公開情報のみ：メアド等は含まない）=====
+function renderUser(d){
+  const photo = d.photoURL || "";
+  const nick = d.nickname || "(名前未設定)";
+  const av = photo ? `style="background-image:url('${esc(photo)}')"` : '';
+  const avInner = photo ? '' : (String(nick).trim().charAt(0) || "?").toUpperCase();
+  const dt = d.createdAt?.seconds ? new Date(d.createdAt.seconds*1000).toLocaleDateString('ja-JP') : '';
+  return `<div class="item">
+    <div class="u-avatar" ${av}>${avInner}</div>
+    <div class="meta">
+      <h3>${esc(nick)}</h3>
+      <p class="who">${dt ? '登録：'+dt : ''}</p>
+      <p class="lead">${esc(d.bio||'')}</p>
+    </div>
+    <div class="actions">
+      <a class="b-view" href="./user.html?uid=${esc(d.id)}" target="_blank">プロフィール</a>
+    </div>
+  </div>`;
+}
+
+async function loadUsers(){
+  $("list").innerHTML = '<div class="empty">読み込み中…</div>';
+  try{
+    const snap = await getDocs(collection(db, "publicProfiles"));
+    const docs = [];
+    snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
+    docs.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+    if(!docs.length){ $("list").innerHTML = `<div class="empty">ユーザーがいません。</div>`; return; }
+    $("list").innerHTML = `<p class="sub" style="margin:0 0 14px">登録ユーザー：${docs.length}人</p>` + docs.map(renderUser).join("");
+  }catch(err){
+    console.error(err);
+    $("list").innerHTML = `<div class="empty">読み込みエラー：${esc(err.message||err)}</div>`;
+  }
+}
+
+const TABS = ["pending","published","rejected","users"];
+TABS.forEach(t => {
   $("tab-"+t).addEventListener("click", () => {
     currentTab = t;
-    ["pending","published","rejected"].forEach(x => $("tab-"+x).classList.toggle("on", x===t));
+    TABS.forEach(x => $("tab-"+x).classList.toggle("on", x===t));
     msg("", "");
-    loadList();
+    if(t==="users") loadUsers(); else loadList();
   });
 });
 

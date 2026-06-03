@@ -198,6 +198,13 @@ $("submitBtn").onclick = async () => {
   showMsg(mode==="login" ? "ログイン中…" : "登録中…", "ok");
   try{
     if(mode==="signup"){
+      // ニックネーム重複チェック（簡易）
+      const dup = await getDocs(query(collection(db, "publicProfiles"), where("nickname", "==", nickname)));
+      if(!dup.empty){
+        showMsg("このニックネームは既に使われています。別の名前にしてください。", "err");
+        $("submitBtn").disabled = false;
+        return;
+      }
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: nickname });
       await setDoc(doc(db, "users", cred.user.uid), {
