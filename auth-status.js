@@ -36,7 +36,7 @@ if (el) {
       el.innerHTML =
         `<p class="as-line">ログイン中：<strong>${esc(nick || user.email)}</strong></p>` +
         `<div class="as-links">` +
-        `<a href="${base}account.html">アカウント</a>` +
+        `<a href="${base}account.html">マイページ</a>` +
         `<a href="#" id="asLogout">ログアウト</a>` +
         `</div>`;
       const lo = document.getElementById("asLogout");

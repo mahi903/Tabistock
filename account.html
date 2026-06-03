@@ -45,9 +45,31 @@
   .avatar-wrap{position:relative;flex-shrink:0}
   .avatar{width:84px;height:84px;border-radius:50%;background:#1f6f5b;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px;font-weight:800;border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.12)}
   .avatar-edit{position:absolute;right:-2px;bottom:-2px;width:30px;height:30px;border-radius:50%;background:#e2683b;color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;padding:0;line-height:1}
-  .profile .pinfo{min-width:0}
+  .profile .pinfo{min-width:0;flex:1}
   .profile .pinfo .nick{font-size:20px;font-weight:800;margin:0 0 2px}
   .profile .pinfo .email{color:#6c7787;font-size:13px;margin:0;word-break:break-all}
+  /* フォロー統計 */
+  .stats{display:flex;gap:8px;margin-top:14px}
+  .stats .stat{flex:1;text-align:center;background:#faf6ee;border:1px solid #e7ddcb;border-radius:12px;padding:9px 4px;font:inherit;color:inherit}
+  button.stat{cursor:pointer;transition:background .15s}
+  button.stat:hover{background:#f1ead9}
+  .stats .stat strong{display:block;font-size:18px;font-weight:800;color:#182033;line-height:1.15}
+  .stats .stat span{font-size:11.5px;color:#6c7787}
+  /* フォロー一覧モーダル */
+  .fmodal{position:fixed;inset:0;background:rgba(24,32,51,.45);display:none;align-items:flex-end;justify-content:center;z-index:1000}
+  .fmodal.open{display:flex}
+  .fmodal .sheet{background:#fff;width:100%;max-width:480px;max-height:78vh;border-radius:18px 18px 0 0;display:flex;flex-direction:column;animation:fsheet .22s ease}
+  @media(min-width:520px){.fmodal{align-items:center}.fmodal .sheet{border-radius:18px}}
+  @keyframes fsheet{from{transform:translateY(20px);opacity:.6}to{transform:none;opacity:1}}
+  .fmodal .fhead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #eee3d2}
+  .fmodal .fhead h3{margin:0;font-size:15px;font-weight:800}
+  .fmodal .fclose{background:none;border:none;font-size:22px;line-height:1;color:#6c7787;cursor:pointer;padding:0 4px}
+  .fmodal .flist{overflow:auto;padding:8px 0}
+  .frow{display:flex;align-items:center;gap:12px;padding:10px 18px;text-decoration:none;color:inherit}
+  .frow:hover{background:#faf6ee}
+  .frow .fav{width:42px;height:42px;border-radius:50%;background:#1f6f5b;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;font-weight:800;flex-shrink:0}
+  .frow .fnk{font-size:14px;font-weight:700}
+  .fempty{color:#6c7787;font-size:13px;text-align:center;padding:34px 16px}
   .section-title{font-size:15px;font-weight:800;margin:26px 0 12px;display:flex;align-items:center;justify-content:space-between}
   .section-title .count{font-size:12px;color:#6c7787;font-weight:700}
   .posts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -120,6 +142,12 @@
         </div>
       </div>
 
+      <div class="stats">
+        <div class="stat"><strong id="postStat">0</strong><span>投稿</span></div>
+        <button class="stat" id="followerStat" type="button"><strong id="followerCount">0</strong><span>フォロワー</span></button>
+        <button class="stat" id="followingStat" type="button"><strong id="followingCount">0</strong><span>フォロー</span></button>
+      </div>
+
       <div class="actions" style="margin-top:18px;flex-direction:row;gap:10px">
         <a class="a-main" href="./post.html" style="flex:1">投稿する</a>
         <button class="a-ghost" id="logoutBtn" type="button" style="flex:1">ログアウト</button>
@@ -145,13 +173,24 @@
     </div>
   </div>
 
+  <!-- フォロー/フォロワー一覧モーダル -->
+  <div class="fmodal" id="fModal">
+    <div class="sheet">
+      <div class="fhead">
+        <h3 id="fTitle">フォロー</h3>
+        <button class="fclose" id="fClose" type="button" aria-label="閉じる">×</button>
+      </div>
+      <div class="flist" id="fList"></div>
+    </div>
+  </div>
+
 <script type="module">
 import { auth, db, storage } from "./firebase-config.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
   onAuthStateChanged, updateProfile, sendEmailVerification, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs }
+import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, getCountFromServer }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref as sRef, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -357,6 +396,7 @@ async function loadMyPosts(uid){
     snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
     docs.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
     $("postCount").textContent = docs.length ? `${docs.length}件` : "";
+    $("postStat").textContent = docs.filter(d => d.status === "published").length;
     if(!docs.length){
       box.innerHTML = `<p class="posts-empty">まだ投稿がありません。<br><a href="./post.html">最初の旅程を投稿する →</a></p>`;
       return;
@@ -396,6 +436,57 @@ async function loadSavedPosts(uid){
   }
 }
 
+/* ===== フォロー数・フォロー/フォロワー一覧 ===== */
+async function loadFollowCounts(uid){
+  try{
+    const fr = await getCountFromServer(collection(db, "users", uid, "followers"));
+    $("followerCount").textContent = fr.data().count;
+  }catch(e){ console.warn("フォロワー数の取得に失敗:", e); }
+  try{
+    const fg = await getCountFromServer(collection(db, "users", uid, "following"));
+    $("followingCount").textContent = fg.data().count;
+  }catch(e){ console.warn("フォロー数の取得に失敗:", e); }
+}
+
+function closeFModal(){ $("fModal").classList.remove("open"); }
+$("fClose").onclick = closeFModal;
+$("fModal").addEventListener("click", e => { if(e.target.id === "fModal") closeFModal(); });
+
+// type: "followers" | "following"
+async function openFollowList(uid, type){
+  $("fTitle").textContent = type === "followers" ? "フォロワー" : "フォロー";
+  const list = $("fList");
+  list.innerHTML = `<p class="fempty">読み込み中…</p>`;
+  $("fModal").classList.add("open");
+  try{
+    const snap = await getDocs(collection(db, "users", uid, type));
+    const ids = [];
+    snap.forEach(s => ids.push(s.id));
+    if(!ids.length){
+      list.innerHTML = `<p class="fempty">${type === "followers" ? "まだフォロワーがいません。" : "まだ誰もフォローしていません。"}</p>`;
+      return;
+    }
+    // 各ユーザーの公開プロフィールを取得
+    const profiles = await Promise.all(ids.map(async id => {
+      try{
+        const p = await getDoc(doc(db, "publicProfiles", id));
+        return { id, ...(p.exists() ? p.data() : {}) };
+      }catch(e){ return { id }; }
+    }));
+    list.innerHTML = profiles.map(p => {
+      const nick = p.nickname || "旅人";
+      const photo = p.photoURL || "";
+      const av = photo
+        ? `<div class="fav" style="background-image:url('${esc(photo)}')"></div>`
+        : `<div class="fav">${esc((String(nick).trim().charAt(0) || "?").toUpperCase())}</div>`;
+      return `<a class="frow" href="./user.html?uid=${esc(p.id)}">${av}<span class="fnk">${esc(nick)}</span></a>`;
+    }).join("");
+  }catch(err){
+    console.error(err);
+    list.innerHTML = `<p class="fempty">読み込みに失敗しました。</p>`;
+  }
+}
+
 onAuthStateChanged(auth, async (user) => {
   if(user){
     // プロフィール取得（nickname / photoURL）
@@ -422,6 +513,9 @@ onAuthStateChanged(auth, async (user) => {
     setAvatar(photo, nick);
     loadMyPosts(user.uid);
     loadSavedPosts(user.uid);
+    loadFollowCounts(user.uid);
+    $("followerStat").onclick = () => openFollowList(user.uid, "followers");
+    $("followingStat").onclick = () => openFollowList(user.uid, "following");
   }else{
     $("meCard").classList.add("hide");
     $("authCard").classList.remove("hide");
