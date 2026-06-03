@@ -12,7 +12,7 @@ if (!document.getElementById("authStatusStyle")) {
   const st = document.createElement("style");
   st.id = "authStatusStyle";
   st.textContent = `
-.auth-status{margin:0 0 6px;padding:14px 16px;background:#fff;border:1px solid #e7ddcb;border-radius:14px;font-size:13px;font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
+.auth-status{margin:auto 0 0;padding:14px 16px;background:#fff;border:1px solid #e7ddcb;border-radius:14px;font-size:13px;font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
 .auth-status .as-line{margin:0 0 10px;color:#6c7787;font-weight:500}
 .auth-status .as-line strong{color:#1f6f5b;font-weight:800}
 .auth-status .as-links{display:flex;gap:10px}
