@@ -16,6 +16,9 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- ルートマップ用（Leaflet・無料/OpenStreetMap） -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 
 <body>
@@ -696,6 +699,40 @@ function initComments(){
   });
 }
 
+// 記事内ルートマップ：座標を持つ日を訪問順に番号ピンで並べ、線で結ぶ
+function initRouteMap(d){
+  const el = document.getElementById('routeMap');
+  if(!el || typeof L === 'undefined') return;
+  const pts = (d.days||[])
+    .map((day,i)=>({ n:i+1, lat:day.lat, lng:day.lng, summary:day.summary||'', date:day.date||'' }))
+    .filter(p=> typeof p.lat==='number' && typeof p.lng==='number');
+  if(!pts.length) return;
+
+  const map = L.map(el, { worldCopyJump:true, scrollWheelZoom:false, minZoom:2 });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'&copy; OpenStreetMap', maxZoom:18
+  }).addTo(map);
+
+  const latlngs = pts.map(p=>[p.lat, p.lng]);
+  if(latlngs.length > 1){
+    L.polyline(latlngs, { color:'#1f6f5b', weight:3, opacity:.85, dashArray:'6 6' }).addTo(map);
+  }
+  const esc2 = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  pts.forEach(p=>{
+    const icon = L.divIcon({ className:'', html:`<div class="ctpin">${p.n}</div>`, iconSize:[34,34], iconAnchor:[17,17] });
+    L.marker([p.lat,p.lng], { icon }).addTo(map)
+      .bindPopup(`<strong>DAY ${p.n}${p.date?'・'+esc2(p.date):''}</strong><br>${esc2(p.summary)}`);
+  });
+
+  if(latlngs.length > 1){
+    map.fitBounds(L.latLngBounds(latlngs).pad(0.25));
+  }else{
+    map.setView(latlngs[0], 6);
+  }
+  setTimeout(()=>map.invalidateSize(), 200);
+  window.addEventListener('resize', ()=>map.invalidateSize());
+}
+
 (async () => {
   if(!id){ showError("記事IDが指定されていません。"); return; }
   try{
@@ -726,6 +763,7 @@ function initComments(){
     root.innerHTML = renderArticleBody(d);
     initInteractions();
     initComments();
+    initRouteMap(d);
   }catch(err){
     console.error(err);
     showError("読み込み中にエラーが発生しました。");

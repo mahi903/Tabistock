@@ -2232,6 +2232,12 @@ a {
   background:#1f6f5b;
 }
 
+/* ルートマップ（記事内の経路地図） */
+.route-card .route-note{margin:0 0 12px;font-size:12.5px;color:#6c7787;}
+.route-map{height:300px;border-radius:14px;overflow:hidden;background:#aad3df;}
+.route-map .ctpin{background:#1f6f5b;color:#fff;border:2.5px solid #fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 3px 10px rgba(0,0,0,.3);}
+@media(max-width:600px){.route-map{height:240px;}}
+
 /* タイムライン・ラベル類をグリーン基調へ */
 .timeline::before{background:#cfe3d9;}
 .timeline-item::before{border-color:#1f6f5b;}

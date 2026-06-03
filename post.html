@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>旅程を投稿する｜Tabistock（記事ジェネレーター）</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- 各日の場所ピン用（Leaflet・無料/OpenStreetMap） -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{ --green:#1f6f5b; --green-d:#185645; --gold:#c2873f; --cream:#fffaf2; --line:#ece2d0; --ink:#2b2b2b; --mut:#6b7280; }
   *{box-sizing:border-box}
@@ -66,6 +69,15 @@
   .stars i.on{ color:var(--gold); }
   .note{ background:#fff7e9; border:1px solid #f0dcae; border-radius:10px; padding:10px 12px; font-size:12.5px; color:#7a5a1f; margin-top:10px; }
   code{ background:#f1ece1; padding:1px 5px; border-radius:5px; font-size:12px; }
+  /* 各日の場所ピン */
+  .dayloc{ margin-top:12px; }
+  .dayloc-toggle{ background:#fff; border:1px solid #d9d2c4; border-radius:999px; padding:8px 14px; font-size:13px; font-weight:700; color:var(--green); cursor:pointer; }
+  .dayloc-body{ display:none; margin-top:10px; }
+  .dayloc.open .dayloc-body{ display:block; }
+  .dayloc-map{ height:220px; border-radius:10px; overflow:hidden; background:#aad3df; border:1px solid #d9d2c4; }
+  .dayloc-map .ctpin{ background:var(--green); color:#fff; border:2.5px solid #fff; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; box-shadow:0 3px 10px rgba(0,0,0,.3); }
+  .dayloc-foot{ display:flex; align-items:center; gap:10px; margin-top:8px; font-size:12.5px; color:var(--mut); flex-wrap:wrap; }
+  .dayloc-clear{ background:#faf6ee; border:1px solid #d9d2c4; border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--green); cursor:pointer; }
 </style>
 </head>
 <body>
@@ -375,12 +387,32 @@ function addDay(data){
     <label class="f">その日の文章（観光地を挙げるだけでも可）<span class="req">必須</span></label>
     <textarea class="d-text" placeholder="例：早朝出発。お昼に空港着。市内は予想以上に都会で…"></textarea>
     <label class="f">写真<span class="req">最低1枚</span></label>
-    <div class="filebox"><input type="file" class="d-photos" accept="image/jpeg,image/png" multiple><div class="thumbs"></div></div>`;
+    <div class="filebox"><input type="file" class="d-photos" accept="image/jpeg,image/png" multiple><div class="thumbs"></div></div>
+    <div class="dayloc">
+      <button type="button" class="dayloc-toggle">この日の場所を地図で設定（任意）</button>
+      <div class="dayloc-body">
+        <div class="dayloc-map"></div>
+        <div class="dayloc-foot">
+          <span class="dayloc-status">地図をタップしてピンを置いてください。</span>
+          <button type="button" class="dayloc-clear" style="display:none">ピンを消す</button>
+        </div>
+      </div>
+    </div>`;
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); renumberDays(); });
   const fileIn=wrap.querySelector('.d-photos'), th=wrap.querySelector('.thumbs');
   fileIn.addEventListener('change',()=>previewFiles(fileIn,th));
+  // 場所ピン：開いたら遅延で地図を生成
+  wrap.querySelector('.dayloc-toggle').addEventListener('click',()=>{
+    const box=wrap.querySelector('.dayloc');
+    box.classList.toggle('open');
+    if(box.classList.contains('open')) initDayMap(wrap);
+  });
+  wrap.querySelector('.dayloc-clear').addEventListener('click',()=>clearDayMarker(wrap));
   if(data){
     wrap.querySelector('.d-date').value=data.date||''; wrap.querySelector('.d-sum').value=data.summary||''; wrap.querySelector('.d-text').value=data.text||'';
+    if(typeof data.lat==='number' && typeof data.lng==='number'){
+      wrap._lat=data.lat; wrap._lng=data.lng; updateDayLoc(wrap);
+    }
     if(data.photoUrls && data.photoUrls.length){
       wrap._existingPhotos = data.photoUrls.slice();
       th.innerHTML = data.photoUrls.map(u=>`<img src="${esc(u)}">`).join('')
@@ -388,6 +420,48 @@ function addDay(data){
     }
   }
   $('dayList').appendChild(wrap); renumberDays();
+}
+// 各日の場所ピン（Leaflet）
+function initDayMap(wrap){
+  if(typeof L==='undefined') return;
+  const el=wrap.querySelector('.dayloc-map');
+  if(wrap._map){ setTimeout(()=>wrap._map.invalidateSize(),60); return; }
+  const LL=window.COUNTRY_LL||{};
+  const cs=selectedCountries();
+  let center=[20,0], zoom=2;
+  if(wrap._lat!=null){ center=[wrap._lat,wrap._lng]; zoom=6; }
+  else if(cs[0] && LL[cs[0]]){ center=LL[cs[0]]; zoom=5; }
+  const m=L.map(el,{worldCopyJump:true,minZoom:2}).setView(center,zoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:18}).addTo(m);
+  wrap._map=m;
+  if(wrap._lat!=null) placeDayMarker(wrap,wrap._lat,wrap._lng);
+  m.on('click',e=>{ setDayMarker(wrap, e.latlng.lat, e.latlng.lng); });
+  setTimeout(()=>m.invalidateSize(),60);
+}
+function placeDayMarker(wrap,lat,lng){
+  const icon=L.divIcon({className:'',html:`<div class="ctpin">${wrap.querySelector('.dnum').textContent}</div>`,iconSize:[32,32],iconAnchor:[16,16]});
+  if(wrap._marker) wrap._marker.setLatLng([lat,lng]);
+  else wrap._marker=L.marker([lat,lng],{icon}).addTo(wrap._map);
+}
+function setDayMarker(wrap,lat,lng){
+  wrap._lat=+lat.toFixed(5); wrap._lng=+lng.toFixed(5);
+  if(wrap._map) placeDayMarker(wrap,wrap._lat,wrap._lng);
+  updateDayLoc(wrap);
+}
+function clearDayMarker(wrap){
+  wrap._lat=null; wrap._lng=null;
+  if(wrap._marker && wrap._map){ wrap._map.removeLayer(wrap._marker); wrap._marker=null; }
+  updateDayLoc(wrap);
+}
+function updateDayLoc(wrap){
+  const st=wrap.querySelector('.dayloc-status'), clr=wrap.querySelector('.dayloc-clear');
+  if(wrap._lat!=null){
+    st.textContent=`設定済み：${wrap._lat}, ${wrap._lng}`;
+    if(clr) clr.style.display='';
+  }else{
+    st.textContent='地図をタップしてピンを置いてください。';
+    if(clr) clr.style.display='none';
+  }
 }
 function renumberDays(){
   let n=0;
@@ -457,7 +531,9 @@ async function gather(){
       summary:w.querySelector('.d-sum').value.trim(),
       text:w.querySelector('.d-text').value.trim(),
       files:[...w.querySelector('.d-photos').files],
-      existingPhotos: w._existingPhotos || []
+      existingPhotos: w._existingPhotos || [],
+      lat: (w._lat!=null ? w._lat : null),
+      lng: (w._lng!=null ? w._lng : null)
     });
   }
   const flights=[];
@@ -1365,6 +1441,9 @@ import { auth, db, storage } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { collection, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { COUNTRY_LL } from "./tabistock-render.js";
+// 各日ミニ地図が国を中心に表示できるよう、座標表をグローバルへ
+window.COUNTRY_LL = COUNTRY_LL;
 
 window.tabistockReady = false;
 window.tabistockUser = null;
@@ -1425,7 +1504,9 @@ window.tabistockSubmit = async function(d, st, mode){
     }else{
       photoUrls = (day.existingPhotos || []).slice();
     }
-    days.push({ date: day.date, summary: day.summary, text: day.text, photoUrls });
+    const dayObj = { date: day.date, summary: day.summary, text: day.text, photoUrls };
+    if(typeof day.lat==='number' && typeof day.lng==='number'){ dayObj.lat=day.lat; dayObj.lng=day.lng; }
+    days.push(dayObj);
   }
 
   st.textContent = "保存中…";

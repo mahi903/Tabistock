@@ -133,6 +133,14 @@ export function renderArticleBody(d){
       <p>${esc(day.summary)}</p>
     </div>`).join('\n\n');
 
+  // ルートマップ：座標が1つでもあれば表示（実際の描画は view.html 側で Leaflet が行う）
+  const hasRoute = days.some(day => typeof day.lat === 'number' && typeof day.lng === 'number');
+  const routeMapCard = hasRoute ? `<div class="info-card route-card">
+  <h2>ルートマップ</h2>
+  <p class="route-note">数字は訪問順（DAY）です。ピンをタップするとその日の概要が出ます。</p>
+  <div id="routeMap" class="route-map"></div>
+</div>` : '';
+
   const flights=d.flights||[];
   let flightTotal=0; flights.forEach(f=>flightTotal+=Number(f.price||0));
   const flightRoutes=flights.map((f,i)=>`  <div class="flight-route">
@@ -244,6 +252,8 @@ ${costRows}
 ${timeline}
   </div>
 </div>
+
+${routeMapCard}
 
 ${flightCard}
 
