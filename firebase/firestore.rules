@@ -23,6 +23,19 @@ service cloud.firestore {
       match /saves/{articleId} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
+
+      // フォロー中リスト（自分がフォローしている相手）。数は誰でも閲覧、編集は本人のみ。
+      match /following/{targetUid} {
+        allow read:  if true;
+        allow write: if isSignedIn() && request.auth.uid == uid;
+      }
+
+      // フォロワーリスト（自分をフォローしている人）。数は誰でも閲覧。
+      // 追加・削除は「フォローする本人」が自分のUIDを出し入れする。
+      match /followers/{followerUid} {
+        allow read:  if true;
+        allow write: if isSignedIn() && request.auth.uid == followerUid;
+      }
     }
 
     // ---- 公開プロフィール（名前・アイコン・自己紹介・SNSのみ／誰でも閲覧可） ----
@@ -33,8 +46,9 @@ service cloud.firestore {
     }
 
     // ---- 管理者リスト（コンソールからのみ編集） ----
+    // UID のみを保持（機密情報なし）。管理者バッジ表示のため公開読み取り可。
     match /admins/{uid} {
-      allow read:  if isAdmin();
+      allow read:  if true;
       allow write: if false;
     }
 

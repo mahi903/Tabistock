@@ -83,6 +83,11 @@ export function renderArticleBody(d){
   const period=fmtPeriod(d.dateStart,d.dateEnd);
   const tags=buildTags(d);
   const author=d.authorNickname||d.author||'';
+  const authorId=d.authorId||'';
+  const adminBadge=d.authorIsAdmin?' <i class="fa-solid fa-circle-check admin-badge" title="管理者"></i>':'';
+  const authorNameHTML=authorId
+    ? `<a class="author-name-link" href="../user.html?uid=${esc(authorId)}">${esc(author)}</a>`
+    : esc(author);
   const authorPhoto=d.authorPhotoURL||'';
   const authorBio=d.authorBio||'旅程を投稿しています。';
   let igUrl='';
@@ -267,7 +272,12 @@ ${dayCards}
 
   <div class="author-info">
     <p class="author-label">Author</p>
-    <h2>${esc(author)}</h2>
+    <div class="author-name-row">
+      <h2>${authorNameHTML}${adminBadge}</h2>
+      <button class="author-follow" id="followBtn" type="button" aria-pressed="false" data-uid="${esc(authorId)}" style="display:none">
+        <i class="fa-solid fa-plus"></i><span>フォロー</span>
+      </button>
+    </div>
     <p>${esc(authorBio)}</p>
     ${igUrl?`<div class="author-socials">
       <a href="${esc(igUrl)}" target="_blank" rel="noopener" class="author-social" aria-label="Instagram">
@@ -275,10 +285,6 @@ ${dayCards}
       </a>
     </div>`:''}
   </div>
-
-  <button class="author-follow" id="followBtn" type="button" aria-pressed="false">
-    <i class="fa-solid fa-plus"></i><span>フォロー</span>
-  </button>
 </section>`;
 }
 

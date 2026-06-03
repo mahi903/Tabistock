@@ -1861,18 +1861,30 @@ a {
    執筆者カード：フォローボタン
 ========================= */
 
+.author-name-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 5px;
+}
+.author-name-row h2 {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .author-follow {
-  margin-left: auto;
-  align-self: center;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1;
-  padding: 12px 24px;
+  padding: 9px 22px;
   border-radius: 999px;
   background: #1f6f5b;
   color: #fff;
@@ -1880,7 +1892,7 @@ a {
   cursor: pointer;
   transition: transform .15s ease, background .2s ease, color .2s ease;
 }
-.author-follow i { font-size: 13px; }
+.author-follow i { font-size: 12px; }
 .author-follow:hover { background: #185645; }
 .author-follow:active { transform: scale(.96); }
 .author-follow.following {
@@ -1929,13 +1941,30 @@ a {
   .author-socials { margin-top: 8px; }
   .author-social { font-size: 20px; }
   .author-follow {
-    align-self: flex-start;
-    width: auto;
-    margin-left: 0;
-    margin-top: 2px;
-    padding: 9px 22px;
-    font-size: 14px;
+    padding: 8px 18px;
+    font-size: 13.5px;
   }
+}
+
+/* =========================
+   管理者バッジ（認証チェック）
+========================= */
+
+.admin-badge {
+  color: #1f6f5b;
+  font-size: .78em;
+  flex-shrink: 0;
+}
+
+/* プロフィールへ飛ぶ名前リンク */
+.author-name-link,
+.comment-name-link {
+  color: inherit;
+  text-decoration: none;
+}
+.author-name-link:hover,
+.comment-name-link:hover {
+  text-decoration: underline;
 }
 
 /* =========================
@@ -2052,6 +2081,9 @@ a {
   font-size: 15px;
   font-weight: 700;
   color: #182033;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 .comment-time {
   font-size: 13px;

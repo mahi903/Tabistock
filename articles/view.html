@@ -427,6 +427,15 @@ import { renderArticleBody, esc, para } from "../tabistock-render.js";
 const root = document.getElementById("article-root");
 const id = new URLSearchParams(location.search).get("id");
 
+// 管理者UIDの一覧（バッジ表示用・公開読み取り）
+const adminSet = new Set();
+async function loadAdminSet(){
+  try{
+    const qs = await getDocs(collection(db, "admins"));
+    qs.forEach(s => adminSet.add(s.id));
+  }catch(e){ console.warn("管理者リストの取得に失敗:", e); }
+}
+
 function showError(msg){
   root.innerHTML = '<div style="padding:140px 6% 200px;text-align:center;color:#6c7787">'
     + '<h1 style="font-size:22px;margin-bottom:10px">記事が見つかりません</h1><p>'+msg+'</p>'
@@ -473,22 +482,48 @@ function initInteractions(){
       else { try{ await navigator.clipboard.writeText(location.href); showToast("リンクをコピーしました"); }catch(e){ showToast("コピーできませんでした"); } }
     });
   }
-  const followBtn = root.querySelector("#followBtn");
-  if(followBtn){
-    const author = followBtn.getAttribute("data-author") || "";
-    const fkey = "tabistock_follow_" + author;
-    const setFollow = (on) => {
-      followBtn.classList.toggle("following", on);
-      followBtn.setAttribute("aria-pressed", on);
-      followBtn.querySelector("span").textContent = on ? "フォロー中" : "フォロー";
-      followBtn.querySelector("i").className = on ? "fa-solid fa-check" : "fa-solid fa-plus";
-    };
-    setFollow(localStorage.getItem(fkey)==="1");
-    followBtn.addEventListener("click", () => {
-      const on = !(localStorage.getItem(fkey)==="1");
-      localStorage.setItem(fkey, on?"1":"0"); setFollow(on);
-    });
-  }
+  wireFollow();
+}
+
+// フォロー（Firestore: users/{me}/following/{target} ＋ users/{target}/followers/{me}・要ログイン）
+function wireFollow(){
+  const btn = root.querySelector("#followBtn");
+  if(!btn) return;
+  const target = btn.getAttribute("data-uid");
+  if(!target){ btn.style.display = "none"; return; }
+  let me = null, following = false, busy = false;
+  const paint = () => {
+    btn.classList.toggle("following", following);
+    btn.setAttribute("aria-pressed", following);
+    btn.querySelector("span").textContent = following ? "フォロー中" : "フォロー";
+    btn.querySelector("i").className = following ? "fa-solid fa-check" : "fa-solid fa-plus";
+  };
+  onAuthStateChanged(auth, async (user) => {
+    me = user ? user.uid : null;
+    if(me && me === target){ btn.style.display = "none"; return; } // 自分の記事ではフォロー不要
+    btn.style.display = "";
+    if(me){ try{ following = (await getDoc(doc(db,"users",me,"following",target))).exists(); }catch(e){ following = false; } }
+    else following = false;
+    paint();
+  });
+  btn.addEventListener("click", async () => {
+    if(busy) return;
+    if(!me){ alert("フォローするにはログインが必要です。"); location.href = "../account.html"; return; }
+    busy = true;
+    try{
+      if(following){
+        await deleteDoc(doc(db,"users",me,"following",target));
+        await deleteDoc(doc(db,"users",target,"followers",me));
+        following = false;
+      }else{
+        await setDoc(doc(db,"users",me,"following",target), { createdAt: serverTimestamp() });
+        await setDoc(doc(db,"users",target,"followers",me), { createdAt: serverTimestamp() });
+        following = true;
+      }
+      paint();
+    }catch(e){ console.error(e); }
+    finally{ busy = false; }
+  });
 }
 
 // いいね（Firestore: articles/{id}/likes/{uid}・要ログイン）
@@ -584,11 +619,16 @@ function initComments(){
   const commentHTML = (c) => {
     const canDel = amAdmin || (me && c.authorId === me);
     const photo = c.authorPhotoURL ? esc(c.authorPhotoURL) : defAvatar;
+    const badge = adminSet.has(c.authorId) ? ' <i class="fa-solid fa-circle-check admin-badge" title="管理者"></i>' : '';
+    const nameTxt = esc(c.authorName || "ゲスト");
+    const nameHTML = c.authorId
+      ? '<a class="comment-name-link" href="../user.html?uid='+encodeURIComponent(c.authorId)+'">'+nameTxt+'</a>'
+      : nameTxt;
     return '<div class="comment" data-cid="'+esc(c.id)+'">'
       + '<img class="comment-avatar" src="'+photo+'" alt="" onerror="this.src=\''+defAvatar+'\'">'
       + '<div class="comment-body">'
       +   '<div class="comment-head">'
-      +     '<strong>'+esc(c.authorName || "ゲスト")+'</strong>'
+      +     '<strong>'+nameHTML+badge+'</strong>'
       +     '<span class="comment-time">'+esc(fmt(c.createdAt))+'</span>'
       +     (canDel ? '<button class="comment-del" type="button" data-del="'+esc(c.id)+'">削除</button>' : '')
       +   '</div>'
@@ -665,6 +705,7 @@ function initComments(){
 (async () => {
   if(!id){ showError("記事IDが指定されていません。"); return; }
   try{
+    await loadAdminSet();
     const snap = await getDoc(doc(db, "articles", id));
     if(!snap.exists()){ showError("削除されたか、URLが間違っている可能性があります。"); return; }
     const d = snap.data();
@@ -686,10 +727,9 @@ function initComments(){
         }
       }catch(e){ console.warn("公開プロフィールの取得に失敗:", e); }
     }
+    d.authorIsAdmin = d.authorId ? adminSet.has(d.authorId) : false;
     document.title = (d.title || "旅程") + "｜Tabistock";
     root.innerHTML = renderArticleBody(d);
-    const fb = root.querySelector("#followBtn");
-    if(fb) fb.setAttribute("data-author", d.authorNickname || "");
     initInteractions();
     initComments();
   }catch(err){
