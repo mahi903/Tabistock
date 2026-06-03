@@ -138,10 +138,12 @@ export function renderArticleBody(d){
   const routeSection = hasRoute ? `<div class="section-intro">
   <p class="eyebrow">Route</p>
   <h2>ルートマップ</h2>
+  <p>数字は訪問順（DAY）です。ピンをタップするとその日の概要が出ます。</p>
 </div>
-<section class="route-section">
-  <p class="route-note">数字は訪問順（DAY）です。ピンをタップするとその日の概要が出ます。</p>
-  <div id="routeMap" class="route-map"></div>
+<section class="route-grid">
+  <div class="info-card route-card">
+    <div id="routeMap" class="route-map"></div>
+  </div>
 </section>` : '';
 
   const flights=d.flights||[];

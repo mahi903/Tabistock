@@ -2232,12 +2232,13 @@ a {
   background:#1f6f5b;
 }
 
-/* ルートマップ（独立セクション） */
-.route-section{margin:0 0 8px;}
-.route-section .route-note{margin:0 0 14px;font-size:12.5px;color:#6c7787;}
-.route-map{height:340px;border-radius:16px;overflow:hidden;background:#aad3df;box-shadow:0 6px 22px rgba(0,0,0,.08);}
+/* ルートマップ（他カードと同じ白枠カードの中に地図） */
+.route-grid{max-width:1200px;margin:24px auto 0;padding:0 24px;box-sizing:border-box;}
+.route-card{padding:16px;}
+.route-map{height:360px;border-radius:14px;overflow:hidden;background:#aad3df;}
 .route-map .ctpin{background:#1f6f5b;color:#fff;border:2.5px solid #fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 3px 10px rgba(0,0,0,.3);}
-@media(max-width:600px){.route-map{height:260px;}}
+@media(max-width:768px){.route-grid{padding:0 22px;}}
+@media(max-width:600px){.route-map{height:280px;}}
 
 /* タイムライン・ラベル類をグリーン基調へ */
 .timeline::before{background:#cfe3d9;}
