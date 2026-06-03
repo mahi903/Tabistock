@@ -60,18 +60,22 @@ service cloud.firestore {
                   || (isSignedIn() && resource.data.authorId == request.auth.uid)
                   || isAdmin();
 
-      // 作成：ログイン必須・自分を著者にする・status は必ず 'pending'
+      // 作成：ログイン必須・自分を著者にする・status は 'pending'（申請）か 'draft'（下書き）。
       allow create: if isSignedIn()
                     && request.resource.data.authorId == request.auth.uid
-                    && request.resource.data.status == 'pending';
+                    && (request.resource.data.status == 'pending'
+                        || request.resource.data.status == 'draft');
 
       // 更新：管理者は何でも可（承認＝status変更を含む）。
-      //       著者は自分の記事を編集可。ただし status は自分で変えられない。
+      //       著者は自分の記事を編集可。statusは自分で 'published' にはできない。
+      //       許可する遷移：同じstatusの維持／draft・rejected → pending（申請・再申請）。
       allow update: if isAdmin()
                     || (isSignedIn()
                         && resource.data.authorId == request.auth.uid
                         && request.resource.data.authorId == request.auth.uid
-                        && request.resource.data.status == resource.data.status);
+                        && (request.resource.data.status == resource.data.status
+                            || ((resource.data.status == 'draft' || resource.data.status == 'rejected')
+                                && request.resource.data.status == 'pending')));
 
       // 削除：管理者、または自分の記事
       allow delete: if isAdmin()

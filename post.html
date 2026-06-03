@@ -72,7 +72,7 @@
 <div class="wrap">
   <section class="phero">
     <p class="eyebrow">Post a Trip</p>
-    <h1>旅程を投稿する</h1>
+    <h1 id="pageH1">旅程を投稿する</h1>
     <p>投稿された記事は、管理者が内容を確認・承認したあとに公開されます（あらし対策のための<b>承認制</b>です）。写真はアップロード時に自動でリサイズ・圧縮されるので、そのまま選ぶだけでOKです。</p>
     <a class="back" href="index.html">← トップに戻る</a>
   </section>
@@ -201,8 +201,7 @@
 </div>
 
 <div class="bar">
-  <button class="btn btn-ghost" id="loadJson" type="button" title="前に生成した記事の _data.json を選ぶと、入力内容を復元できます（写真は選び直し）">下書きを復元</button>
-  <input type="file" id="jsonInput" accept="application/json" style="display:none">
+  <button class="btn btn-ghost" id="saveDraft" type="button" title="未完成でもマイページに下書きとして保存します（あなただけが見られます）">下書き保存</button>
   <button class="btn btn-main" id="generate" type="button">この内容で投稿する（承認後に公開）</button>
   <span class="status" id="status"></span>
 </div>
@@ -380,7 +379,14 @@ function addDay(data){
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); renumberDays(); });
   const fileIn=wrap.querySelector('.d-photos'), th=wrap.querySelector('.thumbs');
   fileIn.addEventListener('change',()=>previewFiles(fileIn,th));
-  if(data){ wrap.querySelector('.d-date').value=data.date||''; wrap.querySelector('.d-sum').value=data.summary||''; wrap.querySelector('.d-text').value=data.text||''; }
+  if(data){
+    wrap.querySelector('.d-date').value=data.date||''; wrap.querySelector('.d-sum').value=data.summary||''; wrap.querySelector('.d-text').value=data.text||'';
+    if(data.photoUrls && data.photoUrls.length){
+      wrap._existingPhotos = data.photoUrls.slice();
+      th.innerHTML = data.photoUrls.map(u=>`<img src="${esc(u)}">`).join('')
+        + `<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。差し替える場合のみ新しく選び直してください。</p>`;
+    }
+  }
   $('dayList').appendChild(wrap); renumberDays();
 }
 function renumberDays(){
@@ -450,7 +456,8 @@ async function gather(){
       date:w.querySelector('.d-date').value.trim(),
       summary:w.querySelector('.d-sum').value.trim(),
       text:w.querySelector('.d-text').value.trim(),
-      files:[...w.querySelector('.d-photos').files]
+      files:[...w.querySelector('.d-photos').files],
+      existingPhotos: w._existingPhotos || []
     });
   }
   const flights=[];
@@ -479,7 +486,8 @@ async function gather(){
     difficulty,
     costs, flights, flightWhen:$('flightWhen').value.trim(), flightSite:$('flightSite').value.trim(),
     services, days, comment:$('comment').value.trim(),
-    heroFiles:[...$('heroPhotos').files]
+    heroFiles:[...$('heroPhotos').files],
+    heroExisting: window.tabistockHeroExisting || []
   };
 }
 function validate(d){
@@ -492,10 +500,17 @@ function validate(d){
   if(!d.currency) e.push('通貨'); if(!d.language) e.push('言語'); if(!d.safety) e.push('治安');
   if(!d.flights.length) e.push('航空券（最低1航路）');
   if(!d.flightWhen) e.push('予約時期'); if(!d.flightSite) e.push('予約サイト');
-  if(!d.heroFiles.length) e.push('カルーセル写真（最低1枚／サムネにも使用）');
+  if(!d.heroFiles.length && !(d.heroExisting&&d.heroExisting.length)) e.push('カルーセル写真（最低1枚／サムネにも使用）');
   if(!d.days.length) e.push('日程（最低1日）');
-  d.days.forEach((day,i)=>{ if(!day.summary||!day.text) e.push(`DAY${i+1}の入力`); if(!day.files.length) e.push(`DAY${i+1}の写真（最低1枚）`); });
+  d.days.forEach((day,i)=>{ if(!day.summary||!day.text) e.push(`DAY${i+1}の入力`); if(!day.files.length && !(day.existingPhotos&&day.existingPhotos.length)) e.push(`DAY${i+1}の写真（最低1枚）`); });
   if(!d.comment) e.push('投稿者コメント');
+  return e;
+}
+// 下書き保存用：タイトルだけあればOK（あとから編集して完成できる）
+function validateDraft(d){
+  const e=[];
+  if(!d.author||!/^[a-z0-9_-]+$/i.test(d.author)) e.push('投稿者ニックネーム（半角英数字）');
+  if(!d.title) e.push('タイトル（下書きでも必須）');
   return e;
 }
 
@@ -800,40 +815,71 @@ $('generate').addEventListener('click',async()=>{
   const d=await gather();
   const errs=validate(d);
   if(errs.length){ st.className='status err'; st.textContent='未入力：'+errs.join(' / '); window.scrollTo({top:0,behavior:'smooth'}); return; }
-  $('generate').disabled=true;
+  $('generate').disabled=true; $('saveDraft').disabled=true;
   try{
-    await window.tabistockSubmit(d, st);
+    await window.tabistockSubmit(d, st, 'publish');
   }catch(err){
     console.error(err);
     st.className='status err'; st.textContent='エラー：'+(err&&err.message||err)+'（HEIC写真はJPEGに変換してください）';
-  }finally{ $('generate').disabled=false; }
+  }finally{ $('generate').disabled=false; $('saveDraft').disabled=false; }
 });
 
-/* JSON読込（下書き復元） */
-$('loadJson').addEventListener('click',()=>$('jsonInput').click());
-$('jsonInput').addEventListener('change',async()=>{
-  const f=$('jsonInput').files[0]; if(!f) return;
+/* 下書き保存（タイトルだけあれば保存可能・本人だけが見られる） */
+$('saveDraft').addEventListener('click',async()=>{
+  const st=$('status');
+  if(!window.tabistockReady){ st.className='status err'; st.textContent='Firebaseに接続中です。数秒待って再度お試しください。'; return; }
+  if(!window.tabistockUser){ st.className='status err'; st.textContent='ログインが必要です。'; setTimeout(()=>location.href='account.html',800); return; }
+  const d=await gather();
+  const errs=validateDraft(d);
+  if(errs.length){ st.className='status err'; st.textContent='下書き保存に最低限必要：'+errs.join(' / '); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  $('generate').disabled=true; $('saveDraft').disabled=true;
   try{
-    const d=JSON.parse(await f.text());
-    $('author').value=d.author||'mahiro';
-    $('title').value=d.title||'';
-    $('lead').value=d.lead||''; $('dateStart').value=d.dateStart||''; $('dateEnd').value=d.dateEnd||'';
-    $('currency').value=d.currency||''; $('language').value=d.language||''; $('safety').value=d.safety||'';
-    difficulty=d.difficulty||3; paintStars();
-    $('flightWhen').value=d.flightWhen||''; $('flightSite').value=d.flightSite||'';
-    $('comment').value=d.comment||'';
-    if(d.budget){$('budget').value=d.budget;} if(d.days_v){$('days').value=d.days_v;}
-    document.querySelectorAll('input[name=country]').forEach(c=>{ c.checked=(d.countries||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
-    document.querySelectorAll('input[name=style]').forEach(c=>{ c.checked=(d.styles||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
-    if(d.costs) document.querySelectorAll('[data-cost]').forEach(i=>i.value=d.costs[i.dataset.cost]||'');
-    calcCost();
-    $('flightList').innerHTML=''; flightN=0; (d.flights||[]).forEach(f=>addFlight(f)); if(!(d.flights||[]).length) addFlight();
-    $('dayList').innerHTML=''; dayN=0; (d.days||[]).forEach(day=>addDay(day)); if(!(d.days||[]).length) addDay();
-    document.querySelectorAll('.d-date').forEach(x=>x.dataset.touched='1');
-    updateMeta();
-    $('status').className='status ok'; $('status').textContent='下書きを読み込みました（写真は再選択が必要です）。';
-  }catch(e){ $('status').className='status err'; $('status').textContent='JSON読込エラー'; }
+    await window.tabistockSubmit(d, st, 'draft');
+  }catch(err){
+    console.error(err);
+    st.className='status err'; st.textContent='エラー：'+(err&&err.message||err)+'（HEIC写真はJPEGに変換してください）';
+  }finally{ $('generate').disabled=false; $('saveDraft').disabled=false; }
 });
+
+/* フォームへデータを反映（JSON読込・編集読込で共用） */
+window.populateForm = function(d){
+  $('author').value=d.author||'mahiro';
+  $('title').value=d.title||'';
+  $('lead').value=d.lead||''; $('dateStart').value=d.dateStart||''; $('dateEnd').value=d.dateEnd||'';
+  $('currency').value=d.currency||''; $('language').value=d.language||''; $('safety').value=d.safety||'';
+  difficulty=d.difficulty||3; paintStars();
+  $('flightWhen').value=d.flightWhen||''; $('flightSite').value=d.flightSite||'';
+  $('comment').value=d.comment||'';
+  if(d.budget){$('budget').value=d.budget;} if(d.days_v){$('days').value=d.days_v;}
+  document.querySelectorAll('input[name=country]').forEach(c=>{ c.checked=(d.countries||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
+  document.querySelectorAll('input[name=style]').forEach(c=>{ c.checked=(d.styles||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
+  if(d.costs) document.querySelectorAll('[data-cost]').forEach(i=>i.value=d.costs[i.dataset.cost]||'');
+  calcCost();
+  // サービス復元：label→SERVICE_CATS index、一致する項目はチェック、未一致はその他欄へ
+  document.querySelectorAll('input[data-svc]').forEach(cb=>{ cb.checked=false; cb.closest('.chip').classList.remove('on'); });
+  document.querySelectorAll('input[data-svc-other]').forEach(i=>i.value='');
+  (d.services||[]).forEach(svc=>{
+    const ci=SERVICE_CATS.findIndex(cat=>cat.k===svc.label);
+    if(ci<0) return;
+    const others=[];
+    (svc.items||[]).forEach(item=>{
+      const cb=document.querySelector(`input[data-svc="${ci}"][value="${(window.CSS&&CSS.escape)?CSS.escape(item):item}"]`);
+      if(cb){ cb.checked=true; cb.closest('.chip').classList.add('on'); }
+      else others.push(item);
+    });
+    if(others.length){ const o=document.querySelector(`input[data-svc-other="${ci}"]`); if(o) o.value=others.join('、'); }
+  });
+  $('flightList').innerHTML=''; flightN=0; (d.flights||[]).forEach(f=>addFlight(f)); if(!(d.flights||[]).length) addFlight();
+  $('dayList').innerHTML=''; dayN=0; (d.days||[]).forEach(day=>addDay(day)); if(!(d.days||[]).length) addDay();
+  document.querySelectorAll('.d-date').forEach(x=>x.dataset.touched='1');
+  // カルーセル（ヒーロー）写真の既存分
+  if(d.heroUrls && d.heroUrls.length){
+    window.tabistockHeroExisting = d.heroUrls.slice();
+    $('heroThumbs').innerHTML = d.heroUrls.map(u=>`<img src="${esc(u)}">`).join('')
+      + `<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。差し替える場合のみ新しく選び直してください。</p>`;
+  }
+  updateMeta();
+};
 </script>
 
 <script>
@@ -1330,32 +1376,54 @@ async function uploadAndGetUrl(path, blob){
   return await getDownloadURL(r);
 }
 
-window.tabistockSubmit = async function(d, st){
+window.tabistockSubmit = async function(d, st, mode){
   const user = window.tabistockUser;
   const nickname = window.tabistockNickname || d.author;
+  const editId = window.tabistockEditId || null;
 
-  st.className = "status"; st.textContent = "記事を作成中…";
-  const articleRef = doc(collection(db, "articles"));
+  // 保存先ドキュメント（編集なら既存・新規なら自動採番）
+  const articleRef = editId ? doc(db, "articles", editId) : doc(collection(db, "articles"));
   const id = articleRef.id;
 
-  // ヒーロー写真
-  const heroUrls = [];
-  for(let i=0;i<d.heroFiles.length;i++){
-    st.textContent = `ヒーロー写真 ${i+1}/${d.heroFiles.length} をアップロード中…`;
-    const blob = await window.resizeImage(d.heroFiles[i]);
-    heroUrls.push(await uploadAndGetUrl(`articles/${id}/hero${i+1}.jpg`, blob));
+  // 公開ステータスを決定
+  let status;
+  if(mode === "draft"){
+    status = "draft";
+  }else if(!editId){
+    status = "pending";
+  }else{
+    const prev = window.tabistockEditStatus || "pending";
+    status = (prev === "published" || prev === "pending") ? prev : "pending";
+  }
+
+  st.className = "status"; st.textContent = editId ? "記事を更新中…" : "記事を作成中…";
+
+  // ヒーロー写真：新しく選んだ場合のみアップロード。なければ既存URLを再利用。
+  let heroUrls = [];
+  if(d.heroFiles.length){
+    for(let i=0;i<d.heroFiles.length;i++){
+      st.textContent = `ヒーロー写真 ${i+1}/${d.heroFiles.length} をアップロード中…`;
+      const blob = await window.resizeImage(d.heroFiles[i]);
+      heroUrls.push(await uploadAndGetUrl(`articles/${id}/hero${i+1}.jpg`, blob));
+    }
+  }else{
+    heroUrls = (d.heroExisting || []).slice();
   }
   const thumbUrl = heroUrls[0] || "";
 
-  // 各日の写真
+  // 各日の写真：新しく選んだ場合のみアップロード。なければ既存URLを再利用。
   const days = [];
   for(let i=0;i<d.days.length;i++){
     const day = d.days[i];
-    const photoUrls = [];
-    for(let j=0;j<day.files.length;j++){
-      st.textContent = `DAY${i+1} 写真 ${j+1}/${day.files.length} をアップロード中…`;
-      const blob = await window.resizeImage(day.files[j]);
-      photoUrls.push(await uploadAndGetUrl(`articles/${id}/day${i+1}-${j+1}.jpg`, blob));
+    let photoUrls = [];
+    if(day.files.length){
+      for(let j=0;j<day.files.length;j++){
+        st.textContent = `DAY${i+1} 写真 ${j+1}/${day.files.length} をアップロード中…`;
+        const blob = await window.resizeImage(day.files[j]);
+        photoUrls.push(await uploadAndGetUrl(`articles/${id}/day${i+1}-${j+1}.jpg`, blob));
+      }
+    }else{
+      photoUrls = (day.existingPhotos || []).slice();
     }
     days.push({ date: day.date, summary: day.summary, text: day.text, photoUrls });
   }
@@ -1364,8 +1432,8 @@ window.tabistockSubmit = async function(d, st){
   const docData = {
     authorId: user.uid,
     authorNickname: nickname,
-    status: "pending",
-    createdAt: serverTimestamp(),
+    status,
+    createdAt: (editId && window.tabistockEditCreatedAt) ? window.tabistockEditCreatedAt : serverTimestamp(),
     updatedAt: serverTimestamp(),
     countries: d.countries, region: d.region,
     budget: d.budget, days_v: d.days_v, styles: d.styles,
@@ -1377,10 +1445,22 @@ window.tabistockSubmit = async function(d, st){
     days, heroUrls, thumbUrl
   };
   await setDoc(articleRef, docData);
+  window.tabistockEditStatus = status; // 続けて編集した場合に備えて更新
 
   st.className = "status ok";
-  st.textContent = "投稿しました！管理者の承認後に公開されます。（記事ID: "+id+"）";
+  if(mode === "draft"){
+    st.textContent = "下書きを保存しました。マイページの「あなたの投稿」から続きを編集できます。";
+  }else if(editId){
+    st.textContent = (status === "published")
+      ? "記事を更新しました（公開中）。"
+      : "記事を更新しました。管理者の承認後に公開されます。";
+  }else{
+    st.textContent = "投稿しました！管理者の承認後に公開されます。（記事ID: "+id+"）";
+  }
   window.scrollTo({ top:0, behavior:"smooth" });
+  if(mode === "draft" || editId){
+    setTimeout(()=>{ location.href = "account.html"; }, 1400);
+  }
 };
 
 onAuthStateChanged(auth, async (user) => {
@@ -1404,6 +1484,48 @@ onAuthStateChanged(auth, async (user) => {
     if(nick) a.value = nick;
     a.readOnly = true;
     a.style.background = "#f0ece3";
+  }
+
+  // 編集モード：?edit=<記事ID> があれば既存記事を読み込む
+  const editId = new URLSearchParams(location.search).get("edit");
+  if(editId){
+    try{
+      const snap = await getDoc(doc(db, "articles", editId));
+      if(!snap.exists()){ alert("記事が見つかりませんでした。"); return; }
+      const data = snap.data();
+      // 自分の記事か管理者のみ編集可
+      let isAdmin = false;
+      try{ isAdmin = (await getDoc(doc(db, "admins", user.uid))).exists(); }catch(e){}
+      if(data.authorId !== user.uid && !isAdmin){
+        alert("この記事を編集する権限がありません。"); location.href = "account.html"; return;
+      }
+      window.tabistockEditId = editId;
+      window.tabistockEditStatus = data.status || "pending";
+      window.tabistockEditCreatedAt = data.createdAt || null;
+      window.populateForm({
+        author: data.authorNickname || nick,
+        countries: data.countries || [], region: data.region || "",
+        budget: data.budget || "", days_v: data.days_v || "", styles: data.styles || [],
+        title: data.title || "", lead: data.lead || "",
+        dateStart: data.dateStart || "", dateEnd: data.dateEnd || "",
+        currency: data.currency || "", language: data.language || "", safety: data.safety || "",
+        difficulty: data.difficulty || 3,
+        costs: data.costs || {}, flights: data.flights || [],
+        flightWhen: data.flightWhen || "", flightSite: data.flightSite || "",
+        services: data.services || [], comment: data.comment || "",
+        days: data.days || [], heroUrls: data.heroUrls || []
+      });
+      // 見出し・ボタンのラベルを編集向けに変更
+      const h1 = document.getElementById("pageH1"); if(h1) h1.textContent = (data.status === "draft") ? "下書きを編集する" : "投稿を編集する";
+      const gen = document.getElementById("generate");
+      if(gen) gen.textContent = (data.status === "published") ? "この内容で更新する" : "更新して申請する（承認後に公開）";
+      const sd = document.getElementById("saveDraft"); if(sd) sd.textContent = "下書きとして保存";
+      const stEl = document.getElementById("status");
+      if(stEl){ stEl.className = "status ok"; stEl.textContent = "編集する記事を読み込みました。写真は差し替える場合のみ選び直してください。"; }
+    }catch(e){
+      console.error(e);
+      alert("記事の読み込みに失敗しました。");
+    }
   }
 });
 </script>

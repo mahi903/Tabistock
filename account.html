@@ -61,6 +61,10 @@
   .s-pending{background:#fff3e6;color:#c4691f}
   .s-published{background:#e9f5ef;color:#1f6f5b}
   .s-rejected{background:#fdecec;color:#b53d3d}
+  .s-draft{background:#eef0f3;color:#5b6470}
+  .pcard .pbody .prow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .pedit{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#1f6f5b;text-decoration:none;border:1px solid #cfe3da;background:#f3faf7;padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .pedit:hover{background:#e6f3ed}
   .posts-empty{grid-column:1/-1;color:#6c7787;font-size:13px;text-align:center;padding:26px 16px;border:1px dashed #e7ddcb;border-radius:14px}
 </style>
 </head>
@@ -329,17 +333,20 @@ $("saveProfileBtn").onclick = async () => {
 };
 
 /* ===== 自分の投稿一覧 ===== */
-function renderPost(d){
+function renderPost(d, own){
   const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
-  const sc = d.status==="published" ? "s-published" : (d.status==="rejected" ? "s-rejected" : "s-pending");
-  const sl = d.status==="published" ? "公開中" : (d.status==="rejected" ? "却下" : "承認待ち");
-  return `<a class="pcard" href="./articles/view.html?id=${esc(d.id)}">
-    <div class="pthumb" style="background-image:url('${esc(thumb)}')"></div>
-    <div class="pbody">
-      <p class="ptitle">${esc(d.title||"(無題)")}</p>
-      <span class="ppill ${sc}">${sl}</span>
+  const sc = d.status==="published" ? "s-published" : (d.status==="rejected" ? "s-rejected" : (d.status==="draft" ? "s-draft" : "s-pending"));
+  const sl = d.status==="published" ? "公開中" : (d.status==="rejected" ? "却下" : (d.status==="draft" ? "下書き" : "承認待ち"));
+  const editBtn = own ? `<a class="pedit" href="./post.html?edit=${esc(d.id)}">✎ 編集</a>` : "";
+  return `<div class="pcard">
+    <a href="./articles/view.html?id=${esc(d.id)}" style="text-decoration:none;color:inherit;display:block">
+      <div class="pthumb" style="background-image:url('${esc(thumb)}')"></div>
+      <div class="pbody" style="padding-bottom:8px"><p class="ptitle" style="margin-bottom:0">${esc(d.title||"(無題)")}</p></div>
+    </a>
+    <div class="pbody" style="padding-top:0">
+      <div class="prow"><span class="ppill ${sc}">${sl}</span>${editBtn}</div>
     </div>
-  </a>`;
+  </div>`;
 }
 async function loadMyPosts(uid){
   const box = $("myPosts");
@@ -354,7 +361,7 @@ async function loadMyPosts(uid){
       box.innerHTML = `<p class="posts-empty">まだ投稿がありません。<br><a href="./post.html">最初の旅程を投稿する →</a></p>`;
       return;
     }
-    box.innerHTML = docs.map(renderPost).join("");
+    box.innerHTML = docs.map(d => renderPost(d, true)).join("");
   }catch(err){
     console.error(err);
     box.innerHTML = `<p class="posts-empty">読み込みエラー：${esc(err.message||err)}</p>`;
@@ -382,7 +389,7 @@ async function loadSavedPosts(uid){
       box.innerHTML = `<p class="posts-empty">保存した投稿はありません。<br>記事ページの「保存」ボタンでここに追加されます。</p>`;
       return;
     }
-    box.innerHTML = docs.map(renderPost).join("");
+    box.innerHTML = docs.map(d => renderPost(d, false)).join("");
   }catch(err){
     console.error(err);
     box.innerHTML = `<p class="posts-empty">読み込みエラー：${esc(err.message||err)}</p>`;
