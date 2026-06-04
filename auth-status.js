@@ -224,7 +224,7 @@ if (el) {
 .tabbar .tb-fab{margin-top:-24px;width:50px;height:50px;border-radius:50%;background:#1f6f5b;color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 6px 16px rgba(31,111,91,.42)}
 .tabbar .tb-fab svg{width:25px;height:25px}
 .tabbar .tb-post:active .tb-fab{transform:scale(.94)}
-@media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(82px + env(safe-area-inset-bottom))}}`;
+@media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(82px + env(safe-area-inset-bottom))}body.pwa:has(.drawer.open) .tabbar{display:none}}`;
     document.head.appendChild(st);
   }
   document.body.classList.add("pwa");
@@ -259,4 +259,12 @@ if (el) {
     a("map", "マップ", "map.html", SVG.map) +
     a("account", "マイページ", "account.html", SVG.account);
   document.body.appendChild(bar);
+
+  // ドロワー（ハンバーガーメニュー）展開中はタブバーを隠す。
+  // CSS の :has() が効かない端末向けの保険として JS でも切り替える。
+  const drawerEl = document.querySelector(".drawer");
+  if (drawerEl) {
+    const sync = () => { bar.style.display = drawerEl.classList.contains("open") ? "none" : ""; };
+    new MutationObserver(sync).observe(drawerEl, { attributes: true, attributeFilter: ["class"] });
+  }
 })();
