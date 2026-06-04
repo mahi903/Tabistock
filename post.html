@@ -1636,7 +1636,7 @@ onAuthStateChanged(auth, async (user) => {
       if(gen) gen.textContent = (data.status === "published") ? "この内容で更新する" : "更新して申請する（承認後に公開）";
       const sd = document.getElementById("saveDraft"); if(sd) sd.textContent = "下書きとして保存";
       const stEl = document.getElementById("status");
-      if(stEl){ stEl.className = "status ok"; stEl.textContent = "編集する記事を読み込みました。写真は差し替える場合のみ選び直してください。"; }
+      if(stEl){ stEl.className = "status"; stEl.textContent = ""; }
     }catch(e){
       console.error(e);
       alert("記事の読み込みに失敗しました。");
