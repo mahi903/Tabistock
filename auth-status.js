@@ -8,6 +8,14 @@ import { doc, getDoc, collection, query, orderBy, limit, onSnapshot, writeBatch 
 const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const base = location.pathname.includes("/articles/") ? "../" : "./";
 
+// PWA: Service Worker を登録（インストール可能化＋静的ファイル高速化）。
+// ルート(/sw.js)に置いてあるので scope はサイト全体。失敗してもページ動作には影響しない。
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(e => console.warn("SW登録に失敗:", e));
+  });
+}
+
 // スタイルを注入（style.css を読み込まないページでも見た目を統一）
 if (!document.getElementById("authStatusStyle")) {
   const st = document.createElement("style");
