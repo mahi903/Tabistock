@@ -217,16 +217,16 @@ if (el) {
     const st = document.createElement("style");
     st.id = "tabbarStyle";
     st.textContent = `
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:90;display:none;align-items:stretch;height:58px;background:#fff;border-top:1px solid #e7ddcb;padding-bottom:env(safe-area-inset-bottom);font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
-.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:#9aa3b0;font-size:10.5px;font-weight:700;-webkit-tap-highlight-color:transparent}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:90;display:none;align-items:stretch;height:68px;background:#fff;border-top:1px solid #e7ddcb;padding-bottom:env(safe-area-inset-bottom);font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
+.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding-bottom:6px;text-decoration:none;color:#9aa3b0;font-size:10.5px;font-weight:700;-webkit-tap-highlight-color:transparent}
 .tabbar a svg{width:23px;height:23px}
 .tabbar a.active{color:#1f6f5b}
 .tabbar .tb-post{flex:0 0 auto;width:66px;position:relative}
 .tabbar .tb-post .tb-fab{position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:54px;height:54px;border-radius:50%;background:#1f6f5b;color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 6px 16px rgba(31,111,91,.42)}
 .tabbar .tb-post .tb-fab svg{width:27px;height:27px}
-.tabbar .tb-post .tb-lbl{position:absolute;left:0;right:0;bottom:7px;text-align:center;font-size:10.5px;font-weight:700;color:#9aa3b0}
+.tabbar .tb-post .tb-lbl{position:absolute;left:0;right:0;bottom:13px;text-align:center;font-size:10.5px;font-weight:700;color:#9aa3b0}
 .tabbar .tb-post:active .tb-fab{transform:translateX(-50%) scale(.94)}
-@media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(58px + env(safe-area-inset-bottom))}}`;
+@media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(68px + env(safe-area-inset-bottom))}}`;
     document.head.appendChild(st);
   }
   document.body.classList.add("pwa");
@@ -255,7 +255,7 @@ if (el) {
   bar.setAttribute("aria-label", "メインメニュー");
   bar.innerHTML =
     a("home", "ホーム", "index.html", SVG.home) +
-    a("search", "さがす", "search.html", SVG.search) +
+    a("search", "さがす", "filter.html", SVG.search) +
     `<a class="tb-post ${activeKey === "post" ? "active" : ""}" href="${base}post.html" aria-label="投稿">` +
       `<span class="tb-fab">${SVG.post}</span><span class="tb-lbl">投稿</span></a>` +
     a("map", "マップ", "map.html", SVG.map) +
