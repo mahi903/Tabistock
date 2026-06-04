@@ -197,3 +197,68 @@ if (el) {
     }, (err) => { console.warn("通知の購読に失敗:", err); });
   });
 })();
+
+/* =========================================================
+   下タブバー（PWA／スマホのみ）
+   - display-mode:standalone（ホーム画面から起動）かつ
+     スマホ幅のときだけ表示。PCやブラウザ閲覧では出さない。
+   - 5枠：ホーム／さがす／（中央）投稿／マップ／マイページ
+   - 現在地のタブをハイライト。
+========================================================= */
+(function initTabbar() {
+  // PWA（standalone）起動か判定。iOSは navigator.standalone。
+  const standalone =
+    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+    window.navigator.standalone === true;
+  if (!standalone) return; // ブラウザ閲覧時は出さない
+  if (document.querySelector(".tabbar")) return; // 二重生成防止
+
+  if (!document.getElementById("tabbarStyle")) {
+    const st = document.createElement("style");
+    st.id = "tabbarStyle";
+    st.textContent = `
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:90;display:none;align-items:stretch;height:58px;background:#fff;border-top:1px solid #e7ddcb;padding-bottom:env(safe-area-inset-bottom);font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
+.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:#9aa3b0;font-size:10.5px;font-weight:700;-webkit-tap-highlight-color:transparent}
+.tabbar a svg{width:23px;height:23px}
+.tabbar a.active{color:#1f6f5b}
+.tabbar .tb-post{flex:0 0 auto;width:66px;position:relative}
+.tabbar .tb-post .tb-fab{position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:54px;height:54px;border-radius:50%;background:#1f6f5b;color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 6px 16px rgba(31,111,91,.42)}
+.tabbar .tb-post .tb-fab svg{width:27px;height:27px}
+.tabbar .tb-post .tb-lbl{position:absolute;left:0;right:0;bottom:7px;text-align:center;font-size:10.5px;font-weight:700;color:#9aa3b0}
+.tabbar .tb-post:active .tb-fab{transform:translateX(-50%) scale(.94)}
+@media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(58px + env(safe-area-inset-bottom))}}`;
+    document.head.appendChild(st);
+  }
+  document.body.classList.add("pwa");
+
+  const SVG = {
+    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>',
+    post: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+    map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.2-6-10a6 6 0 0 1 12 0c0 4.8-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>',
+    account: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>'
+  };
+
+  const cur = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+  const activeKey =
+    (cur === "" || cur === "index.html") ? "home" :
+    (cur === "search.html" || cur === "filter.html") ? "search" :
+    (cur === "post.html") ? "post" :
+    (cur === "map.html") ? "map" :
+    (cur === "account.html" || cur === "user.html") ? "account" : "";
+
+  const a = (key, label, href, svg) =>
+    `<a class="${key === activeKey ? "active" : ""}" href="${base}${href}" aria-label="${label}">${svg}<span>${label}</span></a>`;
+
+  const bar = document.createElement("nav");
+  bar.className = "tabbar";
+  bar.setAttribute("aria-label", "メインメニュー");
+  bar.innerHTML =
+    a("home", "ホーム", "index.html", SVG.home) +
+    a("search", "さがす", "search.html", SVG.search) +
+    `<a class="tb-post ${activeKey === "post" ? "active" : ""}" href="${base}post.html" aria-label="投稿">` +
+      `<span class="tb-fab">${SVG.post}</span><span class="tb-lbl">投稿</span></a>` +
+    a("map", "マップ", "map.html", SVG.map) +
+    a("account", "マイページ", "account.html", SVG.account);
+  document.body.appendChild(bar);
+})();
