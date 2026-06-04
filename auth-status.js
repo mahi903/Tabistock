@@ -383,13 +383,36 @@ if (el) {
     next.setAttribute("aria-label", "次のカードへ"); next.innerHTML = CH_R;
     wrap.appendChild(prev); wrap.appendChild(next);
 
-    const update = () => {
-      const max = grid.scrollWidth - grid.clientWidth;
-      const scrollable = max > 8;
-      prev.classList.toggle("show", scrollable && grid.scrollLeft > 8);
-      next.classList.toggle("show", scrollable && grid.scrollLeft < max - 8);
+    // カードは scroll-snap で中央寄せされるため、scrollLeft の単純比較ではなく
+    // 「各カードの中央」と「表示中央」を比べて判定・移動する。
+    const cards = () => [...grid.children]; // 実カード（::before/::after擬似は含まれない）
+    const viewCenter = () => grid.scrollLeft + grid.clientWidth / 2;
+    const cardCenter = (card) => {
+      const gr = grid.getBoundingClientRect();
+      const cr = card.getBoundingClientRect();
+      return (cr.left - gr.left) + grid.scrollLeft + cr.width / 2; // スクロール内容内での中央位置
     };
-    const step = (dir) => grid.scrollBy({ left: dir * grid.clientWidth * 0.85, behavior: "smooth" });
+    const TOL = 6;
+    const update = () => {
+      const vc = viewCenter();
+      const cs = cards();
+      prev.classList.toggle("show", cs.some((c) => cardCenter(c) < vc - TOL));
+      next.classList.toggle("show", cs.some((c) => cardCenter(c) > vc + TOL));
+    };
+    const goTo = (card) => {
+      if (!card) return;
+      grid.scrollTo({ left: Math.max(0, cardCenter(card) - grid.clientWidth / 2), behavior: "smooth" });
+    };
+    const step = (dir) => {
+      const vc = viewCenter();
+      const cs = cards();
+      if (dir > 0) {
+        goTo(cs.find((c) => cardCenter(c) > vc + TOL));
+      } else {
+        const left = cs.filter((c) => cardCenter(c) < vc - TOL);
+        goTo(left[left.length - 1]);
+      }
+    };
     prev.addEventListener("click", () => step(-1));
     next.addEventListener("click", () => step(1));
     grid.addEventListener("scroll", update, { passive: true });
