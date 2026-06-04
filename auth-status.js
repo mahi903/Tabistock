@@ -243,6 +243,33 @@ if (el) {
 })();
 
 /* =========================================================
+   iOS スタンドアロンPWA：同一オリジンのリンクはアプリ内で遷移
+   - iOS はホーム画面起動の standalone でも <a> を踏むと Safari に
+     飛び出し、下に「戻る／共有」バーが出てしまう。これを防ぐため、
+     同一オリジンのリンクは location 遷移に置き換えてアプリ内に留める。
+   - 外部リンク・_blank・ダウンロード・mailto/tel 等はそのまま（Safariへ）。
+========================================================= */
+(function keepLinksInApp() {
+  if (window.navigator.standalone !== true) return; // iOSのホーム画面起動時のみ
+  document.addEventListener(
+    "click",
+    function (e) {
+      const a = e.target.closest ? e.target.closest("a[href]") : null;
+      if (!a) return;
+      if (a.target === "_blank" || a.hasAttribute("download")) return;
+      const href = a.getAttribute("href") || "";
+      if (href.startsWith("#") || /^(mailto:|tel:|sms:|javascript:)/i.test(href)) return;
+      let url;
+      try { url = new URL(href, location.href); } catch (_) { return; }
+      if (url.origin !== location.origin) return; // 外部はSafariへ
+      e.preventDefault();
+      location.href = url.href; // 同一オリジンはアプリ内で遷移
+    },
+    false
+  );
+})();
+
+/* =========================================================
    下タブバー（PWA／スマホのみ）
    - display-mode:standalone（ホーム画面から起動）かつ
      スマホ幅のときだけ表示。PCやブラウザ閲覧では出さない。
