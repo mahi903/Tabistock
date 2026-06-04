@@ -218,11 +218,11 @@ if (el) {
     st.id = "tabbarStyle";
     st.textContent = `
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:90;display:none;align-items:stretch;height:82px;background:#fff;border-top:1px solid #e7ddcb;padding-bottom:env(safe-area-inset-bottom);font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
-.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding-bottom:8px;text-decoration:none;color:#9aa3b0;font-size:11px;font-weight:700;-webkit-tap-highlight-color:transparent}
-.tabbar a svg{width:24px;height:24px}
+.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding-bottom:8px;text-decoration:none;color:#9aa3b0;font-size:10px;font-weight:700;-webkit-tap-highlight-color:transparent}
+.tabbar a svg{width:21px;height:21px}
 .tabbar a.active{color:#1f6f5b}
-.tabbar .tb-fab{margin-top:-26px;width:56px;height:56px;border-radius:50%;background:#1f6f5b;color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 6px 16px rgba(31,111,91,.42)}
-.tabbar .tb-fab svg{width:28px;height:28px}
+.tabbar .tb-fab{margin-top:-24px;width:50px;height:50px;border-radius:50%;background:#1f6f5b;color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 6px 16px rgba(31,111,91,.42)}
+.tabbar .tb-fab svg{width:25px;height:25px}
 .tabbar .tb-post:active .tb-fab{transform:scale(.94)}
 @media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(82px + env(safe-area-inset-bottom))}}`;
     document.head.appendChild(st);
