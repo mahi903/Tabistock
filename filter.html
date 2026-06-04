@@ -558,10 +558,10 @@ cards.forEach(card=>{
 function refreshHeights(){cards.forEach(c=>{if(c.classList.contains('active')){const p=c.querySelector('.fpanel');p.style.maxHeight=p.scrollHeight+'px'}})}
 addEventListener('resize',refreshHeights);
 
-// open card matching URL hash (from index.html entry points)
+// open card matching URL hash (from index.html entry points); default: all closed
 const hash=location.hash.replace('#','');
-const target=hash?document.getElementById(hash):document.getElementById('fc-country');
-if(target&&target.classList.contains('fcard')){openCard(target,true);} else {openCard(cards[0],true);}
+const target=hash?document.getElementById(hash):null;
+if(target&&target.classList.contains('fcard')){openCard(target,true);}
 
 // selection count + per-card badges
 const selN=document.getElementById('selN');
