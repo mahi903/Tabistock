@@ -144,20 +144,15 @@
       </div>
     </div>
 
-    <div class="row3">
-      <div>
-        <label class="f">通貨<span class="req">必須</span></label>
-        <input type="text" id="currency" placeholder="例：モンゴルトゥグルグ">
-      </div>
-      <div>
-        <label class="f">言語<span class="req">必須</span></label>
-        <input type="text" id="language" placeholder="例：モンゴル語">
-      </div>
-      <div>
-        <label class="f">治安<span class="req">必須</span></label>
-        <input type="text" id="safety" placeholder="例：比較的安全">
-      </div>
-    </div>
+    <label class="f">治安<span class="req">必須</span></label>
+    <select id="safety">
+      <option value="">選択してください</option>
+      <option value="とても安全">とても安全</option>
+      <option value="比較的安全">比較的安全</option>
+      <option value="普通">普通</option>
+      <option value="やや注意が必要">やや注意が必要</option>
+      <option value="注意が必要">注意が必要</option>
+    </select>
 
     <label class="f">旅の難易度<span class="req">必須</span></label>
     <div class="stars" id="stars">
@@ -266,6 +261,19 @@ const COUNTRIES = [
   {v:'kenya',jp:'ケニア',en:'Kenya',r:'africa'},{v:'south-africa',jp:'南アフリカ',en:'South Africa',r:'africa'},
   {v:'australia',jp:'オーストラリア',en:'Australia',r:'oceania'},{v:'new-zealand',jp:'ニュージーランド',en:'New Zealand',r:'oceania'},
 ];
+// 国 → [通貨, 言語]。投稿フォームに欄は出さず、選んだ国からこの表で自動セットして記事に載せる。
+const COUNTRY_CL={
+  japan:['日本円','日本語'],korea:['韓国ウォン','韓国語'],china:['人民元','中国語'],taiwan:['台湾ドル','中国語'],hongkong:['香港ドル','広東語'],mongolia:['モンゴルトゥグルグ','モンゴル語'],
+  thai:['タイバーツ','タイ語'],cambodia:['リエル','クメール語'],vietnam:['ベトナムドン','ベトナム語'],malaysia:['リンギット','マレー語'],singapore:['シンガポールドル','英語'],indonesia:['ルピア','インドネシア語'],philippines:['フィリピンペソ','フィリピン語・英語'],
+  india:['インドルピー','ヒンディー語・英語'],nepal:['ネパールルピー','ネパール語'],srilanka:['スリランカルピー','シンハラ語・タミル語'],bhutan:['ニュルタム','ゾンカ語'],maldives:['ルフィヤ','ディベヒ語'],pakistan:['パキスタンルピー','ウルドゥー語'],bangladesh:['タカ','ベンガル語'],
+  kazakhstan:['テンゲ','カザフ語・ロシア語'],kyrgyzstan:['ソム','キルギス語・ロシア語'],uzbekistan:['スム','ウズベク語'],
+  turkey:['トルコリラ','トルコ語'],qatar:['カタールリヤル','アラビア語'],UAE:['ディルハム','アラビア語'],
+  finland:['ユーロ','フィンランド語'],sweden:['スウェーデンクローナ','スウェーデン語'],norway:['ノルウェークローネ','ノルウェー語'],estonia:['ユーロ','エストニア語'],latvia:['ユーロ','ラトビア語'],lithuania:['ユーロ','リトアニア語'],croatia:['ユーロ','クロアチア語'],austria:['ユーロ','ドイツ語'],hungary:['フォリント','ハンガリー語'],slovakia:['ユーロ','スロバキア語'],france:['ユーロ','フランス語'],uk:['イギリスポンド','英語'],italy:['ユーロ','イタリア語'],spain:['ユーロ','スペイン語'],germany:['ユーロ','ドイツ語'],netherlands:['ユーロ','オランダ語'],switzerland:['スイスフラン','ドイツ語・フランス語'],portugal:['ユーロ','ポルトガル語'],greece:['ユーロ','ギリシャ語'],czech:['チェコ・コルナ','チェコ語'],poland:['ズロチ','ポーランド語'],belgium:['ユーロ','オランダ語・フランス語'],ireland:['ユーロ','英語'],denmark:['デンマーククローネ','デンマーク語'],iceland:['アイスランドクローナ','アイスランド語'],
+  usa:['米ドル','英語'],canada:['カナダドル','英語・フランス語'],mexico:['メキシコペソ','スペイン語'],
+  peru:['ソル','スペイン語'],bolivia:['ボリビアーノ','スペイン語'],chile:['チリペソ','スペイン語'],argentina:['アルゼンチンペソ','スペイン語'],brazil:['レアル','ポルトガル語'],
+  morocco:['モロッコ・ディルハム','アラビア語・フランス語'],egypt:['エジプトポンド','アラビア語'],kenya:['ケニアシリング','スワヒリ語・英語'],'south-africa':['ランド','英語'],
+  australia:['オーストラリアドル','英語'],'new-zealand':['ニュージーランドドル','英語']
+};
 const REGION_JP={ "east-asia":"東アジア","southeast-asia":"東南アジア","south-asia":"南アジア","central-asia":"中央アジア","west-asia":"西アジア","europe":"ヨーロッパ","north-america":"北アメリカ","south-america":"南アメリカ","africa":"アフリカ","oceania":"オセアニア" };
 const REGION_EN={ "east-asia":"East Asia","southeast-asia":"Southeast Asia","south-asia":"South Asia","central-asia":"Central Asia","west-asia":"West Asia","europe":"Europe","north-america":"North America","south-america":"South America","africa":"Africa","oceania":"Oceania" };
 const REGION_ORDER=["east-asia","southeast-asia","south-asia","central-asia","west-asia","europe","north-america","south-america","africa","oceania"];
@@ -535,6 +543,9 @@ wirePhotoInput($('heroPhotos'),$('heroThumbs'));
 
 /* メタ情報のプレビュー＆eyebrow自動入力 */
 function selectedCountries(){ return [...document.querySelectorAll('input[name=country]:checked')].map(c=>c.value); }
+/* 選んだ国から通貨・言語を自動生成（周遊は「／」で連結）。記事に載せる用。 */
+function autoCurrency(){ return [...new Set(selectedCountries().map(v=>(COUNTRY_CL[v]||[])[0]).filter(Boolean))].join('／'); }
+function autoLanguage(){ return [...new Set(selectedCountries().map(v=>(COUNTRY_CL[v]||[])[1]).filter(Boolean))].join('／'); }
 function selectedStyles(){ return [...document.querySelectorAll('input[name=style]:checked')].map(c=>c.value); }
 function primaryRegion(){ const cs=selectedCountries(); if(!cs.length) return ''; return cinfo(cs[0]).r; }
 function buildTags(){
@@ -595,7 +606,7 @@ async function gather(){
     budget:$('budget').value, days_v:$('days').value, styles:selectedStyles(),
     title:$('title').value.trim(), lead:$('lead').value.trim(),
     dateStart:$('dateStart').value, dateEnd:$('dateEnd').value,
-    currency:$('currency').value.trim(), language:$('language').value.trim(), safety:$('safety').value.trim(),
+    currency:autoCurrency(), language:autoLanguage(), safety:$('safety').value.trim(),
     difficulty,
     costs, flights, flightWhen:$('flightWhen').value.trim(), flightSite:$('flightSite').value.trim(),
     services, days, comment:$('comment').value.trim(),
@@ -610,7 +621,7 @@ function validate(d){
   if(!d.budget) e.push('予算'); if(!d.days_v) e.push('日数'); if(!d.styles.length) e.push('旅スタイル');
   if(!d.title) e.push('タイトル'); if(!d.lead) e.push('リード文');
   if(!d.dateStart||!d.dateEnd) e.push('旅行時期');
-  if(!d.currency) e.push('通貨'); if(!d.language) e.push('言語'); if(!d.safety) e.push('治安');
+  if(!d.safety) e.push('治安');
   if(!d.flights.length) e.push('航空券（最低1航路）');
   if(!d.flightWhen) e.push('予約時期'); if(!d.flightSite) e.push('予約サイト');
   if(!d.heroFiles.length && !(d.heroExisting&&d.heroExisting.length)) e.push('カルーセル写真（最低1枚／サムネにも使用）');
@@ -959,7 +970,7 @@ window.populateForm = function(d){
   $('author').value=d.author||'mahiro';
   $('title').value=d.title||'';
   $('lead').value=d.lead||''; $('dateStart').value=d.dateStart||''; $('dateEnd').value=d.dateEnd||'';
-  $('currency').value=d.currency||''; $('language').value=d.language||''; $('safety').value=d.safety||'';
+  $('safety').value=d.safety||'';
   difficulty=d.difficulty||3; paintStars();
   $('flightWhen').value=d.flightWhen||''; $('flightSite').value=d.flightSite||'';
   $('comment').value=d.comment||'';
