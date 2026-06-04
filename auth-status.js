@@ -212,6 +212,8 @@ if (el) {
     window.navigator.standalone === true;
   if (!standalone) return; // ブラウザ閲覧時は出さない
   if (document.querySelector(".tabbar")) return; // 二重生成防止
+  // 投稿/編集ページはタブを出さない（下部の送信バーと重なるため）
+  if ((location.pathname.split("/").pop() || "").toLowerCase() === "post.html") return;
 
   if (!document.getElementById("tabbarStyle")) {
     const st = document.createElement("style");

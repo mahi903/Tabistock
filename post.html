@@ -56,7 +56,10 @@
   .total b{ color:var(--green-d); font-size:18px; }
   .filebox{ border:1px solid #d9d2c4; border-radius:10px; padding:10px; background:#fff; }
   .thumbs{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
-  .thumbs img{ width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--line); }
+  .thumbs img{ width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--line); display:block; }
+  .thumb{ position:relative; display:inline-block; }
+  .thumb-x{ position:absolute; top:-6px; right:-6px; width:20px; height:20px; padding:0; border:none; border-radius:50%; background:rgba(20,24,32,.82); color:#fff; font-size:13px; line-height:20px; text-align:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+  .thumb-x:hover{ background:#e0564b; }
   .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:50; }
   .btn{ border:none; border-radius:999px; padding:13px 26px; font-size:15px; font-weight:800; cursor:pointer; }
   .btn-main{ background:var(--green); color:#fff; }
@@ -400,7 +403,7 @@ function addDay(data){
     </div>`;
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); renumberDays(); });
   const fileIn=wrap.querySelector('.d-photos'), th=wrap.querySelector('.thumbs');
-  fileIn.addEventListener('change',()=>previewFiles(fileIn,th));
+  wirePhotoInput(fileIn,th);
   // 場所ピン：開いたら遅延で地図を生成
   wrap.querySelector('.dayloc-toggle').addEventListener('click',()=>{
     const box=wrap.querySelector('.dayloc');
@@ -414,9 +417,10 @@ function addDay(data){
       wrap._lat=data.lat; wrap._lng=data.lng; updateDayLoc(wrap);
     }
     if(data.photoUrls && data.photoUrls.length){
-      wrap._existingPhotos = data.photoUrls.slice();
-      th.innerHTML = data.photoUrls.map(u=>`<img src="${esc(u)}">`).join('')
-        + `<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。差し替える場合のみ新しく選び直してください。</p>`;
+      const ex = data.photoUrls.slice();
+      wrap._existingPhotos = ex;       // gather が参照（splice で同期）
+      fileIn._existing = ex;           // renderThumbs が同じ配列を参照
+      renderThumbs(fileIn, th);
     }
   }
   $('dayList').appendChild(wrap); renumberDays();
@@ -488,12 +492,42 @@ $('stars').addEventListener('click',e=>{ if(e.target.dataset.v){ difficulty=Numb
 function paintStars(){ document.querySelectorAll('#stars i').forEach(i=>i.classList.toggle('on',Number(i.dataset.v)<=difficulty)); }
 paintStars();
 
-// 写真プレビュー
-function previewFiles(input,container){
-  container.innerHTML='';
-  [...input.files].forEach(f=>{ const img=document.createElement('img'); img.src=URL.createObjectURL(f); container.appendChild(img); });
+// 写真プレビュー＆個別削除
+// input.files は直接いじれないので、選択ファイルを input._sel に保持し
+// DataTransfer で input.files に同期する（追加選択も保持できる）。
+// 既存写真（編集時）は input._existing（URL配列）として一緒に表示・削除する。
+function syncInputFiles(input){
+  const dt=new DataTransfer();
+  (input._sel||[]).forEach(f=>dt.items.add(f));
+  input.files=dt.files;
 }
-$('heroPhotos').addEventListener('change',()=>previewFiles($('heroPhotos'),$('heroThumbs')));
+function renderThumbs(input,container){
+  const existing=input._existing||[];
+  const sel=input._sel||[];
+  let html='';
+  existing.forEach((u,i)=>{ html+=`<div class="thumb"><img src="${esc(u)}"><button type="button" class="thumb-x" data-ex="${i}" aria-label="削除">×</button></div>`; });
+  sel.forEach((f,i)=>{ html+=`<div class="thumb"><img src="${URL.createObjectURL(f)}"><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button></div>`; });
+  if(existing.length) html+=`<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。×で削除、追加する場合は新しく選んでください。</p>`;
+  container.innerHTML=html;
+  container.querySelectorAll('.thumb-x').forEach(b=>{
+    b.addEventListener('click',()=>{
+      if(b.dataset.ex!=null){ existing.splice(+b.dataset.ex,1); }
+      else { sel.splice(+b.dataset.new,1); syncInputFiles(input); }
+      renderThumbs(input,container);
+    });
+  });
+}
+function wirePhotoInput(input,container){
+  input._sel=input._sel||[];
+  input.addEventListener('change',()=>{
+    [...input.files].forEach(f=>input._sel.push(f));
+    syncInputFiles(input);
+    renderThumbs(input,container);
+  });
+}
+// 後方互換（既存呼び出し用）
+function previewFiles(input,container){ renderThumbs(input,container); }
+wirePhotoInput($('heroPhotos'),$('heroThumbs'));
 
 
 /* メタ情報のプレビュー＆eyebrow自動入力 */
@@ -951,8 +985,8 @@ window.populateForm = function(d){
   // カルーセル（ヒーロー）写真の既存分
   if(d.heroUrls && d.heroUrls.length){
     window.tabistockHeroExisting = d.heroUrls.slice();
-    $('heroThumbs').innerHTML = d.heroUrls.map(u=>`<img src="${esc(u)}">`).join('')
-      + `<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。差し替える場合のみ新しく選び直してください。</p>`;
+    $('heroPhotos')._existing = window.tabistockHeroExisting; // 同じ配列を参照（splice で同期）
+    renderThumbs($('heroPhotos'), $('heroThumbs'));
   }
   updateMeta();
 };
