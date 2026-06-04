@@ -7,7 +7,7 @@
 //   - HTML（ページ遷移）はネット優先＋失敗時キャッシュ（更新を即反映）。
 //   - CSS/JS/画像は stale-while-revalidate（まず表示→裏で更新）。
 
-const VERSION = 'tabistock-v4';
+const VERSION = 'tabistock-v5';
 const CACHE = VERSION;
 
 // インストール時に最低限の「アプリの骨格」を先読みしておく。
@@ -30,11 +30,13 @@ const PRECACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  // ここでは skipWaiting しない（新SWは「待機」状態にとどめ、
+  // ページ側の「更新」ボタンが押されたら切り替える）。
   event.waitUntil(
     caches.open(CACHE).then((cache) =>
       // 一部が 404 でも全体が失敗しないよう個別に追加。
       Promise.allSettled(PRECACHE.map((url) => cache.add(url)))
-    ).then(() => self.skipWaiting())
+    )
   );
 });
 
@@ -44,6 +46,11 @@ self.addEventListener('activate', (event) => {
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
+});
+
+// ページから「更新」を指示されたら待機中の新SWを有効化する。
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {

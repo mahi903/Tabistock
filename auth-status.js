@@ -10,9 +10,53 @@ const base = location.pathname.includes("/articles/") ? "../" : "./";
 
 // PWA: Service Worker を登録（インストール可能化＋静的ファイル高速化）。
 // ルート(/sw.js)に置いてあるので scope はサイト全体。失敗してもページ動作には影響しない。
+// 新バージョンを検知したら「更新」トーストを出し、タップで即時反映する。
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(e => console.warn("SW登録に失敗:", e));
+  let updateClicked = false; // 「更新」を押した時だけリロードする（初回インストール時の無駄なリロード防止）
+  const showUpdateToast = (worker) => {
+    if (document.getElementById("swUpdate")) return;
+    const bar = document.createElement("div");
+    bar.id = "swUpdate";
+    bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 12px);z-index:120;display:flex;align-items:center;gap:10px;background:#1f6f5b;color:#fff;padding:9px 10px 9px 16px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:"Noto Sans JP",-apple-system,sans-serif;font-size:13px;font-weight:700;max-width:calc(100vw - 24px)';
+    const txt = document.createElement("span");
+    txt.textContent = "新しいバージョンがあります";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "更新";
+    btn.style.cssText = 'border:none;background:#fff;color:#1f6f5b;font-weight:800;font-size:13px;padding:7px 15px;border-radius:999px;cursor:pointer;flex-shrink:0';
+    const close = document.createElement("button");
+    close.type = "button";
+    close.setAttribute("aria-label", "閉じる");
+    close.textContent = "×";
+    close.style.cssText = 'border:none;background:transparent;color:#fff;font-size:18px;line-height:1;cursor:pointer;padding:0 4px;flex-shrink:0';
+    close.addEventListener("click", () => bar.remove());
+    btn.addEventListener("click", () => { updateClicked = true; btn.disabled = true; btn.textContent = "更新中…"; worker.postMessage("SKIP_WAITING"); });
+    bar.append(txt, btn, close);
+    document.body.appendChild(bar);
+  };
+
+  // 新SWが制御を取ったら一度だけリロードして新版を適用。
+  let refreshed = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!updateClicked || refreshed) return;
+    refreshed = true;
+    location.reload();
+  });
+
+  window.addEventListener("load", async () => {
+    try {
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      // 既に待機中の新SWがある場合（初回インストール時は controller が無いので出さない）
+      if (reg.waiting && navigator.serviceWorker.controller) showUpdateToast(reg.waiting);
+      // 新SWが見つかったら、インストール完了時に通知。
+      reg.addEventListener("updatefound", () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener("statechange", () => {
+          if (nw.state === "installed" && navigator.serviceWorker.controller) showUpdateToast(nw);
+        });
+      });
+    } catch (e) { console.warn("SW登録に失敗:", e); }
   });
 }
 
@@ -220,11 +264,11 @@ if (el) {
     st.id = "tabbarStyle";
     st.textContent = `
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:90;display:none;align-items:stretch;height:82px;background:#fff;border-top:1px solid #e7ddcb;padding-bottom:env(safe-area-inset-bottom);font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
-.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding-bottom:8px;text-decoration:none;color:#9aa3b0;font-size:10px;font-weight:700;-webkit-tap-highlight-color:transparent}
-.tabbar a svg{width:21px;height:21px}
+.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding-top:12px;text-decoration:none;color:#9aa3b0;font-size:9px;font-weight:700;-webkit-tap-highlight-color:transparent}
+.tabbar a svg{width:19px;height:19px}
 .tabbar a.active{color:#1f6f5b}
-.tabbar .tb-fab{margin-top:-24px;width:50px;height:50px;border-radius:50%;background:#1f6f5b;color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 6px 16px rgba(31,111,91,.42)}
-.tabbar .tb-fab svg{width:25px;height:25px}
+.tabbar .tb-fab{margin-top:-22px;width:46px;height:46px;border-radius:50%;background:#1f6f5b;color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 6px 16px rgba(31,111,91,.42)}
+.tabbar .tb-fab svg{width:23px;height:23px}
 .tabbar .tb-post:active .tb-fab{transform:scale(.94)}
 @media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(82px + env(safe-area-inset-bottom))}body.pwa:has(.drawer.open) .tabbar{display:none}}`;
     document.head.appendChild(st);
