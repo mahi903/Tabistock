@@ -283,9 +283,17 @@ $("submitBtn").onclick = async () => {
         nickname, createdAt: serverTimestamp()
       }, { merge: true });
       try { await sendEmailVerification(cred.user); } catch(e){}
-      showMsg("登録できました。確認メールを送信しました。", "ok");
+      await signOut(auth); // 認証が済むまでログイン状態にしない
+      setMode("login");
+      showMsg("確認メールを送信しました。メール内のリンクを開いて認証を完了してから、ログインしてください。", "ok");
     }else{
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      if(!cred.user.emailVerified){
+        try { await sendEmailVerification(cred.user); } catch(e){} // 確認メールを再送
+        await signOut(auth);
+        showMsg("メールアドレスが未確認です。確認メールのリンクを開いて認証を完了してください。（確認メールを再送しました）", "err");
+        return;
+      }
     }
   }catch(err){
     showMsg(jpError(err.code), "err");
@@ -498,7 +506,7 @@ async function openFollowList(uid, type){
 
 onAuthStateChanged(auth, async (user) => {
   $("authLoading").classList.add("hide"); // 判定が出たらローディングを消す
-  if(user){
+  if(user && user.emailVerified){
     // プロフィール取得（nickname / photoURL）
     let nick = user.displayName || "";
     let photo = user.photoURL || "";
