@@ -341,3 +341,70 @@ if (el) {
     new MutationObserver(sync).observe(drawerEl, { attributes: true, attributeFilter: ["class"] });
   }
 })();
+
+/* =========================================================
+   旅の概要カード（.info-grid）の横スクロール矢印
+   - スマホで横スクロールに気づきにくい問題への対策。
+   - 隣にカードがある向きにだけ、半透明の小さい矢印を表示。
+     左右どちらにもあれば両方出す。端まで来たらその向きは消す。
+   - PC（グリッド表示で横スクロール不要）では出さない。
+   - view.html は記事を後から描画するため MutationObserver で検知。
+========================================================= */
+(function infoGridArrows() {
+  const STYLE_ID = "infoGridArrowStyle";
+  if (!document.getElementById(STYLE_ID)) {
+    const st = document.createElement("style");
+    st.id = STYLE_ID;
+    st.textContent = `
+.ig-wrap{position:relative}
+.ig-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:34px;height:34px;padding:0;border:none;border-radius:50%;background:rgba(23,32,51,.30);color:#fff;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);box-shadow:0 2px 8px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .2s;display:none}
+.ig-nav svg{width:16px;height:16px;display:block}
+.ig-nav.show{display:flex;opacity:1;pointer-events:auto}
+.ig-prev{left:8px}
+.ig-next{right:8px}
+@media(min-width:769px){.ig-nav{display:none!important}}`;
+    document.head.appendChild(st);
+  }
+  const CH_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+  const CH_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+
+  function setup(grid) {
+    if (grid.dataset.igReady) return;
+    grid.dataset.igReady = "1";
+    const wrap = document.createElement("div");
+    wrap.className = "ig-wrap";
+    grid.parentNode.insertBefore(wrap, grid);
+    wrap.appendChild(grid);
+    const prev = document.createElement("button");
+    prev.type = "button"; prev.className = "ig-nav ig-prev";
+    prev.setAttribute("aria-label", "前のカードへ"); prev.innerHTML = CH_L;
+    const next = document.createElement("button");
+    next.type = "button"; next.className = "ig-nav ig-next";
+    next.setAttribute("aria-label", "次のカードへ"); next.innerHTML = CH_R;
+    wrap.appendChild(prev); wrap.appendChild(next);
+
+    const update = () => {
+      const max = grid.scrollWidth - grid.clientWidth;
+      const scrollable = max > 8;
+      prev.classList.toggle("show", scrollable && grid.scrollLeft > 8);
+      next.classList.toggle("show", scrollable && grid.scrollLeft < max - 8);
+    };
+    const step = (dir) => grid.scrollBy({ left: dir * grid.clientWidth * 0.85, behavior: "smooth" });
+    prev.addEventListener("click", () => step(-1));
+    next.addEventListener("click", () => step(1));
+    grid.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+    setTimeout(update, 400); // 画像読み込みで幅が確定してから再計算
+  }
+  const scan = () => document.querySelectorAll(".info-grid").forEach(setup);
+  if (document.readyState !== "loading") scan();
+  else document.addEventListener("DOMContentLoaded", scan);
+  let scheduled = false;
+  const mo = new MutationObserver(() => {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => { scheduled = false; scan(); });
+  });
+  mo.observe(document.documentElement, { childList: true, subtree: true });
+})();
