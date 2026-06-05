@@ -239,8 +239,42 @@ a{color:inherit;text-decoration:none}
   .scroll-cue{display:none}
 }
 </style>
+<style>
+/* 起動スプラッシュ（PWAでアプリとして開いた時だけ・1起動につき1回） */
+#tabi-splash{display:none;position:fixed;inset:0;z-index:99999;align-items:center;justify-content:center;background:linear-gradient(150deg,#1f6f5b,#2f9e7f)}
+#tabi-splash .ts-inner{display:flex;flex-direction:column;align-items:center;gap:16px}
+#tabi-splash .ts-logo{font-family:"Manrope","Noto Sans JP",-apple-system,BlinkMacSystemFont,sans-serif;font-weight:800;font-size:40px;letter-spacing:-.02em;color:#fff;opacity:0;transform:translateY(12px) scale(.93);animation:tsLogoIn .8s cubic-bezier(.2,.7,.2,1) .05s forwards}
+#tabi-splash .ts-line{width:0;height:3px;border-radius:2px;background:#ffd9a0;animation:tsLineIn .55s cubic-bezier(.2,.7,.2,1) .5s forwards}
+#tabi-splash.ts-out{animation:tsOut .45s ease forwards}
+@keyframes tsLogoIn{to{opacity:1;transform:none}}
+@keyframes tsLineIn{to{width:132px}}
+@keyframes tsOut{to{opacity:0;visibility:hidden}}
+@media(prefers-reduced-motion:reduce){#tabi-splash .ts-logo,#tabi-splash .ts-line{animation-duration:.01s;animation-delay:0s}}
+</style>
 </head>
 <body>
+
+<!-- 起動スプラッシュ -->
+<div id="tabi-splash" aria-hidden="true">
+  <div class="ts-inner">
+    <div class="ts-logo">Tabistock</div>
+    <div class="ts-line"></div>
+  </div>
+</div>
+<script>
+(function(){
+  var el=document.getElementById('tabi-splash');
+  if(!el) return;
+  var standalone=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;
+  var shown=false;
+  try{shown=sessionStorage.getItem('tabiSplashShown')==='1';}catch(e){}
+  if(!standalone||shown){ if(el.parentNode) el.parentNode.removeChild(el); return; }
+  try{sessionStorage.setItem('tabiSplashShown','1');}catch(e){}
+  el.style.display='flex';
+  setTimeout(function(){el.classList.add('ts-out');},1150);
+  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},1650);
+})();
+</script>
 
 <!-- HEADER -->
 <header class="hd" id="hd">
