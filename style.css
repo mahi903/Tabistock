@@ -231,15 +231,15 @@ a {
 .concept,
 .founder-section,
 /* ===== GREEN MINI HERO (matches filter.html) ===== */
-.fhero{position:relative;padding:116px 6% 44px;background:linear-gradient(150deg,#1f6f5b,#2f9e7f);color:#fff;overflow:hidden}
+.fhero{position:relative;padding:108px 6% 34px;background:linear-gradient(150deg,#1f6f5b,#2f9e7f);color:#fff;overflow:hidden}
 .fhero::after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.07)}
 .fhero .eyebrow{font-family:"Manrope",sans-serif;font-weight:800;letter-spacing:.22em;font-size:12px;text-transform:uppercase;color:#ffd9a0;margin:0}
 .fhero h1{font-size:clamp(28px,4.4vw,46px);font-weight:900;letter-spacing:-.02em;margin:12px 0 10px;color:#fff}
 .fhero p{color:rgba(255,255,255,.9);font-size:15px;line-height:1.8;max-width:560px;margin:0}
-@media (max-width:768px){.fhero{padding:90px 6% 26px}.fhero h1{margin:8px 0 8px}.fhero p{font-size:14px;line-height:1.7}}
+@media (max-width:768px){.fhero{padding:88px 6% 16px}.fhero h1{margin:6px 0 7px}.fhero p{font-size:14px;line-height:1.65}}
 
 .search-results{
-  padding: 48px 7% 84px;
+  padding: 30px 7% 84px;
 }
 
 .search-area h2,
@@ -2691,7 +2691,7 @@ a {
 }
 @media (max-width: 768px) {
   .search-results {
-    padding-top: 36px;
+    padding-top: 24px;
   }
 
   .searchlabel {
