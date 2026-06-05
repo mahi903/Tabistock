@@ -42,6 +42,14 @@
   .row2{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
   .row3{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:12px; }
   @media(max-width:600px){ .row2,.row3{ grid-template-columns:minmax(0,1fr); } }
+  /* 航空会社オートコンプリート（欄の直下に候補を表示） */
+  .ac-wrap{ position:relative; }
+  .ac-list{ position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:60; background:#fff; border:1px solid #d9d2c4; border-radius:10px; box-shadow:0 10px 28px rgba(0,0,0,.14); max-height:240px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .ac-item{ padding:10px 12px; font-size:14px; cursor:pointer; border-bottom:1px solid #f0ece2; }
+  .ac-item:last-child{ border-bottom:none; }
+  .ac-item .ac-sub{ color:var(--mut); font-size:12px; margin-left:6px; }
+  .ac-item.sel,.ac-item:active{ background:#eaf5f0; }
+  @media(hover:hover){ .ac-item:hover{ background:#f3efe6; } }
   .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
   .chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid #d9d2c4; border-radius:999px; padding:6px 12px; font-size:13px; cursor:pointer; background:#fff; user-select:none; }
   .chip input{ accured:0; margin:0; }
@@ -367,11 +375,12 @@ function addFlight(data){
     <h4>航路 ${flightN}</h4>
     <label class="f">区間</label><input type="text" class="fl-route" placeholder="例：大阪 → 上海 → ウランバートル">
     <div class="row2" style="margin-top:8px">
-      <div><label class="f">航空会社<span class="opt">任意</span></label><input type="text" class="fl-air" list="airlines" autocomplete="off" placeholder="例：ANA（頭文字で候補が出ます）"></div>
+      <div class="ac-wrap"><label class="f">航空会社<span class="opt">任意</span></label><input type="text" class="fl-air" autocomplete="off" placeholder="例：ANA／エミレーツ（入力で候補）"></div>
       <div><label class="f">値段（円）</label><input type="number" class="fl-price" min="0" step="1000" placeholder="0"></div>
     </div>`;
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); calcFlight(); renumberFlights(); });
   wrap.querySelector('.fl-price').addEventListener('input',calcFlight);
+  attachAirlineAC(wrap.querySelector('.fl-air'));
   if(data){ wrap.querySelector('.fl-route').value=data.route||''; wrap.querySelector('.fl-air').value=data.airline||''; wrap.querySelector('.fl-price').value=data.price||''; }
   $('flightList').appendChild(wrap); renumberFlights(); calcFlight();
 }
@@ -379,9 +388,108 @@ function renumberFlights(){ let n=0; document.querySelectorAll('[data-flight] h4
 function calcFlight(){ let t=0; document.querySelectorAll('.fl-price').forEach(i=>t+=Number(i.value||0)); $('flightTotal').textContent=yen(t); return t; }
 $('addFlight').addEventListener('click',()=>addFlight());
 addFlight();
-// 航空会社オートコンプリート（頭文字を打つと候補が絞り込まれる）
-const AIRLINES=["ANA","JAL","Peach","Jetstar","Zipair","Skymark","Solaseed Air","AirAsia","AirAsia X","Scoot","Cebu Pacific","Cebgo","VietJet Air","Vietnam Airlines","Thai Airways","Thai AirAsia","Bangkok Airways","Singapore Airlines","Cathay Pacific","Hong Kong Airlines","Greater Bay Airlines","EVA Air","China Airlines","Korean Air","Asiana Airlines","Jeju Air","T'way Air","Air Busan","China Eastern Airlines","China Southern Airlines","Air China","Spring Airlines","Hainan Airlines","Philippine Airlines","Malaysia Airlines","Batik Air","Garuda Indonesia","Lion Air","Qatar Airways","Emirates","Etihad Airways","Turkish Airlines","Qantas","Air New Zealand","American Airlines","United Airlines","Delta Air Lines","Hawaiian Airlines","Air Canada","Air India","IndiGo","Finnair","Lufthansa","Air France","KLM","British Airways","Swiss","Iberia","ITA Airways","Aeroflot","Aurora","Uzbekistan Airways","Air Astana"];
-(function(){ const dl=document.createElement('datalist'); dl.id='airlines'; dl.innerHTML=AIRLINES.map(a=>`<option value="${a}"></option>`).join(''); document.body.appendChild(dl); })();
+// 航空会社オートコンプリート（英語・カタカナ・かな・漢字で絞り込み／欄の直下に候補を表示）
+const AIRLINES=[
+  {name:"ANA",kana:["エーエヌエー","全日空","全日本空輸","ぜんにっくう"]},
+  {name:"JAL",kana:["ジャル","日本航空","にほんこうくう"]},
+  {name:"Peach",kana:["ピーチ","ピーチアビエーション"]},
+  {name:"Jetstar",kana:["ジェットスター"]},
+  {name:"Zipair",kana:["ジップエア"]},
+  {name:"Skymark",kana:["スカイマーク"]},
+  {name:"Solaseed Air",kana:["ソラシドエア","ソラシド"]},
+  {name:"AirAsia",kana:["エアアジア"]},
+  {name:"AirAsia X",kana:["エアアジアエックス"]},
+  {name:"Scoot",kana:["スクート"]},
+  {name:"Cebu Pacific",kana:["セブパシフィック","セブパシ"]},
+  {name:"Cebgo",kana:["セブゴー"]},
+  {name:"VietJet Air",kana:["ベトジェット","ベトジェットエア"]},
+  {name:"Vietnam Airlines",kana:["ベトナム航空","ベトナムこうくう"]},
+  {name:"Thai Airways",kana:["タイ国際航空","タイ航空","タイこうくう"]},
+  {name:"Thai AirAsia",kana:["タイエアアジア"]},
+  {name:"Bangkok Airways",kana:["バンコクエアウェイズ","バンコクエア"]},
+  {name:"Singapore Airlines",kana:["シンガポール航空","シンガポールこうくう","シンガポールエアラインズ"]},
+  {name:"Cathay Pacific",kana:["キャセイパシフィック","キャセイ"]},
+  {name:"Hong Kong Airlines",kana:["香港航空","ホンコン航空"]},
+  {name:"Greater Bay Airlines",kana:["グレーターベイ航空","グレーターベイ"]},
+  {name:"EVA Air",kana:["エバー航空","エバーエア","エバ"]},
+  {name:"China Airlines",kana:["チャイナエアライン","中華航空"]},
+  {name:"Korean Air",kana:["大韓航空","だいかんこうくう","コリアンエア"]},
+  {name:"Asiana Airlines",kana:["アシアナ航空","アシアナ"]},
+  {name:"Jeju Air",kana:["チェジュ航空","チェジュエア","チェジュ"]},
+  {name:"T'way Air",kana:["ティーウェイ航空","ティーウェイ"]},
+  {name:"Air Busan",kana:["エアプサン"]},
+  {name:"China Eastern Airlines",kana:["中国東方航空","東方航空"]},
+  {name:"China Southern Airlines",kana:["中国南方航空","南方航空"]},
+  {name:"Air China",kana:["中国国際航空","エアチャイナ"]},
+  {name:"Spring Airlines",kana:["春秋航空","スプリング","しゅんじゅう"]},
+  {name:"Hainan Airlines",kana:["海南航空","ハイナン航空"]},
+  {name:"Philippine Airlines",kana:["フィリピン航空"]},
+  {name:"Malaysia Airlines",kana:["マレーシア航空"]},
+  {name:"Batik Air",kana:["バティックエア"]},
+  {name:"Garuda Indonesia",kana:["ガルーダインドネシア","ガルーダ"]},
+  {name:"Lion Air",kana:["ライオンエア"]},
+  {name:"Qatar Airways",kana:["カタール航空","カタールエアウェイズ"]},
+  {name:"Emirates",kana:["エミレーツ","エミレーツ航空"]},
+  {name:"Etihad Airways",kana:["エティハド航空","エティハド"]},
+  {name:"Turkish Airlines",kana:["ターキッシュエアラインズ","トルコ航空"]},
+  {name:"Qantas",kana:["カンタス","カンタス航空"]},
+  {name:"Air New Zealand",kana:["ニュージーランド航空","エアニュージーランド"]},
+  {name:"American Airlines",kana:["アメリカン航空","アメリカンエアラインズ"]},
+  {name:"United Airlines",kana:["ユナイテッド航空","ユナイテッド"]},
+  {name:"Delta Air Lines",kana:["デルタ航空","デルタ"]},
+  {name:"Hawaiian Airlines",kana:["ハワイアン航空","ハワイアン"]},
+  {name:"Air Canada",kana:["エアカナダ","カナダ航空"]},
+  {name:"Air India",kana:["エアインディア","インド航空"]},
+  {name:"IndiGo",kana:["インディゴ"]},
+  {name:"Finnair",kana:["フィンエアー","フィンランド航空"]},
+  {name:"Lufthansa",kana:["ルフトハンザ","ルフトハンザドイツ航空"]},
+  {name:"Air France",kana:["エールフランス","フランス航空"]},
+  {name:"KLM",kana:["ケーエルエム","KLMオランダ航空","オランダ航空"]},
+  {name:"British Airways",kana:["ブリティッシュエアウェイズ","イギリス航空"]},
+  {name:"Swiss",kana:["スイス航空","スイスインターナショナル"]},
+  {name:"Iberia",kana:["イベリア航空"]},
+  {name:"ITA Airways",kana:["イタエアウェイズ","アリタリア"]},
+  {name:"Aeroflot",kana:["アエロフロート","アエロフロートロシア航空"]},
+  {name:"Aurora",kana:["オーロラ航空","オーロラ"]},
+  {name:"Uzbekistan Airways",kana:["ウズベキスタン航空"]},
+  {name:"Air Astana",kana:["エアアスタナ"]}
+];
+// 検索用に正規化：英字は小文字化、ひらがな→カタカナに統一（かな/カナどちらでもヒット）
+function acNorm(s){ return (s||'').toLowerCase().replace(/[ぁ-ゖ]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60)); }
+function attachAirlineAC(input){
+  const wrap=input.closest('.ac-wrap'); if(!wrap) return;
+  const list=document.createElement('div'); list.className='ac-list'; list.style.display='none';
+  wrap.appendChild(list);
+  let current=[], active=-1;
+  function close(){ list.style.display='none'; list.innerHTML=''; current=[]; active=-1; }
+  function paint(){ [...list.children].forEach((c,i)=>c.classList.toggle('sel',i===active)); }
+  function pick(i){ if(current[i]){ input.value=current[i].name; close(); } }
+  function update(){
+    const q=acNorm(input.value.trim());
+    if(!q){ close(); return; }
+    // 前方一致（英名 or いずれかのカナ/かな/漢字表記）。「AN」→ANA のように頭から絞り込む。
+    current=AIRLINES.filter(a=>acNorm(a.name).startsWith(q)||(a.kana||[]).some(k=>acNorm(k).startsWith(q))).slice(0,8);
+    active=-1;
+    if(!current.length){ close(); return; }
+    list.innerHTML=current.map((a,i)=>{
+      const mk=(a.kana||[]).find(k=>acNorm(k).startsWith(q));         // 一致したカナ表記を併記
+      const sub=(mk && acNorm(mk)!==acNorm(a.name))?`<span class="ac-sub">${esc(mk)}</span>`:'';
+      return `<div class="ac-item" data-i="${i}">${esc(a.name)}${sub}</div>`;
+    }).join('');
+    list.style.display='block';
+  }
+  input.addEventListener('input',update);
+  input.addEventListener('focus',update);
+  input.addEventListener('blur',()=>setTimeout(close,160));
+  input.addEventListener('keydown',e=>{
+    if(list.style.display==='none') return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); active=Math.min(active+1,current.length-1); paint(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); active=Math.max(active-1,0); paint(); }
+    else if(e.key==='Enter'&&active>=0){ e.preventDefault(); pick(active); }
+    else if(e.key==='Escape'){ close(); }
+  });
+  list.addEventListener('mousedown',e=>{ const it=e.target.closest('.ac-item'); if(it){ e.preventDefault(); pick(Number(it.dataset.i)); } });
+}
 // サービス
 SERVICE_CATS.forEach((cat,ci)=>{
   const box=$('serviceBox');
