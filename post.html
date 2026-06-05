@@ -35,11 +35,13 @@
   label.f .req{ color:#d4493f; font-size:11px; margin-left:4px; }
   label.f .opt{ color:var(--mut); font-size:11px; margin-left:4px; font-weight:600; }
   input[type=text],input[type=number],input[type=date],textarea,select{
-    width:100%; padding:9px 11px; border:1px solid #d9d2c4; border-radius:10px; font-size:14px; font-family:inherit; background:#fff; color:var(--ink); }
+    width:100%; min-width:0; max-width:100%; padding:9px 11px; border:1px solid #d9d2c4; border-radius:10px; font-size:14px; font-family:inherit; background:#fff; color:var(--ink); }
+  /* iOS の日付入力は本来の幅が広く右にはみ出すため、見た目をリセットして枠に収める */
+  input[type=date]{ -webkit-appearance:none; appearance:none; }
   textarea{ min-height:90px; resize:vertical; }
-  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-  @media(max-width:600px){ .row2,.row3{ grid-template-columns:1fr; } }
+  .row2{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
+  .row3{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:12px; }
+  @media(max-width:600px){ .row2,.row3{ grid-template-columns:minmax(0,1fr); } }
   .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
   .chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid #d9d2c4; border-radius:999px; padding:6px 12px; font-size:13px; cursor:pointer; background:#fff; user-select:none; }
   .chip input{ accured:0; margin:0; }
@@ -199,7 +201,7 @@
   <!-- ===== 5. 日程 ===== -->
   <section class="card">
     <h2><span class="num">5</span>日程（旅程＆旅の記録）</h2>
-    <p class="hint">「＋日を追加」で1日ずつ作成。ここで入れた内容が<b>旅程タイムライン</b>と<b>Day by Dayカード</b>の両方に反映されます。日付は旅行開始日から自動で入りますが編集できます。</p>
+    <p class="hint">「＋日を追加」で1日ずつ作成。ここで入れた内容が<b>旅程タイムライン</b>と<b>Day by Dayカード</b>の両方に反映されます。</p>
     <div id="dayList"></div>
     <button class="addbtn" id="addDay" type="button">＋ 日を追加</button>
   </section>
@@ -365,7 +367,7 @@ function addFlight(data){
     <h4>航路 ${flightN}</h4>
     <label class="f">区間</label><input type="text" class="fl-route" placeholder="例：大阪 → 上海 → ウランバートル">
     <div class="row2" style="margin-top:8px">
-      <div><label class="f">航空会社</label><input type="text" class="fl-air" placeholder="例：Spring Airlines"></div>
+      <div><label class="f">航空会社<span class="opt">任意</span></label><input type="text" class="fl-air" list="airlines" autocomplete="off" placeholder="例：ANA（頭文字で候補が出ます）"></div>
       <div><label class="f">値段（円）</label><input type="number" class="fl-price" min="0" step="1000" placeholder="0"></div>
     </div>`;
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); calcFlight(); renumberFlights(); });
@@ -377,6 +379,9 @@ function renumberFlights(){ let n=0; document.querySelectorAll('[data-flight] h4
 function calcFlight(){ let t=0; document.querySelectorAll('.fl-price').forEach(i=>t+=Number(i.value||0)); $('flightTotal').textContent=yen(t); return t; }
 $('addFlight').addEventListener('click',()=>addFlight());
 addFlight();
+// 航空会社オートコンプリート（頭文字を打つと候補が絞り込まれる）
+const AIRLINES=["ANA","JAL","Peach","Jetstar","Zipair","Skymark","Solaseed Air","AirAsia","AirAsia X","Scoot","Cebu Pacific","Cebgo","VietJet Air","Vietnam Airlines","Thai Airways","Thai AirAsia","Bangkok Airways","Singapore Airlines","Cathay Pacific","Hong Kong Airlines","Greater Bay Airlines","EVA Air","China Airlines","Korean Air","Asiana Airlines","Jeju Air","T'way Air","Air Busan","China Eastern Airlines","China Southern Airlines","Air China","Spring Airlines","Hainan Airlines","Philippine Airlines","Malaysia Airlines","Batik Air","Garuda Indonesia","Lion Air","Qatar Airways","Emirates","Etihad Airways","Turkish Airlines","Qantas","Air New Zealand","American Airlines","United Airlines","Delta Air Lines","Hawaiian Airlines","Air Canada","Air India","IndiGo","Finnair","Lufthansa","Air France","KLM","British Airways","Swiss","Iberia","ITA Airways","Aeroflot","Aurora","Uzbekistan Airways","Air Astana"];
+(function(){ const dl=document.createElement('datalist'); dl.id='airlines'; dl.innerHTML=AIRLINES.map(a=>`<option value="${a}"></option>`).join(''); document.body.appendChild(dl); })();
 // サービス
 SERVICE_CATS.forEach((cat,ci)=>{
   const box=$('serviceBox');
@@ -394,10 +399,7 @@ function addDay(data){
   const wrap=document.createElement('div'); wrap.className='sub'; wrap.dataset.day='1';
   wrap.innerHTML=`<button class="del" type="button">削除</button>
     <h4>DAY <span class="dnum">${dayN}</span></h4>
-    <div class="row2">
-      <div><label class="f">日付ラベル<span class="opt">自動・編集可</span></label><input type="text" class="d-date" placeholder="例：3/30"></div>
-      <div><label class="f">一文サマリー<span class="req">必須</span></label><input type="text" class="d-sum" placeholder="例：上海経由でウランバートルへ"></div>
-    </div>
+    <label class="f">一文サマリー<span class="req">必須</span></label><input type="text" class="d-sum" placeholder="例：上海経由でウランバートルへ">
     <label class="f">その日の文章（観光地を挙げるだけでも可）<span class="req">必須</span></label>
     <textarea class="d-text" placeholder="例：早朝出発。お昼に空港着。市内は予想以上に都会で…"></textarea>
     <label class="f">写真<span class="req">最低1枚</span></label>
@@ -423,7 +425,7 @@ function addDay(data){
   });
   wrap.querySelector('.dayloc-clear').addEventListener('click',()=>clearDayMarker(wrap));
   if(data){
-    wrap.querySelector('.d-date').value=data.date||''; wrap.querySelector('.d-sum').value=data.summary||''; wrap.querySelector('.d-text').value=data.text||'';
+    wrap.querySelector('.d-sum').value=data.summary||''; wrap.querySelector('.d-text').value=data.text||'';
     if(typeof data.lat==='number' && typeof data.lng==='number'){
       wrap._lat=data.lat; wrap._lng=data.lng; updateDayLoc(wrap);
     }
@@ -482,19 +484,10 @@ function renumberDays(){
   let n=0;
   document.querySelectorAll('[data-day]').forEach(w=>{
     n++; w.querySelector('.dnum').textContent=n;
-    const di=w.querySelector('.d-date');
-    if(!di.dataset.touched){ di.value=autoDate(n); }
   });
   dayN=n;
 }
-function autoDate(n){
-  const s=$('dateStart').value; if(!s) return '';
-  const d=new Date(s+'T00:00:00'); d.setDate(d.getDate()+(n-1));
-  return (d.getMonth()+1)+'/'+d.getDate();
-}
-$('dayList').addEventListener('input',e=>{ if(e.target.classList.contains('d-date')) e.target.dataset.touched='1'; });
 $('addDay').addEventListener('click',()=>addDay());
-$('dateStart').addEventListener('change',()=>{ document.querySelectorAll('.d-date').forEach(d=>{ if(!d.dataset.touched){} }); renumberDays(); });
 addDay();
 
 // 星
@@ -575,7 +568,7 @@ async function gather(){
   const days=[];
   for(const w of document.querySelectorAll('[data-day]')){
     days.push({
-      date:w.querySelector('.d-date').value.trim(),
+      date:'',
       summary:w.querySelector('.d-sum').value.trim(),
       text:w.querySelector('.d-text').value.trim(),
       files:[...w.querySelector('.d-photos').files],
@@ -718,7 +711,7 @@ ${d.services.map(s=>`  <div class="service-item">
     const imgs=day.files.map((f,j)=>`      <img src="../images/${slug}/day${i+1}-${j+1}.jpg" alt="">`).join('\n');
     return `  <article class="day-card">
     <button class="day-toggle">
-      <span class="day-label">DAY ${i+1}.${day.date?' '+esc(day.date):''}</span>
+      <span class="day-label">DAY ${i+1}</span>
       <span class="day-title">${esc(day.summary)}</span>
       <span class="day-icon">+</span>
     </button>
@@ -995,7 +988,6 @@ window.populateForm = function(d){
   });
   $('flightList').innerHTML=''; flightN=0; (d.flights||[]).forEach(f=>addFlight(f)); if(!(d.flights||[]).length) addFlight();
   $('dayList').innerHTML=''; dayN=0; (d.days||[]).forEach(day=>addDay(day)); if(!(d.days||[]).length) addDay();
-  document.querySelectorAll('.d-date').forEach(x=>x.dataset.touched='1');
   // カルーセル（ヒーロー）写真の既存分
   if(d.heroUrls && d.heroUrls.length){
     window.tabistockHeroExisting = d.heroUrls.slice();
