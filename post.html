@@ -117,7 +117,7 @@
     <h2><span class="num">0</span>基本設定</h2>
     <p class="hint">検索用メタは検索の選択肢と同じ値を使うので表記ブレは起きません。</p>
 
-    <label class="f">投稿者ニックネーム<span class="req">必須・半角英数字</span></label>
+    <label class="f">投稿者ニックネーム<span class="req">必須・登録名で自動入力</span></label>
     <input type="text" id="author" placeholder="例：mahiro" value="mahiro" autocomplete="off">
 
     <label class="f">国（複数選択可）<span class="req">必須</span></label>
@@ -762,7 +762,7 @@ async function gather(){
 }
 function validate(d){
   const e=[];
-  if(!d.author||!/^[a-z0-9_-]+$/i.test(d.author)) e.push('投稿者ニックネーム（半角英数字）');
+  if(!d.author) e.push('投稿者ニックネーム');
   if(!d.countries.length) e.push('国');
   if(!d.budget) e.push('予算'); if(!d.days_v) e.push('日数'); if(!d.styles.length) e.push('旅スタイル');
   if(!d.title) e.push('タイトル'); if(!d.lead) e.push('リード文');
@@ -779,7 +779,7 @@ function validate(d){
 // 下書き保存用：タイトルだけあればOK（あとから編集して完成できる）
 function validateDraft(d){
   const e=[];
-  if(!d.author||!/^[a-z0-9_-]+$/i.test(d.author)) e.push('投稿者ニックネーム（半角英数字）');
+  if(!d.author) e.push('投稿者ニックネーム');
   if(!d.title) e.push('タイトル（下書きでも必須）');
   return e;
 }
