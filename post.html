@@ -547,7 +547,7 @@ function addDay(data){
     <label class="f">一文サマリー<span class="req">必須</span></label><input type="text" class="d-sum" placeholder="例：上海経由でウランバートルへ">
     <label class="f">その日の文章（観光地を挙げるだけでも可）<span class="req">必須</span></label>
     <textarea class="d-text" placeholder="例：早朝出発。お昼に空港着。市内は予想以上に都会で…"></textarea>
-    <label class="f">写真<span class="req">最低1枚</span></label>
+    <label class="f">写真<span class="opt">任意</span></label>
     <div class="filebox"><input type="file" class="d-photos" accept="image/jpeg,image/png" multiple><div class="thumbs"></div></div>
     <div class="dayloc">
       <button type="button" class="dayloc-toggle">この日の場所を地図で設定（任意）</button>
@@ -772,7 +772,7 @@ function validate(d){
   if(!d.flightWhen) e.push('予約時期'); if(!d.flightSite) e.push('予約サイト');
   if(!d.heroFiles.length && !(d.heroExisting&&d.heroExisting.length)) e.push('カルーセル写真（最低1枚／サムネにも使用）');
   if(!d.days.length) e.push('日程（最低1日）');
-  d.days.forEach((day,i)=>{ if(!day.summary||!day.text) e.push(`DAY${i+1}の入力`); if(!day.files.length && !(day.existingPhotos&&day.existingPhotos.length)) e.push(`DAY${i+1}の写真（最低1枚）`); });
+  d.days.forEach((day,i)=>{ if(!day.summary||!day.text) e.push(`DAY${i+1}の入力`); });
   if(!d.comment) e.push('投稿者コメント');
   return e;
 }
