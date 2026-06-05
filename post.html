@@ -50,6 +50,13 @@
   .ac-item .ac-sub{ color:var(--mut); font-size:12px; margin-left:6px; }
   .ac-item.sel,.ac-item:active{ background:#eaf5f0; }
   @media(hover:hover){ .ac-item:hover{ background:#f3efe6; } }
+  /* 航路：片道／往復トグル＋2都市入力 */
+  .trip-toggle{ display:inline-flex; border:1px solid #d9d2c4; border-radius:999px; overflow:hidden; margin:2px 0 10px; }
+  .trip-btn{ border:none; background:#fff; padding:7px 18px; font-size:13px; font-weight:700; color:var(--mut); cursor:pointer; line-height:1; }
+  .trip-btn+.trip-btn{ border-left:1px solid #d9d2c4; }
+  .trip-btn.on{ background:#eaf5f0; color:var(--green-d); }
+  .route-grid{ display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:8px; }
+  .route-arrow{ font-size:20px; font-weight:700; color:var(--green-d); text-align:center; user-select:none; }
   .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
   .chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid #d9d2c4; border-radius:999px; padding:6px 12px; font-size:13px; cursor:pointer; background:#fff; user-select:none; }
   .chip input{ accured:0; margin:0; }
@@ -373,15 +380,42 @@ function addFlight(data){
   const wrap=document.createElement('div'); wrap.className='sub'; wrap.dataset.flight='1';
   wrap.innerHTML=`<button class="del" type="button">削除</button>
     <h4>航路 ${flightN}</h4>
-    <label class="f">区間</label><input type="text" class="fl-route" placeholder="例：大阪 → 上海 → ウランバートル">
+    <div class="trip-toggle" role="group" aria-label="片道か往復か">
+      <button type="button" class="trip-btn on" data-trip="oneway">片道</button>
+      <button type="button" class="trip-btn" data-trip="round">往復</button>
+    </div>
+    <label class="f">区間</label>
+    <div class="route-grid">
+      <input type="text" class="fl-from" placeholder="出発地（例：大阪）">
+      <span class="route-arrow" aria-hidden="true">→</span>
+      <input type="text" class="fl-to" placeholder="到着地（例：上海）">
+    </div>
     <div class="row2" style="margin-top:8px">
       <div class="ac-wrap"><label class="f">航空会社<span class="opt">任意</span></label><input type="text" class="fl-air" autocomplete="off" placeholder="例：ANA／エミレーツ（入力で候補）"></div>
       <div><label class="f">値段（円）</label><input type="number" class="fl-price" min="0" step="1000" placeholder="0"></div>
     </div>`;
+  const arrow=wrap.querySelector('.route-arrow');
+  function setTrip(t){
+    wrap.querySelectorAll('.trip-btn').forEach(b=>b.classList.toggle('on',b.dataset.trip===t));
+    arrow.textContent = t==='round' ? '↔' : '→';   // 片道→ / 往復↔
+  }
+  wrap.querySelectorAll('.trip-btn').forEach(b=>b.addEventListener('click',()=>setTrip(b.dataset.trip)));
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); calcFlight(); renumberFlights(); });
   wrap.querySelector('.fl-price').addEventListener('input',calcFlight);
   attachAirlineAC(wrap.querySelector('.fl-air'));
-  if(data){ wrap.querySelector('.fl-route').value=data.route||''; wrap.querySelector('.fl-air').value=data.airline||''; wrap.querySelector('.fl-price').value=data.price||''; }
+  if(data){
+    wrap.querySelector('.fl-air').value=data.airline||'';
+    wrap.querySelector('.fl-price').value=data.price||'';
+    let from=data.from||'', to=data.to||'', trip=data.trip||'';
+    if(!from && !to && !trip && data.route){          // 旧形式（route文字列のみ）の救済
+      trip=/↔|⇄|⇔/.test(data.route)?'round':'oneway';
+      const parts=data.route.split(/\s*(?:↔|⇄|⇔|→|⇒|⇨)\s*/);
+      from=parts[0]||''; to=parts.slice(1).join(' / ');
+    }
+    wrap.querySelector('.fl-from').value=from;
+    wrap.querySelector('.fl-to').value=to;
+    setTrip(trip==='round'?'round':'oneway');
+  }
   $('flightList').appendChild(wrap); renumberFlights(); calcFlight();
 }
 function renumberFlights(){ let n=0; document.querySelectorAll('[data-flight] h4').forEach(h=>{n++;h.textContent='航路 '+n;}); flightN=n; }
@@ -687,10 +721,15 @@ async function gather(){
   }
   const flights=[];
   document.querySelectorAll('[data-flight]').forEach(w=>{
-    const route=w.querySelector('.fl-route').value.trim();
+    const from=w.querySelector('.fl-from').value.trim();
+    const to=w.querySelector('.fl-to').value.trim();
+    const onBtn=w.querySelector('.trip-btn.on');
+    const trip=onBtn?onBtn.dataset.trip:'oneway';
+    const arrow=trip==='round'?'↔':'→';
+    const route=(from&&to)?`${from} ${arrow} ${to}`:(from||to||'');
     const airline=w.querySelector('.fl-air').value.trim();
     const price=Number(w.querySelector('.fl-price').value||0);
-    if(route||airline||price) flights.push({route,airline,price});
+    if(from||to||airline||price) flights.push({route,from,to,trip,airline,price});
   });
   const services=[];
   SERVICE_CATS.forEach((cat,ci)=>{
