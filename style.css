@@ -3094,3 +3094,105 @@ a {
     justify-self: end;
   }
 }
+
+/* =========================================================
+   旅の概要：ボタン → 中央モーダルで1枚ずつ表示
+   （カードの高さが揃わない＝周遊で全部長くならない）
+========================================================= */
+.overview-tabs{
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 24px 8px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  box-sizing:border-box;
+}
+.ov-tab{
+  flex:1 1 200px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:18px 22px;
+  border:1px solid rgba(20,30,50,0.08);
+  border-radius:16px;
+  background:rgba(255,255,255,0.9);
+  box-shadow:0 8px 22px rgba(20,30,50,0.06);
+  font-size:16px;
+  font-weight:700;
+  color:#172033;
+  cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.ov-tab::after{
+  content:"›";
+  font-size:22px;
+  line-height:1;
+  color:#1f6f5b;
+  font-weight:700;
+}
+.ov-tab:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(20,30,50,0.10); border-color:rgba(31,111,91,.35); }
+.ov-tab:active{ transform:translateY(0); }
+
+body.ov-lock{ overflow:hidden; }
+.ov-modal[hidden]{ display:none; }
+.ov-modal{
+  position:fixed; inset:0; z-index:1000;
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+  box-sizing:border-box;
+}
+.ov-backdrop{
+  position:absolute; inset:0;
+  background:rgba(15,20,30,0.5);
+  -webkit-backdrop-filter:blur(2px);
+  backdrop-filter:blur(2px);
+  animation:ovFade .2s ease;
+}
+.ov-dialog{
+  position:relative;
+  width:100%;
+  max-width:520px;
+  animation:ovPop .22s cubic-bezier(.2,.7,.2,1);
+}
+.ov-close{
+  position:absolute; top:10px; right:10px;
+  z-index:2;
+  width:36px; height:36px;
+  border:none; border-radius:50%;
+  background:#fff; color:#172033;
+  font-size:22px; line-height:1; cursor:pointer;
+  box-shadow:0 6px 16px rgba(20,30,50,0.22);
+}
+.ov-body{
+  position:relative;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  max-height:85vh;
+  border-radius:22px;
+}
+.ov-panel{ display:none; }
+.ov-panel.is-active{ display:block; }
+
+/* モーダル内のカードはカルーセル幅指定を打ち消して全幅で表示 */
+.ov-body .info-card{
+  min-width:0 !important;
+  max-width:none !important;
+  width:auto !important;
+  margin:0 !important;
+  flex:none !important;
+  border-radius:22px;
+  box-shadow:none;
+  background:#fff;
+}
+
+@keyframes ovFade{ from{opacity:0} to{opacity:1} }
+@keyframes ovPop{ from{opacity:0; transform:translateY(10px) scale(.98)} to{opacity:1; transform:none} }
+
+@media (max-width:768px){
+  .overview-tabs{ flex-direction:column; padding:0 18px 6px; gap:10px; }
+  .ov-tab{ width:100%; flex:none; }
+  .ov-dialog{ max-width:none; }
+  .ov-body{ max-height:80vh; }
+}

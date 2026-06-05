@@ -179,6 +179,33 @@ ${services.map(s=>`  <div class="service-item">
   </div>`).join('\n\n')}
 </div>`:'';
 
+  // 旅の概要：カードはボタン→中央モーダルで1枚ずつ表示（高さが揃わない／周遊で全部長くならない）
+  const costCard=`<div class="info-card cost-card">
+  <h2>費用内訳</h2>
+
+${costRows}
+
+  <div class="cost-total">
+    <span>合計</span>
+    <strong>${yen(costTotal)}</strong>
+  </div>
+</div>`;
+  const itineraryCard=days.length?`<div class="info-card itinerary-card">
+  <h2>旅程</h2>
+
+  <div class="timeline">
+${timeline}
+  </div>
+</div>`:'';
+  const overviewItems=[
+    {k:'cost',label:'費用内訳',card:costCard},
+    ...(itineraryCard?[{k:'itinerary',label:'旅程',card:itineraryCard}]:[]),
+    ...(flightCard?[{k:'flight',label:'航空券',card:flightCard}]:[]),
+    ...(servicesCard?[{k:'services',label:'利用サービス',card:servicesCard}]:[]),
+  ];
+  const overviewTabs=overviewItems.map(it=>`    <button type="button" class="ov-tab" data-ov="${it.k}"><span>${it.label}</span></button>`).join('\n');
+  const overviewPanels=overviewItems.map(it=>`      <div class="ov-panel" data-ov="${it.k}">${it.card}</div>`).join('\n');
+
   const dayCards=days.map((day,i)=>{
     const imgs=(day.photoUrls||[]).map(u=>`      <img src="${esc(u)}" alt="">`).join('\n');
     return `  <article class="day-card">
@@ -236,32 +263,20 @@ ${tags.map(t=>`      <span>${esc(t)}</span>`).join('\n')}
 <div class="section-intro">
   <p class="eyebrow">Trip Overview</p>
   <h2>旅の概要</h2>
-  <p>費用・旅程・航空券・利用サービスを、ひと目でまとめてチェック。</p>
+  <p>気になる項目をタップすると、詳しい内容が開きます。</p>
 </div>
-<section class="info-grid">
-  <div class="info-card cost-card">
-  <h2>費用内訳</h2>
-
-${costRows}
-
-  <div class="cost-total">
-    <span>合計</span>
-    <strong>${yen(costTotal)}</strong>
-  </div>
-</div>
-
-  <div class="info-card itinerary-card">
-  <h2>旅程</h2>
-
-  <div class="timeline">
-${timeline}
-  </div>
-</div>
-
-${flightCard}
-
-${servicesCard}
+<section class="overview-tabs">
+${overviewTabs}
 </section>
+<div class="ov-modal" id="ovModal" hidden>
+  <div class="ov-backdrop" data-ov-close></div>
+  <div class="ov-dialog" role="dialog" aria-modal="true" aria-label="旅の概要">
+    <button type="button" class="ov-close" data-ov-close aria-label="閉じる">×</button>
+    <div class="ov-body">
+${overviewPanels}
+    </div>
+  </div>
+</div>
 ${routeSection}
 <div class="section-intro">
   <p class="eyebrow">Day by Day</p>

@@ -456,6 +456,25 @@ function initInteractions(){
       dots.forEach((dot, i) => dot.classList.toggle("active", i === index));
     });
   }
+  // 旅の概要：ボタン → 中央モーダルで該当カードを表示、×／背景／Escで閉じる
+  const ovModal = root.querySelector("#ovModal");
+  if(ovModal){
+    const panels = ovModal.querySelectorAll(".ov-panel");
+    const openOv = (k) => {
+      panels.forEach(p => p.classList.toggle("is-active", p.dataset.ov === k));
+      ovModal.hidden = false;
+      document.body.classList.add("ov-lock");
+    };
+    const closeOv = () => {
+      ovModal.hidden = true;
+      document.body.classList.remove("ov-lock");
+    };
+    root.querySelectorAll(".ov-tab").forEach(tab => {
+      tab.addEventListener("click", () => openOv(tab.dataset.ov));
+    });
+    ovModal.querySelectorAll("[data-ov-close]").forEach(el => el.addEventListener("click", closeOv));
+    document.addEventListener("keydown", (e) => { if(e.key === "Escape" && !ovModal.hidden) closeOv(); });
+  }
   // DAYカードの開閉（スマホ）
   root.querySelectorAll(".day-card").forEach(card => {
     const toggle = card.querySelector(".day-toggle");
