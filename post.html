@@ -390,6 +390,8 @@ function addFlight(data){
       <span class="route-arrow" aria-hidden="true">→</span>
       <input type="text" class="fl-to" placeholder="到着地（例：上海）">
     </div>
+    <label class="f" style="margin-top:8px">乗換<span class="opt">任意</span></label>
+    <input type="text" class="fl-transit" placeholder="例：ソウル（複数は「、」で区切り）">
     <div class="row2" style="margin-top:8px">
       <div class="ac-wrap"><label class="f">航空会社<span class="opt">任意</span></label><input type="text" class="fl-air" autocomplete="off" placeholder="例：ANA／エミレーツ（入力で候補）"></div>
       <div><label class="f">値段（円）</label><input type="number" class="fl-price" min="0" step="1000" placeholder="0"></div>
@@ -406,14 +408,15 @@ function addFlight(data){
   if(data){
     wrap.querySelector('.fl-air').value=data.airline||'';
     wrap.querySelector('.fl-price').value=data.price||'';
-    let from=data.from||'', to=data.to||'', trip=data.trip||'';
+    let from=data.from||'', to=data.to||'', trip=data.trip||'', transit=data.transit||'';
     if(!from && !to && !trip && data.route){          // 旧形式（route文字列のみ）の救済
       trip=/↔|⇄|⇔/.test(data.route)?'round':'oneway';
-      const parts=data.route.split(/\s*(?:↔|⇄|⇔|→|⇒|⇨)\s*/);
-      from=parts[0]||''; to=parts.slice(1).join(' / ');
+      const parts=data.route.split(/\s*(?:↔|⇄|⇔|→|⇒|⇨)\s*/).filter(Boolean);
+      from=parts[0]||''; to=parts.length>1?parts[parts.length-1]:''; transit=parts.slice(1,-1).join('、');
     }
     wrap.querySelector('.fl-from').value=from;
     wrap.querySelector('.fl-to').value=to;
+    wrap.querySelector('.fl-transit').value=transit;
     setTrip(trip==='round'?'round':'oneway');
   }
   $('flightList').appendChild(wrap); renumberFlights(); calcFlight();
@@ -723,13 +726,16 @@ async function gather(){
   document.querySelectorAll('[data-flight]').forEach(w=>{
     const from=w.querySelector('.fl-from').value.trim();
     const to=w.querySelector('.fl-to').value.trim();
+    const transit=w.querySelector('.fl-transit').value.trim();
     const onBtn=w.querySelector('.trip-btn.on');
     const trip=onBtn?onBtn.dataset.trip:'oneway';
     const arrow=trip==='round'?'↔':'→';
-    const route=(from&&to)?`${from} ${arrow} ${to}`:(from||to||'');
+    const stops=transit?transit.split(/[、,]/).map(s=>s.trim()).filter(Boolean):[];
+    const seq=[from,...stops,to].filter(Boolean);     // 出発→乗換→到着 を矢印で連結
+    const route=seq.length?seq.join(` ${arrow} `):'';
     const airline=w.querySelector('.fl-air').value.trim();
     const price=Number(w.querySelector('.fl-price').value||0);
-    if(from||to||airline||price) flights.push({route,from,to,trip,airline,price});
+    if(from||to||transit||airline||price) flights.push({route,from,to,transit,trip,airline,price});
   });
   const services=[];
   SERVICE_CATS.forEach((cat,ci)=>{
