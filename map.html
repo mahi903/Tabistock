@@ -237,7 +237,7 @@
     const buildContLabels = () => {
       contLabelGroup.clearLayers();
       CONTINENTS.forEach(ct => {
-        if(!contCount[ct.k] || !contBounds[ct.k]) return;   // 投稿のある大陸のみ
+        if(!contBounds[ct.k]) return;            // 全大陸のボタンを表示（投稿0でも出す）
         const center = contBounds[ct.k].getCenter();
         const icon = L.divIcon({
           className:'area-wrap', iconSize:[0,0], iconAnchor:[0,0],
