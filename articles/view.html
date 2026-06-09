@@ -561,12 +561,11 @@ async function makeStoryImage(){
 
   ctx.textBaseline = "alphabetic";
 
-  // カード寸法（中央配置）
-  const margin = 80, cardX = margin, cardW = W - margin * 2, cardR = 44;
-  const photoH = 720, textH = 620, cardH = photoH + textH;
-  const cardY = Math.round((H - cardH) / 2);
+  // カード寸法（白背景の中央に配置）
+  const margin = 70, cardX = margin, cardW = W - margin * 2, cardR = 48;
+  const cardH = 1540, cardY = Math.round((H - cardH) / 2);
 
-  // 角丸の長方形パス
+  // 角丸長方形パス
   const rr = (x, y, w, h, r) => {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -576,91 +575,87 @@ async function makeStoryImage(){
     ctx.arcTo(x, y, x + w, y, r);
     ctx.closePath();
   };
-  // 上だけ角丸の領域（写真用クリップ）
-  const topRoundClip = () => {
-    ctx.beginPath();
-    ctx.moveTo(cardX + cardR, cardY);
-    ctx.arcTo(cardX + cardW, cardY, cardX + cardW, cardY + photoH, cardR);
-    ctx.lineTo(cardX + cardW, cardY + photoH);
-    ctx.lineTo(cardX, cardY + photoH);
-    ctx.lineTo(cardX, cardY + cardR);
-    ctx.arcTo(cardX, cardY, cardX + cardW, cardY, cardR);
-    ctx.closePath();
-    ctx.clip();
-  };
 
-  // カードの影＋白下地
+  // カードの影
   ctx.save();
-  ctx.shadowColor = "rgba(20,30,25,0.18)"; ctx.shadowBlur = 48; ctx.shadowOffsetY = 16;
-  ctx.fillStyle = "#ffffff"; rr(cardX, cardY, cardW, cardH, cardR); ctx.fill();
+  ctx.shadowColor = "rgba(20,30,25,0.22)"; ctx.shadowBlur = 56; ctx.shadowOffsetY = 18;
+  ctx.fillStyle = "#10241d"; rr(cardX, cardY, cardW, cardH, cardR); ctx.fill();
   ctx.restore();
 
-  // 写真（カード上部に cover）
+  // 以降はカード内部だけに描画（角丸クリップ）
+  ctx.save();
+  rr(cardX, cardY, cardW, cardH, cardR); ctx.clip();
+
+  // 写真をカード全面に cover（失敗時は緑下地）
   if(photo){
-    ctx.save(); topRoundClip();
     const iw = photo.naturalWidth || photo.width, ih = photo.naturalHeight || photo.height;
-    const scale = Math.max(cardW / iw, photoH / ih);
+    const scale = Math.max(cardW / iw, cardH / ih);
     const dw = iw * scale, dh = ih * scale;
-    ctx.drawImage(photo, cardX + (cardW - dw) / 2, cardY + (photoH - dh) / 2, dw, dh);
-    ctx.restore();
+    ctx.drawImage(photo, cardX + (cardW - dw) / 2, cardY + (cardH - dh) / 2, dw, dh);
   }else{
-    ctx.save(); topRoundClip();
-    const g = ctx.createLinearGradient(0, cardY, 0, cardY + photoH);
-    g.addColorStop(0, "#1f6f5b"); g.addColorStop(1, "#10241d");
-    ctx.fillStyle = g; ctx.fillRect(cardX, cardY, cardW, photoH);
-    ctx.restore();
+    const base = ctx.createLinearGradient(0, cardY, 0, cardY + cardH);
+    base.addColorStop(0, "#1f6f5b"); base.addColorStop(1, "#10241d");
+    ctx.fillStyle = base; ctx.fillRect(cardX, cardY, cardW, cardH);
   }
 
-  // ロゴ（写真左上に白＋影で可読性確保）
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.45)"; ctx.shadowBlur = 14; ctx.shadowOffsetY = 2;
+  // 上下グラデーション（ロゴ・文字の可読性確保）
+  const gTop = ctx.createLinearGradient(0, cardY, 0, cardY + cardH * 0.26);
+  gTop.addColorStop(0, "rgba(8,18,14,0.55)"); gTop.addColorStop(1, "rgba(8,18,14,0)");
+  ctx.fillStyle = gTop; ctx.fillRect(cardX, cardY, cardW, cardH * 0.26);
+  const gBot = ctx.createLinearGradient(0, cardY + cardH * 0.38, 0, cardY + cardH);
+  gBot.addColorStop(0, "rgba(8,18,14,0)");
+  gBot.addColorStop(0.55, "rgba(8,18,14,0.62)");
+  gBot.addColorStop(1, "rgba(8,18,14,0.97)");
+  ctx.fillStyle = gBot; ctx.fillRect(cardX, cardY, cardW, cardH);
+
+  const pad = 56, innerX = cardX + pad, maxW = cardW - pad * 2;
+
+  // ロゴ（カード左上・白）
   ctx.fillStyle = "#ffffff";
-  ctx.font = `900 54px ${LOGO_FT}`;
+  ctx.font = `900 60px ${LOGO_FT}`;
   try{ ctx.letterSpacing = "-0.04em"; }catch(e){}
-  ctx.fillText("Tabistock", cardX + 44, cardY + 82);
+  ctx.fillText("Tabistock", innerX, cardY + 96);
   try{ ctx.letterSpacing = "normal"; }catch(e){}
-  ctx.restore();
+  ctx.fillStyle = "#7fd9bf";
+  ctx.fillRect(innerX, cardY + 116, 132, 6);
 
-  // テキスト領域（白カード内・上から）
-  const px = 56, innerX = cardX + px, innerW = cardW - px * 2;
-  let y = cardY + photoH + 78;
-
-  const eyeEl = root.querySelector(".hero-eyebrow");
-  const eye = (eyeEl ? eyeEl.textContent : "").trim();
-  if(eye){
-    ctx.fillStyle = "#1f6f5b"; ctx.font = `800 32px ${FT}`;
-    ctx.fillText(eye, innerX, y); y += 56;
-  }
-
-  const titleEl = root.querySelector(".hero-text h1");
-  const title = (titleEl ? titleEl.textContent : document.title).trim();
-  ctx.fillStyle = "#182033"; ctx.font = `800 60px ${FT}`;
-  const tLines = wrapText(ctx, title, innerW).slice(0, 3);
-  for(const ln of tLines){ ctx.fillText(ln, innerX, y); y += 76; }
-  y += 12;
+  // 下から積み上げ：URL → 小見出し → タイトル → 国・地域
+  let y = cardY + cardH - 76;
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.font = `700 34px ${FT}`;
+  ctx.fillText("tabistock.jp", innerX, y);
+  y -= 74;
 
   const leadEl = root.querySelector(".hero-lead");
   const lead = (leadEl ? leadEl.textContent : "").trim().replace(/\s+/g, " ");
   if(lead){
-    ctx.fillStyle = "#6c7787"; ctx.font = `500 34px ${FT}`;
-    const lLines = wrapText(ctx, lead, innerW).slice(0, 2);
-    for(const ln of lLines){ ctx.fillText(ln, innerX, y); y += 48; }
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = `500 38px ${FT}`;
+    const leadLines = wrapText(ctx, lead, maxW).slice(0, 2);
+    for(let i = leadLines.length - 1; i >= 0; i--){ ctx.fillText(leadLines[i], innerX, y); y -= 54; }
+    y -= 14;
   }
 
-  // フッター（カード下部・区切り線＋URL）
-  const footY = cardY + cardH - 60;
-  ctx.strokeStyle = "#ece5d8"; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(innerX, footY - 46); ctx.lineTo(cardX + cardW - px, footY - 46); ctx.stroke();
-  ctx.fillStyle = "#1f6f5b"; ctx.font = `900 30px ${LOGO_FT}`;
-  try{ ctx.letterSpacing = "-0.04em"; }catch(e){}
-  ctx.fillText("Tabistock", innerX, footY);
-  try{ ctx.letterSpacing = "normal"; }catch(e){}
-  ctx.fillStyle = "#9aa3ad"; ctx.font = `700 28px ${FT}`;
-  const urlText = "tabistock.jp", uw = ctx.measureText(urlText).width;
-  ctx.fillText(urlText, cardX + cardW - px - uw, footY);
+  const titleEl = root.querySelector(".hero-text h1");
+  const title = (titleEl ? titleEl.textContent : document.title).trim();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `800 70px ${FT}`;
+  const tLines = wrapText(ctx, title, maxW).slice(0, 3);
+  for(let i = tLines.length - 1; i >= 0; i--){ ctx.fillText(tLines[i], innerX, y); y -= 86; }
+  y -= 4;
+
+  const eyeEl = root.querySelector(".hero-eyebrow");
+  const eye = (eyeEl ? eyeEl.textContent : "").trim();
+  if(eye){
+    ctx.fillStyle = "#7fd9bf";
+    ctx.font = `800 36px ${FT}`;
+    ctx.fillText(eye, innerX, y);
+  }
+
+  ctx.restore(); // クリップ解除
 
   // カードの枠線（最後に上から）
-  ctx.strokeStyle = "rgba(20,30,25,0.10)"; ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(255,255,255,0.7)"; ctx.lineWidth = 3;
   rr(cardX, cardY, cardW, cardH, cardR); ctx.stroke();
 
   const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.92));
