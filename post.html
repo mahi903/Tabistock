@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>旅程を投稿する｜Tabistock（記事ジェネレーター）</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- 各日の場所ピン用（Leaflet・無料/OpenStreetMap） -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{ --green:#1f6f5b; --green-d:#185645; --gold:#c2873f; --cream:#fffaf2; --line:#ece2d0; --ink:#2b2b2b; --mut:#6b7280; }
+  *{box-sizing:border-box}
+  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif; color:var(--ink); background:#f6f1e8; line-height:1.7; }
+  .wrap{ max-width:860px; margin:0 auto; padding:32px 20px 120px; }
+  .top{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+  h1.page{ font-size:24px; margin:0; }
+  .lead{ color:var(--mut); font-size:14px; margin:4px 0 28px; }
+  .phero{ position:relative; overflow:hidden; border-radius:22px; padding:40px 34px; margin:0 0 28px; background:linear-gradient(150deg,#1f6f5b,#2f9e7f); color:#fff; }
+  .phero .eyebrow{ font-family:"Manrope",system-ui,sans-serif; letter-spacing:.22em; text-transform:uppercase; font-size:12px; font-weight:800; color:#ffd9a0; margin:0 0 10px; }
+  .phero h1{ font-size:clamp(26px,4.4vw,40px); line-height:1.2; margin:0 0 14px; color:#fff; }
+  .phero p{ color:rgba(255,255,255,.92); font-size:14px; line-height:1.8; margin:0; max-width:600px; }
+  .phero p b{ color:#fff; }
+  .phero .back{ display:inline-block; margin-top:16px; font-size:13px; font-weight:700; color:#fff; text-decoration:none; opacity:.9; }
+  .phero .back:hover{ opacity:1; }
+  @media(max-width:600px){ .phero{ padding:30px 22px; } }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:22px 22px 24px; margin-bottom:22px; }
+  .card > h2{ font-size:16px; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
+  .card > h2 .num{ display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:var(--green); color:#fff; border-radius:50%; font-size:12px; font-weight:800; }
+  .card .hint{ color:var(--mut); font-size:12.5px; margin:0 0 16px; }
+  label.f{ display:block; font-size:13px; font-weight:700; margin:14px 0 5px; }
+  label.f .req{ color:#d4493f; font-size:11px; margin-left:4px; }
+  label.f .opt{ color:var(--mut); font-size:11px; margin-left:4px; font-weight:600; }
+  input[type=text],input[type=number],input[type=date],textarea,select{
+    width:100%; min-width:0; max-width:100%; padding:9px 11px; border:1px solid #d9d2c4; border-radius:10px; font-size:14px; font-family:inherit; background:#fff; color:var(--ink); }
+  /* iOS の日付入力は本来の幅が広く右にはみ出すため、見た目をリセットして枠に収める */
+  input[type=date]{ -webkit-appearance:none; appearance:none; }
+  textarea{ min-height:90px; resize:vertical; }
+  .row2{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
+  .row3{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:12px; }
+  @media(max-width:600px){ .row2,.row3{ grid-template-columns:minmax(0,1fr); } }
+  /* 航空会社オートコンプリート（欄の直下に候補を表示） */
+  .ac-wrap{ position:relative; }
+  .ac-list{ position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:60; background:#fff; border:1px solid #d9d2c4; border-radius:10px; box-shadow:0 10px 28px rgba(0,0,0,.14); max-height:240px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .ac-item{ padding:10px 12px; font-size:14px; cursor:pointer; border-bottom:1px solid #f0ece2; }
+  .ac-item:last-child{ border-bottom:none; }
+  .ac-item .ac-sub{ color:var(--mut); font-size:12px; margin-left:6px; }
+  .ac-item.sel,.ac-item:active{ background:#eaf5f0; }
+  @media(hover:hover){ .ac-item:hover{ background:#f3efe6; } }
+  /* 航路：片道／往復トグル＋2都市入力 */
+  .trip-toggle{ display:inline-flex; border:1px solid #d9d2c4; border-radius:999px; overflow:hidden; margin:2px 0 10px; }
+  .trip-btn{ border:none; background:#fff; padding:7px 18px; font-size:13px; font-weight:700; color:var(--mut); cursor:pointer; line-height:1; }
+  .trip-btn+.trip-btn{ border-left:1px solid #d9d2c4; }
+  .trip-btn.on{ background:#eaf5f0; color:var(--green-d); }
+  .route-grid{ display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:8px; }
+  .route-arrow{ font-size:20px; font-weight:700; color:var(--green-d); text-align:center; user-select:none; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid #d9d2c4; border-radius:999px; padding:6px 12px; font-size:13px; cursor:pointer; background:#fff; user-select:none; }
+  .chip input{ accured:0; margin:0; }
+  .chip.on{ background:#eaf5f0; border-color:var(--green); color:var(--green-d); font-weight:700; }
+  details.region{ border:1px solid var(--line); border-radius:10px; margin-bottom:8px; }
+  details.region>summary{ cursor:pointer; padding:9px 12px; font-weight:700; font-size:13px; }
+  details.region .chips{ padding:0 12px 12px; }
+  .sub{ border:1px dashed #d9d2c4; border-radius:12px; padding:14px; margin:12px 0; position:relative; background:#fcfaf5; }
+  .sub .del{ position:absolute; top:8px; right:8px; border:none; background:#f1e7d6; color:#7a6a4f; border-radius:8px; padding:3px 9px; font-size:12px; cursor:pointer; }
+  .sub h4{ margin:0 0 8px; font-size:13px; color:var(--green-d); }
+  .addbtn{ border:1px dashed var(--green); color:var(--green-d); background:#fff; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; cursor:pointer; margin-top:6px; }
+  .costgrid{ display:grid; grid-template-columns:1fr 140px; gap:8px 12px; align-items:center; }
+  .costgrid .yen{ position:relative; }
+  .costgrid .yen::before{ content:"¥"; position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--mut); font-size:13px; }
+  .costgrid .yen input{ padding-left:22px; text-align:right; }
+  .total{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:12px; border-top:2px solid var(--line); font-weight:800; }
+  .total b{ color:var(--green-d); font-size:18px; }
+  .filebox{ border:1px solid #d9d2c4; border-radius:10px; padding:10px; background:#fff; }
+  .thumbs{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .thumbs img{ width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--line); display:block; }
+  .thumb{ position:relative; display:inline-block; }
+  .thumb-x{ position:absolute; top:-6px; right:-6px; width:20px; height:20px; padding:0; border:none; border-radius:50%; background:rgba(20,24,32,.82); color:#fff; font-size:13px; line-height:20px; text-align:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+  .thumb-x:hover{ background:#e0564b; }
+  .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:50; }
+  .btn{ border:none; border-radius:999px; padding:13px 26px; font-size:15px; font-weight:800; cursor:pointer; }
+  .btn-main{ background:var(--green); color:#fff; }
+  .btn-main:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-ghost{ background:#fff; border:1px solid #d9d2c4; color:var(--ink); }
+  .status{ font-size:13px; color:var(--mut); }
+  .err{ color:#d4493f; font-weight:700; }
+  .ok{ color:var(--green-d); font-weight:700; }
+  .stars{ display:flex; gap:4px; font-size:22px; color:#d9d2c4; cursor:pointer; width:max-content; }
+  .stars i.on{ color:var(--gold); }
+  .note{ background:#fff7e9; border:1px solid #f0dcae; border-radius:10px; padding:10px 12px; font-size:12.5px; color:#7a5a1f; margin-top:10px; }
+  code{ background:#f1ece1; padding:1px 5px; border-radius:5px; font-size:12px; }
+  /* 各日の場所ピン */
+  .dayloc{ margin-top:12px; }
+  .dayloc-toggle{ background:#fff; border:1px solid #d9d2c4; border-radius:999px; padding:8px 14px; font-size:13px; font-weight:700; color:var(--green); cursor:pointer; }
+  .dayloc-body{ display:none; margin-top:10px; }
+  .dayloc.open .dayloc-body{ display:block; }
+  .dayloc-map{ height:220px; border-radius:10px; overflow:hidden; background:#aad3df; border:1px solid #d9d2c4; }
+  .dayloc-map .ctpin{ background:var(--green); color:#fff; border:2.5px solid #fff; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; box-shadow:0 3px 10px rgba(0,0,0,.3); }
+  .dayloc-foot{ display:flex; align-items:center; gap:10px; margin-top:8px; font-size:12.5px; color:var(--mut); flex-wrap:wrap; }
+  .dayloc-clear{ background:#faf6ee; border:1px solid #d9d2c4; border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--green); cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="phero">
+    <p class="eyebrow">Post a Trip</p>
+    <h1 id="pageH1">旅程を投稿する</h1>
+    <p>投稿された記事は、管理者が内容を確認・承認したあとに公開されます（あらし対策のための<b>承認制</b>です）。写真はアップロード時に自動でリサイズ・圧縮されるので、そのまま選ぶだけでOKです。</p>
+    <a class="back" href="index.html">← トップに戻る</a>
+  </section>
+
+  <!-- ===== 0. 基本設定 ===== -->
+  <section class="card">
+    <h2><span class="num">0</span>基本設定</h2>
+    <p class="hint">検索用メタは検索の選択肢と同じ値を使うので表記ブレは起きません。</p>
+
+    <label class="f">投稿者ニックネーム<span class="req">必須・登録名で自動入力</span></label>
+    <input type="text" id="author" placeholder="例：mahiro" value="mahiro" autocomplete="off">
+
+    <label class="f">国（複数選択可）<span class="req">必須</span></label>
+    <p class="hint" style="margin:0 0 6px">周遊なら複数チェック。地域は最初に選んだ国から自動で決まります。</p>
+    <div id="countryBox"></div>
+
+    <div class="row2">
+      <div>
+        <label class="f">予算<span class="req">必須</span></label>
+        <select id="budget"></select>
+      </div>
+      <div>
+        <label class="f">日数<span class="req">必須</span></label>
+        <select id="days"></select>
+      </div>
+    </div>
+
+    <label class="f">旅スタイル（複数選択可）<span class="req">必須</span></label>
+    <div class="chips" id="styleBox"></div>
+  </section>
+
+  <!-- ===== 1. ヒーロー ===== -->
+  <section class="card">
+    <h2><span class="num">1</span>記事トップ（ヒーロー）</h2>
+
+    <label class="f">タイトル<span class="req">必須</span></label>
+    <input type="text" id="title" placeholder="例：モンゴル5泊6日｜大学生ひとり旅">
+
+    <label class="f">リード文（短い一言説明）<span class="req">必須</span></label>
+    <textarea id="lead" placeholder="例：ゴビ砂漠、バヤンザグ、ゲル泊を巡る冒険旅" style="min-height:60px"></textarea>
+    <p class="hint" style="margin-top:4px">※この文章は記事トップと<b>検索カードの説明文</b>の両方に使われます。短めに。英語の小見出しは国から自動生成されます。</p>
+
+    <div class="row2">
+      <div>
+        <label class="f">旅行時期（開始日）<span class="req">必須</span></label>
+        <input type="date" id="dateStart">
+      </div>
+      <div>
+        <label class="f">旅行時期（終了日）<span class="req">必須</span></label>
+        <input type="date" id="dateEnd">
+      </div>
+    </div>
+
+    <label class="f">治安<span class="req">必須</span></label>
+    <select id="safety">
+      <option value="">選択してください</option>
+      <option value="とても安全">とても安全</option>
+      <option value="比較的安全">比較的安全</option>
+      <option value="普通">普通</option>
+      <option value="やや注意が必要">やや注意が必要</option>
+      <option value="注意が必要">注意が必要</option>
+    </select>
+
+    <label class="f">旅の難易度<span class="req">必須</span></label>
+    <div class="stars" id="stars">
+      <i class="fa-solid fa-star" data-v="1"></i><i class="fa-solid fa-star" data-v="2"></i>
+      <i class="fa-solid fa-star" data-v="3"></i><i class="fa-solid fa-star" data-v="4"></i>
+      <i class="fa-solid fa-star" data-v="5"></i>
+    </div>
+
+    <label class="f">カルーセル写真（記事トップに横スクロールで並ぶ写真）<span class="req">最低1枚・1枚目がサムネ</span></label>
+    <div class="filebox">
+      <input type="file" id="heroPhotos" accept="image/jpeg,image/png" multiple>
+      <div class="thumbs" id="heroThumbs"></div>
+    </div>
+  </section>
+
+  <!-- ===== 2. 費用内訳 ===== -->
+  <section class="card">
+    <h2><span class="num">2</span>費用内訳</h2>
+    <p class="hint">各項目に金額（円）を入力。合計は自動計算されます。0円の項目は0を入力。</p>
+    <div class="costgrid" id="costGrid"></div>
+    <div class="total"><span>合計</span><b id="costTotal">¥0</b></div>
+  </section>
+
+  <!-- ===== 3. 航空券 ===== -->
+  <section class="card">
+    <h2><span class="num">3</span>航空券</h2>
+    <p class="hint">周遊で複数回取った場合は「航路を追加」で増やせます。合計は自動計算。</p>
+    <div id="flightList"></div>
+    <button class="addbtn" id="addFlight" type="button">＋ 航路を追加</button>
+    <div class="row2" style="margin-top:14px">
+      <div><label class="f">予約時期<span class="req">必須</span></label><input type="text" id="flightWhen" placeholder="例：出発の2ヶ月前"></div>
+      <div><label class="f">予約サイト<span class="req">必須</span></label><input type="text" id="flightSite" placeholder="例：Trip.com"></div>
+    </div>
+    <div class="total"><span>航空券合計</span><b id="flightTotal">¥0</b></div>
+  </section>
+
+  <!-- ===== 4. 利用サービス ===== -->
+  <section class="card">
+    <h2><span class="num">4</span>利用サービス</h2>
+    <p class="hint">使ったサービスをチェック。リストに無い国独自のものは各カテゴリの「その他」に自由入力（カンマ区切りで複数可）。</p>
+    <div id="serviceBox"></div>
+  </section>
+
+  <!-- ===== 5. 日程 ===== -->
+  <section class="card">
+    <h2><span class="num">5</span>日程（旅程＆旅の記録）</h2>
+    <p class="hint">「＋日を追加」で1日ずつ作成。ここで入れた内容が<b>旅程タイムライン</b>と<b>Day by Dayカード</b>の両方に反映されます。</p>
+    <div id="dayList"></div>
+    <button class="addbtn" id="addDay" type="button">＋ 日を追加</button>
+  </section>
+
+  <!-- ===== 6. 投稿者コメント ===== -->
+  <section class="card">
+    <h2><span class="num">6</span>投稿者コメント<span class="req" style="font-size:11px;color:#d4493f;margin-left:6px">必須</span></h2>
+    <p class="hint">安く抑えた工夫・こうしておけばよかった点・持ち物・現地のリアルな本音やTipsを。</p>
+    <textarea id="comment" placeholder="例：4月でも朝晩はかなり寒いので防寒着は必須です。英語はほとんど通じないので…"></textarea>
+  </section>
+
+</div>
+
+<div class="bar">
+  <button class="btn btn-ghost" id="saveDraft" type="button" title="未完成でもマイページに下書きとして保存します（あなただけが見られます）">下書き保存</button>
+  <button class="btn btn-main" id="generate" type="button">この内容で投稿する（承認後に公開）</button>
+  <span class="status" id="status"></span>
+</div>
+
+<script>
+/* =========================================================
+   共有ボキャブラリ（検索フィルタと完全一致させる）
+========================================================= */
+const COUNTRIES = [
+  {v:'japan',jp:'日本',en:'Japan',r:'east-asia'},{v:'korea',jp:'韓国',en:'Korea',r:'east-asia'},
+  {v:'china',jp:'中国',en:'China',r:'east-asia'},{v:'taiwan',jp:'台湾',en:'Taiwan',r:'east-asia'},
+  {v:'hongkong',jp:'香港',en:'Hong Kong',r:'east-asia'},{v:'mongolia',jp:'モンゴル',en:'Mongolia',r:'east-asia'},
+  {v:'thai',jp:'タイ',en:'Thailand',r:'southeast-asia'},{v:'cambodia',jp:'カンボジア',en:'Cambodia',r:'southeast-asia'},
+  {v:'vietnam',jp:'ベトナム',en:'Vietnam',r:'southeast-asia'},{v:'malaysia',jp:'マレーシア',en:'Malaysia',r:'southeast-asia'},
+  {v:'singapore',jp:'シンガポール',en:'Singapore',r:'southeast-asia'},{v:'indonesia',jp:'インドネシア',en:'Indonesia',r:'southeast-asia'},
+  {v:'philippines',jp:'フィリピン',en:'Philippines',r:'southeast-asia'},
+  {v:'india',jp:'インド',en:'India',r:'south-asia'},{v:'nepal',jp:'ネパール',en:'Nepal',r:'south-asia'},
+  {v:'srilanka',jp:'スリランカ',en:'Sri Lanka',r:'south-asia'},{v:'bhutan',jp:'ブータン',en:'Bhutan',r:'south-asia'},
+  {v:'maldives',jp:'モルディブ',en:'Maldives',r:'south-asia'},{v:'pakistan',jp:'パキスタン',en:'Pakistan',r:'south-asia'},
+  {v:'bangladesh',jp:'バングラデシュ',en:'Bangladesh',r:'south-asia'},
+  {v:'kazakhstan',jp:'カザフスタン',en:'Kazakhstan',r:'central-asia'},{v:'kyrgyzstan',jp:'キルギス',en:'Kyrgyzstan',r:'central-asia'},
+  {v:'uzbekistan',jp:'ウズベキスタン',en:'Uzbekistan',r:'central-asia'},
+  {v:'turkey',jp:'トルコ',en:'Turkey',r:'west-asia'},{v:'qatar',jp:'カタール',en:'Qatar',r:'west-asia'},
+  {v:'UAE',jp:'アラブ首長国連邦',en:'UAE',r:'west-asia'},
+  {v:'finland',jp:'フィンランド',en:'Finland',r:'europe'},{v:'sweden',jp:'スウェーデン',en:'Sweden',r:'europe'},
+  {v:'norway',jp:'ノルウェー',en:'Norway',r:'europe'},{v:'estonia',jp:'エストニア',en:'Estonia',r:'europe'},
+  {v:'latvia',jp:'ラトビア',en:'Latvia',r:'europe'},{v:'lithuania',jp:'リトアニア',en:'Lithuania',r:'europe'},
+  {v:'croatia',jp:'クロアチア',en:'Croatia',r:'europe'},{v:'austria',jp:'オーストリア',en:'Austria',r:'europe'},
+  {v:'hungary',jp:'ハンガリー',en:'Hungary',r:'europe'},{v:'slovakia',jp:'スロバキア',en:'Slovakia',r:'europe'},
+  {v:'france',jp:'フランス',en:'France',r:'europe'},{v:'uk',jp:'イギリス',en:'UK',r:'europe'},
+  {v:'italy',jp:'イタリア',en:'Italy',r:'europe'},{v:'spain',jp:'スペイン',en:'Spain',r:'europe'},
+  {v:'germany',jp:'ドイツ',en:'Germany',r:'europe'},{v:'netherlands',jp:'オランダ',en:'Netherlands',r:'europe'},
+  {v:'switzerland',jp:'スイス',en:'Switzerland',r:'europe'},{v:'portugal',jp:'ポルトガル',en:'Portugal',r:'europe'},
+  {v:'greece',jp:'ギリシャ',en:'Greece',r:'europe'},{v:'czech',jp:'チェコ',en:'Czech',r:'europe'},
+  {v:'poland',jp:'ポーランド',en:'Poland',r:'europe'},{v:'belgium',jp:'ベルギー',en:'Belgium',r:'europe'},
+  {v:'ireland',jp:'アイルランド',en:'Ireland',r:'europe'},{v:'denmark',jp:'デンマーク',en:'Denmark',r:'europe'},
+  {v:'iceland',jp:'アイスランド',en:'Iceland',r:'europe'},
+  {v:'usa',jp:'アメリカ',en:'USA',r:'north-america'},{v:'canada',jp:'カナダ',en:'Canada',r:'north-america'},
+  {v:'mexico',jp:'メキシコ',en:'Mexico',r:'north-america'},
+  {v:'peru',jp:'ペルー',en:'Peru',r:'south-america'},{v:'bolivia',jp:'ボリビア',en:'Bolivia',r:'south-america'},
+  {v:'chile',jp:'チリ',en:'Chile',r:'south-america'},{v:'argentina',jp:'アルゼンチン',en:'Argentina',r:'south-america'},
+  {v:'brazil',jp:'ブラジル',en:'Brazil',r:'south-america'},
+  {v:'morocco',jp:'モロッコ',en:'Morocco',r:'africa'},{v:'egypt',jp:'エジプト',en:'Egypt',r:'africa'},
+  {v:'kenya',jp:'ケニア',en:'Kenya',r:'africa'},{v:'south-africa',jp:'南アフリカ',en:'South Africa',r:'africa'},
+  {v:'australia',jp:'オーストラリア',en:'Australia',r:'oceania'},{v:'new-zealand',jp:'ニュージーランド',en:'New Zealand',r:'oceania'},
+];
+// 国 → [通貨, 言語]。投稿フォームに欄は出さず、選んだ国からこの表で自動セットして記事に載せる。
+const COUNTRY_CL={
+  japan:['日本円','日本語'],korea:['韓国ウォン','韓国語'],china:['人民元','中国語'],taiwan:['台湾ドル','中国語'],hongkong:['香港ドル','広東語'],mongolia:['モンゴルトゥグルグ','モンゴル語'],
+  thai:['タイバーツ','タイ語'],cambodia:['リエル','クメール語'],vietnam:['ベトナムドン','ベトナム語'],malaysia:['リンギット','マレー語'],singapore:['シンガポールドル','英語'],indonesia:['ルピア','インドネシア語'],philippines:['フィリピンペソ','フィリピン語・英語'],
+  india:['インドルピー','ヒンディー語・英語'],nepal:['ネパールルピー','ネパール語'],srilanka:['スリランカルピー','シンハラ語・タミル語'],bhutan:['ニュルタム','ゾンカ語'],maldives:['ルフィヤ','ディベヒ語'],pakistan:['パキスタンルピー','ウルドゥー語'],bangladesh:['タカ','ベンガル語'],
+  kazakhstan:['テンゲ','カザフ語・ロシア語'],kyrgyzstan:['ソム','キルギス語・ロシア語'],uzbekistan:['スム','ウズベク語'],
+  turkey:['トルコリラ','トルコ語'],qatar:['カタールリヤル','アラビア語'],UAE:['ディルハム','アラビア語'],
+  finland:['ユーロ','フィンランド語'],sweden:['スウェーデンクローナ','スウェーデン語'],norway:['ノルウェークローネ','ノルウェー語'],estonia:['ユーロ','エストニア語'],latvia:['ユーロ','ラトビア語'],lithuania:['ユーロ','リトアニア語'],croatia:['ユーロ','クロアチア語'],austria:['ユーロ','ドイツ語'],hungary:['フォリント','ハンガリー語'],slovakia:['ユーロ','スロバキア語'],france:['ユーロ','フランス語'],uk:['イギリスポンド','英語'],italy:['ユーロ','イタリア語'],spain:['ユーロ','スペイン語'],germany:['ユーロ','ドイツ語'],netherlands:['ユーロ','オランダ語'],switzerland:['スイスフラン','ドイツ語・フランス語'],portugal:['ユーロ','ポルトガル語'],greece:['ユーロ','ギリシャ語'],czech:['チェコ・コルナ','チェコ語'],poland:['ズロチ','ポーランド語'],belgium:['ユーロ','オランダ語・フランス語'],ireland:['ユーロ','英語'],denmark:['デンマーククローネ','デンマーク語'],iceland:['アイスランドクローナ','アイスランド語'],
+  usa:['米ドル','英語'],canada:['カナダドル','英語・フランス語'],mexico:['メキシコペソ','スペイン語'],
+  peru:['ソル','スペイン語'],bolivia:['ボリビアーノ','スペイン語'],chile:['チリペソ','スペイン語'],argentina:['アルゼンチンペソ','スペイン語'],brazil:['レアル','ポルトガル語'],
+  morocco:['モロッコ・ディルハム','アラビア語・フランス語'],egypt:['エジプトポンド','アラビア語'],kenya:['ケニアシリング','スワヒリ語・英語'],'south-africa':['ランド','英語'],
+  australia:['オーストラリアドル','英語'],'new-zealand':['ニュージーランドドル','英語']
+};
+const REGION_JP={ "east-asia":"東アジア","southeast-asia":"東南アジア","south-asia":"南アジア","central-asia":"中央アジア","west-asia":"西アジア","europe":"ヨーロッパ","north-america":"北アメリカ","south-america":"南アメリカ","africa":"アフリカ","oceania":"オセアニア" };
+const REGION_EN={ "east-asia":"East Asia","southeast-asia":"Southeast Asia","south-asia":"South Asia","central-asia":"Central Asia","west-asia":"West Asia","europe":"Europe","north-america":"North America","south-america":"South America","africa":"Africa","oceania":"Oceania" };
+const REGION_ORDER=["east-asia","southeast-asia","south-asia","central-asia","west-asia","europe","north-america","south-america","africa","oceania"];
+const BUDGETS=[{v:'10',l:'〜10万円'},{v:'20',l:'〜20万円'},{v:'30',l:'〜30万円'},{v:'40',l:'〜40万円'},{v:'50',l:'〜50万円'},{v:'50plus',l:'50万円以上'}];
+const DAYS_OPT=[{v:'daytrip',l:'日帰り'},{v:'1night',l:'1泊'},{v:'3-5',l:'3〜5日'},{v:'1w',l:'1週間'},{v:'2w',l:'2週間'},{v:'3w-plus',l:'3週間以上'}];
+const STYLES=[
+  {v:'solo',l:'1人旅',tag:'ひとり旅'},{v:'friends',l:'友達と',tag:'友達旅'},{v:'family',l:'家族と',tag:'家族旅'},
+  {v:'backpacker',l:'バックパッカー',tag:'バックパッカー'},{v:'girls',l:'女子旅',tag:'女子旅'},{v:'couple',l:'カップル',tag:'カップル'},
+  {v:'nature',l:'自然・絶景',tag:'自然旅'},{v:'city',l:'都市・街歩き',tag:'街歩き'},{v:'local',l:'現地体験',tag:'現地体験'},{v:'round-trip',l:'周遊',tag:'周遊'}
+];
+const COST_ITEMS=[
+  {k:'flight',l:'航空券'},{k:'stay',l:'宿泊'},{k:'food',l:'食費'},{k:'transit',l:'交通'},
+  {k:'tour',l:'ツアー'},{k:'sightseeing',l:'観光費'},{k:'esim',l:'eSIM'},{k:'souvenir',l:'お土産'}
+];
+const SERVICE_CATS=[
+  {k:'宿泊',opts:['Booking.com','Agoda','Hostelworld','Airbnb','楽天トラベル'],ex:'例：現地ホテル直予約'},
+  {k:'現地ツアー',opts:['GetYourGuide','Klook','Viator','KKday'],ex:'例：現地代理店ツアー'},
+  {k:'eSIM',opts:['Airalo','au海外放題','ahamo','Holafly'],ex:'例：現地SIM'},
+  {k:'地図・交通',opts:['Google Maps','Maps.me','Uber','Grab','Bolt'],ex:'例：UBCab（現地の配車アプリ）'},
+  {k:'決済',opts:['現金','VISA','Mastercard','Wise','PayPay'],ex:'例：Alipay'},
+  {k:'翻訳・その他',opts:['Google翻訳','DeepL'],ex:'例：現地ガイド'},
+];
+
+/* =========================================================
+   ユーティリティ
+========================================================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const para=s=>esc(s).trim().split(/\n{2,}/).map(p=>p.replace(/\n/g,'<br>')).join('<br><br>');
+const yen=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
+const cinfo=v=>COUNTRIES.find(c=>c.v===v);
+const pad=n=>String(n).padStart(2,'0');
+
+/* =========================================================
+   フォーム生成
+========================================================= */
+// 国チェックボックス（地域ごと）
+(function(){
+  const box=$('countryBox');
+  REGION_ORDER.forEach(r=>{
+    const list=COUNTRIES.filter(c=>c.r===r);
+    if(!list.length) return;
+    const d=document.createElement('details'); d.className='region';
+    d.innerHTML=`<summary>${REGION_JP[r]}</summary><div class="chips"></div>`;
+    const chips=d.querySelector('.chips');
+    list.forEach(c=>{
+      const lab=document.createElement('label'); lab.className='chip';
+      lab.innerHTML=`<input type="checkbox" name="country" value="${c.v}"> ${c.jp}`;
+      const cb=lab.querySelector('input');
+      cb.addEventListener('change',()=>{ lab.classList.toggle('on',cb.checked); updateMeta(); });
+      chips.appendChild(lab);
+    });
+    box.appendChild(d);
+  });
+})();
+// 予算・日数
+BUDGETS.forEach(b=>$('budget').appendChild(new Option(b.l,b.v)));
+DAYS_OPT.forEach(d=>$('days').appendChild(new Option(d.l,d.v)));
+$('budget').selectedIndex=0; $('days').selectedIndex=0;
+$('budget').addEventListener('change',updateMeta);
+$('days').addEventListener('change',updateMeta);
+// スタイル
+STYLES.forEach(s=>{
+  const lab=document.createElement('label'); lab.className='chip';
+  lab.innerHTML=`<input type="checkbox" name="style" value="${s.v}"> ${s.l}`;
+  const cb=lab.querySelector('input');
+  cb.addEventListener('change',()=>{ lab.classList.toggle('on',cb.checked); updateMeta(); });
+  $('styleBox').appendChild(lab);
+});
+// 費用
+COST_ITEMS.forEach(it=>{
+  const grid=$('costGrid');
+  const l=document.createElement('div'); l.textContent=it.l; l.style.fontSize='14px';
+  const w=document.createElement('div'); w.className='yen';
+  w.innerHTML=`<input type="number" min="0" step="1000" data-cost="${it.k}" placeholder="0">`;
+  grid.appendChild(l); grid.appendChild(w);
+});
+$('costGrid').addEventListener('input',calcCost);
+function calcCost(){
+  let t=0; document.querySelectorAll('[data-cost]').forEach(i=>t+=Number(i.value||0));
+  $('costTotal').textContent=yen(t); return t;
+}
+// 航空券
+let flightN=0;
+function addFlight(data){
+  flightN++;
+  const wrap=document.createElement('div'); wrap.className='sub'; wrap.dataset.flight='1';
+  wrap.innerHTML=`<button class="del" type="button">削除</button>
+    <h4>航路 ${flightN}</h4>
+    <div class="trip-toggle" role="group" aria-label="片道か往復か">
+      <button type="button" class="trip-btn on" data-trip="oneway">片道</button>
+      <button type="button" class="trip-btn" data-trip="round">往復</button>
+    </div>
+    <label class="f">区間</label>
+    <div class="route-grid">
+      <input type="text" class="fl-from" placeholder="出発地（例：大阪）">
+      <span class="route-arrow" aria-hidden="true">→</span>
+      <input type="text" class="fl-to" placeholder="到着地（例：上海）">
+    </div>
+    <label class="f" style="margin-top:8px">乗換<span class="opt">任意</span></label>
+    <input type="text" class="fl-transit" placeholder="例：ソウル（複数は「、」で区切り）">
+    <div class="row2" style="margin-top:8px">
+      <div class="ac-wrap"><label class="f">航空会社<span class="opt">任意</span></label><input type="text" class="fl-air" autocomplete="off" placeholder="例：ANA／エミレーツ（入力で候補）"></div>
+      <div><label class="f">値段（円）</label><input type="number" class="fl-price" min="0" step="1000" placeholder="0"></div>
+    </div>`;
+  const arrow=wrap.querySelector('.route-arrow');
+  function setTrip(t){
+    wrap.querySelectorAll('.trip-btn').forEach(b=>b.classList.toggle('on',b.dataset.trip===t));
+    arrow.textContent = t==='round' ? '↔' : '→';   // 片道→ / 往復↔
+  }
+  wrap.querySelectorAll('.trip-btn').forEach(b=>b.addEventListener('click',()=>setTrip(b.dataset.trip)));
+  wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); calcFlight(); renumberFlights(); });
+  wrap.querySelector('.fl-price').addEventListener('input',calcFlight);
+  attachAirlineAC(wrap.querySelector('.fl-air'));
+  if(data){
+    wrap.querySelector('.fl-air').value=data.airline||'';
+    wrap.querySelector('.fl-price').value=data.price||'';
+    let from=data.from||'', to=data.to||'', trip=data.trip||'', transit=data.transit||'';
+    if(!from && !to && !trip && data.route){          // 旧形式（route文字列のみ）の救済
+      trip=/↔|⇄|⇔/.test(data.route)?'round':'oneway';
+      const parts=data.route.split(/\s*(?:↔|⇄|⇔|→|⇒|⇨)\s*/).filter(Boolean);
+      from=parts[0]||''; to=parts.length>1?parts[parts.length-1]:''; transit=parts.slice(1,-1).join('、');
+    }
+    wrap.querySelector('.fl-from').value=from;
+    wrap.querySelector('.fl-to').value=to;
+    wrap.querySelector('.fl-transit').value=transit;
+    setTrip(trip==='round'?'round':'oneway');
+  }
+  $('flightList').appendChild(wrap); renumberFlights(); calcFlight();
+}
+function renumberFlights(){ let n=0; document.querySelectorAll('[data-flight] h4').forEach(h=>{n++;h.textContent='航路 '+n;}); flightN=n; }
+function calcFlight(){ let t=0; document.querySelectorAll('.fl-price').forEach(i=>t+=Number(i.value||0)); $('flightTotal').textContent=yen(t); return t; }
+$('addFlight').addEventListener('click',()=>addFlight());
+addFlight();
+// 航空会社オートコンプリート（英語・カタカナ・かな・漢字で絞り込み／欄の直下に候補を表示）
+const AIRLINES=[
+  {name:"ANA",kana:["エーエヌエー","全日空","全日本空輸","ぜんにっくう"]},
+  {name:"JAL",kana:["ジャル","日本航空","にほんこうくう"]},
+  {name:"Peach",kana:["ピーチ","ピーチアビエーション"]},
+  {name:"Jetstar",kana:["ジェットスター"]},
+  {name:"Zipair",kana:["ジップエア"]},
+  {name:"Skymark",kana:["スカイマーク"]},
+  {name:"Solaseed Air",kana:["ソラシドエア","ソラシド"]},
+  {name:"AirAsia",kana:["エアアジア"]},
+  {name:"AirAsia X",kana:["エアアジアエックス"]},
+  {name:"Scoot",kana:["スクート"]},
+  {name:"Cebu Pacific",kana:["セブパシフィック","セブパシ"]},
+  {name:"Cebgo",kana:["セブゴー"]},
+  {name:"VietJet Air",kana:["ベトジェット","ベトジェットエア"]},
+  {name:"Vietnam Airlines",kana:["ベトナム航空","ベトナムこうくう"]},
+  {name:"Thai Airways",kana:["タイ国際航空","タイ航空","タイこうくう"]},
+  {name:"Thai AirAsia",kana:["タイエアアジア"]},
+  {name:"Bangkok Airways",kana:["バンコクエアウェイズ","バンコクエア"]},
+  {name:"Singapore Airlines",kana:["シンガポール航空","シンガポールこうくう","シンガポールエアラインズ"]},
+  {name:"Cathay Pacific",kana:["キャセイパシフィック","キャセイ"]},
+  {name:"Hong Kong Airlines",kana:["香港航空","ホンコン航空"]},
+  {name:"Greater Bay Airlines",kana:["グレーターベイ航空","グレーターベイ"]},
+  {name:"EVA Air",kana:["エバー航空","エバーエア","エバ"]},
+  {name:"China Airlines",kana:["チャイナエアライン","中華航空"]},
+  {name:"Korean Air",kana:["大韓航空","だいかんこうくう","コリアンエア"]},
+  {name:"Asiana Airlines",kana:["アシアナ航空","アシアナ"]},
+  {name:"Jeju Air",kana:["チェジュ航空","チェジュエア","チェジュ"]},
+  {name:"T'way Air",kana:["ティーウェイ航空","ティーウェイ"]},
+  {name:"Air Busan",kana:["エアプサン"]},
+  {name:"China Eastern Airlines",kana:["中国東方航空","東方航空"]},
+  {name:"China Southern Airlines",kana:["中国南方航空","南方航空"]},
+  {name:"Air China",kana:["中国国際航空","エアチャイナ"]},
+  {name:"Spring Airlines",kana:["春秋航空","スプリング","しゅんじゅう"]},
+  {name:"Hainan Airlines",kana:["海南航空","ハイナン航空"]},
+  {name:"Philippine Airlines",kana:["フィリピン航空"]},
+  {name:"Malaysia Airlines",kana:["マレーシア航空"]},
+  {name:"Batik Air",kana:["バティックエア"]},
+  {name:"Garuda Indonesia",kana:["ガルーダインドネシア","ガルーダ"]},
+  {name:"Lion Air",kana:["ライオンエア"]},
+  {name:"Qatar Airways",kana:["カタール航空","カタールエアウェイズ"]},
+  {name:"Emirates",kana:["エミレーツ","エミレーツ航空"]},
+  {name:"Etihad Airways",kana:["エティハド航空","エティハド"]},
+  {name:"Turkish Airlines",kana:["ターキッシュエアラインズ","トルコ航空"]},
+  {name:"Qantas",kana:["カンタス","カンタス航空"]},
+  {name:"Air New Zealand",kana:["ニュージーランド航空","エアニュージーランド"]},
+  {name:"American Airlines",kana:["アメリカン航空","アメリカンエアラインズ"]},
+  {name:"United Airlines",kana:["ユナイテッド航空","ユナイテッド"]},
+  {name:"Delta Air Lines",kana:["デルタ航空","デルタ"]},
+  {name:"Hawaiian Airlines",kana:["ハワイアン航空","ハワイアン"]},
+  {name:"Air Canada",kana:["エアカナダ","カナダ航空"]},
+  {name:"Air India",kana:["エアインディア","インド航空"]},
+  {name:"IndiGo",kana:["インディゴ"]},
+  {name:"Finnair",kana:["フィンエアー","フィンランド航空"]},
+  {name:"Lufthansa",kana:["ルフトハンザ","ルフトハンザドイツ航空"]},
+  {name:"Air France",kana:["エールフランス","フランス航空"]},
+  {name:"KLM",kana:["ケーエルエム","KLMオランダ航空","オランダ航空"]},
+  {name:"British Airways",kana:["ブリティッシュエアウェイズ","イギリス航空"]},
+  {name:"Swiss",kana:["スイス航空","スイスインターナショナル"]},
+  {name:"Iberia",kana:["イベリア航空"]},
+  {name:"ITA Airways",kana:["イタエアウェイズ","アリタリア"]},
+  {name:"Aeroflot",kana:["アエロフロート","アエロフロートロシア航空"]},
+  {name:"Aurora",kana:["オーロラ航空","オーロラ"]},
+  {name:"Uzbekistan Airways",kana:["ウズベキスタン航空"]},
+  {name:"Air Astana",kana:["エアアスタナ"]}
+];
+// 検索用に正規化：英字は小文字化、ひらがな→カタカナに統一（かな/カナどちらでもヒット）
+function acNorm(s){ return (s||'').toLowerCase().replace(/[ぁ-ゖ]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60)); }
+function attachAirlineAC(input){
+  const wrap=input.closest('.ac-wrap'); if(!wrap) return;
+  const list=document.createElement('div'); list.className='ac-list'; list.style.display='none';
+  wrap.appendChild(list);
+  let current=[], active=-1;
+  function close(){ list.style.display='none'; list.innerHTML=''; current=[]; active=-1; }
+  function paint(){ [...list.children].forEach((c,i)=>c.classList.toggle('sel',i===active)); }
+  function pick(i){ if(current[i]){ input.value=current[i].name; close(); } }
+  function update(){
+    const q=acNorm(input.value.trim());
+    if(!q){ close(); return; }
+    // 前方一致（英名 or いずれかのカナ/かな/漢字表記）。「AN」→ANA のように頭から絞り込む。
+    current=AIRLINES.filter(a=>acNorm(a.name).startsWith(q)||(a.kana||[]).some(k=>acNorm(k).startsWith(q))).slice(0,8);
+    active=-1;
+    if(!current.length){ close(); return; }
+    list.innerHTML=current.map((a,i)=>{
+      const mk=(a.kana||[]).find(k=>acNorm(k).startsWith(q));         // 一致したカナ表記を併記
+      const sub=(mk && acNorm(mk)!==acNorm(a.name))?`<span class="ac-sub">${esc(mk)}</span>`:'';
+      return `<div class="ac-item" data-i="${i}">${esc(a.name)}${sub}</div>`;
+    }).join('');
+    list.style.display='block';
+  }
+  input.addEventListener('input',update);
+  input.addEventListener('focus',update);
+  input.addEventListener('blur',()=>setTimeout(close,160));
+  input.addEventListener('keydown',e=>{
+    if(list.style.display==='none') return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); active=Math.min(active+1,current.length-1); paint(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); active=Math.max(active-1,0); paint(); }
+    else if(e.key==='Enter'&&active>=0){ e.preventDefault(); pick(active); }
+    else if(e.key==='Escape'){ close(); }
+  });
+  list.addEventListener('mousedown',e=>{ const it=e.target.closest('.ac-item'); if(it){ e.preventDefault(); pick(Number(it.dataset.i)); } });
+}
+// サービス
+SERVICE_CATS.forEach((cat,ci)=>{
+  const box=$('serviceBox');
+  const wrap=document.createElement('div'); wrap.style.marginBottom='12px';
+  const chips=cat.opts.map(o=>`<label class="chip"><input type="checkbox" data-svc="${ci}" value="${esc(o)}"> ${esc(o)}</label>`).join('');
+  wrap.innerHTML=`<label class="f">${cat.k}</label><div class="chips">${chips}</div>
+    <input type="text" data-svc-other="${ci}" placeholder="その他（自由入力・${esc(cat.ex)}）" style="margin-top:8px">`;
+  box.appendChild(wrap);
+  wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',()=>cb.closest('.chip').classList.toggle('on',cb.checked)));
+});
+// 日程
+let dayN=0;
+function addDay(data){
+  dayN++;
+  const wrap=document.createElement('div'); wrap.className='sub'; wrap.dataset.day='1';
+  wrap.innerHTML=`<button class="del" type="button">削除</button>
+    <h4>DAY <span class="dnum">${dayN}</span></h4>
+    <label class="f">一文サマリー<span class="req">必須</span></label><input type="text" class="d-sum" placeholder="例：上海経由でウランバートルへ">
+    <label class="f">その日の文章（観光地を挙げるだけでも可）<span class="req">必須</span></label>
+    <textarea class="d-text" placeholder="例：早朝出発。お昼に空港着。市内は予想以上に都会で…"></textarea>
+    <label class="f">写真<span class="opt">任意</span></label>
+    <div class="filebox"><input type="file" class="d-photos" accept="image/jpeg,image/png" multiple><div class="thumbs"></div></div>
+    <div class="dayloc">
+      <button type="button" class="dayloc-toggle">この日の場所を地図で設定（任意）</button>
+      <div class="dayloc-body">
+        <div class="dayloc-map"></div>
+        <div class="dayloc-foot">
+          <span class="dayloc-status">地図をタップしてピンを置いてください。</span>
+          <button type="button" class="dayloc-clear" style="display:none">ピンを消す</button>
+        </div>
+      </div>
+    </div>`;
+  wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); renumberDays(); });
+  const fileIn=wrap.querySelector('.d-photos'), th=wrap.querySelector('.thumbs');
+  wirePhotoInput(fileIn,th);
+  // 場所ピン：開いたら遅延で地図を生成
+  wrap.querySelector('.dayloc-toggle').addEventListener('click',()=>{
+    const box=wrap.querySelector('.dayloc');
+    box.classList.toggle('open');
+    if(box.classList.contains('open')) initDayMap(wrap);
+  });
+  wrap.querySelector('.dayloc-clear').addEventListener('click',()=>clearDayMarker(wrap));
+  if(data){
+    wrap.querySelector('.d-sum').value=data.summary||''; wrap.querySelector('.d-text').value=data.text||'';
+    if(typeof data.lat==='number' && typeof data.lng==='number'){
+      wrap._lat=data.lat; wrap._lng=data.lng; updateDayLoc(wrap);
+    }
+    if(data.photoUrls && data.photoUrls.length){
+      const ex = data.photoUrls.slice();
+      wrap._existingPhotos = ex;       // gather が参照（splice で同期）
+      fileIn._existing = ex;           // renderThumbs が同じ配列を参照
+      renderThumbs(fileIn, th);
+    }
+  }
+  $('dayList').appendChild(wrap); renumberDays();
+}
+// 各日の場所ピン（Leaflet）
+function initDayMap(wrap){
+  if(typeof L==='undefined') return;
+  const el=wrap.querySelector('.dayloc-map');
+  if(wrap._map){ setTimeout(()=>wrap._map.invalidateSize(),60); return; }
+  const LL=window.COUNTRY_LL||{};
+  const cs=selectedCountries();
+  let center=[20,0], zoom=2;
+  if(wrap._lat!=null){ center=[wrap._lat,wrap._lng]; zoom=6; }
+  else if(cs[0] && LL[cs[0]]){ center=LL[cs[0]]; zoom=5; }
+  const m=L.map(el,{worldCopyJump:true,minZoom:2}).setView(center,zoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:18}).addTo(m);
+  wrap._map=m;
+  if(wrap._lat!=null) placeDayMarker(wrap,wrap._lat,wrap._lng);
+  m.on('click',e=>{ setDayMarker(wrap, e.latlng.lat, e.latlng.lng); });
+  setTimeout(()=>m.invalidateSize(),60);
+}
+function placeDayMarker(wrap,lat,lng){
+  const icon=L.divIcon({className:'',html:`<div class="ctpin">${wrap.querySelector('.dnum').textContent}</div>`,iconSize:[32,32],iconAnchor:[16,16]});
+  if(wrap._marker) wrap._marker.setLatLng([lat,lng]);
+  else wrap._marker=L.marker([lat,lng],{icon}).addTo(wrap._map);
+}
+function setDayMarker(wrap,lat,lng){
+  wrap._lat=+lat.toFixed(5); wrap._lng=+lng.toFixed(5);
+  if(wrap._map) placeDayMarker(wrap,wrap._lat,wrap._lng);
+  updateDayLoc(wrap);
+}
+function clearDayMarker(wrap){
+  wrap._lat=null; wrap._lng=null;
+  if(wrap._marker && wrap._map){ wrap._map.removeLayer(wrap._marker); wrap._marker=null; }
+  updateDayLoc(wrap);
+}
+function updateDayLoc(wrap){
+  const st=wrap.querySelector('.dayloc-status'), clr=wrap.querySelector('.dayloc-clear');
+  if(wrap._lat!=null){
+    st.textContent=`設定済み：${wrap._lat}, ${wrap._lng}`;
+    if(clr) clr.style.display='';
+  }else{
+    st.textContent='地図をタップしてピンを置いてください。';
+    if(clr) clr.style.display='none';
+  }
+}
+function renumberDays(){
+  let n=0;
+  document.querySelectorAll('[data-day]').forEach(w=>{
+    n++; w.querySelector('.dnum').textContent=n;
+  });
+  dayN=n;
+}
+$('addDay').addEventListener('click',()=>addDay());
+addDay();
+
+// 星
+let difficulty=3;
+$('stars').addEventListener('click',e=>{ if(e.target.dataset.v){ difficulty=Number(e.target.dataset.v); paintStars(); }});
+function paintStars(){ document.querySelectorAll('#stars i').forEach(i=>i.classList.toggle('on',Number(i.dataset.v)<=difficulty)); }
+paintStars();
+
+// 写真プレビュー＆個別削除
+// input.files は直接いじれないので、選択ファイルを input._sel に保持し
+// DataTransfer で input.files に同期する（追加選択も保持できる）。
+// 既存写真（編集時）は input._existing（URL配列）として一緒に表示・削除する。
+function syncInputFiles(input){
+  const dt=new DataTransfer();
+  (input._sel||[]).forEach(f=>dt.items.add(f));
+  input.files=dt.files;
+}
+function renderThumbs(input,container){
+  const existing=input._existing||[];
+  const sel=input._sel||[];
+  let html='';
+  existing.forEach((u,i)=>{ html+=`<div class="thumb"><img src="${esc(u)}"><button type="button" class="thumb-x" data-ex="${i}" aria-label="削除">×</button></div>`; });
+  sel.forEach((f,i)=>{ html+=`<div class="thumb"><img src="${URL.createObjectURL(f)}"><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button></div>`; });
+  if(existing.length) html+=`<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。×で削除、追加する場合は新しく選んでください。</p>`;
+  container.innerHTML=html;
+  container.querySelectorAll('.thumb-x').forEach(b=>{
+    b.addEventListener('click',()=>{
+      if(b.dataset.ex!=null){ existing.splice(+b.dataset.ex,1); }
+      else { sel.splice(+b.dataset.new,1); syncInputFiles(input); }
+      renderThumbs(input,container);
+    });
+  });
+}
+function wirePhotoInput(input,container){
+  input._sel=input._sel||[];
+  input.addEventListener('change',()=>{
+    [...input.files].forEach(f=>input._sel.push(f));
+    syncInputFiles(input);
+    renderThumbs(input,container);
+  });
+}
+// 後方互換（既存呼び出し用）
+function previewFiles(input,container){ renderThumbs(input,container); }
+wirePhotoInput($('heroPhotos'),$('heroThumbs'));
+
+
+/* メタ情報のプレビュー＆eyebrow自動入力 */
+function selectedCountries(){ return [...document.querySelectorAll('input[name=country]:checked')].map(c=>c.value); }
+/* 選んだ国から通貨・言語を自動生成（周遊は「／」で連結）。記事に載せる用。 */
+function autoCurrency(){ return [...new Set(selectedCountries().map(v=>(COUNTRY_CL[v]||[])[0]).filter(Boolean))].join('／'); }
+function autoLanguage(){ return [...new Set(selectedCountries().map(v=>(COUNTRY_CL[v]||[])[1]).filter(Boolean))].join('／'); }
+function selectedStyles(){ return [...document.querySelectorAll('input[name=style]:checked')].map(c=>c.value); }
+function primaryRegion(){ const cs=selectedCountries(); if(!cs.length) return ''; return cinfo(cs[0]).r; }
+function buildTags(){
+  const cs=selectedCountries(), d=$('days').value, b=$('budget').value, st=selectedStyles();
+  const tags=[];
+  if(cs[0]) tags.push(cinfo(cs[0]).jp);
+  const dd=DAYS_OPT.find(x=>x.v===d); if(dd) tags.push(dd.l);
+  const bb=BUDGETS.find(x=>x.v===b); if(bb) tags.push(bb.l);
+  st.forEach(s=>{ const ss=STYLES.find(x=>x.v===s); if(ss) tags.push(ss.tag); });
+  return tags;
+}
+function updateMeta(){
+  const cs=selectedCountries();
+  const r=primaryRegion();
+  const eb=cs.length?`${cinfo(cs[0]).en} · ${REGION_EN[r]}`:'';
+  const mp=$('metaPreview');
+  if(mp){ mp.innerHTML = cs.length
+    ? `英語小見出し（自動）: <code>${eb}</code><br>検索属性: <code>data-country="${cs.join(' ')}"</code> <code>data-region="${r}"</code> <code>data-budget="${$('budget').value||'-'}"</code> <code>data-days="${$('days').value||'-'}"</code> <code>data-style="${selectedStyles().join(' ')||'-'}"</code><br>タグ: ${buildTags().map(t=>'#'+t).join(' ')}`
+    : '国・予算・日数・スタイルを選ぶと、タグと検索属性のプレビューがここに表示されます。'; }
+}
+
+/* =========================================================
+   データ収集
+========================================================= */
+async function gather(){
+  const cs=selectedCountries();
+  const days=[];
+  for(const w of document.querySelectorAll('[data-day]')){
+    days.push({
+      date:'',
+      summary:w.querySelector('.d-sum').value.trim(),
+      text:w.querySelector('.d-text').value.trim(),
+      files:[...w.querySelector('.d-photos').files],
+      existingPhotos: w._existingPhotos || [],
+      lat: (w._lat!=null ? w._lat : null),
+      lng: (w._lng!=null ? w._lng : null)
+    });
+  }
+  const flights=[];
+  document.querySelectorAll('[data-flight]').forEach(w=>{
+    const from=w.querySelector('.fl-from').value.trim();
+    const to=w.querySelector('.fl-to').value.trim();
+    const transit=w.querySelector('.fl-transit').value.trim();
+    const onBtn=w.querySelector('.trip-btn.on');
+    const trip=onBtn?onBtn.dataset.trip:'oneway';
+    const arrow=trip==='round'?'↔':'→';
+    const stops=transit?transit.split(/[、,]/).map(s=>s.trim()).filter(Boolean):[];
+    const seq=[from,...stops,to].filter(Boolean);     // 出発→乗換→到着 を矢印で連結
+    const route=seq.length?seq.join(` ${arrow} `):'';
+    const airline=w.querySelector('.fl-air').value.trim();
+    const price=Number(w.querySelector('.fl-price').value||0);
+    if(from||to||transit||airline||price) flights.push({route,from,to,transit,trip,airline,price});
+  });
+  const services=[];
+  SERVICE_CATS.forEach((cat,ci)=>{
+    const items=[...document.querySelectorAll(`input[data-svc="${ci}"]:checked`)].map(c=>c.value);
+    const other=document.querySelector(`input[data-svc-other="${ci}"]`).value.trim();
+    if(other) other.split(/[、,]/).map(s=>s.trim()).filter(Boolean).forEach(s=>items.push(s));
+    if(items.length) services.push({label:cat.k,items});
+  });
+  const costs={}; document.querySelectorAll('[data-cost]').forEach(i=>costs[i.dataset.cost]=Number(i.value||0));
+  const author=$('author').value.trim()||'mahiro';
+  return {
+    author,
+    countries:cs, region:primaryRegion(),
+    budget:$('budget').value, days_v:$('days').value, styles:selectedStyles(),
+    title:$('title').value.trim(), lead:$('lead').value.trim(),
+    dateStart:$('dateStart').value, dateEnd:$('dateEnd').value,
+    currency:autoCurrency(), language:autoLanguage(), safety:$('safety').value.trim(),
+    difficulty,
+    costs, flights, flightWhen:$('flightWhen').value.trim(), flightSite:$('flightSite').value.trim(),
+    services, days, comment:$('comment').value.trim(),
+    heroFiles:[...$('heroPhotos').files],
+    heroExisting: window.tabistockHeroExisting || []
+  };
+}
+function validate(d){
+  const e=[];
+  if(!d.author) e.push('投稿者ニックネーム');
+  if(!d.countries.length) e.push('国');
+  if(!d.budget) e.push('予算'); if(!d.days_v) e.push('日数'); if(!d.styles.length) e.push('旅スタイル');
+  if(!d.title) e.push('タイトル'); if(!d.lead) e.push('リード文');
+  if(!d.dateStart||!d.dateEnd) e.push('旅行時期');
+  if(!d.safety) e.push('治安');
+  if(!d.flights.length) e.push('航空券（最低1航路）');
+  if(!d.flightWhen) e.push('予約時期'); if(!d.flightSite) e.push('予約サイト');
+  if(!d.heroFiles.length && !(d.heroExisting&&d.heroExisting.length)) e.push('カルーセル写真（最低1枚／サムネにも使用）');
+  if(!d.days.length) e.push('日程（最低1日）');
+  d.days.forEach((day,i)=>{ if(!day.summary||!day.text) e.push(`DAY${i+1}の入力`); });
+  if(!d.comment) e.push('投稿者コメント');
+  return e;
+}
+// 下書き保存用：タイトルだけあればOK（あとから編集して完成できる）
+function validateDraft(d){
+  const e=[];
+  if(!d.author) e.push('投稿者ニックネーム');
+  if(!d.title) e.push('タイトル（下書きでも必須）');
+  return e;
+}
+
+/* =========================================================
+   日付フォーマット
+========================================================= */
+function fmtPeriod(s,e){
+  if(!s||!e) return '';
+  const a=new Date(s+'T00:00:00'), b=new Date(e+'T00:00:00');
+  const sameYear=a.getFullYear()===b.getFullYear();
+  const A=`${a.getFullYear()}.${pad(a.getMonth()+1)}.${pad(a.getDate())}`;
+  const B=sameYear?`${pad(b.getMonth()+1)}.${pad(b.getDate())}`:`${b.getFullYear()}.${pad(b.getMonth()+1)}.${pad(b.getDate())}`;
+  return `${A} - ${B}`;
+}
+
+/* =========================================================
+   描画：記事HTML
+========================================================= */
+function renderArticle(d){
+  const slug=d.slug;
+  const stars='★'.repeat(d.difficulty)+'☆'.repeat(5-d.difficulty);
+  const period=fmtPeriod(d.dateStart,d.dateEnd);
+  const tags=buildTags();
+  const desc=d.lead.replace(/\n+/g,' ').slice(0,120);
+  const pc=cinfo(d.countries[0]);
+  const eyebrow=pc?`${pc.en} · ${REGION_EN[pc.r]}`:'';
+
+  // hero images
+  const heroImgs=d.heroFiles.map((f,i)=>`    <img src="../images/${slug}/hero${i+1}.jpg" alt="${esc(d.title)}">`).join('\n');
+  const heroDots=d.heroFiles.map(()=>'    <span></span>').join('\n');
+
+  // costs
+  const costMap={flight:'航空券',stay:'宿泊',food:'食費',transit:'交通',tour:'ツアー',sightseeing:'観光費',esim:'eSIM',souvenir:'お土産'};
+  let costTotal=0; Object.values(d.costs).forEach(v=>costTotal+=v);
+  const costRows=COST_ITEMS.map(it=>`  <div class="cost-row">
+    <span>${costMap[it.k]}</span>
+    <strong>${yen(d.costs[it.k]||0)}</strong>
+  </div>`).join('\n\n');
+
+  // timeline
+  const timeline=d.days.map((day,i)=>`    <div class="timeline-item">
+      <span class="day">DAY ${i+1}</span>
+      <p>${esc(day.summary)}</p>
+    </div>`).join('\n\n');
+
+  // flights
+  let flightTotal=0; d.flights.forEach(f=>flightTotal+=f.price);
+  const flightRoutes=d.flights.map((f,i)=>`  <div class="flight-route">
+    <span class="flight-label">航路${i+1}</span>
+    <h3>${esc(f.route)}</h3>
+    <p>${esc(f.airline)}${f.price?`　${yen(f.price)}`:''}</p>
+  </div>`).join('\n\n');
+  const flightMeta=(d.flightWhen||d.flightSite)?`  <div class="flight-meta">
+    ${d.flightWhen?`<div><span>予約時期</span><strong>${esc(d.flightWhen)}</strong></div>`:''}
+    ${d.flightSite?`<div><span>予約サイト</span><strong>${esc(d.flightSite)}</strong></div>`:''}
+  </div>`:'';
+  const flightCard=d.flights.length?`<div class="info-card flight-card">
+  <h2>航空券</h2>
+
+${flightRoutes}
+
+${flightMeta}
+  <div class="cost-total">
+    <span>航空券合計</span>
+    <strong>${yen(flightTotal)}</strong>
+  </div>
+</div>`:'';
+
+  // services
+  const servicesCard=d.services.length?`<div class="info-card services-card">
+  <h2>利用サービス</h2>
+
+${d.services.map(s=>`  <div class="service-item">
+    <span class="service-label">${esc(s.label)}</span>
+    <strong>${s.items.map(esc).join('<br>')}</strong>
+  </div>`).join('\n\n')}
+</div>`:'';
+
+  // day cards
+  const dayCards=d.days.map((day,i)=>{
+    const imgs=day.files.map((f,j)=>`      <img src="../images/${slug}/day${i+1}-${j+1}.jpg" alt="">`).join('\n');
+    return `  <article class="day-card">
+    <button class="day-toggle">
+      <span class="day-label">DAY ${i+1}</span>
+      <span class="day-title">${esc(day.summary)}</span>
+      <span class="day-icon">+</span>
+    </button>
+    <div class="day-content">
+      <div class="day-text">
+        <p>${para(day.text)}</p>
+      </div>
+      <div class="photo-slider">
+${imgs}
+      </div>
+    </div>
+  </article>`;
+  }).join('\n\n');
+
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${esc(d.title)}｜Tabistock</title>
+  <meta name="description" content="${esc(desc)}">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#1f6f5b">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Tabistock">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="${esc(d.title)}｜Tabistock">
+  <meta property="og:description" content="${esc(desc)}">
+  <meta property="og:url" content="https://tabistock.jp/articles/${slug}.html">
+  <meta property="og:image" content="https://tabistock.jp/images/${slug}.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="800">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${esc(d.title)}｜Tabistock">
+  <meta name="twitter:description" content="${esc(desc)}">
+  <meta name="twitter:image" content="https://tabistock.jp/images/${slug}.jpg">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+${HEADER_HTML}
+
+<main class="article-page">
+  <section class="article-hero">
+    <div class="hero-carousel">
+    <div class="hero-images">
+${heroImgs}
+  </div>
+
+  <div class="hero-dots">
+${heroDots}
+</div>
+</div>
+  <div class="hero-text">
+    <p class="hero-eyebrow">${esc(eyebrow)}</p>
+    <h1>${esc(d.title)}</h1>
+
+    <p class="hero-lead">
+      ${para(d.lead)}
+    </p>
+     <div class="hero-basic-info">
+  <div><span>通貨</span><strong>${esc(d.currency)}</strong></div>
+  <div><span>言語</span><strong>${esc(d.language)}</strong></div>
+  <div><span>治安</span><strong>${esc(d.safety)}</strong></div>
+</div>
+<div class="hero-info">
+      <div><span>旅行時期</span><strong>${esc(period)}</strong></div>
+      <div><span>旅の難易度</span><strong>${stars}</strong></div>
+      <div><span>投稿者</span><strong>${esc(d.author)}</strong></div>
+    </div>
+    <div class="hero-tags">
+${tags.map(t=>`      <span>${esc(t)}</span>`).join('\n')}
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="section-intro">
+  <p class="eyebrow">Trip Overview</p>
+  <h2>旅の概要</h2>
+  <p>費用・旅程・航空券・利用サービスを、ひと目でまとめてチェック。</p>
+</div>
+<section class="info-grid">
+  <div class="info-card cost-card">
+  <h2>費用内訳</h2>
+
+${costRows}
+
+  <div class="cost-total">
+    <span>合計</span>
+    <strong>${yen(costTotal)}</strong>
+  </div>
+</div>
+
+  <div class="info-card itinerary-card">
+  <h2>旅程</h2>
+
+  <div class="timeline">
+${timeline}
+  </div>
+</div>
+
+${flightCard}
+
+${servicesCard}
+</section>
+<div class="section-intro">
+  <p class="eyebrow">Day by Day</p>
+  <h2>旅の記録</h2>
+</div>
+<section class="day-grid">
+
+${dayCards}
+</section>
+<section class="tips-section">
+  <div class="tips-card">
+    <p class="tips-eyebrow">From the Traveler</p>
+    <h2>投稿者のコメント</h2>
+    <p class="tips-text">
+      ${para(d.comment)}
+    </p>
+  </div>
+</section>
+
+
+<section class="article-actions">
+  <button class="action-like" id="likeBtn" type="button" aria-pressed="false" aria-label="いいね">
+    <i class="fa-regular fa-heart"></i>
+    <span class="like-count" id="likeCount">0</span>
+  </button>
+  <button class="action-share" id="shareBtn" type="button" aria-label="共有する">
+    <i class="fa-solid fa-arrow-up-from-bracket"></i>
+    <span>共有</span>
+  </button>
+</section>
+
+<section class="author-card">
+  <img src="../images/authors/${esc(d.author)}.jpg" alt="投稿者アイコン" class="author-icon" onerror="this.src='../images/authors/mahiro.jpg'">
+
+  <div class="author-info">
+    <p class="author-label">Author</p>
+    <h2>${esc(d.author)}</h2>
+    <p>20歳大学生。ひとり旅と自然旅が好き。</p>
+    <div class="author-socials">
+      <a href="https://www.instagram.com/mahiro.9.3/" target="_blank" class="author-social" aria-label="Instagram">
+        <i class="fa-brands fa-instagram"></i>
+      </a>
+    </div>
+  </div>
+
+  <button class="author-follow" id="followBtn" type="button" aria-pressed="false">
+    <i class="fa-solid fa-plus"></i><span>フォロー</span>
+  </button>
+</section>
+
+${FOOTER_HTML}
+${SCRIPTS_HTML.replace('__AUTHORKEY__', esc(d.author))}
+</body>
+</html>`;
+}
+
+/* =========================================================
+   描画：検索カード
+========================================================= */
+function renderCard(d){
+  const c=cinfo(d.countries[0]);
+  const tags=buildTags();
+  const cardTags=[];
+  const bb=BUDGETS.find(x=>x.v===d.budget); if(bb) cardTags.push(bb.l);
+  d.styles.slice(0,2).forEach(s=>{ const ss=STYLES.find(x=>x.v===s); if(ss) cardTags.push(ss.tag); });
+  return `  <a href="./articles/${d.slug}.html"
+     class="trip-card"
+     data-country="${d.countries.join(' ')}"
+     data-days="${d.days_v}"
+     data-budget="${d.budget==='50plus'?'50':d.budget}"
+     data-style="${d.styles.join(' ')}"
+     data-region="${d.region}">
+    <div class="trip-image"
+         style="background-image:
+    linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.12)),url('./images/${d.slug}.jpg');">
+    </div>
+    <div class="trip-content">
+      <p class="country">${esc(c.en)}</p>
+      <h3>${esc(d.title)}</h3>
+      <p>${esc(d.lead.replace(/\n+/g,' '))}</p>
+
+      <div class="tags">
+${cardTags.map(t=>`        <span>${esc(t)}</span>`).join('\n')}
+      </div>
+    </div>
+  </a>`;
+}
+
+/* =========================================================
+   画像リサイズ（長辺1600px / JPEG 0.82）
+========================================================= */
+function loadImage(file){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=URL.createObjectURL(file); }); }
+async function resizeImage(file,maxEdge=1600,q=0.82){
+  const img=await loadImage(file);
+  const scale=Math.min(1,maxEdge/Math.max(img.width,img.height));
+  const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  cv.getContext('2d').drawImage(img,0,0,w,h);
+  return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
+}
+
+/* =========================================================
+   投稿（Firebaseへ保存）— 実処理は下部の module スクリプト window.tabistockSubmit
+========================================================= */
+$('generate').addEventListener('click',async()=>{
+  const st=$('status');
+  if(!window.tabistockReady){ st.className='status err'; st.textContent='Firebaseに接続中です。数秒待って再度お試しください。'; return; }
+  if(!window.tabistockUser){ st.className='status err'; st.textContent='ログインが必要です。'; setTimeout(()=>location.href='account.html',800); return; }
+  const d=await gather();
+  const errs=validate(d);
+  if(errs.length){ st.className='status err'; st.textContent='未入力：'+errs.join(' / '); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  $('generate').disabled=true; $('saveDraft').disabled=true;
+  try{
+    await window.tabistockSubmit(d, st, 'publish');
+  }catch(err){
+    console.error(err);
+    st.className='status err'; st.textContent='エラー：'+(err&&err.message||err)+'（HEIC写真はJPEGに変換してください）';
+  }finally{ $('generate').disabled=false; $('saveDraft').disabled=false; }
+});
+
+/* 下書き保存（タイトルだけあれば保存可能・本人だけが見られる） */
+$('saveDraft').addEventListener('click',async()=>{
+  const st=$('status');
+  if(!window.tabistockReady){ st.className='status err'; st.textContent='Firebaseに接続中です。数秒待って再度お試しください。'; return; }
+  if(!window.tabistockUser){ st.className='status err'; st.textContent='ログインが必要です。'; setTimeout(()=>location.href='account.html',800); return; }
+  const d=await gather();
+  const errs=validateDraft(d);
+  if(errs.length){ st.className='status err'; st.textContent='下書き保存に最低限必要：'+errs.join(' / '); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  $('generate').disabled=true; $('saveDraft').disabled=true;
+  try{
+    await window.tabistockSubmit(d, st, 'draft');
+  }catch(err){
+    console.error(err);
+    st.className='status err'; st.textContent='エラー：'+(err&&err.message||err)+'（HEIC写真はJPEGに変換してください）';
+  }finally{ $('generate').disabled=false; $('saveDraft').disabled=false; }
+});
+
+/* フォームへデータを反映（JSON読込・編集読込で共用） */
+window.populateForm = function(d){
+  $('author').value=d.author||'mahiro';
+  $('title').value=d.title||'';
+  $('lead').value=d.lead||''; $('dateStart').value=d.dateStart||''; $('dateEnd').value=d.dateEnd||'';
+  $('safety').value=d.safety||'';
+  difficulty=d.difficulty||3; paintStars();
+  $('flightWhen').value=d.flightWhen||''; $('flightSite').value=d.flightSite||'';
+  $('comment').value=d.comment||'';
+  if(d.budget){$('budget').value=d.budget;} if(d.days_v){$('days').value=d.days_v;}
+  document.querySelectorAll('input[name=country]').forEach(c=>{ c.checked=(d.countries||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
+  document.querySelectorAll('input[name=style]').forEach(c=>{ c.checked=(d.styles||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
+  if(d.costs) document.querySelectorAll('[data-cost]').forEach(i=>i.value=d.costs[i.dataset.cost]||'');
+  calcCost();
+  // サービス復元：label→SERVICE_CATS index、一致する項目はチェック、未一致はその他欄へ
+  document.querySelectorAll('input[data-svc]').forEach(cb=>{ cb.checked=false; cb.closest('.chip').classList.remove('on'); });
+  document.querySelectorAll('input[data-svc-other]').forEach(i=>i.value='');
+  (d.services||[]).forEach(svc=>{
+    const ci=SERVICE_CATS.findIndex(cat=>cat.k===svc.label);
+    if(ci<0) return;
+    const others=[];
+    (svc.items||[]).forEach(item=>{
+      const cb=document.querySelector(`input[data-svc="${ci}"][value="${(window.CSS&&CSS.escape)?CSS.escape(item):item}"]`);
+      if(cb){ cb.checked=true; cb.closest('.chip').classList.add('on'); }
+      else others.push(item);
+    });
+    if(others.length){ const o=document.querySelector(`input[data-svc-other="${ci}"]`); if(o) o.value=others.join('、'); }
+  });
+  $('flightList').innerHTML=''; flightN=0; (d.flights||[]).forEach(f=>addFlight(f)); if(!(d.flights||[]).length) addFlight();
+  $('dayList').innerHTML=''; dayN=0; (d.days||[]).forEach(day=>addDay(day)); if(!(d.days||[]).length) addDay();
+  // カルーセル（ヒーロー）写真の既存分
+  if(d.heroUrls && d.heroUrls.length){
+    window.tabistockHeroExisting = d.heroUrls.slice();
+    $('heroPhotos')._existing = window.tabistockHeroExisting; // 同じ配列を参照（splice で同期）
+    renderThumbs($('heroPhotos'), $('heroThumbs'));
+  }
+  updateMeta();
+};
+</script>
+
+<script>
+/* ===== 生成記事に埋め込む固定パーツ（モンゴル記事と同一） ===== */
+const HEADER_HTML = `  <header class="hd" id="hd">
+    <a class="logo" href="../index.html">Tabistock</a>
+    <div class="hd-r">
+      <form class="hd-search" action="../search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
+      <button class="burger" id="burger" aria-label="メニューを開く"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+  <div class="ovl" id="ovl"></div>
+  <nav class="drawer" id="drawer">
+  <button class="dclose" id="dclose" aria-label="閉じる">×</button>
+  <p class="dtitle">旅を検索</p>
+  <input class="dq" id="dq" placeholder="旅先・キーワードで検索">
+  <div class="dfilter">
+    <label class="dfield">国・地域
+      <select id="d-country">
+        <option value="">すべての国・地域</option>
+        <optgroup label="東アジア">
+          <option value="japan">日本</option>
+          <option value="korea">韓国</option>
+          <option value="china">中国</option>
+          <option value="taiwan">台湾</option>
+          <option value="hongkong">香港</option>
+          <option value="mongolia">モンゴル</option>
+        </optgroup>
+        <optgroup label="東南アジア">
+          <option value="thai">タイ</option>
+          <option value="cambodia">カンボジア</option>
+          <option value="vietnam">ベトナム</option>
+          <option value="malaysia">マレーシア</option>
+          <option value="singapore">シンガポール</option>
+          <option value="indonesia">インドネシア</option>
+          <option value="philippines">フィリピン</option>
+        </optgroup>
+        <optgroup label="南アジア">
+          <option value="india">インド</option>
+          <option value="nepal">ネパール</option>
+          <option value="srilanka">スリランカ</option>
+          <option value="bhutan">ブータン</option>
+          <option value="maldives">モルディブ</option>
+          <option value="pakistan">パキスタン</option>
+          <option value="bangladesh">バングラデシュ</option>
+        </optgroup>
+        <optgroup label="中央アジア">
+          <option value="kazakhstan">カザフスタン</option>
+          <option value="kyrgyzstan">キルギス</option>
+          <option value="uzbekistan">ウズベキスタン</option>
+        </optgroup>
+        <optgroup label="西アジア">
+          <option value="turkey">トルコ</option>
+          <option value="qatar">カタール</option>
+          <option value="UAE">アラブ首長国連邦</option>
+        </optgroup>
+        <optgroup label="ヨーロッパ">
+          <option value="finland">フィンランド</option>
+          <option value="sweden">スウェーデン</option>
+          <option value="norway">ノルウェー</option>
+          <option value="estonia">エストニア</option>
+          <option value="latvia">ラトビア</option>
+          <option value="lithuania">リトアニア</option>
+          <option value="croatia">クロアチア</option>
+          <option value="austria">オーストリア</option>
+          <option value="hungary">ハンガリー</option>
+          <option value="slovakia">スロバキア</option>
+          <option value="france">フランス</option>
+          <option value="uk">イギリス</option>
+          <option value="italy">イタリア</option>
+          <option value="spain">スペイン</option>
+          <option value="germany">ドイツ</option>
+          <option value="netherlands">オランダ</option>
+          <option value="switzerland">スイス</option>
+          <option value="portugal">ポルトガル</option>
+          <option value="greece">ギリシャ</option>
+          <option value="czech">チェコ</option>
+          <option value="poland">ポーランド</option>
+          <option value="belgium">ベルギー</option>
+          <option value="ireland">アイルランド</option>
+          <option value="denmark">デンマーク</option>
+          <option value="iceland">アイスランド</option>
+        </optgroup>
+        <optgroup label="北アメリカ">
+          <option value="usa">アメリカ</option>
+          <option value="canada">カナダ</option>
+          <option value="mexico">メキシコ</option>
+        </optgroup>
+        <optgroup label="南アメリカ">
+          <option value="peru">ペルー</option>
+          <option value="bolivia">ボリビア</option>
+          <option value="chile">チリ</option>
+          <option value="argentina">アルゼンチン</option>
+          <option value="brazil">ブラジル</option>
+        </optgroup>
+        <optgroup label="アフリカ">
+          <option value="morocco">モロッコ</option>
+          <option value="egypt">エジプト</option>
+          <option value="kenya">ケニア</option>
+          <option value="south-africa">南アフリカ</option>
+        </optgroup>
+        <optgroup label="オセアニア">
+          <option value="australia">オーストラリア</option>
+          <option value="new-zealand">ニュージーランド</option>
+        </optgroup>
+      </select>
+    </label>
+    <label class="dfield">予算
+      <select id="d-budget">
+        <option value="">予算を選ばない</option>
+        <option value="10">〜10万円</option>
+        <option value="20">〜20万円</option>
+        <option value="30">〜30万円</option>
+        <option value="40">〜40万円</option>
+        <option value="50">〜50万円</option>
+        <option value="50plus">50万円以上</option>
+      </select>
+    </label>
+    <label class="dfield">日数
+      <select id="d-days">
+        <option value="">日数を選ばない</option>
+        <option value="daytrip">日帰り</option>
+        <option value="1night">1泊</option>
+        <option value="3-5">3〜5日</option>
+        <option value="1w">1週間</option>
+        <option value="2w">2週間</option>
+        <option value="3w-plus">3週間以上</option>
+      </select>
+    </label>
+    <label class="dfield">旅スタイル
+      <select id="d-style">
+        <option value="">スタイルを選ばない</option>
+        <option value="solo">1人旅</option>
+        <option value="friends">友達と</option>
+        <option value="family">家族と</option>
+        <option value="backpacker">バックパッカー</option>
+        <option value="girls">女子旅</option>
+        <option value="couple">カップル</option>
+        <option value="nature">自然・絶景</option>
+        <option value="city">都市・街歩き</option>
+        <option value="local">現地体験</option>
+        <option value="round-trip">周遊</option>
+      </select>
+    </label>
+  </div>
+  <button class="btn btn-p dgo" id="dGo" type="button">この条件で検索 →</button>
+  <div class="dcta"><a class="btn btn-g" href="post.html">旅程を投稿する</a></div>
+  <div id="authStatus" class="auth-status"></div>
+</nav>
+   <div class="filter-drawer" id="filterDrawer">
+  <div class="filter-drawer-header">
+    <h3>条件で絞り込む</h3>
+    <button id="filterClose">×</button>
+  </div>
+  <div class="result-filter-bar">
+    <input type="text" name="q" placeholder="旅先・キーワードで検索">
+
+    <select name="country">
+      <option value="">国・地域</option>
+      <optgroup label="東アジア">
+        <option value="japan">日本</option>
+        <option value="korea">韓国</option>
+        <option value="china">中国</option>
+        <option value="taiwan">台湾</option>
+        <option value="hongkong">香港</option>
+        <option value="mongolia">モンゴル</option>
+      </optgroup>
+      <optgroup label="東南アジア">
+        <option value="thai">タイ</option>
+        <option value="cambodia">カンボジア</option>
+        <option value="vietnam">ベトナム</option>
+        <option value="malaysia">マレーシア</option>
+        <option value="singapore">シンガポール</option>
+        <option value="indonesia">インドネシア</option>
+        <option value="philippines">フィリピン</option>
+      </optgroup>
+      <optgroup label="南アジア">
+        <option value="india">インド</option>
+        <option value="nepal">ネパール</option>
+        <option value="srilanka">スリランカ</option>
+        <option value="bhutan">ブータン</option>
+        <option value="maldives">モルディブ</option>
+        <option value="pakistan">パキスタン</option>
+        <option value="bangladesh">バングラデシュ</option>
+      </optgroup>
+      <optgroup label="中央アジア">
+        <option value="kazakhstan">カザフスタン</option>
+        <option value="kyrgyzstan">キルギス</option>
+        <option value="uzbekistan">ウズベキスタン</option>
+      </optgroup>
+      <optgroup label="西アジア">
+        <option value="turkey">トルコ</option>
+        <option value="qatar">カタール</option>
+        <option value="UAE">アラブ首長国連邦</option>
+      </optgroup>
+      <optgroup label="ヨーロッパ">
+        <option value="finland">フィンランド</option>
+        <option value="sweden">スウェーデン</option>
+        <option value="norway">ノルウェー</option>
+        <option value="estonia">エストニア</option>
+        <option value="latvia">ラトビア</option>
+        <option value="lithuania">リトアニア</option>
+        <option value="croatia">クロアチア</option>
+        <option value="austria">オーストリア</option>
+        <option value="hungary">ハンガリー</option>
+        <option value="slovakia">スロバキア</option>
+        <option value="france">フランス</option>
+        <option value="uk">イギリス</option>
+        <option value="italy">イタリア</option>
+        <option value="spain">スペイン</option>
+        <option value="germany">ドイツ</option>
+        <option value="netherlands">オランダ</option>
+        <option value="switzerland">スイス</option>
+        <option value="portugal">ポルトガル</option>
+        <option value="greece">ギリシャ</option>
+        <option value="czech">チェコ</option>
+        <option value="poland">ポーランド</option>
+        <option value="belgium">ベルギー</option>
+        <option value="ireland">アイルランド</option>
+        <option value="denmark">デンマーク</option>
+        <option value="iceland">アイスランド</option>
+      </optgroup>
+      <optgroup label="北アメリカ">
+        <option value="usa">アメリカ</option>
+        <option value="canada">カナダ</option>
+        <option value="mexico">メキシコ</option>
+      </optgroup>
+      <optgroup label="南アメリカ">
+        <option value="peru">ペルー</option>
+        <option value="bolivia">ボリビア</option>
+        <option value="chile">チリ</option>
+        <option value="argentina">アルゼンチン</option>
+        <option value="brazil">ブラジル</option>
+      </optgroup>
+      <optgroup label="アフリカ">
+        <option value="morocco">モロッコ</option>
+        <option value="egypt">エジプト</option>
+        <option value="kenya">ケニア</option>
+        <option value="south-africa">南アフリカ</option>
+      </optgroup>
+      <optgroup label="オセアニア">
+        <option value="australia">オーストラリア</option>
+        <option value="new-zealand">ニュージーランド</option>
+      </optgroup>
+    </select>
+
+    <select name="budget">
+      <option value="">予算</option>
+      <option value="10">〜10万円</option>
+      <option value="20">〜20万円</option>
+      <option value="30">〜30万円</option>
+      <option value="40">〜40万円</option>
+      <option value="50">〜50万円</option>
+      <option value="50plus">50万円以上</option>
+    </select>
+
+    <select name="days">
+      <option value="">日数</option>
+      <option value="daytrip">日帰り</option>
+      <option value="1night">1泊</option>
+      <option value="3-5">3〜5日</option>
+      <option value="1w">1週間</option>
+      <option value="2w">2週間</option>
+      <option value="3w-plus">3週間以上</option>
+    </select>
+
+    <select name="style">
+      <option value="">スタイル</option>
+      <optgroup label="誰と行くか">
+        <option value="solo">1人旅</option>
+        <option value="friends">友達と</option>
+        <option value="family">家族と</option>
+        <option value="backpacker">バックパッカー</option>
+        <option value="girls">女子旅</option>
+        <option value="couple">カップル</option>
+      </optgroup>
+      <optgroup label="旅のスタイル">
+        <option value="nature">自然・絶景</option>
+        <option value="city">都市・街歩き</option>
+        <option value="local">現地体験</option>
+        <option value="round-trip">周遊</option>
+      </optgroup>
+    </select>
+
+    <button id="drawer-filter-btn">検索する</button>
+  </div>
+</div>
+<div class="drawer-overlay" id="drawerOverlay"></div>`;
+const FOOTER_HTML = `<footer class="site-footer">
+  <div class="footer-inner">
+    <h2>Tabistock</h2>
+    <p>学生・若者のリアルな旅程を集める旅行プラットフォーム。</p>
+
+    <div class="footer-links">
+      <a href="../index.html">トップ</a>
+      <a href="#">旅程を検索する</a>
+      <a href="post.html">旅程を投稿する</a>
+      <br>
+      <a href="https://www.instagram.com/mahiro.9.3/" target="_blank" class="author-social">
+    <i class="fa-brands fa-instagram"></i>
+  </a>
+    </div>
+
+    <small>© 2026 Tabistock</small>
+  </div>
+</footer>`;
+const SCRIPTS_HTML = `<script>
+const filterOpen = document.getElementById("filterOpen");
+const filterClose = document.getElementById("filterClose");
+const filterDrawer = document.getElementById("filterDrawer");
+const drawerOverlay = document.getElementById("drawerOverlay");
+
+console.log(filterOpen, filterClose, filterDrawer, drawerOverlay);
+
+if (filterOpen && filterClose && filterDrawer && drawerOverlay) {
+  filterOpen.addEventListener("click", () => {
+    filterDrawer.classList.add("active");
+    drawerOverlay.classList.add("active");
+  });
+
+  filterClose.addEventListener("click", () => {
+    filterDrawer.classList.remove("active");
+    drawerOverlay.classList.remove("active");
+  });
+
+  drawerOverlay.addEventListener("click", () => {
+    filterDrawer.classList.remove("active");
+    drawerOverlay.classList.remove("active");
+  });
+}
+
+const drawerFilterBtns = document.querySelectorAll("#drawer-filter-btn");
+drawerFilterBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const drawer = btn.closest(".filter-drawer");
+    const params = new URLSearchParams();
+
+    const keywordInput = drawer.querySelector('input[name="q"]');
+    if (keywordInput && keywordInput.value.trim()) {
+      params.append("q", keywordInput.value.trim());
+    }
+
+    drawer.querySelectorAll("select").forEach(select => {
+      if (select.value) {
+        params.append(select.name, select.value);
+      }
+    });
+
+    window.location.href = \`../search.html?\${params.toString()}\`;
+  });
+});
+<\/script>
+<script>
+  const slider = document.querySelector(".hero-images");
+  const dots = document.querySelectorAll(".hero-dots span");
+
+  slider.addEventListener("scroll", () => {
+    const index = Math.round(slider.scrollLeft / slider.clientWidth);
+
+    dots.forEach((dot, i) => {
+      dot.classList.toggle("active", i === index);
+    });
+  });
+<\/script>
+<script>
+  const dayCards = document.querySelectorAll(".day-card");
+
+  dayCards.forEach(card => {
+    const toggle = card.querySelector(".day-toggle");
+    const icon = card.querySelector(".day-icon");
+
+    if (!toggle || !icon) return;
+
+    toggle.addEventListener("click", () => {
+      if (window.innerWidth > 768) return;
+
+      card.classList.toggle("is-open");
+
+      icon.textContent = card.classList.contains("is-open") ? "-" : "+";
+    });
+  });
+<\/script>
+  <script>
+  (function(){
+    var hd=document.getElementById('hd');
+    if(hd)addEventListener('scroll',function(){hd.classList.toggle('scrolled',scrollY>40)});
+    var burger=document.getElementById('burger'),nav=document.getElementById('drawer'),ovl=document.getElementById('ovl'),dc=document.getElementById('dclose');
+    if(burger&&nav&&ovl){
+      var t=function(o){burger.classList.toggle('open',o);nav.classList.toggle('open',o);ovl.classList.toggle('open',o);document.body.style.overflow=o?'hidden':''};
+      burger.addEventListener('click',function(){t(!nav.classList.contains('open'))});
+      ovl.addEventListener('click',function(){t(false)});
+      if(dc)dc.addEventListener('click',function(){t(false)});
+      nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){t(false)})});
+    }
+  })();
+  <\/script>
+  <script>
+  (function(){
+    var dGo=document.getElementById('dGo'),dq=document.getElementById('dq');
+    function go(){
+      var p=new URLSearchParams();
+      if(dq&&dq.value.trim())p.append('q',dq.value.trim());
+      ['country','budget','days','style'].forEach(function(k){
+        var el=document.getElementById('d-'+k);
+        if(el&&el.value)p.append(k,el.value);
+      });
+      var qs=p.toString();
+      window.location.href='../search.html'+(qs?('?'+qs):'');
+    }
+    if(dGo)dGo.addEventListener('click',go);
+    if(dq)dq.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();go();}});
+  })();
+  <\/script>
+  <script>
+  /* 記事のいいね・共有・フォロー */
+  (function(){
+    function showToast(msg){
+      var t=document.createElement('div');
+      t.className='tabi-toast';t.textContent=msg;
+      document.body.appendChild(t);
+      requestAnimationFrame(function(){t.classList.add('show');});
+      setTimeout(function(){t.classList.remove('show');setTimeout(function(){t.remove();},300);},1800);
+    }
+
+    /* いいね（端末内に保存。表示数はベース値＋自分の1） */
+    var likeBtn=document.getElementById('likeBtn'),likeCount=document.getElementById('likeCount');
+    if(likeBtn&&likeCount){
+      var lkey='tabistock_like_'+location.pathname;
+      var base=parseInt(likeCount.textContent,10)||0;
+      var liked=localStorage.getItem(lkey)==='1';
+      var render=function(){
+        likeBtn.classList.toggle('liked',liked);
+        likeBtn.setAttribute('aria-pressed',liked);
+        likeBtn.querySelector('i').className=liked?'fa-solid fa-heart':'fa-regular fa-heart';
+        likeCount.textContent=base+(liked?1:0);
+      };
+      render();
+      likeBtn.addEventListener('click',function(){
+        liked=!liked;
+        localStorage.setItem(lkey,liked?'1':'0');
+        render();
+      });
+    }
+
+    /* 共有（対応端末はネイティブ共有、非対応はURLコピー） */
+    var shareBtn=document.getElementById('shareBtn');
+    if(shareBtn){
+      shareBtn.addEventListener('click',async function(){
+        var data={title:document.title,url:location.href};
+        if(navigator.share){
+          try{await navigator.share(data);}catch(e){}
+        }else{
+          try{await navigator.clipboard.writeText(location.href);showToast('リンクをコピーしました');}
+          catch(e){showToast('コピーできませんでした');}
+        }
+      });
+    }
+
+    /* フォロー（端末内に保存・将来サーバー連携予定） */
+    var followBtn=document.getElementById('followBtn');
+    if(followBtn){
+      var fkey='tabistock_follow___AUTHORKEY__';
+      var setFollow=function(on){
+        followBtn.classList.toggle('following',on);
+        followBtn.setAttribute('aria-pressed',on);
+        followBtn.querySelector('span').textContent=on?'フォロー中':'フォロー';
+        followBtn.querySelector('i').className=on?'fa-solid fa-check':'fa-solid fa-plus';
+      };
+      setFollow(localStorage.getItem(fkey)==='1');
+      followBtn.addEventListener('click',function(){
+        var on=!(localStorage.getItem(fkey)==='1');
+        localStorage.setItem(fkey,on?'1':'0');
+        setFollow(on);
+      });
+    }
+  })();
+  <\/script>`;
+</script>
+
+<!-- ===== Firebase 投稿処理（動的化） ===== -->
+<script type="module">
+import { auth, db, storage } from "./firebase-config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { collection, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { COUNTRY_LL } from "./tabistock-render.js";
+// 各日ミニ地図が国を中心に表示できるよう、座標表をグローバルへ
+window.COUNTRY_LL = COUNTRY_LL;
+
+window.tabistockReady = false;
+window.tabistockUser = null;
+window.tabistockNickname = "";
+
+async function uploadAndGetUrl(path, blob){
+  const r = ref(storage, path);
+  await uploadBytes(r, blob, { contentType: "image/jpeg" });
+  return await getDownloadURL(r);
+}
+
+window.tabistockSubmit = async function(d, st, mode){
+  const user = window.tabistockUser;
+  const nickname = window.tabistockNickname || d.author;
+  const editId = window.tabistockEditId || null;
+
+  // 保存先ドキュメント（編集なら既存・新規なら自動採番）
+  const articleRef = editId ? doc(db, "articles", editId) : doc(collection(db, "articles"));
+  const id = articleRef.id;
+
+  // 公開ステータスを決定
+  let status;
+  if(mode === "draft"){
+    status = "draft";
+  }else if(!editId){
+    status = "pending";
+  }else{
+    const prev = window.tabistockEditStatus || "pending";
+    status = (prev === "published" || prev === "pending") ? prev : "pending";
+  }
+
+  st.className = "status"; st.textContent = editId ? "記事を更新中…" : "記事を作成中…";
+
+  // ヒーロー写真：新しく選んだ場合のみアップロード。なければ既存URLを再利用。
+  let heroUrls = [];
+  if(d.heroFiles.length){
+    for(let i=0;i<d.heroFiles.length;i++){
+      st.textContent = `ヒーロー写真 ${i+1}/${d.heroFiles.length} をアップロード中…`;
+      const blob = await window.resizeImage(d.heroFiles[i]);
+      heroUrls.push(await uploadAndGetUrl(`articles/${id}/hero${i+1}.jpg`, blob));
+    }
+  }else{
+    heroUrls = (d.heroExisting || []).slice();
+  }
+  const thumbUrl = heroUrls[0] || "";
+
+  // 各日の写真：新しく選んだ場合のみアップロード。なければ既存URLを再利用。
+  const days = [];
+  for(let i=0;i<d.days.length;i++){
+    const day = d.days[i];
+    let photoUrls = [];
+    if(day.files.length){
+      for(let j=0;j<day.files.length;j++){
+        st.textContent = `DAY${i+1} 写真 ${j+1}/${day.files.length} をアップロード中…`;
+        const blob = await window.resizeImage(day.files[j]);
+        photoUrls.push(await uploadAndGetUrl(`articles/${id}/day${i+1}-${j+1}.jpg`, blob));
+      }
+    }else{
+      photoUrls = (day.existingPhotos || []).slice();
+    }
+    const dayObj = { date: day.date, summary: day.summary, text: day.text, photoUrls };
+    if(typeof day.lat==='number' && typeof day.lng==='number'){ dayObj.lat=day.lat; dayObj.lng=day.lng; }
+    days.push(dayObj);
+  }
+
+  st.textContent = "保存中…";
+  const docData = {
+    authorId: user.uid,
+    authorNickname: nickname,
+    status,
+    createdAt: (editId && window.tabistockEditCreatedAt) ? window.tabistockEditCreatedAt : serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    countries: d.countries, region: d.region,
+    budget: d.budget, days_v: d.days_v, styles: d.styles,
+    title: d.title, lead: d.lead,
+    dateStart: d.dateStart, dateEnd: d.dateEnd,
+    currency: d.currency, language: d.language, safety: d.safety, difficulty: d.difficulty,
+    costs: d.costs, flights: d.flights, flightWhen: d.flightWhen, flightSite: d.flightSite,
+    services: d.services, comment: d.comment,
+    days, heroUrls, thumbUrl
+  };
+  await setDoc(articleRef, docData);
+  window.tabistockEditStatus = status; // 続けて編集した場合に備えて更新
+
+  st.className = "status ok";
+  if(mode === "draft"){
+    st.textContent = "下書きを保存しました。マイページの「あなたの投稿」から続きを編集できます。";
+  }else if(editId){
+    st.textContent = (status === "published")
+      ? "記事を更新しました（公開中）。"
+      : "記事を更新しました。管理者の承認後に公開されます。";
+  }else{
+    st.textContent = "投稿しました！管理者の承認後に公開されます。（記事ID: "+id+"）";
+  }
+  window.scrollTo({ top:0, behavior:"smooth" });
+  if(mode === "draft" || editId){
+    setTimeout(()=>{ location.href = "account.html"; }, 1400);
+  }
+};
+
+onAuthStateChanged(auth, async (user) => {
+  window.tabistockReady = true;
+  if(!user){
+    window.tabistockUser = null;
+    alert("旅程の投稿にはログインが必要です。ログインページへ移動します。");
+    location.href = "account.html";
+    return;
+  }
+  window.tabistockUser = user;
+  let nick = user.displayName || "";
+  try{
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if(snap.exists() && snap.data().nickname) nick = snap.data().nickname;
+  }catch(e){}
+  window.tabistockNickname = nick;
+  // 投稿者欄をログイン名で固定
+  const a = document.getElementById("author");
+  if(a){
+    if(nick) a.value = nick;
+    a.readOnly = true;
+    a.style.background = "#f0ece3";
+  }
+
+  // 編集モード：?edit=<記事ID> があれば既存記事を読み込む
+  const editId = new URLSearchParams(location.search).get("edit");
+  if(editId){
+    try{
+      const snap = await getDoc(doc(db, "articles", editId));
+      if(!snap.exists()){ alert("記事が見つかりませんでした。"); return; }
+      const data = snap.data();
+      // 自分の記事か管理者のみ編集可
+      let isAdmin = false;
+      try{ isAdmin = (await getDoc(doc(db, "admins", user.uid))).exists(); }catch(e){}
+      if(data.authorId !== user.uid && !isAdmin){
+        alert("この記事を編集する権限がありません。"); location.href = "account.html"; return;
+      }
+      window.tabistockEditId = editId;
+      window.tabistockEditStatus = data.status || "pending";
+      window.tabistockEditCreatedAt = data.createdAt || null;
+      window.populateForm({
+        author: data.authorNickname || nick,
+        countries: data.countries || [], region: data.region || "",
+        budget: data.budget || "", days_v: data.days_v || "", styles: data.styles || [],
+        title: data.title || "", lead: data.lead || "",
+        dateStart: data.dateStart || "", dateEnd: data.dateEnd || "",
+        currency: data.currency || "", language: data.language || "", safety: data.safety || "",
+        difficulty: data.difficulty || 3,
+        costs: data.costs || {}, flights: data.flights || [],
+        flightWhen: data.flightWhen || "", flightSite: data.flightSite || "",
+        services: data.services || [], comment: data.comment || "",
+        days: data.days || [], heroUrls: data.heroUrls || []
+      });
+      // 見出し・ボタンのラベルを編集向けに変更
+      const h1 = document.getElementById("pageH1"); if(h1) h1.textContent = (data.status === "draft") ? "下書きを編集する" : "投稿を編集する";
+      const gen = document.getElementById("generate");
+      if(gen) gen.textContent = (data.status === "published") ? "この内容で更新する" : "更新して申請する（承認後に公開）";
+      const sd = document.getElementById("saveDraft"); if(sd) sd.textContent = "下書きとして保存";
+      const stEl = document.getElementById("status");
+      if(stEl){ stEl.className = "status"; stEl.textContent = ""; }
+    }catch(e){
+      console.error(e);
+      alert("記事の読み込みに失敗しました。");
+    }
+  }
+});
+</script>
+  <script type="module" src="./auth-status.js"></script>
+  <!-- Vercel Web Analytics -->
+  <script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

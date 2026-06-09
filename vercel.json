@@ -1,0 +1,10 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "tabistock.vercel.app" }],
+      "destination": "https://tabistock.jp/:path*",
+      "permanent": true
+    }
+  ]
+}
