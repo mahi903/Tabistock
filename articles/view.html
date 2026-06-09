@@ -535,7 +535,11 @@ async function makeStoryImage(){
     const heroImg = root.querySelector(".hero-images img");
     const imgUrl = heroImg && heroImg.getAttribute("src");
     if(imgUrl){
-      const res = await fetch(imgUrl, { mode: "cors" });
+      // Firebase Storage は CORS 非対応のため、同一オリジンのプロキシ経由で取得する。
+      const fetchUrl = /^https:\/\/firebasestorage\.googleapis\.com\//.test(imgUrl)
+        ? "/api/img?u=" + encodeURIComponent(imgUrl)
+        : imgUrl;
+      const res = await fetch(fetchUrl);
       const objUrl = URL.createObjectURL(await res.blob());
       try{
         const img = await new Promise((resolve, reject) => {

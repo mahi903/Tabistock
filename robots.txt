@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /admin.html
-Disallow: /account.html
-Disallow: /post.html
-
-Sitemap: https://tabistock.jp/sitemap.xml
