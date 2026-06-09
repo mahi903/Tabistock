@@ -498,32 +498,7 @@ function initInteractions(){
   wireSave();
   const shareBtn = root.querySelector("#shareBtn");
   if(shareBtn){
-    shareBtn.addEventListener("click", async () => {
-      const url = location.href, title = document.title;
-      const label = shareBtn.querySelector("span");
-      const prevLabel = label ? label.textContent : "";
-      if(label) label.textContent = "作成中…";
-      shareBtn.disabled = true;
-      // インスタのストーリー用に、ロゴ・写真・タイトル・小見出し入りの9:16画像を生成。
-      let file = null;
-      try{ file = await makeStoryImage(); }catch(e){ file = null; }
-      if(label) label.textContent = prevLabel;
-      shareBtn.disabled = false;
-      try{
-        if(file && navigator.canShare && navigator.canShare({ files: [file] })){
-          await navigator.share({ files: [file], text: title + "\n" + url });
-        }else if(navigator.share){
-          await navigator.share({ title, url });
-        }else if(file){
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(file); a.download = file.name; a.click();
-          setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-          showToast("ストーリー画像を保存しました");
-        }else{
-          await navigator.clipboard.writeText(url); showToast("リンクをコピーしました");
-        }
-      }catch(e){ /* ユーザーがキャンセルした場合などは何もしない */ }
-    });
+    shareBtn.addEventListener("click", () => openShareMenu(showToast));
   }
   wireFollow();
 }
@@ -565,8 +540,10 @@ async function makeStoryImage(){
       try{
         const img = await new Promise((resolve, reject) => {
           const im = new Image();
-          im.onload = () => resolve(im);
-          im.onerror = () => reject(new Error("img load failed"));
+          const to = setTimeout(() => reject(new Error("img load timeout")), 8000);
+          im.onload = () => { clearTimeout(to); resolve(im); };
+          im.onerror = () => { clearTimeout(to); reject(new Error("img load failed")); };
+          im.decoding = "async";
           im.src = objUrl;
         });
         const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
@@ -640,6 +617,64 @@ async function makeStoryImage(){
 
   const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.92));
   return new File([blob], "tabistock-story.jpg", { type: "image/jpeg" });
+}
+
+// 共有メニュー（ボトムシート）。ストーリー画像 / リンクコピー / 他アプリ共有 を選べる。
+function openShareMenu(showToast){
+  const url = location.href, title = document.title;
+  const old = document.querySelector(".share-sheet-ovl"); if(old) old.remove();
+
+  const ovl = document.createElement("div");
+  ovl.className = "share-sheet-ovl";
+  ovl.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(15,20,18,.45);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s";
+  const sheet = document.createElement("div");
+  sheet.style.cssText = "background:#fff;width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:8px 14px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.2);transform:translateY(14px);transition:transform .2s";
+  const row = "display:flex;align-items:center;gap:13px;width:100%;background:none;border:none;border-radius:12px;padding:16px 12px;font-size:16px;font-weight:700;color:#182033;font-family:inherit;cursor:pointer;text-align:left";
+  const ic = "color:#1f6f5b;width:24px;text-align:center;flex:0 0 24px";
+  sheet.innerHTML =
+    '<div style="width:40px;height:4px;background:#e0d8c7;border-radius:999px;margin:8px auto 10px"></div>'
+    + '<button data-act="story" style="'+row+'"><i class="fa-solid fa-image" style="'+ic+'"></i><span>ストーリー画像を作成（インスタ向け）</span></button>'
+    + '<button data-act="copy" style="'+row+'"><i class="fa-solid fa-link" style="'+ic+'"></i><span>リンクをコピー</span></button>'
+    + (navigator.share ? '<button data-act="native" style="'+row+'"><i class="fa-solid fa-arrow-up-from-bracket" style="'+ic+'"></i><span>他のアプリで共有</span></button>' : '')
+    + '<button data-act="cancel" style="'+row+'justify-content:center;color:#6c7787;margin-top:2px">キャンセル</button>';
+  ovl.appendChild(sheet);
+  document.body.appendChild(ovl);
+  requestAnimationFrame(() => { ovl.style.opacity = "1"; sheet.style.transform = "none"; });
+
+  const close = () => { ovl.style.opacity = "0"; setTimeout(() => ovl.remove(), 200); };
+  ovl.addEventListener("click", (e) => { if(e.target === ovl) close(); });
+  sheet.querySelector('[data-act="cancel"]').addEventListener("click", close);
+
+  sheet.querySelector('[data-act="copy"]').addEventListener("click", async () => {
+    close();
+    try{ await navigator.clipboard.writeText(url); showToast("リンクをコピーしました"); }
+    catch(e){ showToast("コピーできませんでした"); }
+  });
+
+  const nativeBtn = sheet.querySelector('[data-act="native"]');
+  if(nativeBtn) nativeBtn.addEventListener("click", async () => {
+    close();
+    try{ await navigator.share({ title, url }); }catch(e){}
+  });
+
+  sheet.querySelector('[data-act="story"]').addEventListener("click", async (e) => {
+    const btn = e.currentTarget, span = btn.querySelector("span");
+    btn.disabled = true; sheet.style.pointerEvents = "none"; if(span) span.textContent = "作成中…";
+    let file = null;
+    try{ file = await makeStoryImage(); }catch(err){ file = null; }
+    close();
+    if(!file){ showToast("画像を作成できませんでした"); return; }
+    try{
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file] });
+      }else{
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        showToast("ストーリー画像を保存しました");
+      }
+    }catch(err){ /* キャンセルは無視 */ }
+  });
 }
 
 // フォロー（Firestore: users/{me}/following/{target} ＋ users/{target}/followers/{me}・要ログイン）
