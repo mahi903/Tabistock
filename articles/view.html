@@ -555,16 +555,25 @@ async function makeStoryImage(){
   base.addColorStop(0, "#1f6f5b"); base.addColorStop(1, "#10241d");
   ctx.fillStyle = base; ctx.fillRect(0, 0, W, H);
 
-  // 写真を cover で全面に描画
+  // 写真を cover で全面に描画（Blob URL経由の <img> でiOS含め確実に読み込む）
   try{
     const heroImg = root.querySelector(".hero-images img");
     const imgUrl = heroImg && heroImg.getAttribute("src");
     if(imgUrl){
       const res = await fetch(imgUrl, { mode: "cors" });
-      const bmp = await createImageBitmap(await res.blob());
-      const scale = Math.max(W / bmp.width, H / bmp.height);
-      const dw = bmp.width * scale, dh = bmp.height * scale;
-      ctx.drawImage(bmp, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      const objUrl = URL.createObjectURL(await res.blob());
+      try{
+        const img = await new Promise((resolve, reject) => {
+          const im = new Image();
+          im.onload = () => resolve(im);
+          im.onerror = () => reject(new Error("img load failed"));
+          im.src = objUrl;
+        });
+        const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+        const scale = Math.max(W / iw, H / ih);
+        const dw = iw * scale, dh = ih * scale;
+        ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      }finally{ URL.revokeObjectURL(objUrl); }
     }
   }catch(e){ /* 取得失敗時はベース背景のまま */ }
 
@@ -578,17 +587,23 @@ async function makeStoryImage(){
   gBot.addColorStop(1, "rgba(8,18,14,0.96)");
   ctx.fillStyle = gBot; ctx.fillRect(0, 0, W, H);
 
-  try{ if(document.fonts && document.fonts.ready) await document.fonts.ready; }catch(e){}
+  try{
+    if(document.fonts && document.fonts.ready){
+      await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]);
+    }
+  }catch(e){}
 
   const pad = 72;
   ctx.textBaseline = "alphabetic";
 
-  // ロゴ（上部）
-  ctx.fillStyle = "#ffffff";
-  ctx.font = `800 60px ${FT}`;
-  ctx.fillText("Tabistock", pad, 132);
-  ctx.fillStyle = "#7fd9bf";
-  ctx.fillRect(pad, 152, 132, 6);
+  // ロゴ（サイトのヘッダーと同じフォント・緑色 #1f6f5b）
+  const LOGO_FT = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", "Yu Gothic", sans-serif';
+  ctx.fillStyle = "#1f6f5b";
+  ctx.font = `900 64px ${LOGO_FT}`;
+  try{ ctx.letterSpacing = "-0.04em"; }catch(e){}
+  ctx.fillText("Tabistock", pad, 134);
+  try{ ctx.letterSpacing = "normal"; }catch(e){}
+  ctx.fillRect(pad, 154, 140, 6);
 
   // 下から積み上げ：URL → 小見出し → タイトル → 国・地域
   let y = H - 96;
