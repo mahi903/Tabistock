@@ -290,14 +290,15 @@ if (el) {
     const st = document.createElement("style");
     st.id = "tabbarStyle";
     st.textContent = `
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:90;display:none;align-items:stretch;height:82px;background:#fff;border-top:1px solid #e7ddcb;padding-bottom:env(safe-area-inset-bottom);font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
-.tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding-top:12px;text-decoration:none;color:#9aa3b0;font-size:9px;font-weight:700;-webkit-tap-highlight-color:transparent}
-.tabbar a svg{width:19px;height:19px}
+.tabbar{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:90;display:none;align-items:center;justify-content:space-around;height:62px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);border:1px solid rgba(255,255,255,.55);border-radius:999px;box-shadow:0 12px 34px rgba(20,30,25,.20);font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
+.tabbar a{flex:1;display:flex;align-items:center;justify-content:center;height:100%;text-decoration:none;color:#5b6670;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,color .2s ease}
+.tabbar a svg{width:25px;height:25px}
+.tabbar a span{display:none}
 .tabbar a.active{color:#1f6f5b}
-.tabbar .tb-fab{margin-top:-22px;width:46px;height:46px;border-radius:50%;background:#1f6f5b;color:#fff;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 6px 16px rgba(31,111,91,.42)}
-.tabbar .tb-fab svg{width:23px;height:23px}
-.tabbar .tb-post:active .tb-fab{transform:scale(.94)}
-@media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(82px + env(safe-area-inset-bottom))}body.pwa:has(.drawer.open) .tabbar{display:none}}`;
+.tabbar a:active{transform:scale(.9)}
+.tabbar .tb-fab{display:flex;align-items:center;justify-content:center}
+.tabbar .tb-fab svg{width:25px;height:25px}
+@media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(62px + env(safe-area-inset-bottom) + 28px)}body.pwa:has(.drawer.open) .tabbar{display:none}}`;
     document.head.appendChild(st);
   }
   document.body.classList.add("pwa");
