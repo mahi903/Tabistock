@@ -577,13 +577,14 @@ async function makeStoryImage(){
   const pad = 72;
   ctx.textBaseline = "alphabetic";
 
-  // ロゴ（サイトのヘッダーと同じフォント・緑色 #1f6f5b）
+  // ロゴ（サイトのヘッダーと同じフォント・白）
   const LOGO_FT = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", "Yu Gothic", sans-serif';
-  ctx.fillStyle = "#1f6f5b";
+  ctx.fillStyle = "#ffffff";
   ctx.font = `900 64px ${LOGO_FT}`;
   try{ ctx.letterSpacing = "-0.04em"; }catch(e){}
   ctx.fillText("Tabistock", pad, 134);
   try{ ctx.letterSpacing = "normal"; }catch(e){}
+  ctx.fillStyle = "#7fd9bf";
   ctx.fillRect(pad, 154, 140, 6);
 
   // 下から積み上げ：URL → 小見出し → タイトル → 国・地域
