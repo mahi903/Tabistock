@@ -517,32 +517,31 @@ function wrapText(ctx, text, maxW){
 }
 
 // インスタのストーリー用画像（1080×1920）を生成して File を返す。
-// ロゴ＋写真（全面cover）＋タイトル＋小見出し＋URL を載せる。
+// 白背景の中央に、写真＋ロゴ＋タイトル＋小見出しを載せた「縁アリカード」を配置。
 async function makeStoryImage(){
   const W = 1080, H = 1920;
   const cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d");
   const FT = '"Noto Sans JP", system-ui, sans-serif';
+  const LOGO_FT = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", "Yu Gothic", sans-serif';
 
-  // ベース背景（写真が無い/取得失敗時の保険）
-  const base = ctx.createLinearGradient(0, 0, 0, H);
-  base.addColorStop(0, "#1f6f5b"); base.addColorStop(1, "#10241d");
-  ctx.fillStyle = base; ctx.fillRect(0, 0, W, H);
+  // 背景（白）
+  ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
 
-  // 写真を cover で全面に描画（Blob URL経由の <img> でiOS含め確実に読み込む）
+  // 写真の取得（Firebase Storage はCORS非対応のため同一オリジンのプロキシ経由）
+  let photo = null;
   try{
     const heroImg = root.querySelector(".hero-images img");
     const imgUrl = heroImg && heroImg.getAttribute("src");
     if(imgUrl){
-      // Firebase Storage は CORS 非対応のため、同一オリジンのプロキシ経由で取得する。
       const fetchUrl = /^https:\/\/firebasestorage\.googleapis\.com\//.test(imgUrl)
         ? "/api/img?u=" + encodeURIComponent(imgUrl)
         : imgUrl;
       const res = await fetch(fetchUrl);
       const objUrl = URL.createObjectURL(await res.blob());
       try{
-        const img = await new Promise((resolve, reject) => {
+        photo = await new Promise((resolve, reject) => {
           const im = new Image();
           const to = setTimeout(() => reject(new Error("img load timeout")), 8000);
           im.onload = () => { clearTimeout(to); resolve(im); };
@@ -550,23 +549,9 @@ async function makeStoryImage(){
           im.decoding = "async";
           im.src = objUrl;
         });
-        const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
-        const scale = Math.max(W / iw, H / ih);
-        const dw = iw * scale, dh = ih * scale;
-        ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
       }finally{ URL.revokeObjectURL(objUrl); }
     }
-  }catch(e){ /* 取得失敗時はベース背景のまま */ }
-
-  // 上下のグラデーション（ロゴと文字を読みやすく）
-  const gTop = ctx.createLinearGradient(0, 0, 0, H * 0.28);
-  gTop.addColorStop(0, "rgba(8,18,14,0.55)"); gTop.addColorStop(1, "rgba(8,18,14,0)");
-  ctx.fillStyle = gTop; ctx.fillRect(0, 0, W, H * 0.28);
-  const gBot = ctx.createLinearGradient(0, H * 0.40, 0, H);
-  gBot.addColorStop(0, "rgba(8,18,14,0)");
-  gBot.addColorStop(0.55, "rgba(8,18,14,0.62)");
-  gBot.addColorStop(1, "rgba(8,18,14,0.96)");
-  ctx.fillStyle = gBot; ctx.fillRect(0, 0, W, H);
+  }catch(e){ photo = null; }
 
   try{
     if(document.fonts && document.fonts.ready){
@@ -574,51 +559,109 @@ async function makeStoryImage(){
     }
   }catch(e){}
 
-  const pad = 72;
   ctx.textBaseline = "alphabetic";
 
-  // ロゴ（サイトのヘッダーと同じフォント・白）
-  const LOGO_FT = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", "Yu Gothic", sans-serif';
-  ctx.fillStyle = "#ffffff";
-  ctx.font = `900 64px ${LOGO_FT}`;
-  try{ ctx.letterSpacing = "-0.04em"; }catch(e){}
-  ctx.fillText("Tabistock", pad, 134);
-  try{ ctx.letterSpacing = "normal"; }catch(e){}
-  ctx.fillStyle = "#7fd9bf";
-  ctx.fillRect(pad, 154, 140, 6);
+  // カード寸法（中央配置）
+  const margin = 80, cardX = margin, cardW = W - margin * 2, cardR = 44;
+  const photoH = 720, textH = 620, cardH = photoH + textH;
+  const cardY = Math.round((H - cardH) / 2);
 
-  // 下から積み上げ：URL → 小見出し → タイトル → 国・地域
-  let y = H - 96;
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.font = `700 36px ${FT}`;
-  ctx.fillText("tabistock.jp", pad, y);
-  y -= 78;
+  // 角丸の長方形パス
+  const rr = (x, y, w, h, r) => {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  };
+  // 上だけ角丸の領域（写真用クリップ）
+  const topRoundClip = () => {
+    ctx.beginPath();
+    ctx.moveTo(cardX + cardR, cardY);
+    ctx.arcTo(cardX + cardW, cardY, cardX + cardW, cardY + photoH, cardR);
+    ctx.lineTo(cardX + cardW, cardY + photoH);
+    ctx.lineTo(cardX, cardY + photoH);
+    ctx.lineTo(cardX, cardY + cardR);
+    ctx.arcTo(cardX, cardY, cardX + cardW, cardY, cardR);
+    ctx.closePath();
+    ctx.clip();
+  };
 
-  const leadEl = root.querySelector(".hero-lead");
-  const lead = (leadEl ? leadEl.textContent : "").trim().replace(/\s+/g, " ");
-  if(lead){
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.font = `500 40px ${FT}`;
-    const leadLines = wrapText(ctx, lead, W - pad * 2).slice(0, 2);
-    for(let i = leadLines.length - 1; i >= 0; i--){ ctx.fillText(leadLines[i], pad, y); y -= 56; }
-    y -= 14;
+  // カードの影＋白下地
+  ctx.save();
+  ctx.shadowColor = "rgba(20,30,25,0.18)"; ctx.shadowBlur = 48; ctx.shadowOffsetY = 16;
+  ctx.fillStyle = "#ffffff"; rr(cardX, cardY, cardW, cardH, cardR); ctx.fill();
+  ctx.restore();
+
+  // 写真（カード上部に cover）
+  if(photo){
+    ctx.save(); topRoundClip();
+    const iw = photo.naturalWidth || photo.width, ih = photo.naturalHeight || photo.height;
+    const scale = Math.max(cardW / iw, photoH / ih);
+    const dw = iw * scale, dh = ih * scale;
+    ctx.drawImage(photo, cardX + (cardW - dw) / 2, cardY + (photoH - dh) / 2, dw, dh);
+    ctx.restore();
+  }else{
+    ctx.save(); topRoundClip();
+    const g = ctx.createLinearGradient(0, cardY, 0, cardY + photoH);
+    g.addColorStop(0, "#1f6f5b"); g.addColorStop(1, "#10241d");
+    ctx.fillStyle = g; ctx.fillRect(cardX, cardY, cardW, photoH);
+    ctx.restore();
   }
 
-  const titleEl = root.querySelector(".hero-text h1");
-  const title = (titleEl ? titleEl.textContent : document.title).trim();
+  // ロゴ（写真左上に白＋影で可読性確保）
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.45)"; ctx.shadowBlur = 14; ctx.shadowOffsetY = 2;
   ctx.fillStyle = "#ffffff";
-  ctx.font = `800 78px ${FT}`;
-  const tLines = wrapText(ctx, title, W - pad * 2).slice(0, 3);
-  for(let i = tLines.length - 1; i >= 0; i--){ ctx.fillText(tLines[i], pad, y); y -= 96; }
-  y -= 4;
+  ctx.font = `900 54px ${LOGO_FT}`;
+  try{ ctx.letterSpacing = "-0.04em"; }catch(e){}
+  ctx.fillText("Tabistock", cardX + 44, cardY + 82);
+  try{ ctx.letterSpacing = "normal"; }catch(e){}
+  ctx.restore();
+
+  // テキスト領域（白カード内・上から）
+  const px = 56, innerX = cardX + px, innerW = cardW - px * 2;
+  let y = cardY + photoH + 78;
 
   const eyeEl = root.querySelector(".hero-eyebrow");
   const eye = (eyeEl ? eyeEl.textContent : "").trim();
   if(eye){
-    ctx.fillStyle = "#7fd9bf";
-    ctx.font = `800 38px ${FT}`;
-    ctx.fillText(eye, pad, y);
+    ctx.fillStyle = "#1f6f5b"; ctx.font = `800 32px ${FT}`;
+    ctx.fillText(eye, innerX, y); y += 56;
   }
+
+  const titleEl = root.querySelector(".hero-text h1");
+  const title = (titleEl ? titleEl.textContent : document.title).trim();
+  ctx.fillStyle = "#182033"; ctx.font = `800 60px ${FT}`;
+  const tLines = wrapText(ctx, title, innerW).slice(0, 3);
+  for(const ln of tLines){ ctx.fillText(ln, innerX, y); y += 76; }
+  y += 12;
+
+  const leadEl = root.querySelector(".hero-lead");
+  const lead = (leadEl ? leadEl.textContent : "").trim().replace(/\s+/g, " ");
+  if(lead){
+    ctx.fillStyle = "#6c7787"; ctx.font = `500 34px ${FT}`;
+    const lLines = wrapText(ctx, lead, innerW).slice(0, 2);
+    for(const ln of lLines){ ctx.fillText(ln, innerX, y); y += 48; }
+  }
+
+  // フッター（カード下部・区切り線＋URL）
+  const footY = cardY + cardH - 60;
+  ctx.strokeStyle = "#ece5d8"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(innerX, footY - 46); ctx.lineTo(cardX + cardW - px, footY - 46); ctx.stroke();
+  ctx.fillStyle = "#1f6f5b"; ctx.font = `900 30px ${LOGO_FT}`;
+  try{ ctx.letterSpacing = "-0.04em"; }catch(e){}
+  ctx.fillText("Tabistock", innerX, footY);
+  try{ ctx.letterSpacing = "normal"; }catch(e){}
+  ctx.fillStyle = "#9aa3ad"; ctx.font = `700 28px ${FT}`;
+  const urlText = "tabistock.jp", uw = ctx.measureText(urlText).width;
+  ctx.fillText(urlText, cardX + cardW - px - uw, footY);
+
+  // カードの枠線（最後に上から）
+  ctx.strokeStyle = "rgba(20,30,25,0.10)"; ctx.lineWidth = 2;
+  rr(cardX, cardY, cardW, cardH, cardR); ctx.stroke();
 
   const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.92));
   return new File([blob], "tabistock-story.jpg", { type: "image/jpeg" });
