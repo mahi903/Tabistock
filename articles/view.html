@@ -499,9 +499,28 @@ function initInteractions(){
   const shareBtn = root.querySelector("#shareBtn");
   if(shareBtn){
     shareBtn.addEventListener("click", async () => {
-      const data = { title: document.title, url: location.href };
-      if(navigator.share){ try{ await navigator.share(data); }catch(e){} }
-      else { try{ await navigator.clipboard.writeText(location.href); showToast("リンクをコピーしました"); }catch(e){ showToast("コピーできませんでした"); } }
+      const url = location.href, title = document.title;
+      // 画像ファイルを添えて共有すると、共有シートにInstagram（ストーリーズ/フィード/DM）が出る。
+      let file = null;
+      try{
+        const heroImg = root.querySelector(".hero-images img");
+        const imgUrl = heroImg && heroImg.getAttribute("src");
+        if(imgUrl && navigator.canShare){
+          const res = await fetch(imgUrl, { mode: "cors" });
+          const blob = await res.blob();
+          const f = new File([blob], "tabistock.jpg", { type: blob.type || "image/jpeg" });
+          if(navigator.canShare({ files: [f] })) file = f;
+        }
+      }catch(e){ /* CORS等で画像取得に失敗したらリンクのみで共有 */ }
+      try{
+        if(file){
+          await navigator.share({ files: [file], text: title + "\n" + url });
+        }else if(navigator.share){
+          await navigator.share({ title, url });
+        }else{
+          await navigator.clipboard.writeText(url); showToast("リンクをコピーしました");
+        }
+      }catch(e){ /* ユーザーがキャンセルした場合などは何もしない */ }
     });
   }
   wireFollow();
