@@ -561,9 +561,11 @@ async function makeStoryImage(){
 
   ctx.textBaseline = "alphabetic";
 
-  // カード寸法（白背景の中央に配置）
-  const margin = 70, cardX = margin, cardW = W - margin * 2, cardR = 48;
-  const cardH = 1540, cardY = Math.round((H - cardH) / 2);
+  // カード寸法（白背景の中央に配置）。S を下げると全体が一回り小さく表示される。
+  const S = 0.80;
+  const s = (n) => Math.round(n * S);
+  const cardW = s(940), cardH = s(1540), cardR = s(48);
+  const cardX = Math.round((W - cardW) / 2), cardY = Math.round((H - cardH) / 2);
 
   // 角丸長方形パス
   const rr = (x, y, w, h, r) => {
@@ -578,7 +580,7 @@ async function makeStoryImage(){
 
   // カードの影
   ctx.save();
-  ctx.shadowColor = "rgba(20,30,25,0.22)"; ctx.shadowBlur = 56; ctx.shadowOffsetY = 18;
+  ctx.shadowColor = "rgba(20,30,25,0.22)"; ctx.shadowBlur = s(56); ctx.shadowOffsetY = s(18);
   ctx.fillStyle = "#10241d"; rr(cardX, cardY, cardW, cardH, cardR); ctx.fill();
   ctx.restore();
 
@@ -608,47 +610,47 @@ async function makeStoryImage(){
   gBot.addColorStop(1, "rgba(8,18,14,0.97)");
   ctx.fillStyle = gBot; ctx.fillRect(cardX, cardY, cardW, cardH);
 
-  const pad = 56, innerX = cardX + pad, maxW = cardW - pad * 2;
+  const pad = s(56), innerX = cardX + pad, maxW = cardW - pad * 2;
 
   // ロゴ（カード左上・白）
   ctx.fillStyle = "#ffffff";
-  ctx.font = `900 60px ${LOGO_FT}`;
+  ctx.font = `900 ${s(60)}px ${LOGO_FT}`;
   try{ ctx.letterSpacing = "-0.04em"; }catch(e){}
-  ctx.fillText("Tabistock", innerX, cardY + 96);
+  ctx.fillText("Tabistock", innerX, cardY + s(96));
   try{ ctx.letterSpacing = "normal"; }catch(e){}
   ctx.fillStyle = "#7fd9bf";
-  ctx.fillRect(innerX, cardY + 116, 132, 6);
+  ctx.fillRect(innerX, cardY + s(116), s(132), s(6));
 
   // 下から積み上げ：URL → 小見出し → タイトル → 国・地域
-  let y = cardY + cardH - 76;
+  let y = cardY + cardH - s(76);
   ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.font = `700 34px ${FT}`;
+  ctx.font = `700 ${s(34)}px ${FT}`;
   ctx.fillText("tabistock.jp", innerX, y);
-  y -= 74;
+  y -= s(74);
 
   const leadEl = root.querySelector(".hero-lead");
   const lead = (leadEl ? leadEl.textContent : "").trim().replace(/\s+/g, " ");
   if(lead){
     ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.font = `500 38px ${FT}`;
+    ctx.font = `500 ${s(38)}px ${FT}`;
     const leadLines = wrapText(ctx, lead, maxW).slice(0, 2);
-    for(let i = leadLines.length - 1; i >= 0; i--){ ctx.fillText(leadLines[i], innerX, y); y -= 54; }
-    y -= 14;
+    for(let i = leadLines.length - 1; i >= 0; i--){ ctx.fillText(leadLines[i], innerX, y); y -= s(54); }
+    y -= s(14);
   }
 
   const titleEl = root.querySelector(".hero-text h1");
   const title = (titleEl ? titleEl.textContent : document.title).trim();
   ctx.fillStyle = "#ffffff";
-  ctx.font = `800 70px ${FT}`;
+  ctx.font = `800 ${s(70)}px ${FT}`;
   const tLines = wrapText(ctx, title, maxW).slice(0, 3);
-  for(let i = tLines.length - 1; i >= 0; i--){ ctx.fillText(tLines[i], innerX, y); y -= 86; }
-  y -= 4;
+  for(let i = tLines.length - 1; i >= 0; i--){ ctx.fillText(tLines[i], innerX, y); y -= s(86); }
+  y -= s(4);
 
   const eyeEl = root.querySelector(".hero-eyebrow");
   const eye = (eyeEl ? eyeEl.textContent : "").trim();
   if(eye){
     ctx.fillStyle = "#7fd9bf";
-    ctx.font = `800 36px ${FT}`;
+    ctx.font = `800 ${s(36)}px ${FT}`;
     ctx.fillText(eye, innerX, y);
   }
 
