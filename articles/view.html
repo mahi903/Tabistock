@@ -642,7 +642,26 @@ function initComments(){
     }catch(e){ return ""; }
   };
 
-  const commentHTML = (c) => {
+  const likesCache = {};   // cid -> { count, mine }
+  const authorOf = {};     // cid -> authorId（返信通知用）
+
+  const actionBar = (c, isReply) => {
+    const st = likesCache[c.id] || { count:0, mine:false };
+    let h = '<div class="comment-actions">';
+    h += '<button class="comment-like'+(st.mine?' liked':'')+'" type="button" data-like="'+esc(c.id)+'" aria-label="いいね">'
+       +   '<i class="'+(st.mine?'fa-solid':'fa-regular')+' fa-heart"></i>'
+       +   '<span class="comment-like-count">'+(st.count||"")+'</span>'
+       + '</button>';
+    if(!isReply){
+      h += '<button class="comment-reply-btn" type="button" data-reply="'+esc(c.id)+'">返信</button>';
+    }
+    h += '</div>';
+    return h;
+  };
+
+  const commentHTML = (c, opts) => {
+    opts = opts || {};
+    const isReply = !!opts.isReply;
     const canDel = amAdmin || (me && c.authorId === me);
     const photo = c.authorPhotoURL ? esc(c.authorPhotoURL) : defAvatar;
     const badge = adminSet.has(c.authorId) ? ' <i class="fa-solid fa-circle-check admin-badge" title="管理者"></i>' : '';
@@ -650,7 +669,7 @@ function initComments(){
     const nameHTML = c.authorId
       ? '<a class="comment-name-link" href="../user.html?uid='+encodeURIComponent(c.authorId)+'">'+nameTxt+'</a>'
       : nameTxt;
-    return '<div class="comment" data-cid="'+esc(c.id)+'">'
+    return '<div class="comment'+(isReply?' comment-reply':'')+'" data-cid="'+esc(c.id)+'">'
       + '<img class="comment-avatar" src="'+photo+'" alt="" onerror="this.src=\''+defAvatar+'\'">'
       + '<div class="comment-body">'
       +   '<div class="comment-head">'
@@ -659,27 +678,122 @@ function initComments(){
       +     (canDel ? '<button class="comment-del" type="button" data-del="'+esc(c.id)+'">削除</button>' : '')
       +   '</div>'
       +   '<div class="comment-text">'+para(c.text || "")+'</div>'
+      +   actionBar(c, isReply)
+      + (isReply ? '' : '<div class="comment-replies" data-replies="'+esc(c.id)+'">'+(opts.repliesHTML||"")+'</div>')
       + '</div></div>';
+  };
+
+  const loadLikes = async (items) => {
+    await Promise.all(items.map(async c => {
+      try{
+        const cnt = await getCountFromServer(collection(db,"articles",id,"comments",c.id,"likes"));
+        let mine = false;
+        if(me) mine = (await getDoc(doc(db,"articles",id,"comments",c.id,"likes",me))).exists();
+        likesCache[c.id] = { count: cnt.data().count, mine };
+      }catch(e){ likesCache[c.id] = likesCache[c.id] || { count:0, mine:false }; }
+    }));
+  };
+
+  const toggleLike = async (cid, btn) => {
+    if(!me){ alert("いいねするにはログインが必要です。"); location.href = "../account.html"; return; }
+    const st = likesCache[cid] || { count:0, mine:false };
+    const ref = doc(db,"articles",id,"comments",cid,"likes",me);
+    btn.disabled = true;
+    try{
+      if(st.mine){ await deleteDoc(ref); st.mine = false; st.count = Math.max(0, st.count-1); }
+      else { await setDoc(ref, { likedAt: serverTimestamp() }); st.mine = true; st.count++; }
+      likesCache[cid] = st;
+      btn.classList.toggle("liked", st.mine);
+      const ic = btn.querySelector("i"); if(ic) ic.className = (st.mine?"fa-solid":"fa-regular")+" fa-heart";
+      const cn = btn.querySelector(".comment-like-count"); if(cn) cn.textContent = st.count || "";
+    }catch(e){ console.error(e); alert("いいねできませんでした。"); }
+    finally{ btn.disabled = false; }
+  };
+
+  const openReplyForm = (parentId) => {
+    if(!me){ alert("返信するにはログインが必要です。"); location.href = "../account.html"; return; }
+    const box = cList.querySelector('[data-replies="'+parentId+'"]');
+    if(!box) return;
+    const existing = box.querySelector(".reply-form");
+    if(existing){ existing.remove(); return; }   // トグル
+    const form = document.createElement("div");
+    form.className = "reply-form";
+    form.innerHTML = '<textarea class="reply-input" maxlength="1000" rows="2" placeholder="返信を書く…"></textarea>'
+      + '<div class="comment-form-foot">'
+      +   '<button class="comment-submit reply-submit" type="button">返信する</button>'
+      +   '<button class="reply-cancel" type="button">キャンセル</button>'
+      + '</div>';
+    box.insertBefore(form, box.firstChild);
+    const inp = form.querySelector(".reply-input");
+    const sub = form.querySelector(".reply-submit");
+    const cancel = form.querySelector(".reply-cancel");
+    inp.focus();
+    cancel.addEventListener("click", () => form.remove());
+    sub.addEventListener("click", async () => {
+      const text = (inp.value || "").trim();
+      if(!text){ inp.focus(); return; }
+      sub.disabled = true;
+      try{
+        await addDoc(col, {
+          authorId: me,
+          authorName: myName || "ゲスト",
+          authorPhotoURL: myPhoto || "",
+          text,
+          parentId,
+          createdAt: serverTimestamp()
+        });
+        const parentAuthor = authorOf[parentId];
+        if(parentAuthor && parentAuthor !== me){
+          sendNotification({ toUid: parentAuthor, type: "comment", articleId: id, articleTitle });
+        }
+        await loadComments();
+      }catch(e){ console.error(e); alert("返信できませんでした。"); }
+      finally{ sub.disabled = false; }
+    });
+  };
+
+  const wireEvents = () => {
+    cList.querySelectorAll("[data-del]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if(!confirm("このコメントを削除しますか？")) return;
+        try{
+          await deleteDoc(doc(db,"articles",id,"comments",btn.getAttribute("data-del")));
+          await loadComments();
+        }catch(e){ console.error(e); alert("削除できませんでした。"); }
+      });
+    });
+    cList.querySelectorAll("[data-like]").forEach(btn => {
+      btn.addEventListener("click", () => toggleLike(btn.getAttribute("data-like"), btn));
+    });
+    cList.querySelectorAll("[data-reply]").forEach(btn => {
+      btn.addEventListener("click", () => openReplyForm(btn.getAttribute("data-reply")));
+    });
   };
 
   const loadComments = async () => {
     try{
       const qs = await getDocs(query(col, orderBy("createdAt","desc")));
-      const items = [];
-      qs.forEach(s => items.push(Object.assign({ id: s.id }, s.data())));
-      if(cCount) cCount.textContent = items.length ? "("+items.length+")" : "";
-      cList.innerHTML = items.length
-        ? items.map(commentHTML).join("")
-        : '<p class="comments-empty">まだコメントはありません。最初のコメントを書いてみましょう。</p>';
-      cList.querySelectorAll("[data-del]").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          if(!confirm("このコメントを削除しますか？")) return;
-          try{
-            await deleteDoc(doc(db,"articles",id,"comments",btn.getAttribute("data-del")));
-            await loadComments();
-          }catch(e){ console.error(e); alert("削除できませんでした。"); }
-        });
-      });
+      const all = [];
+      qs.forEach(s => all.push(Object.assign({ id: s.id }, s.data())));
+      all.forEach(c => { authorOf[c.id] = c.authorId || null; });
+      if(cCount) cCount.textContent = all.length ? "("+all.length+")" : "";
+
+      const tops = all.filter(c => !c.parentId);
+      const repliesBy = {};
+      all.filter(c => c.parentId).forEach(c => { (repliesBy[c.parentId] = repliesBy[c.parentId] || []).push(c); });
+      Object.values(repliesBy).forEach(arr => arr.sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0)));
+
+      await loadLikes(all);
+
+      if(!tops.length){
+        cList.innerHTML = '<p class="comments-empty">まだコメントはありません。最初のコメントを書いてみましょう。</p>';
+        return;
+      }
+      cList.innerHTML = tops.map(c => {
+        const repliesHTML = (repliesBy[c.id] || []).map(r => commentHTML(r, { isReply:true })).join("");
+        return commentHTML(c, { repliesHTML });
+      }).join("");
+      wireEvents();
     }catch(e){ console.error(e); cList.innerHTML = '<p class="comments-empty">コメントを読み込めませんでした。</p>'; }
   };
 
