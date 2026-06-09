@@ -30,8 +30,16 @@
     .burger span{background:#1b2330}
     .mapwrap{flex:1 1 auto;position:relative;min-height:0}
     #map{position:absolute;inset:0;background:#aad3df;z-index:0}
+    /* 大陸チップ（引きで選ぶ） */
+    .region-bar{position:absolute;top:14px;left:0;right:0;z-index:15;display:flex;gap:8px;overflow-x:auto;padding:0 14px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .region-bar::-webkit-scrollbar{display:none}
+    .region-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid #e7ddcb;border-radius:999px;padding:9px 15px;font-size:13px;font-weight:800;color:#1f6f5b;box-shadow:0 4px 14px rgba(0,0,0,.12);cursor:pointer;font-family:inherit;white-space:nowrap}
+    .region-chip.active{background:#1f6f5b;color:#fff;border-color:#1f6f5b}
+    .region-chip .rc-num{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#eaf3ef;color:#1f6f5b;font-size:11px;font-weight:800}
+    .region-chip.active .rc-num{background:rgba(255,255,255,.25);color:#fff}
+    .region-chip.back{color:#6c7787}
     /* マップ上のヒント */
-    .map-hint{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;background:#fff;border:1px solid #e7ddcb;border-radius:999px;padding:8px 16px;font-size:12.5px;font-weight:700;color:#1f6f5b;box-shadow:0 4px 14px rgba(0,0,0,.1);white-space:nowrap}
+    .map-hint{position:absolute;top:62px;left:50%;transform:translateX(-50%);z-index:5;background:#fff;border:1px solid #e7ddcb;border-radius:999px;padding:8px 16px;font-size:12.5px;font-weight:700;color:#1f6f5b;box-shadow:0 4px 14px rgba(0,0,0,.1);white-space:nowrap}
     .map-loading{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(247,241,232,.7);font-size:14px;color:#6c7787;font-weight:700}
     /* 国ピン（数字つき） */
     .ctpin{background:#1f6f5b;color:#fff;border:2.5px solid #fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 3px 10px rgba(0,0,0,.3);font-family:"Noto Sans JP",sans-serif}
@@ -80,7 +88,8 @@
 
   <div class="mapwrap">
     <div id="map"></div>
-    <div class="map-hint">ピンをタップでその国の旅程一覧</div>
+    <div class="region-bar" id="regionBar"></div>
+    <div class="map-hint" id="mapHint">エリアを選ぶと国別の投稿が見られます</div>
     <div class="map-loading" id="mapLoading">地図を読み込み中…</div>
 
     <!-- 国別の旅程パネル -->
@@ -117,12 +126,31 @@
   <script type="module">
     import { db } from "./firebase-config.js";
     import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { COUNTRY_LL, cinfo, REGION_JP, BUDGETS, DAYS_OPT, esc } from "./tabistock-render.js";
+    import { COUNTRIES, COUNTRY_LL, cinfo, REGION_JP, BUDGETS, DAYS_OPT, esc } from "./tabistock-render.js";
 
     if(typeof L === 'undefined'){
       document.getElementById('mapLoading').textContent = '地図ライブラリ(Leaflet)を読み込めませんでした。通信環境をご確認ください。';
       throw new Error('Leaflet not loaded');
     }
+
+    // 大陸（細かい地域をまとめる）
+    const CONTINENTS = [
+      { k:'asia',          jp:'アジア',     regions:['east-asia','southeast-asia','south-asia','central-asia','west-asia'] },
+      { k:'europe',        jp:'ヨーロッパ', regions:['europe'] },
+      { k:'north-america', jp:'北アメリカ', regions:['north-america'] },
+      { k:'south-america', jp:'南アメリカ', regions:['south-america'] },
+      { k:'africa',        jp:'アフリカ',   regions:['africa'] },
+      { k:'oceania',       jp:'オセアニア', regions:['oceania'] },
+    ];
+    const regionToCont = {};
+    CONTINENTS.forEach(ct => ct.regions.forEach(r => { regionToCont[r] = ct.k; }));
+    const contOfCountry = c => { const info = cinfo(c); return info ? regionToCont[info.r] : null; };
+    // 大陸ごとの範囲（投稿の有無に関係なく、その大陸の全対象国の座標から算出）
+    const contBounds = {};
+    CONTINENTS.forEach(ct => {
+      const lls = COUNTRIES.filter(co => ct.regions.includes(co.r)).map(co => COUNTRY_LL[co.v]).filter(Boolean);
+      if(lls.length) contBounds[ct.k] = L.latLngBounds(lls);
+    });
 
     const map = L.map('map', { worldCopyJump:true, minZoom:2 }).setView([28, 30], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -137,6 +165,8 @@
     const panelTitle = document.getElementById('panelTitle');
     const panelSub = document.getElementById('panelSub');
     const panelList = document.getElementById('panelList');
+    const hint = document.getElementById('mapHint');
+    const regionBar = document.getElementById('regionBar');
     document.getElementById('panelClose').addEventListener('click', ()=> panel.classList.remove('open'));
 
     const budgetL = v => (BUDGETS.find(b=>b.v===v)||{}).l || '';
@@ -162,6 +192,44 @@
       panel.classList.add('open');
     }
 
+    // 大陸ごとのマーカー群と、その大陸の（重複なし）投稿数
+    const contGroups = {};
+    const contCount = {};
+    let activeCont = null;
+
+    const showOverview = () => {
+      activeCont = null;
+      CONTINENTS.forEach(ct => { if(contGroups[ct.k]) map.removeLayer(contGroups[ct.k]); });
+      panel.classList.remove('open');
+      map.setView([28, 30], 2);
+      hint.textContent = 'エリアを選ぶと国別の投稿が見られます';
+      renderChips();
+    };
+
+    const showContinent = (k) => {
+      activeCont = k;
+      CONTINENTS.forEach(ct => { if(contGroups[ct.k]) map.removeLayer(contGroups[ct.k]); });
+      if(contGroups[k]) contGroups[k].addTo(map);
+      if(contBounds[k]) map.fitBounds(contBounds[k].pad(0.12));
+      panel.classList.remove('open');
+      const cj = (CONTINENTS.find(c=>c.k===k)||{}).jp || '';
+      hint.textContent = cj + 'の国をタップで旅程一覧';
+      renderChips();
+    };
+
+    const renderChips = () => {
+      let html = '';
+      if(activeCont) html += `<button class="region-chip back" data-back="1">← エリア一覧</button>`;
+      CONTINENTS.forEach(ct => {
+        if(!contCount[ct.k]) return;                 // 投稿のある大陸のみ
+        html += `<button class="region-chip ${activeCont===ct.k?'active':''}" data-cont="${ct.k}">`
+              +   `${ct.jp}<span class="rc-num">${contCount[ct.k]}</span></button>`;
+      });
+      regionBar.innerHTML = html;
+      regionBar.querySelectorAll('[data-cont]').forEach(b => b.addEventListener('click', ()=> showContinent(b.dataset.cont)));
+      regionBar.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', showOverview));
+    };
+
     (async () => {
       const loading = document.getElementById('mapLoading');
       try{
@@ -176,23 +244,32 @@
           (byCountry[c] = byCountry[c] || []).push(d);
         }));
 
+        // 大陸ごとのレイヤー群・投稿数（記事の重複なし）を準備
+        const contArticleIds = {};
+        CONTINENTS.forEach(ct => { contGroups[ct.k] = L.layerGroup(); contArticleIds[ct.k] = new Set(); });
+
         let placed = 0;
         Object.keys(byCountry).forEach(c => {
           const ll = COUNTRY_LL[c];
-          if(!ll) return; // 座標未登録の国はスキップ
+          if(!ll) return;                 // 座標未登録の国はスキップ
+          const ct = contOfCountry(c);
+          if(!ct) return;
           const arr = byCountry[c];
+          arr.forEach(d => contArticleIds[ct].add(d.id));
           const icon = L.divIcon({
             className:'', html:`<div class="ctpin">${arr.length}</div>`,
             iconSize:[38,38], iconAnchor:[19,19]
           });
-          L.marker(ll, { icon }).addTo(map).on('click', ()=> openCountry(c, arr));
+          L.marker(ll, { icon }).on('click', ()=> openCountry(c, arr)).addTo(contGroups[ct]);
           placed++;
         });
+        CONTINENTS.forEach(ct => { contCount[ct.k] = contArticleIds[ct.k].size; });
 
         loading.remove();
         if(!placed){
-          const hint = document.querySelector('.map-hint');
-          if(hint) hint.textContent = 'まだ地図に表示できる旅程がありません';
+          hint.textContent = 'まだ地図に表示できる旅程がありません';
+        } else {
+          showOverview();   // 引き＋大陸チップから開始
         }
       }catch(err){
         console.error(err);
