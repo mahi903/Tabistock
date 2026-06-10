@@ -42,7 +42,7 @@
   .me .nick{font-size:20px;font-weight:800;margin:6px 0}
   .me .email{color:#6c7787;font-size:13px;margin:0 0 18px}
   .me .actions{display:flex;flex-direction:column;gap:10px}
-  .me .actions a,.me .actions button{display:block;width:100%;padding:13px;border-radius:999px;font-size:15px;font-weight:800;text-decoration:none;text-align:center;cursor:pointer;font-family:inherit;border:none}
+  .me .actions a,.me .actions button{display:flex;align-items:center;justify-content:center;width:100%;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:700;line-height:1;text-decoration:none;text-align:center;cursor:pointer;font-family:inherit;border:none}
   .a-main{background:#e2683b;color:#fff}
   .a-ghost{background:#faf6ee;color:#1f6f5b;border:1.5px solid #1f6f5b !important}
   .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-top:8px}
@@ -164,9 +164,6 @@
         <button class="a-ghost" id="editToggleBtn" type="button" style="flex:1">プロフィールを編集</button>
         <a class="a-main" href="./post.html" style="flex:1">投稿する</a>
       </div>
-      <div class="actions" style="margin-top:10px">
-        <button class="a-ghost" id="logoutBtn" type="button">ログアウト</button>
-      </div>
       <div class="msg" id="avatarMsg" style="margin-top:12px"></div>
 
       <!-- プロフィール編集（ボタンで開閉・初期は非表示） -->
@@ -191,6 +188,10 @@
       <div id="savedPosts" class="posts"></div>
 
       <p class="hint" id="uidLine" style="margin-top:18px;word-break:break-all"></p>
+
+      <div class="actions" style="margin-top:18px">
+        <button class="a-ghost" id="logoutBtn" type="button">ログアウト</button>
+      </div>
     </div>
   </div>
 
