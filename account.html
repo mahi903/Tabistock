@@ -38,7 +38,7 @@
   .msg.err{display:block;background:#fdecec;color:#b53d3d;border:1px solid #f3c9c9}
   .msg.ok{display:block;background:#e9f5ef;color:#1f6f5b;border:1px solid #bfe3d3}
   .hide{display:none}
-  .me{background:#fff;border:1px solid #e7ddcb;border-radius:18px;padding:26px;text-align:center}
+  .me{background:transparent;border:none;border-radius:0;padding:0;text-align:center}
   .me .nick{font-size:20px;font-weight:800;margin:6px 0}
   .me .email{color:#6c7787;font-size:13px;margin:0 0 18px}
   .me .actions{display:flex;flex-direction:column;gap:10px}
@@ -82,7 +82,7 @@
   .section-title{font-size:15px;font-weight:800;margin:26px 0 12px;display:flex;align-items:center;justify-content:space-between}
   .section-title .count{font-size:12px;color:#6c7787;font-weight:700}
   .posts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:480px){.posts{grid-template-columns:1fr}}
+  @media(max-width:480px){.posts{grid-template-columns:1fr 1fr;gap:10px}}
   .pcard{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid #e7ddcb;border-radius:14px;overflow:hidden;transition:box-shadow .15s}
   .pcard:hover{box-shadow:0 6px 18px rgba(0,0,0,.08)}
   .pcard .pthumb{width:100%;height:108px;background-size:cover;background-position:center;background-color:#e7ddcb}
@@ -161,19 +161,28 @@
       </div>
 
       <div class="actions" style="margin-top:18px;flex-direction:row;gap:10px">
+        <button class="a-ghost" id="editToggleBtn" type="button" style="flex:1">プロフィールを編集</button>
         <a class="a-main" href="./post.html" style="flex:1">投稿する</a>
-        <button class="a-ghost" id="logoutBtn" type="button" style="flex:1">ログアウト</button>
+      </div>
+      <div class="actions" style="margin-top:10px">
+        <button class="a-ghost" id="logoutBtn" type="button">ログアウト</button>
       </div>
       <div class="msg" id="avatarMsg" style="margin-top:12px"></div>
 
-      <div class="section-title">プロフィール</div>
-      <label for="bio">ひとこと自己紹介</label>
-      <input id="bio" type="text" maxlength="60" placeholder="例：学生バックパッカー。アジア中心に旅してます">
-      <label for="instagram">Instagram（任意）</label>
-      <input id="instagram" type="text" placeholder="ユーザー名 または URL（例：mahiro.9.3）">
-      <p class="hint">ここで設定した内容が、あなたが投稿した記事の「執筆者カード」に表示されます。</p>
-      <button class="btn" id="saveProfileBtn" type="button" style="margin-top:14px">プロフィールを保存</button>
-      <div class="msg" id="profileMsg" style="margin-top:12px"></div>
+      <!-- プロフィール編集（ボタンで開閉・初期は非表示） -->
+      <div id="editSection" class="hide">
+        <div class="section-title">プロフィールを編集</div>
+        <label for="editNick">ユーザーネーム（投稿者名）</label>
+        <input id="editNick" type="text" maxlength="30" autocomplete="nickname">
+        <p class="hint">記事や投稿者カードに表示される名前です。他の人と同じ名前は使えません。</p>
+        <label for="bio">ひとこと自己紹介</label>
+        <input id="bio" type="text" maxlength="60" placeholder="例：学生バックパッカー。アジア中心に旅してます">
+        <label for="instagram">Instagram（任意）</label>
+        <input id="instagram" type="text" placeholder="ユーザー名 または URL（例：mahiro.9.3）">
+        <p class="hint">ここで設定した内容が、あなたが投稿した記事の「執筆者カード」に表示されます。</p>
+        <button class="btn" id="saveProfileBtn" type="button" style="margin-top:14px">変更を保存</button>
+        <div class="msg" id="profileMsg" style="margin-top:12px"></div>
+      </div>
 
       <div class="section-title">自分の投稿 <span class="count" id="postCount"></span></div>
       <div id="myPosts" class="posts"></div>
@@ -307,6 +316,15 @@ $("submitBtn").onclick = async () => {
 
 $("logoutBtn").onclick = () => signOut(auth);
 
+/* プロフィール編集の開閉 */
+$("editToggleBtn").onclick = () => {
+  const sec = $("editSection");
+  const willShow = sec.classList.contains("hide");
+  sec.classList.toggle("hide");
+  $("editToggleBtn").textContent = willShow ? "編集を閉じる" : "プロフィールを編集";
+  if(willShow) sec.scrollIntoView({ behavior:"smooth", block:"start" });
+};
+
 /* ===== アイコン ===== */
 function setAvatar(url, nick){
   const a = $("meAvatar");
@@ -370,18 +388,32 @@ function showProfileMsg(text, kind){
 }
 $("saveProfileBtn").onclick = async () => {
   const user = auth.currentUser; if(!user) return;
+  const newNick = $("editNick").value.trim();
   const bio = $("bio").value.trim();
   const instagram = $("instagram").value.trim();
+  if(!newNick){ showProfileMsg("ユーザーネームを入力してください。", "err"); return; }
   $("saveProfileBtn").disabled = true;
   showProfileMsg("保存中…", "ok");
   try{
+    const curNick = $("meNick").textContent;
+    // ニックネームが変わるときだけ重複チェック（自分自身は除外）
+    if(newNick !== curNick){
+      const dup = await getDocs(query(collection(db, "publicProfiles"), where("nickname", "==", newNick)));
+      let taken = false;
+      dup.forEach(d => { if(d.id !== user.uid) taken = true; });
+      if(taken){
+        showProfileMsg("このユーザーネームは既に使われています。別の名前にしてください。", "err");
+        $("saveProfileBtn").disabled = false;
+        return;
+      }
+      await updateProfile(user, { displayName: newNick });
+    }
     // 公開プロフィールに名前・アイコンも同期（記事カード用）
-    const pub = { bio, instagram };
-    const nick = $("meNick").textContent;
-    if(nick && nick !== "(名前未設定)") pub.nickname = nick;
+    const pub = { bio, instagram, nickname: newNick };
     if(user.photoURL) pub.photoURL = user.photoURL;
     await setDoc(doc(db, "publicProfiles", user.uid), pub, { merge: true });
-    await setDoc(doc(db, "users", user.uid), { bio, instagram }, { merge: true });
+    await setDoc(doc(db, "users", user.uid), { bio, instagram, nickname: newNick }, { merge: true });
+    $("meNick").textContent = newNick;
     showProfileMsg("プロフィールを保存しました。", "ok");
   }catch(err){
     console.error(err);
@@ -526,6 +558,7 @@ onAuthStateChanged(auth, async (user) => {
     $("authCard").classList.add("hide");
     $("meCard").classList.remove("hide");
     $("meNick").textContent = nick || "(名前未設定)";
+    $("editNick").value = nick || "";
     $("meEmail").textContent = user.email;
     $("uidLine").textContent = "UID: " + user.uid;
     $("verifyBadge").innerHTML = user.emailVerified
