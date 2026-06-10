@@ -40,6 +40,10 @@
   .follow-btn:hover{background:#185645}
   .follow-btn:active{transform:scale(.96)}
   .follow-btn.following{background:#fff;color:#1f6f5b}
+  .message-btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;font-size:14px;font-weight:700;line-height:1;padding:11px 18px;border-radius:999px;background:#faf6ee;color:#1f6f5b;border:1.5px solid #1f6f5b;text-decoration:none;cursor:pointer;transition:transform .15s,background .2s}
+  .message-btn i{font-size:13px}
+  .message-btn:hover{background:#f1e9da}
+  .message-btn:active{transform:scale(.96)}
   .edit-link{flex:1;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;text-decoration:none;color:#1f6f5b;background:#faf6ee;border:1.5px solid #1f6f5b;border-radius:999px;padding:11px 18px}
   .socials{margin-top:16px}
   .socials a{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:#faf6ee;border:1px solid #e7ddcb;color:#1f6f5b;font-size:20px;text-decoration:none}
@@ -166,8 +170,17 @@ function renderPost(d){
       let following = false;
       if(me){ try{ following = (await getDoc(doc(db,"users",me,"following",uid))).exists(); }catch(e){} }
       slot.innerHTML = '<button class="follow-btn" id="followBtn" type="button">'
-        + '<i class="fa-solid fa-plus"></i><span>フォロー</span></button>';
+        + '<i class="fa-solid fa-plus"></i><span>フォロー</span></button>'
+        + '<a class="message-btn" id="messageBtn" href="./dm.html?to=' + encodeURIComponent(uid) + '">'
+        + '<i class="fa-regular fa-paper-plane"></i><span>メッセージ</span></a>';
       const btn = document.getElementById("followBtn");
+      // 未ログインならメッセージもログインへ誘導
+      const msgBtn = document.getElementById("messageBtn");
+      if(msgBtn){
+        msgBtn.addEventListener("click", (e) => {
+          if(!me){ e.preventDefault(); alert("メッセージを送るにはログインが必要です。"); location.href = "./account.html"; }
+        });
+      }
       let busy = false;
       const paint = () => {
         btn.classList.toggle("following", following);

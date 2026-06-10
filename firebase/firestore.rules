@@ -118,5 +118,39 @@ service cloud.firestore {
         }
       }
     }
+
+    // ---- DM（1対1メッセージ） ----
+    // conversations/{convId}：convId は参加者2人のUIDを昇順連結（uidA__uidB）。
+    // 参加者本人だけが読み書き可。誰にでも送れる（フォロー不問）が、
+    // 自分を participants に含む2人だけの会話に限る。
+    match /conversations/{convId} {
+      function isParticipant() {
+        return isSignedIn() && request.auth.uid in resource.data.participants;
+      }
+      // 一覧取得は participants array-contains 自分 のクエリ前提。
+      allow read: if isParticipant();
+      // 作成：自分を含む2人だけの会話。
+      allow create: if isSignedIn()
+                    && request.resource.data.participants is list
+                    && request.resource.data.participants.size() == 2
+                    && request.auth.uid in request.resource.data.participants;
+      // 更新：参加者本人（lastMessage や unread の更新）。
+      allow update: if isParticipant();
+
+      // メッセージ：参加者だけ閲覧・送信。送信者＝自分、本文1〜2000文字。編集・削除は不可。
+      match /messages/{msgId} {
+        function inConv() {
+          return isSignedIn()
+            && request.auth.uid in
+               get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
+        }
+        allow read: if inConv();
+        allow create: if inConv()
+                      && request.resource.data.senderId == request.auth.uid
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() > 0
+                      && request.resource.data.text.size() <= 2000;
+      }
+    }
   }
 }

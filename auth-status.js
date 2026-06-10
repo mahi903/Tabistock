@@ -155,7 +155,8 @@ if (el) {
   const ICON = {
     like: '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M12 21s-6.7-4.35-9.33-8.07C.9 10.27 1.86 6.5 5.2 6.06c1.94-.26 3.4.86 4.3 2.07.9-1.21 2.36-2.33 4.3-2.07 3.34.44 4.3 4.21 2.53 6.87C18.7 16.65 12 21 12 21z"/></svg>',
     comment: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.1-5.4A8.5 8.5 0 1 1 21 11.5z"/></svg>',
-    follow: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>'
+    follow: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>',
+    dm: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>'
   };
 
   const timeAgo = (ts) => {
@@ -183,6 +184,9 @@ if (el) {
       if (n.type === "follow") {
         txt = `<b>${name}</b>さんがあなたをフォローしました`;
         href = `${base}user.html?uid=${encodeURIComponent(n.fromUid || "")}`;
+      } else if (n.type === "dm") {
+        txt = `<b>${name}</b>さんからメッセージが届きました`;
+        href = `${base}dm.html?to=${encodeURIComponent(n.fromUid || "")}`;
       } else if (n.type === "comment") {
         txt = `<b>${name}</b>さんが「${title}」にコメントしました`;
         href = `${base}articles/view.html?id=${encodeURIComponent(n.articleId || "")}`;
@@ -283,8 +287,11 @@ if (el) {
     window.navigator.standalone === true;
   if (!standalone) return; // ブラウザ閲覧時は出さない
   if (document.querySelector(".tabbar")) return; // 二重生成防止
-  // 投稿/編集ページはタブを出さない（下部の送信バーと重なるため）
-  if ((location.pathname.split("/").pop() || "").toLowerCase() === "post.html") return;
+  // 投稿/編集・DMページはタブを出さない（下部の入力バーと重なるため）
+  {
+    const pg = (location.pathname.split("/").pop() || "").toLowerCase();
+    if (pg === "post.html" || pg === "dm.html") return;
+  }
 
   if (!document.getElementById("tabbarStyle")) {
     const st = document.createElement("style");

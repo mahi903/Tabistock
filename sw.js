@@ -7,7 +7,7 @@
 //   - HTML（ページ遷移）はネット優先＋失敗時キャッシュ（更新を即反映）。
 //   - CSS/JS/画像は stale-while-revalidate（まず表示→裏で更新）。
 
-const VERSION = 'tabistock-v43';
+const VERSION = 'tabistock-v44';
 const CACHE = VERSION;
 
 // インストール時に最低限の「アプリの骨格」を先読みしておく。
@@ -22,6 +22,7 @@ const PRECACHE = [
   '/search.html',
   '/map.html',
   '/post.html',
+  '/dm.html',
   '/account.html',
   '/favicon-192x192.png',
   '/favicon-512x512.png',
