@@ -207,19 +207,15 @@ async function openThread(me, other){
   const sendBtn = document.getElementById("send");
   const form = document.getElementById("composer");
 
-  // 会話ドキュメントの用意＋自分の未読をリセット
+  // 会話ドキュメントを確実に用意（存在チェックの getDoc は、未作成だと
+  // ルール上「参加者判定」できず拒否されるため使わない）。
+  // setDoc + merge なら：未作成→作成（participants 2人・自分含む）、
+  // 既存→マージ更新。unread はマップなので自分の分だけ 0 にマージされる。
   try{
-    const cs = await getDoc(convRef);
-    if (!cs.exists()){
-      await setDoc(convRef, {
-        participants: [me, other].sort(),
-        unread: { [me]: 0, [other]: 0 },
-        lastMessage: "", lastSenderId: "",
-        createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-      });
-    } else {
-      await updateDoc(convRef, { ["unread." + me]: 0 });
-    }
+    await setDoc(convRef, {
+      participants: [me, other].sort(),
+      unread: { [me]: 0 }
+    }, { merge: true });
   }catch(e){ console.warn("会話の初期化に失敗:", e); }
 
   // テキストエリアの自動リサイズ＋送信可否
