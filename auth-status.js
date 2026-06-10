@@ -350,15 +350,15 @@ if (el) {
     const st = document.createElement("style");
     st.id = "tabbarStyle";
     st.textContent = `
-.tabbar{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:90;display:none;align-items:center;justify-content:space-around;height:62px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);border:1px solid rgba(255,255,255,.55);border-radius:999px;box-shadow:0 12px 34px rgba(20,30,25,.20);font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
-.tabbar a{flex:1;display:flex;align-items:center;justify-content:center;height:100%;text-decoration:none;color:#5b6670;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,color .2s ease}
+.tabbar{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:90;display:none;align-items:center;justify-content:space-around;height:64px;padding:0 7px;background:rgba(255,255,255,.26);-webkit-backdrop-filter:blur(32px) saturate(190%);backdrop-filter:blur(32px) saturate(190%);border:1px solid rgba(255,255,255,.42);border-radius:999px;box-shadow:0 14px 40px rgba(20,30,25,.22),inset 0 1px 0 rgba(255,255,255,.55);font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif}
+.tabbar a{flex:1;display:flex;align-items:center;justify-content:center;height:48px;margin:0 2px;border-radius:18px;text-decoration:none;color:#1b2330;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,background .2s ease,color .2s ease}
 .tabbar a svg{width:25px;height:25px}
 .tabbar a span{display:none}
-.tabbar a.active{color:#1f6f5b}
+.tabbar a.active{color:#1f6f5b;background:rgba(255,255,255,.42)}
 .tabbar a:active{transform:scale(.9)}
 .tabbar .tb-fab{display:flex;align-items:center;justify-content:center}
 .tabbar .tb-fab svg{width:25px;height:25px}
-@media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(62px + env(safe-area-inset-bottom) + 28px)}body.pwa:has(.drawer.open) .tabbar{display:none}}`;
+@media(max-width:768px){body.pwa .tabbar{display:flex}body.pwa{padding-bottom:calc(64px + env(safe-area-inset-bottom) + 28px)}body.pwa:has(.drawer.open) .tabbar{display:none}}`;
     document.head.appendChild(st);
   }
   document.body.classList.add("pwa");
