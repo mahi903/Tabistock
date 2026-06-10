@@ -201,7 +201,9 @@ async function openThread(me, other){
       </form>
     </div>`;
 
-  document.getElementById("back").onclick = () => location.href = "./dm.html";
+  // 来たページ（プロフィール or 一覧）へ戻る。履歴が無ければ一覧へ。
+  document.getElementById("back").onclick = () =>
+    history.length > 1 ? history.back() : (location.href = "./dm.html");
   const msgsEl = document.getElementById("msgs");
   const input = document.getElementById("input");
   const sendBtn = document.getElementById("send");
