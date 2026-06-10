@@ -251,7 +251,9 @@ ${heroDots}
 <div class="hero-info">
       <div><span>旅行時期</span><strong>${esc(period)}</strong></div>
       <div><span>旅の難易度</span><strong>${stars}</strong></div>
-      <div><span>投稿者</span><strong>${esc(author)}</strong></div>
+      <div><span>投稿者</span><strong>${authorId
+        ? `<a class="hero-author" href="../user.html?uid=${esc(authorId)}"><img class="hero-author-icon" src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="" onerror="this.src='${defAvatar}'"><span class="hero-author-name">${esc(author)}</span></a>`
+        : `<span class="hero-author"><img class="hero-author-icon" src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="" onerror="this.src='${defAvatar}'"><span class="hero-author-name">${esc(author)}</span></span>`}</strong></div>
     </div>
     <div class="hero-tags">
 ${tags.map(t=>`      <span>${esc(t)}</span>`).join('\n')}
