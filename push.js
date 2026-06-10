@@ -3,9 +3,9 @@
 //       users/{uid}/pushTokens/{token} に保存する。
 //       受信表示は sw.js（onBackgroundMessage）が担当。
 import { app, auth, db } from "./firebase-config.js";
-import { getMessaging, getToken, isSupported }
+import { getMessaging, getToken, deleteToken, isSupported }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
-import { doc, setDoc, serverTimestamp }
+import { doc, setDoc, deleteDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Firebase コンソール → Cloud Messaging → ウェブプッシュ証明書の公開鍵。
@@ -48,4 +48,25 @@ export async function enablePush() {
   }, { merge: true });
 
   return token;
+}
+
+// 通知を無効化：この端末のトークンを Firestore から削除し、FCM登録も解除する。
+// （ブラウザの「許可」自体は取り消せないが、トークンを消せばサーバーは送らない）
+export async function disablePush() {
+  const user = auth.currentUser;
+  if (!user) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const messaging = getMessaging(app);
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: reg
+    });
+    if (token) {
+      await deleteDoc(doc(db, "users", user.uid, "pushTokens", token)).catch(() => {});
+      try { await deleteToken(messaging); } catch (e) { /* 解除失敗は無視 */ }
+    }
+  } catch (e) {
+    // トークン取得に失敗してもオフ状態として扱う（再送はされない）
+  }
 }

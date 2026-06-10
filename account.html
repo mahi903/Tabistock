@@ -97,6 +97,15 @@
   .pedit{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#1f6f5b;text-decoration:none;border:1px solid #cfe3da;background:#f3faf7;padding:3px 10px;border-radius:999px;white-space:nowrap}
   .pedit:hover{background:#e6f3ed}
   .posts-empty{grid-column:1/-1;color:#6c7787;font-size:13px;text-align:center;padding:26px 16px;border:1px dashed #e7ddcb;border-radius:14px}
+  /* 設定行（トグル） */
+  .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid #eee3d2;border-bottom:1px solid #eee3d2}
+  .setlabel{font-size:14px;font-weight:700;color:#182033;line-height:1.3}
+  .setnote{font-size:11px;color:#9aa2af;margin-top:2px}
+  .toggle{position:relative;width:46px;height:27px;border-radius:999px;background:#d4cdbe;border:none;cursor:pointer;padding:0;flex-shrink:0;transition:background .2s}
+  .toggle .knob{position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+  .toggle.on{background:#1f6f5b}
+  .toggle.on .knob{transform:translateX(19px)}
+  .toggle:disabled{opacity:.45;cursor:default}
 </style>
 </head>
 <body>
@@ -164,10 +173,6 @@
         <button class="a-ghost" id="editToggleBtn" type="button" style="flex:1">プロフィールを編集</button>
         <a class="a-main" href="./post.html" style="flex:1">投稿する</a>
       </div>
-      <div class="actions" style="margin-top:10px">
-        <button class="a-ghost" id="pushBtn" type="button">🔔 通知をオンにする</button>
-      </div>
-      <div class="msg" id="pushMsg" style="margin-top:10px"></div>
       <div class="msg" id="avatarMsg" style="margin-top:12px"></div>
 
       <!-- プロフィール編集（ボタンで開閉・初期は非表示） -->
@@ -190,6 +195,15 @@
 
       <div class="section-title">保存した投稿 <span class="count" id="savedCount"></span></div>
       <div id="savedPosts" class="posts"></div>
+
+      <div class="setrow" style="margin-top:26px">
+        <div>
+          <div class="setlabel">プッシュ通知</div>
+          <div class="setnote" id="pushNote"></div>
+        </div>
+        <button class="toggle" id="pushToggle" type="button" role="switch" aria-checked="false" aria-label="プッシュ通知の切り替え"><span class="knob"></span></button>
+      </div>
+      <div class="msg" id="pushMsg" style="margin-top:8px"></div>
 
       <p class="hint" id="uidLine" style="margin-top:18px;word-break:break-all"></p>
 
@@ -220,7 +234,7 @@ import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref as sRef, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { enablePush, isPushSupported } from "./push.js";
+import { enablePush, disablePush, isPushSupported } from "./push.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -322,37 +336,59 @@ $("submitBtn").onclick = async () => {
 
 $("logoutBtn").onclick = () => signOut(auth);
 
-/* ===== プッシュ通知 ===== */
+/* ===== プッシュ通知（トグル） ===== */
+const PUSH_PREF = "tabistock_push"; // この端末での希望状態 "on" | "off"
 function showPushMsg(text, kind){
   const el = $("pushMsg");
   el.className = "msg" + (kind ? " "+kind : "");
   el.textContent = text;
 }
+function setToggle(on){
+  const t = $("pushToggle"); if(!t) return;
+  t.classList.toggle("on", !!on);
+  t.setAttribute("aria-checked", on ? "true" : "false");
+}
 async function updatePushUI(){
-  const btn = $("pushBtn"); if(!btn) return;
+  const t = $("pushToggle"); if(!t) return;
   if(!(await isPushSupported())){
-    btn.disabled = true;
-    btn.textContent = "この端末は通知に未対応";
+    t.disabled = true; setToggle(false);
+    $("pushNote").textContent = "この端末は通知に対応していません";
     return;
   }
   const perm = (typeof Notification !== "undefined") ? Notification.permission : "denied";
-  if(perm === "granted"){ btn.disabled = false; btn.textContent = "🔔 通知はオン（再設定）"; }
-  else if(perm === "denied"){ btn.disabled = true; btn.textContent = "通知がブロックされています"; }
-  else { btn.disabled = false; btn.textContent = "🔔 通知をオンにする"; }
+  if(perm === "denied"){
+    t.disabled = true; setToggle(false);
+    $("pushNote").textContent = "ブラウザ設定で通知がブロックされています";
+    return;
+  }
+  t.disabled = false;
+  $("pushNote").textContent = "いいね・コメント・フォローをお知らせ";
+  const on = (perm === "granted") && (localStorage.getItem(PUSH_PREF) !== "off");
+  setToggle(on);
 }
-$("pushBtn").onclick = async () => {
-  const btn = $("pushBtn");
-  btn.disabled = true;
+$("pushToggle").onclick = async () => {
+  const t = $("pushToggle");
+  const turningOn = !t.classList.contains("on");
+  t.disabled = true;
   showPushMsg("設定中…", "ok");
   try{
-    await enablePush();
-    showPushMsg("通知をオンにしました。", "ok");
-    btn.textContent = "🔔 通知はオン（再設定）";
+    if(turningOn){
+      await enablePush();
+      localStorage.setItem(PUSH_PREF, "on");
+      setToggle(true);
+      showPushMsg("通知をオンにしました。", "ok");
+    }else{
+      await disablePush();
+      localStorage.setItem(PUSH_PREF, "off");
+      setToggle(false);
+      showPushMsg("通知をオフにしました。", "ok");
+    }
   }catch(e){
-    showPushMsg(e.message || "通知の設定に失敗しました。", "err");
+    showPushMsg(e.message || "設定に失敗しました。", "err");
+    await updatePushUI(); // 失敗時は実状態に戻す
   }finally{
     const denied = (typeof Notification !== "undefined") && Notification.permission === "denied";
-    btn.disabled = denied;
+    t.disabled = denied || !(await isPushSupported());
   }
 };
 
@@ -609,8 +645,9 @@ onAuthStateChanged(auth, async (user) => {
     loadSavedPosts(user.uid);
     loadFollowCounts(user.uid);
     updatePushUI();
-    // 既に許可済みなら、トークンを黙って更新（プロンプトは出ない）。
-    if((typeof Notification !== "undefined") && Notification.permission === "granted"){
+    // 既に許可済みで、かつ本人がオフにしていなければ、トークンを黙って更新（プロンプトは出ない）。
+    if((typeof Notification !== "undefined") && Notification.permission === "granted"
+       && localStorage.getItem(PUSH_PREF) !== "off"){
       enablePush().catch(() => {});
     }
     $("followerStat").onclick = () => openFollowList(user.uid, "followers");
