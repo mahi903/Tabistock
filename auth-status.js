@@ -2,7 +2,7 @@
 // 記事ページ(/articles/)からは ../ で account.html へ繋ぐ。
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, collection, query, orderBy, limit, onSnapshot, writeBatch }
+import { doc, getDoc, collection, query, where, orderBy, limit, onSnapshot, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -243,6 +243,59 @@ if (el) {
       snap.forEach(s => items.push({ id: s.id, ...s.data() }));
       render(); updateBadge();
     }, (err) => { console.warn("通知の購読に失敗:", err); });
+  });
+})();
+
+/* =========================================================
+   DMアイコン（ヘッダー・通知ベルの隣）
+   - タップで dm.html（メッセージ一覧）へ。
+   - conversations（participants array-contains 自分）を購読し、
+     unread[自分] の合計を赤バッジで表示。
+========================================================= */
+(function initDmIcon() {
+  const hdr = document.querySelector(".hd-r");
+  if (!hdr) return; // ヘッダーが無いページ（account/user等）はスキップ
+
+  if (!document.getElementById("dmIconStyle")) {
+    const s = document.createElement("style");
+    s.id = "dmIconStyle";
+    s.textContent = `
+.hd-dm{position:relative;display:none;align-items:center;justify-content:center;width:40px;height:40px;border:none;background:transparent;cursor:pointer;color:#1b2330;border-radius:50%;padding:0;text-decoration:none}
+.hd-dm:hover{background:rgba(31,111,91,.10)}
+.hd-dm svg{width:22px;height:22px}
+.hd-dm-badge{position:absolute;top:4px;right:4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#e0564b;color:#fff;font-size:11px;font-weight:800;line-height:17px;text-align:center;display:none;box-sizing:border-box}
+.hd-dm-badge.on{display:block}`;
+    document.head.appendChild(s);
+  }
+
+  const link = document.createElement("a");
+  link.className = "hd-dm";
+  link.id = "hdDm";
+  link.href = base + "dm.html";
+  link.setAttribute("aria-label", "メッセージ");
+  link.innerHTML =
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>` +
+    `<span class="hd-dm-badge" id="hdDmBadge"></span>`;
+  // 通知ベルの左隣に置く（無ければバーガー前 / 末尾）
+  const bell = hdr.querySelector("#hdBell");
+  const burger = hdr.querySelector(".burger");
+  if (bell) hdr.insertBefore(link, bell);
+  else if (burger) hdr.insertBefore(link, burger);
+  else hdr.appendChild(link);
+
+  const badge = link.querySelector("#hdDmBadge");
+  let unsub = null;
+  onAuthStateChanged(auth, (user) => {
+    if (unsub) { unsub(); unsub = null; }
+    if (!user) { link.style.display = "none"; badge.classList.remove("on"); return; }
+    link.style.display = "inline-flex";
+    const qy = query(collection(db, "conversations"), where("participants", "array-contains", user.uid));
+    unsub = onSnapshot(qy, (snap) => {
+      let total = 0;
+      snap.forEach(s => { const u = s.data().unread; if (u && u[user.uid]) total += u[user.uid]; });
+      badge.textContent = total > 99 ? "99+" : String(total);
+      badge.classList.toggle("on", total > 0);
+    }, (err) => { console.warn("DM未読の購読に失敗:", err); });
   });
 })();
 
