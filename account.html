@@ -164,6 +164,10 @@
         <button class="a-ghost" id="editToggleBtn" type="button" style="flex:1">プロフィールを編集</button>
         <a class="a-main" href="./post.html" style="flex:1">投稿する</a>
       </div>
+      <div class="actions" style="margin-top:10px">
+        <button class="a-ghost" id="pushBtn" type="button">🔔 通知をオンにする</button>
+      </div>
+      <div class="msg" id="pushMsg" style="margin-top:10px"></div>
       <div class="msg" id="avatarMsg" style="margin-top:12px"></div>
 
       <!-- プロフィール編集（ボタンで開閉・初期は非表示） -->
@@ -216,6 +220,7 @@ import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref as sRef, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { enablePush, isPushSupported } from "./push.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -316,6 +321,40 @@ $("submitBtn").onclick = async () => {
 };
 
 $("logoutBtn").onclick = () => signOut(auth);
+
+/* ===== プッシュ通知 ===== */
+function showPushMsg(text, kind){
+  const el = $("pushMsg");
+  el.className = "msg" + (kind ? " "+kind : "");
+  el.textContent = text;
+}
+async function updatePushUI(){
+  const btn = $("pushBtn"); if(!btn) return;
+  if(!(await isPushSupported())){
+    btn.disabled = true;
+    btn.textContent = "この端末は通知に未対応";
+    return;
+  }
+  const perm = (typeof Notification !== "undefined") ? Notification.permission : "denied";
+  if(perm === "granted"){ btn.disabled = false; btn.textContent = "🔔 通知はオン（再設定）"; }
+  else if(perm === "denied"){ btn.disabled = true; btn.textContent = "通知がブロックされています"; }
+  else { btn.disabled = false; btn.textContent = "🔔 通知をオンにする"; }
+}
+$("pushBtn").onclick = async () => {
+  const btn = $("pushBtn");
+  btn.disabled = true;
+  showPushMsg("設定中…", "ok");
+  try{
+    await enablePush();
+    showPushMsg("通知をオンにしました。", "ok");
+    btn.textContent = "🔔 通知はオン（再設定）";
+  }catch(e){
+    showPushMsg(e.message || "通知の設定に失敗しました。", "err");
+  }finally{
+    const denied = (typeof Notification !== "undefined") && Notification.permission === "denied";
+    btn.disabled = denied;
+  }
+};
 
 /* プロフィール編集の開閉 */
 $("editToggleBtn").onclick = () => {
@@ -569,6 +608,11 @@ onAuthStateChanged(auth, async (user) => {
     loadMyPosts(user.uid);
     loadSavedPosts(user.uid);
     loadFollowCounts(user.uid);
+    updatePushUI();
+    // 既に許可済みなら、トークンを黙って更新（プロンプトは出ない）。
+    if((typeof Notification !== "undefined") && Notification.permission === "granted"){
+      enablePush().catch(() => {});
+    }
     $("followerStat").onclick = () => openFollowList(user.uid, "followers");
     $("followingStat").onclick = () => openFollowList(user.uid, "following");
   }else{

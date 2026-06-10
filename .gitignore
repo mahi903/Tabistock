@@ -3,3 +3,7 @@
 
 # macOS / iCloud
 .DS_Store
+
+# Firebase サービスアカウント秘密鍵（絶対に公開しない）
+*firebase-adminsdk*.json
+serviceAccount*.json

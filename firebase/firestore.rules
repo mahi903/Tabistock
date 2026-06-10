@@ -24,6 +24,12 @@ service cloud.firestore {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
 
+      // プッシュ通知トークン。本人だけが登録・削除できる。
+      // 送信側（サーバー/firebase-admin）はルールを介さず読めるため read は本人のみで十分。
+      match /pushTokens/{tokenId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
+
       // フォロー中リスト（自分がフォローしている相手）。数は誰でも閲覧、編集は本人のみ。
       match /following/{targetUid} {
         allow read:  if true;

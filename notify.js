@@ -23,7 +23,7 @@ export async function sendNotification({ toUid, type, articleId = "", articleTit
   try {
     const nick = await myNickname(user.uid);
     await addDoc(collection(db, "users", toUid, "notifications"), {
-      type,                       // 'like' | 'comment' | 'follow'
+      type,                       // 'like' | 'comment' | 'follow' | 'dm'
       fromUid: user.uid,
       fromNickname: nick,
       articleId,
@@ -31,6 +31,32 @@ export async function sendNotification({ toUid, type, articleId = "", articleTit
       read: false,
       createdAt: serverTimestamp()
     });
+
+    // プッシュ通知も送る（相手が端末を登録していれば届く）。失敗は無視。
+    try {
+      let title = "Tabistock", text = "", url = "/";
+      if (type === "like") {
+        title = nick + "さんがいいねしました";
+        text = articleTitle || "";
+        url = "/articles/view.html?id=" + encodeURIComponent(articleId);
+      } else if (type === "comment") {
+        title = nick + "さんがコメントしました";
+        text = articleTitle || "";
+        url = "/articles/view.html?id=" + encodeURIComponent(articleId);
+      } else if (type === "follow") {
+        title = nick + "さんにフォローされました";
+        url = "/user.html?uid=" + encodeURIComponent(user.uid);
+      } else if (type === "dm") {
+        title = nick + "さんからメッセージが届きました";
+        url = "/dm.html?to=" + encodeURIComponent(user.uid);
+      }
+      const idToken = await user.getIdToken();
+      fetch("/api/sendPush", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + idToken },
+        body: JSON.stringify({ toUid, title, body: text, url })
+      }).catch(() => {});
+    } catch (e) { /* プッシュは付随処理。失敗してもUIは止めない */ }
   } catch (e) {
     console.warn("通知の送信に失敗:", e);
   }

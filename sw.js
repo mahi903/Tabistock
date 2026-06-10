@@ -7,8 +7,51 @@
 //   - HTML（ページ遷移）はネット優先＋失敗時キャッシュ（更新を即反映）。
 //   - CSS/JS/画像は stale-while-revalidate（まず表示→裏で更新）。
 
-const VERSION = 'tabistock-v52';
+const VERSION = 'tabistock-v53';
 const CACHE = VERSION;
+
+// ---- プッシュ通知（FCM）----
+// 既存SWに統合する（SWを2つに分けると scope が衝突するため）。
+// CDN取得に失敗しても素のキャッシュSWは動くよう try/catch で隔離。
+try {
+  importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+  importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+  firebase.initializeApp({
+    apiKey: 'AIzaSyC64CiQzn6RrpLKNv8ZEIWdtJ3vVqrxlsQ',
+    authDomain: 'tabistock.firebaseapp.com',
+    projectId: 'tabistock',
+    storageBucket: 'tabistock.firebasestorage.app',
+    messagingSenderId: '1003651778196',
+    appId: '1:1003651778196:web:ce29437f495873f1acd681'
+  });
+  const messaging = firebase.messaging();
+  // data-only メッセージを受け取り、ここで通知表示する（二重表示防止）。
+  messaging.onBackgroundMessage((payload) => {
+    const d = (payload && payload.data) || {};
+    self.registration.showNotification(d.title || 'Tabistock', {
+      body: d.body || '',
+      icon: '/favicon-192x192.png',
+      badge: '/favicon-192x192.png',
+      data: { url: d.url || '/' }
+    });
+  });
+} catch (e) {
+  // プッシュ非対応環境ではスキップ（キャッシュ機能は継続）。
+}
+
+// 通知タップ：該当ページを開く（既存タブがあれば再利用）。
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if (c.url.includes(url) && 'focus' in c) return c.focus();
+      }
+      return self.clients.openWindow ? self.clients.openWindow(url) : null;
+    })
+  );
+});
 
 // インストール時に最低限の「アプリの骨格」を先読みしておく。
 const PRECACHE = [
@@ -19,6 +62,7 @@ const PRECACHE = [
   '/tabistock-render.js',
   '/auth-status.js',
   '/notify.js',
+  '/push.js',
   '/search.html',
   '/map.html',
   '/post.html',
