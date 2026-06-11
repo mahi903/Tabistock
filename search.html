@@ -35,44 +35,6 @@
     .hd.scrolled{background:rgba(246,239,228,.85);backdrop-filter:blur(16px);box-shadow:0 6px 24px rgba(0,0,0,.08);padding:14px 6%}
     .hd.scrolled .logo{color:#1f6f5b}
     .hd.scrolled .burger span{background:#1b2330}
-
-    /* AIに相談（ページ最上部の独立ヒーロー。固定ヘッダーの下に緑地を敷く） */
-    .ai-ask{position:relative;overflow:hidden;padding:108px 6% 38px;background:linear-gradient(150deg,#1f6f5b,#2f9e7f);color:#fff}
-    .ai-ask::after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.07)}
-    .ai-ask-inner{position:relative;max-width:920px;margin:0 auto}
-    .ai-ask-eyebrow{margin:0 0 6px;font-family:"Manrope",sans-serif;font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#ffd9a0}
-    .ai-ask-inner h2{margin:0 0 9px;font-size:clamp(24px,3.6vw,34px);font-weight:900;letter-spacing:-.02em}
-    .ai-ask-note{margin:0 0 18px;font-size:14px;line-height:1.8;color:rgba(255,255,255,.92);max-width:620px}
-    /* 検索結果は緑ヒーローと区別するため、この page では軽い見出し帯にする */
-    .fhero{padding:30px 6% 16px;background:#f7f1e8;color:#182033}
-    .fhero::after{display:none}
-    .fhero .eyebrow{color:#1f6f5b}
-    .fhero h1{color:#182033}
-    .fhero p{color:#6c7787}
-    .ai-ask-form{display:flex;gap:10px;align-items:stretch}
-    .ai-ask-form textarea{flex:1;border:none;border-radius:14px;padding:13px 15px;font-size:15px;font-family:inherit;line-height:1.6;resize:vertical;min-height:52px;color:#1b2330;box-shadow:inset 0 1px 3px rgba(0,0,0,.06)}
-    .ai-ask-form textarea:focus{outline:2px solid rgba(255,255,255,.7)}
-    .ai-ask-form button{flex-shrink:0;align-self:flex-end;border:none;border-radius:14px;padding:13px 22px;background:#fff;color:#1f6f5b;font-weight:800;font-size:15px;cursor:pointer;white-space:nowrap}
-    .ai-ask-form button:hover{opacity:.9}
-    .ai-ask-form button:disabled{opacity:.6;cursor:default}
-    .ai-ask-result{margin-top:16px;background:rgba(255,255,255,.96);border-radius:16px;padding:18px 18px;color:#283142}
-    .ai-ask-answer{font-size:14.5px;line-height:1.85;white-space:normal}
-    .ai-ask-answer a{color:#1f6f5b;font-weight:700}
-    .ai-ask-refs{margin-top:14px;display:flex;flex-direction:column;gap:8px}
-    .ai-ask-refs-title{margin:0 0 2px;font-size:12.5px;font-weight:800;color:#1f6f5b}
-    .ai-ask-ref{display:flex;align-items:center;gap:10px;text-decoration:none;background:#f4f0e7;border:1px solid #e7ddcb;border-radius:12px;padding:11px 14px;color:#283142}
-    .ai-ask-ref:hover{background:#efe9dc}
-    .ai-ask-ref-ct{flex-shrink:0;font-size:11px;font-weight:800;color:#1f6f5b;background:#e3efe9;border-radius:999px;padding:3px 9px}
-    .ai-ask-ref-tt{flex:1;font-size:13.5px;font-weight:700;line-height:1.5}
-    .ai-ask-ref-ar{flex-shrink:0;color:#1f6f5b;font-weight:800}
-    @media(max-width:768px){
-      .ai-ask{padding:90px 6% 28px}
-      .fhero{padding:22px 6% 12px}
-    }
-    @media(max-width:600px){
-      .ai-ask-form{flex-direction:column}
-      .ai-ask-form button{align-self:stretch}
-    }
   </style>
 </head>
 <body>
@@ -218,7 +180,7 @@
     </label>
   </div>
   <button class="btn btn-p dgo" id="dGo" type="button">この条件で検索 →</button>
-  <div class="dcta"><a class="btn btn-g" href="map.html">地図で探す</a><a class="btn btn-g" href="post.html">旅程を投稿する</a></div>
+  <div class="dcta"><a class="btn btn-g" href="ask.html">AIに相談</a><a class="btn btn-g" href="map.html">地図で探す</a><a class="btn btn-g" href="post.html">旅程を投稿する</a></div>
   <div id="authStatus" class="auth-status"></div>
 </nav>
    <div class="filter-drawer" id="filterDrawer">
@@ -361,22 +323,6 @@
 </div>
 <div class="drawer-overlay" id="drawerOverlay"></div>
 <!--パソコン画面-->
-  <section class="ai-ask">
-    <div class="ai-ask-inner">
-      <p class="ai-ask-eyebrow">AIに相談</p>
-      <h2>旅の相談をしてみる</h2>
-      <p class="ai-ask-note">行きたい旅のイメージを書くと、AIが投稿された旅程記事を読んで、関連する記事とあわせて答えます。<br>例：「モンゴルでツアーに参加してゲルに泊まりたいけど、どうすればいい？」</p>
-      <div class="ai-ask-form">
-        <textarea id="aiAskInput" rows="2" placeholder="旅の質問を入力（例：オーストラリアで自然を楽しむならどこがいい？）"></textarea>
-        <button type="button" id="aiAskBtn">相談する</button>
-      </div>
-      <div class="ai-ask-result" id="aiAskResult" hidden>
-        <div class="ai-ask-answer" id="aiAskAnswer"></div>
-        <div class="ai-ask-refs" id="aiAskRefs"></div>
-      </div>
-    </div>
-  </section>
-
   <section class="fhero">
     <p class="eyebrow">Search Results</p>
     <h1>検索結果</h1>
@@ -962,69 +908,6 @@ runSearchFilter();
         if (sel && sel.value === "likes" && window.sortResultCards) window.sortResultCards();
       });
     }
-  </script>
-  <!-- AIに相談：公開記事をAIが読んで質問に答える（/api/ask） -->
-  <script type="module">
-    import { auth } from "./firebase-config.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    // ログイン状態の初回復元を待つ（読み込み直後は currentUser が null のことがあるため）
-    let authReady = false;
-    const whenAuthReady = new Promise((resolve) => {
-      const un = onAuthStateChanged(auth, (u) => { authReady = true; un(); resolve(u); });
-    });
-    const input = document.getElementById("aiAskInput");
-    const btn = document.getElementById("aiAskBtn");
-    const result = document.getElementById("aiAskResult");
-    const answerEl = document.getElementById("aiAskAnswer");
-    const refsEl = document.getElementById("aiAskRefs");
-    const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-    async function ask() {
-      const q = (input.value || "").trim();
-      if (!q) { input.focus(); return; }
-      result.hidden = false;
-      refsEl.innerHTML = "";
-      const user = authReady ? auth.currentUser : await whenAuthReady;
-      if (!user) {
-        answerEl.innerHTML = `相談機能を使うにはログインが必要です。<a href="account.html">ログイン / 新規登録はこちら</a>`;
-        return;
-      }
-      btn.disabled = true;
-      const old = btn.textContent;
-      btn.textContent = "考え中…";
-      answerEl.textContent = "AIが旅程記事を読んでいます…";
-      try {
-        const idToken = await user.getIdToken();
-        const res = await fetch("/api/ask", {
-          method: "POST",
-          headers: { "content-type": "application/json", "authorization": "Bearer " + idToken },
-          body: JSON.stringify({ question: q })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || "failed");
-        answerEl.innerHTML = esc(data.answer).replace(/\n/g, "<br>");
-        const refs = data.articles || [];
-        if (refs.length) {
-          refsEl.innerHTML = `<p class="ai-ask-refs-title">詳しくはこちらの記事を参考に</p>` +
-            refs.map(a =>
-              `<a class="ai-ask-ref" href="./articles/view.html?id=${esc(a.id)}">` +
-              (a.country ? `<span class="ai-ask-ref-ct">${esc(a.country)}</span>` : "") +
-              `<span class="ai-ask-ref-tt">${esc(a.title)}</span>` +
-              `<span class="ai-ask-ref-ar">→</span></a>`
-            ).join("");
-        }
-      } catch (e) {
-        answerEl.textContent = "うまく相談できませんでした。少し時間をおいて、もう一度お試しください。";
-        refsEl.innerHTML = "";
-      } finally {
-        btn.disabled = false;
-        btn.textContent = old;
-      }
-    }
-    if (btn) btn.addEventListener("click", ask);
-    if (input) input.addEventListener("keydown", e => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); ask(); }
-    });
   </script>
   <script type="module" src="./auth-status.js"></script>
   <!-- Vercel Web Analytics -->

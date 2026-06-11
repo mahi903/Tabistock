@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>AIに旅を相談｜投稿された旅程からアドバイス｜Tabistock</title>
+  <meta name="description" content="行きたい旅のイメージを伝えると、AIがTabistockに投稿された旅程記事を読んで、関連する記事とあわせてアドバイスします。">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#1f6f5b">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Tabistock">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:title" content="AIに旅を相談｜Tabistock">
+  <meta property="og:description" content="行きたい旅のイメージを伝えると、AIがTabistockの旅程記事を読んでアドバイスします。">
+  <meta property="og:url" content="https://tabistock.jp/ask.html">
+  <meta property="og:image" content="https://tabistock.jp/images/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="800">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* header floats transparently over the green hero, solid on scroll */
+    .hd{position:fixed;background:transparent;backdrop-filter:none;box-shadow:none;padding:20px 6%}
+    .hd .logo{color:#fff}
+    .burger span{background:#fff}
+    .hd.scrolled{background:rgba(246,239,228,.85);backdrop-filter:blur(16px);box-shadow:0 6px 24px rgba(0,0,0,.08);padding:14px 6%}
+    .hd.scrolled .logo{color:#1f6f5b}
+    .hd.scrolled .burger span{background:#1b2330}
+
+    /* AIに相談ヒーロー（固定ヘッダーの下に緑地を敷く） */
+    .ask-hero{position:relative;overflow:hidden;padding:108px 6% 40px;background:linear-gradient(150deg,#1f6f5b,#2f9e7f);color:#fff}
+    .ask-hero::after{content:"";position:absolute;right:-90px;top:-90px;width:340px;height:340px;border-radius:50%;background:rgba(255,255,255,.07)}
+    .ask-inner{position:relative;max-width:860px;margin:0 auto}
+    .ask-eyebrow{margin:0 0 6px;font-family:"Manrope",sans-serif;font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#ffd9a0}
+    .ask-inner h1{margin:0 0 10px;font-size:clamp(27px,4.2vw,42px);font-weight:900;letter-spacing:-.02em;color:#fff}
+    .ask-note{margin:0 0 20px;font-size:14.5px;line-height:1.85;color:rgba(255,255,255,.92);max-width:620px}
+    .ask-form{display:flex;gap:10px;align-items:stretch}
+    .ask-form textarea{flex:1;border:none;border-radius:14px;padding:14px 16px;font-size:15px;font-family:inherit;line-height:1.6;resize:vertical;min-height:56px;color:#1b2330;box-shadow:inset 0 1px 3px rgba(0,0,0,.06)}
+    .ask-form textarea:focus{outline:2px solid rgba(255,255,255,.7)}
+    .ask-form button{flex-shrink:0;align-self:flex-end;border:none;border-radius:14px;padding:14px 24px;background:#fff;color:#1f6f5b;font-weight:800;font-size:15px;cursor:pointer;white-space:nowrap}
+    .ask-form button:hover{opacity:.9}
+    .ask-form button:disabled{opacity:.6;cursor:default}
+    .ask-chips{margin:16px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+    .ask-chip{border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+    .ask-chip:hover{background:rgba(255,255,255,.22)}
+
+    /* 回答エリア（クリーム地） */
+    .ask-body{padding:26px 6% 60px;min-height:30vh}
+    .ask-result{max-width:860px;margin:0 auto;background:#fff;border:1px solid #e7ddcb;border-radius:18px;padding:22px 22px;box-shadow:0 10px 30px rgba(20,30,25,.06)}
+    .ask-result[hidden]{display:none}
+    .ask-result-head{margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#1f6f5b}
+    .ask-answer{font-size:15px;line-height:1.9;color:#283142}
+    .ask-answer a{color:#1f6f5b;font-weight:700}
+    .ask-refs{margin-top:18px;display:flex;flex-direction:column;gap:9px}
+    .ask-refs-title{margin:0 0 2px;font-size:13px;font-weight:800;color:#1f6f5b}
+    .ask-ref{display:flex;align-items:center;gap:11px;text-decoration:none;background:#f4f0e7;border:1px solid #e7ddcb;border-radius:12px;padding:12px 15px;color:#283142}
+    .ask-ref:hover{background:#efe9dc}
+    .ask-ref-ct{flex-shrink:0;font-size:11px;font-weight:800;color:#1f6f5b;background:#e3efe9;border-radius:999px;padding:3px 10px}
+    .ask-ref-tt{flex:1;font-size:14px;font-weight:700;line-height:1.5}
+    .ask-ref-ar{flex-shrink:0;color:#1f6f5b;font-weight:800}
+    .ask-disclaimer{max-width:860px;margin:16px auto 0;font-size:12px;line-height:1.7;color:#8a8170;text-align:center}
+    @media(max-width:768px){
+      .ask-hero{padding:90px 6% 30px}
+    }
+    @media(max-width:600px){
+      .ask-form{flex-direction:column}
+      .ask-form button{align-self:stretch}
+    }
+  </style>
+</head>
+<body>
+  <header class="hd" id="hd">
+    <a class="logo" href="index.html">Tabistock</a>
+    <div class="hd-r">
+      <form class="hd-search" action="search.html" method="get"><input name="q" placeholder="旅先・キーワードで検索"><button type="submit">⌕</button></form>
+      <button class="burger" id="burger" aria-label="メニューを開く"><span></span><span></span><span></span></button>
+    </div>
+  </header>
+  <div class="ovl" id="ovl"></div>
+  <nav class="drawer" id="drawer">
+  <button class="dclose" id="dclose" aria-label="閉じる">×</button>
+  <p class="dtitle">旅を検索</p>
+  <input class="dq" id="dq" placeholder="旅先・キーワードで検索">
+  <div class="dfilter">
+    <label class="dfield">国・地域
+      <select id="d-country">
+        <option value="">すべての国・地域</option>
+        <optgroup label="東アジア">
+          <option value="japan">日本</option>
+          <option value="korea">韓国</option>
+          <option value="china">中国</option>
+          <option value="taiwan">台湾</option>
+          <option value="hongkong">香港</option>
+          <option value="mongolia">モンゴル</option>
+        </optgroup>
+        <optgroup label="東南アジア">
+          <option value="thai">タイ</option>
+          <option value="cambodia">カンボジア</option>
+          <option value="vietnam">ベトナム</option>
+          <option value="malaysia">マレーシア</option>
+          <option value="singapore">シンガポール</option>
+          <option value="indonesia">インドネシア</option>
+          <option value="philippines">フィリピン</option>
+        </optgroup>
+        <optgroup label="南アジア">
+          <option value="india">インド</option>
+          <option value="nepal">ネパール</option>
+          <option value="srilanka">スリランカ</option>
+          <option value="bhutan">ブータン</option>
+          <option value="maldives">モルディブ</option>
+          <option value="pakistan">パキスタン</option>
+          <option value="bangladesh">バングラデシュ</option>
+        </optgroup>
+        <optgroup label="中央アジア">
+          <option value="kazakhstan">カザフスタン</option>
+          <option value="kyrgyzstan">キルギス</option>
+          <option value="uzbekistan">ウズベキスタン</option>
+        </optgroup>
+        <optgroup label="西アジア">
+          <option value="turkey">トルコ</option>
+          <option value="qatar">カタール</option>
+          <option value="UAE">アラブ首長国連邦</option>
+        </optgroup>
+        <optgroup label="ヨーロッパ">
+          <option value="finland">フィンランド</option>
+          <option value="sweden">スウェーデン</option>
+          <option value="norway">ノルウェー</option>
+          <option value="estonia">エストニア</option>
+          <option value="latvia">ラトビア</option>
+          <option value="lithuania">リトアニア</option>
+          <option value="croatia">クロアチア</option>
+          <option value="austria">オーストリア</option>
+          <option value="hungary">ハンガリー</option>
+          <option value="slovakia">スロバキア</option>
+          <option value="france">フランス</option>
+          <option value="uk">イギリス</option>
+          <option value="italy">イタリア</option>
+          <option value="spain">スペイン</option>
+          <option value="germany">ドイツ</option>
+          <option value="netherlands">オランダ</option>
+          <option value="switzerland">スイス</option>
+          <option value="portugal">ポルトガル</option>
+          <option value="greece">ギリシャ</option>
+          <option value="czech">チェコ</option>
+          <option value="poland">ポーランド</option>
+          <option value="belgium">ベルギー</option>
+          <option value="ireland">アイルランド</option>
+          <option value="denmark">デンマーク</option>
+          <option value="iceland">アイスランド</option>
+        </optgroup>
+        <optgroup label="北アメリカ">
+          <option value="usa">アメリカ</option>
+          <option value="canada">カナダ</option>
+          <option value="mexico">メキシコ</option>
+        </optgroup>
+        <optgroup label="南アメリカ">
+          <option value="peru">ペルー</option>
+          <option value="bolivia">ボリビア</option>
+          <option value="chile">チリ</option>
+          <option value="argentina">アルゼンチン</option>
+          <option value="brazil">ブラジル</option>
+        </optgroup>
+        <optgroup label="アフリカ">
+          <option value="morocco">モロッコ</option>
+          <option value="egypt">エジプト</option>
+          <option value="kenya">ケニア</option>
+          <option value="south-africa">南アフリカ</option>
+        </optgroup>
+        <optgroup label="オセアニア">
+          <option value="australia">オーストラリア</option>
+          <option value="new-zealand">ニュージーランド</option>
+        </optgroup>
+      </select>
+    </label>
+    <label class="dfield">予算
+      <select id="d-budget">
+        <option value="">予算を選ばない</option>
+        <option value="10">〜10万円</option>
+        <option value="20">〜20万円</option>
+        <option value="30">〜30万円</option>
+        <option value="40">〜40万円</option>
+        <option value="50">〜50万円</option>
+        <option value="50plus">50万円以上</option>
+      </select>
+    </label>
+    <label class="dfield">日数
+      <select id="d-days">
+        <option value="">日数を選ばない</option>
+        <option value="daytrip">日帰り</option>
+        <option value="1night">1泊</option>
+        <option value="3-5">3〜5日</option>
+        <option value="1w">1週間</option>
+        <option value="2w">2週間</option>
+        <option value="3w-plus">3週間以上</option>
+      </select>
+    </label>
+    <label class="dfield">旅スタイル
+      <select id="d-style">
+        <option value="">スタイルを選ばない</option>
+        <option value="solo">1人旅</option>
+        <option value="friends">友達と</option>
+        <option value="family">家族と</option>
+        <option value="backpacker">バックパッカー</option>
+        <option value="girls">女子旅</option>
+        <option value="couple">カップル</option>
+        <option value="nature">自然・絶景</option>
+        <option value="city">都市・街歩き</option>
+        <option value="local">現地体験</option>
+        <option value="round-trip">周遊</option>
+      </select>
+    </label>
+  </div>
+  <button class="btn btn-p dgo" id="dGo" type="button">この条件で検索 →</button>
+  <div class="dcta"><a class="btn btn-g" href="search.html">旅程をさがす</a><a class="btn btn-g" href="post.html">旅程を投稿する</a></div>
+  <div id="authStatus" class="auth-status"></div>
+</nav>
+
+  <section class="ask-hero">
+    <div class="ask-inner">
+      <p class="ask-eyebrow">AI Travel Assistant</p>
+      <h1>AIに旅を相談</h1>
+      <p class="ask-note">行きたい旅のイメージを書くと、AIがTabistockに投稿された旅程記事を読んで、アドバイスと関連する記事を返します。<br>例：「モンゴルでツアーに参加してゲルに泊まりたいけど、どうすればいい？」</p>
+      <div class="ask-form">
+        <textarea id="askInput" rows="2" placeholder="旅の質問を入力（例：オーストラリアで自然を楽しむならどこがいい？）"></textarea>
+        <button type="button" id="askBtn">相談する</button>
+      </div>
+      <div class="ask-chips" id="askChips">
+        <button type="button" class="ask-chip">モンゴルでゲルに泊まりたい</button>
+        <button type="button" class="ask-chip">オーストラリアで自然を楽しむには？</button>
+        <button type="button" class="ask-chip">トルコのおすすめ周遊ルートは？</button>
+        <button type="button" class="ask-chip">学生の低予算ひとり旅のコツは？</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="ask-body">
+    <div class="ask-result" id="askResult" hidden>
+      <p class="ask-result-head">AIからの回答</p>
+      <div class="ask-answer" id="askAnswer"></div>
+      <div class="ask-refs" id="askRefs"></div>
+    </div>
+    <p class="ask-disclaimer">回答はTabistockに投稿された旅程記事をもとにAIが生成しています。最新の現地情報や料金は、必ず公式サイト等でご確認ください。</p>
+  </section>
+
+  <script>
+  (function(){
+    var hd=document.getElementById('hd');
+    if(hd)addEventListener('scroll',function(){hd.classList.toggle('scrolled',scrollY>40)});
+    var burger=document.getElementById('burger'),nav=document.getElementById('drawer'),ovl=document.getElementById('ovl'),dc=document.getElementById('dclose');
+    if(burger&&nav&&ovl){
+      var t=function(o){burger.classList.toggle('open',o);nav.classList.toggle('open',o);ovl.classList.toggle('open',o);document.body.style.overflow=o?'hidden':''};
+      burger.addEventListener('click',function(){t(!nav.classList.contains('open'))});
+      ovl.addEventListener('click',function(){t(false)});
+      if(dc)dc.addEventListener('click',function(){t(false)});
+      nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){t(false)})});
+    }
+  })();
+  </script>
+  <script>
+  (function(){
+    var dGo=document.getElementById('dGo'),dq=document.getElementById('dq');
+    function go(){
+      var p=new URLSearchParams();
+      if(dq&&dq.value.trim())p.append('q',dq.value.trim());
+      ['country','budget','days','style'].forEach(function(k){
+        var el=document.getElementById('d-'+k);
+        if(el&&el.value)p.append(k,el.value);
+      });
+      var qs=p.toString();
+      window.location.href='search.html'+(qs?('?'+qs):'');
+    }
+    if(dGo)dGo.addEventListener('click',go);
+    if(dq)dq.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();go();}});
+  })();
+  </script>
+  <!-- AIに相談：公開記事をAIが読んで質問に答える（/api/ask） -->
+  <script type="module">
+    import { auth } from "./firebase-config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    // ログイン状態の初回復元を待つ（読み込み直後は currentUser が null のことがあるため）
+    let authReady = false;
+    const whenAuthReady = new Promise((resolve) => {
+      const un = onAuthStateChanged(auth, (u) => { authReady = true; un(); resolve(u); });
+    });
+    const input = document.getElementById("askInput");
+    const btn = document.getElementById("askBtn");
+    const result = document.getElementById("askResult");
+    const answerEl = document.getElementById("askAnswer");
+    const refsEl = document.getElementById("askRefs");
+    const chips = document.getElementById("askChips");
+    const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    async function ask() {
+      const q = (input.value || "").trim();
+      if (!q) { input.focus(); return; }
+      result.hidden = false;
+      refsEl.innerHTML = "";
+      result.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const user = authReady ? auth.currentUser : await whenAuthReady;
+      if (!user) {
+        answerEl.innerHTML = `相談機能を使うにはログインが必要です。<a href="account.html">ログイン / 新規登録はこちら</a>`;
+        return;
+      }
+      btn.disabled = true;
+      const old = btn.textContent;
+      btn.textContent = "考え中…";
+      answerEl.textContent = "AIが旅程記事を読んでいます…";
+      try {
+        const idToken = await user.getIdToken();
+        const res = await fetch("/api/ask", {
+          method: "POST",
+          headers: { "content-type": "application/json", "authorization": "Bearer " + idToken },
+          body: JSON.stringify({ question: q })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "failed");
+        answerEl.innerHTML = esc(data.answer).replace(/\n/g, "<br>");
+        const refs = data.articles || [];
+        if (refs.length) {
+          refsEl.innerHTML = `<p class="ask-refs-title">詳しくはこちらの記事を参考に</p>` +
+            refs.map(a =>
+              `<a class="ask-ref" href="./articles/view.html?id=${esc(a.id)}">` +
+              (a.country ? `<span class="ask-ref-ct">${esc(a.country)}</span>` : "") +
+              `<span class="ask-ref-tt">${esc(a.title)}</span>` +
+              `<span class="ask-ref-ar">→</span></a>`
+            ).join("");
+        }
+      } catch (e) {
+        answerEl.textContent = "うまく相談できませんでした。少し時間をおいて、もう一度お試しください。";
+        refsEl.innerHTML = "";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = old;
+      }
+    }
+    if (btn) btn.addEventListener("click", ask);
+    if (input) input.addEventListener("keydown", e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); ask(); }
+    });
+    if (chips) chips.addEventListener("click", e => {
+      const c = e.target.closest(".ask-chip");
+      if (!c) return;
+      input.value = c.textContent.trim();
+      ask();
+    });
+  </script>
+  <script type="module" src="./auth-status.js"></script>
+  <!-- Vercel Web Analytics -->
+  <script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
