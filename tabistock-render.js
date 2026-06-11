@@ -207,7 +207,24 @@ ${timeline}
   const overviewPanels=overviewItems.map(it=>`      <div class="ov-panel" data-ov="${it.k}">${it.card}</div>`).join('\n');
 
   const dayCards=days.map((day,i)=>{
-    const imgs=(day.photoUrls||[]).map(u=>`      <img src="${esc(u)}" alt="">`).join('\n');
+    const urls=day.photoUrls||[];
+    const imgs=urls.map(u=>`        <img src="${esc(u)}" alt="" loading="lazy">`).join('\n');
+    let gallery='';
+    if(urls.length>1){
+      // 複数枚：矢印＋「現在/総数」カウンターつきギャラリー
+      gallery=`      <div class="photo-gallery" data-count="${urls.length}">
+        <button type="button" class="pg-arrow pg-prev" aria-label="前の写真">‹</button>
+        <div class="photo-slider">
+${imgs}
+        </div>
+        <button type="button" class="pg-arrow pg-next" aria-label="次の写真">›</button>
+        <span class="pg-counter"><b class="pg-cur">1</b> / ${urls.length}</span>
+      </div>`;
+    }else if(urls.length===1){
+      gallery=`      <div class="photo-slider">
+${imgs}
+      </div>`;
+    }
     return `  <article class="day-card">
     <button class="day-toggle">
       <span class="day-label">DAY ${i+1}.${day.date?' '+esc(day.date):''}</span>
@@ -218,9 +235,7 @@ ${timeline}
       <div class="day-text">
         <p>${para(day.text)}</p>
       </div>
-      <div class="photo-slider">
-${imgs}
-      </div>
+${gallery}
     </div>
   </article>`;
   }).join('\n\n');

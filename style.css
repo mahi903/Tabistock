@@ -1581,15 +1581,25 @@ a.hero-author:hover .hero-author-name {
     display: flex;
     overflow-x: auto;
     gap: 10px;
+    scroll-snap-type: x mandatory;
+  }
+
+  /* 最初と最後の写真も中央にスナップできるよう左右に余白を作る */
+  .photo-slider::before,
+  .photo-slider::after {
+    content: "";
+    flex: 0 0 7%;
   }
 
   .photo-slider img {
-    width: 100%;
-    min-width: 100%;
-    max-width: 100%;
-    height: auto;
+    flex: 0 0 86%;
+    width: 86%;
+    min-width: 86%;
+    max-width: 86%;
+    height: 240px;
     object-fit: cover;
     border-radius: 16px;
+    scroll-snap-align: center;
   }
 }
 
@@ -1618,6 +1628,52 @@ a.hero-author:hover .hero-author-name {
 .photo-slider::-webkit-scrollbar-thumb {
   background: #d8b98c;
   border-radius: 999px;
+}
+
+/* 旅の記録：写真ギャラリー（複数枚のとき矢印＋カウンターで分かりやすく） */
+.photo-gallery {
+  position: relative;
+}
+.pg-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f6f5b;
+  font-size: 24px;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 4;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+.pg-prev { left: 8px; }
+.pg-next { right: 8px; }
+.pg-arrow:disabled { opacity: 0.3; cursor: default; }
+.pg-counter {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 4;
+  display: none;
+  background: rgba(24, 32, 51, 0.6);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+/* スマホでは1枚ずつ大きく見えるので、矢印とカウンターを表示 */
+@media (max-width: 768px) {
+  .photo-gallery .pg-arrow { display: flex; }
+  .photo-gallery .pg-counter { display: block; }
 }
 
 
@@ -1714,7 +1770,8 @@ a.hero-author:hover .hero-author-name {
 
   .photo-slider img {
     flex-basis: 86%;
-    height: 220px;
+    height: 240px;
+    scroll-snap-align: center;
   }
 }
 .fade-in {
