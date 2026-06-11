@@ -134,11 +134,14 @@ export function renderArticleBody(d){
     </div>`).join('\n\n');
 
   // ルートマップ：座標が1つでもあれば表示（実際の描画は view.html 側で Leaflet が行う）
-  const hasRoute = days.some(day => typeof day.lat === 'number' && typeof day.lng === 'number');
+  const hasRoute = days.some(day =>
+    (Array.isArray(day.places) && day.places.some(p => p && typeof p.lat === 'number' && typeof p.lng === 'number'))
+    || typeof day.lat === 'number' && typeof day.lng === 'number'
+  );
   const routeSection = hasRoute ? `<div class="section-intro">
   <p class="eyebrow">Route</p>
   <h2>ルートマップ</h2>
-  <p>数字は訪問順（DAY）です。ピンをタップするとその日の概要が出ます。</p>
+  <p>旅で訪れた場所をピンで表示しています。ピンをタップすると地名が出ます。</p>
 </div>
 <section class="route-grid">
   <div class="info-card route-card">

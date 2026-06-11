@@ -1079,13 +1079,25 @@ function initComments(){
   });
 }
 
-// 記事内ルートマップ：座標を持つ日を訪問順に番号ピンで並べ、線で結ぶ
+// 記事内ルートマップ：訪れた場所をピンで表示（線で結ばない・1日複数ピン対応）
 function initRouteMap(d){
   const el = document.getElementById('routeMap');
   if(!el || typeof L === 'undefined') return;
-  const pts = (d.days||[])
-    .map((day,i)=>({ n:i+1, lat:day.lat, lng:day.lng, summary:day.summary||'', date:day.date||'' }))
-    .filter(p=> typeof p.lat==='number' && typeof p.lng==='number');
+  const esc2 = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // 各日の places（新形式）を展開。無ければ旧形式 lat/lng を1ピンとして扱う。
+  const pts = [];
+  (d.days||[]).forEach((day,i)=>{
+    const dayNo = i+1;
+    if(Array.isArray(day.places) && day.places.length){
+      day.places.forEach(p=>{
+        if(typeof p.lat==='number' && typeof p.lng==='number'){
+          pts.push({ n:dayNo, lat:p.lat, lng:p.lng, name:p.name||'', summary:day.summary||'', date:day.date||'' });
+        }
+      });
+    }else if(typeof day.lat==='number' && typeof day.lng==='number'){
+      pts.push({ n:dayNo, lat:day.lat, lng:day.lng, name:'', summary:day.summary||'', date:day.date||'' });
+    }
+  });
   if(!pts.length) return;
 
   const map = L.map(el, { worldCopyJump:true, scrollWheelZoom:false, minZoom:2 });
@@ -1094,20 +1106,18 @@ function initRouteMap(d){
   }).addTo(map);
 
   const latlngs = pts.map(p=>[p.lat, p.lng]);
-  if(latlngs.length > 1){
-    L.polyline(latlngs, { color:'#1f6f5b', weight:3, opacity:.85, dashArray:'6 6' }).addTo(map);
-  }
-  const esc2 = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   pts.forEach(p=>{
-    const icon = L.divIcon({ className:'', html:`<div class="ctpin">${p.n}</div>`, iconSize:[34,34], iconAnchor:[17,17] });
+    const icon = L.divIcon({ className:'', html:`<div class="mappin"></div>`, iconSize:[26,26], iconAnchor:[13,25] });
+    const head = p.name ? esc2(p.name) : `DAY ${p.n}`;
+    const sub = [p.name?`DAY ${p.n}`:'', p.date?esc2(p.date):'', esc2(p.summary)].filter(Boolean).join('・');
     L.marker([p.lat,p.lng], { icon }).addTo(map)
-      .bindPopup(`<strong>DAY ${p.n}${p.date?'・'+esc2(p.date):''}</strong><br>${esc2(p.summary)}`);
+      .bindPopup(`<strong>${head}</strong>${sub?'<br>'+sub:''}`);
   });
 
   if(latlngs.length > 1){
     map.fitBounds(L.latLngBounds(latlngs).pad(0.25));
   }else{
-    map.setView(latlngs[0], 6);
+    map.setView(latlngs[0], 8);
   }
   setTimeout(()=>map.invalidateSize(), 200);
   window.addEventListener('resize', ()=>map.invalidateSize());

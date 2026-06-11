@@ -30,6 +30,7 @@ function ensureApp() {
 }
 
 // Claude の返答から JSON 配列だけを安全に取り出す。
+// 各要素は {name:表示名(日本語), query:地図検索用クエリ(英語・地域込み)}。
 function parsePlaces(raw) {
   if (!raw) return [];
   let s = String(raw).trim();
@@ -43,10 +44,17 @@ function parsePlaces(raw) {
     const arr = JSON.parse(s);
     if (!Array.isArray(arr)) return [];
     return arr
-      .map((x) => (typeof x === "string" ? x : (x && x.name) || ""))
-      .map((x) => String(x).trim())
-      .filter((x) => x.length > 0 && x.length <= 80)
-      .slice(0, 10);
+      .map((x) => {
+        if (typeof x === "string") return { name: x.trim(), query: x.trim() };
+        if (x && typeof x === "object") {
+          const name = String(x.name || x.query || "").trim();
+          const query = String(x.query || x.name || "").trim();
+          return { name, query };
+        }
+        return null;
+      })
+      .filter((x) => x && x.name && x.name.length <= 80 && x.query)
+      .slice(0, 12);
   } catch (e) {
     return [];
   }
@@ -86,7 +94,12 @@ export default async function handler(req, res) {
       "(5) 固有名のない一般名詞（ホテル・レストラン・市場・空港など）、料理名、人名、感想。" +
       "判断に迷う（実際に訪れたか不確かな）場所は含めないでください。" +
       (country ? `舞台となる国はおおむね「${country}」です。この国の中の場所を優先してください。` : "") +
-      "出力は地名の文字列だけを要素に持つ JSON 配列のみ。説明文やコードフェンスは付けないでください。" +
+      "各場所について、次の2つを持つオブジェクトを作ってください：" +
+      "name＝本文での表示名（日本語のまま）、" +
+      "query＝地図検索用の正式名称（英語で、可能なら『施設名, 都市/地域, 国』の形。あなたの知識で正しい綴り・所在地に補ってよい）。" +
+      "例：本文に『サンダルフォードワイナリー』とあれば " +
+      '{"name":"サンダルフォードワイナリー","query":"Sandalford Wines, Swan Valley, Western Australia, Australia"}。' +
+      "出力は name と query を持つオブジェクトの JSON 配列のみ。説明文やコードフェンスは付けないでください。" +
       "該当が無ければ [] を返します。";
 
     const r = await fetch("https://api.anthropic.com/v1/messages", {
