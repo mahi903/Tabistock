@@ -486,26 +486,20 @@ function initInteractions(){
       icon.textContent = card.classList.contains("is-open") ? "-" : "+";
     });
   });
-  // 旅の記録：写真ギャラリー（矢印で送る＋「現在/総数」カウンター更新）
+  // 旅の記録：写真ギャラリーの「現在/総数」カウンターをスクロールに合わせて更新
   root.querySelectorAll(".photo-gallery").forEach(g => {
     const slider = g.querySelector(".photo-slider");
-    if(!slider) return;
+    const cur = g.querySelector(".pg-cur");
+    if(!slider || !cur) return;
     const imgs = slider.querySelectorAll("img");
     const total = imgs.length;
-    const prev = g.querySelector(".pg-prev");
-    const next = g.querySelector(".pg-next");
-    const cur = g.querySelector(".pg-cur");
     // 1コマ分のスクロール距離（画像幅＋隙間）。2枚目の左端位置から算出。
     const step = () => (imgs.length >= 2 ? imgs[1].offsetLeft - imgs[0].offsetLeft
                        : (imgs[0] ? imgs[0].offsetWidth : slider.clientWidth));
     const update = () => {
       const i = Math.round(slider.scrollLeft / step());
-      if(cur) cur.textContent = Math.min(total, Math.max(1, i + 1));
-      if(prev) prev.disabled = slider.scrollLeft <= 4;
-      if(next) next.disabled = slider.scrollLeft + slider.clientWidth >= slider.scrollWidth - 4;
+      cur.textContent = Math.min(total, Math.max(1, i + 1));
     };
-    if(prev) prev.addEventListener("click", () => slider.scrollBy({ left: -step(), behavior: "smooth" }));
-    if(next) next.addEventListener("click", () => slider.scrollBy({ left: step(), behavior: "smooth" }));
     let raf = 0;
     slider.addEventListener("scroll", () => {
       if(raf) return;

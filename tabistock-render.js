@@ -213,11 +213,9 @@ ${timeline}
     if(urls.length>1){
       // 複数枚：矢印＋「現在/総数」カウンターつきギャラリー
       gallery=`      <div class="photo-gallery" data-count="${urls.length}">
-        <button type="button" class="pg-arrow pg-prev" aria-label="前の写真">‹</button>
         <div class="photo-slider">
 ${imgs}
         </div>
-        <button type="button" class="pg-arrow pg-next" aria-label="次の写真">›</button>
         <span class="pg-counter"><b class="pg-cur">1</b> / ${urls.length}</span>
       </div>`;
     }else if(urls.length===1){
