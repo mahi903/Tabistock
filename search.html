@@ -36,12 +36,19 @@
     .hd.scrolled .logo{color:#1f6f5b}
     .hd.scrolled .burger span{background:#1b2330}
 
-    /* AIに相談 */
-    .ai-ask{padding:6px 6% 0}
-    .ai-ask-inner{max-width:920px;margin:0 auto;background:linear-gradient(135deg,#1f6f5b,#2c8a70);border-radius:22px;padding:26px 24px;color:#fff;box-shadow:0 14px 38px rgba(31,111,91,.22)}
-    .ai-ask-eyebrow{margin:0 0 4px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
-    .ai-ask-inner h2{margin:0 0 8px;font-size:22px;font-weight:800}
-    .ai-ask-note{margin:0 0 16px;font-size:13px;line-height:1.7;opacity:.92}
+    /* AIに相談（ページ最上部の独立ヒーロー。固定ヘッダーの下に緑地を敷く） */
+    .ai-ask{position:relative;overflow:hidden;padding:108px 6% 38px;background:linear-gradient(150deg,#1f6f5b,#2f9e7f);color:#fff}
+    .ai-ask::after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.07)}
+    .ai-ask-inner{position:relative;max-width:920px;margin:0 auto}
+    .ai-ask-eyebrow{margin:0 0 6px;font-family:"Manrope",sans-serif;font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#ffd9a0}
+    .ai-ask-inner h2{margin:0 0 9px;font-size:clamp(24px,3.6vw,34px);font-weight:900;letter-spacing:-.02em}
+    .ai-ask-note{margin:0 0 18px;font-size:14px;line-height:1.8;color:rgba(255,255,255,.92);max-width:620px}
+    /* 検索結果は緑ヒーローと区別するため、この page では軽い見出し帯にする */
+    .fhero{padding:30px 6% 16px;background:#f7f1e8;color:#182033}
+    .fhero::after{display:none}
+    .fhero .eyebrow{color:#1f6f5b}
+    .fhero h1{color:#182033}
+    .fhero p{color:#6c7787}
     .ai-ask-form{display:flex;gap:10px;align-items:stretch}
     .ai-ask-form textarea{flex:1;border:none;border-radius:14px;padding:13px 15px;font-size:15px;font-family:inherit;line-height:1.6;resize:vertical;min-height:52px;color:#1b2330;box-shadow:inset 0 1px 3px rgba(0,0,0,.06)}
     .ai-ask-form textarea:focus{outline:2px solid rgba(255,255,255,.7)}
@@ -58,9 +65,11 @@
     .ai-ask-ref-ct{flex-shrink:0;font-size:11px;font-weight:800;color:#1f6f5b;background:#e3efe9;border-radius:999px;padding:3px 9px}
     .ai-ask-ref-tt{flex:1;font-size:13.5px;font-weight:700;line-height:1.5}
     .ai-ask-ref-ar{flex-shrink:0;color:#1f6f5b;font-weight:800}
+    @media(max-width:768px){
+      .ai-ask{padding:90px 6% 28px}
+      .fhero{padding:22px 6% 12px}
+    }
     @media(max-width:600px){
-      .ai-ask-inner{padding:22px 18px;border-radius:18px}
-      .ai-ask-inner h2{font-size:19px}
       .ai-ask-form{flex-direction:column}
       .ai-ask-form button{align-self:stretch}
     }
@@ -352,12 +361,6 @@
 </div>
 <div class="drawer-overlay" id="drawerOverlay"></div>
 <!--パソコン画面-->
-  <section class="fhero">
-    <p class="eyebrow">Search Results</p>
-    <h1>検索結果</h1>
-    <p>選んだ条件に当てはまる旅程の一覧です。さらに条件を追加して、ぴったりの旅に絞り込めます。</p>
-  </section>
-
   <section class="ai-ask">
     <div class="ai-ask-inner">
       <p class="ai-ask-eyebrow">AIに相談</p>
@@ -372,6 +375,12 @@
         <div class="ai-ask-refs" id="aiAskRefs"></div>
       </div>
     </div>
+  </section>
+
+  <section class="fhero">
+    <p class="eyebrow">Search Results</p>
+    <h1>検索結果</h1>
+    <p>選んだ条件に当てはまる旅程の一覧です。さらに条件を追加して、ぴったりの旅に絞り込めます。</p>
   </section>
   <section class="search-results">
   <div class="results-layout">
