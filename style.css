@@ -2353,7 +2353,8 @@ a.hero-author:hover .hero-author-name {
 .route-card{padding:16px;}
 .route-map{height:360px;border-radius:14px;overflow:hidden;background:#aad3df;position:relative;z-index:0;}
 .route-map .ctpin{background:#1f6f5b;color:#fff;border:2.5px solid #fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 3px 10px rgba(0,0,0,.3);}
-.route-map .mappin{width:22px;height:22px;background:#1f6f5b;border:2.5px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 10px rgba(0,0,0,.35);}
+.route-map .mappin{width:24px;height:24px;background:radial-gradient(circle at 35% 30%,#3fa183,#1f6f5b 72%);border:2px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 5px 9px rgba(0,0,0,.4),inset -1px -1px 3px rgba(0,0,0,.25),inset 1px 1px 2px rgba(255,255,255,.35);position:relative;}
+.route-map .mappin::after{content:"";position:absolute;top:50%;left:50%;width:8px;height:8px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);box-shadow:inset 0 1px 2px rgba(0,0,0,.4);}
 @media(max-width:768px){.route-grid{padding:0 22px;}}
 @media(max-width:600px){.route-map{height:280px;}}
 
