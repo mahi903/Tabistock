@@ -79,26 +79,39 @@ export default async function handler(req, res) {
 
     const body = req.body || {};
     const text = String(body.text || "").slice(0, 4000).trim();
-    const country = String(body.country || "").slice(0, 60).trim();
+    // 対象国（複数＝周遊）。countries 配列を優先、無ければ単一 country。
+    let countries = Array.isArray(body.countries)
+      ? body.countries.map((c) => String(c || "").trim()).filter(Boolean)
+      : [];
+    if (!countries.length && body.country) countries = [String(body.country).trim()];
+    countries = countries.slice(0, 8);
     if (!text) { res.status(400).json({ error: "text required" }); return; }
 
+    const countryClause = countries.length
+      ? `対象とする国は次のとおりです：${countries.join("、")}。` +
+        "★最重要：これらの国に実在する場所だけを抽出してください。" +
+        "それ以外の国にある場所（出発地・帰国先・経由地の空港や都市など、特に日本など旅行の舞台ではない国の地名）は、" +
+        "たとえ本文に出てきても必ず除外します。"
+      : "";
+
     const sys =
-      "あなたは旅行日記から『筆者がその日に実際に訪れた場所』だけを抽出するアシスタントです。" +
-      "入力された文章を読み、筆者が実際に行った・滞在した・通った観光地や施設、都市、名所のうち、" +
-      "地図で位置を特定できる固有の地名だけを、本文に出てくる順に抜き出してください。" +
+      "あなたは旅行日記から『筆者がその日に実際に訪れた場所』を抽出するアシスタントです。" +
+      "入力された文章を読み、筆者が実際に行った・滞在した・通った観光地や施設、都市、名所、" +
+      "国立公園・砂漠・湖・ビーチなどの自然の名所を、本文に出てくる順に抜き出してください。" +
+      "ピナクルズ砂漠のような有名な自然名所・ランドマークは積極的に含めます。" +
+      countryClause +
       "次のものは必ず除外します：" +
       "(1) たとえ・比喩・印象として挙げられた場所（例：『まるでロンドンにいるよう』『パリのような街並み』）、" +
       "(2) 願望・予定だけで未訪問の場所（例：『いつか行きたい』『次は◯◯へ』）、" +
       "(3) 過去の別の旅行の回想や、他人から聞いた話の中の場所、" +
-      "(4) 国名・地方名・大陸など範囲が広すぎる一般的言及（例：『ヨーロッパでは』）、" +
+      "(4) 大陸や非常に広い範囲だけの一般的言及（例：『ヨーロッパでは』）、" +
       "(5) 固有名のない一般名詞（ホテル・レストラン・市場・空港など）、料理名、人名、感想。" +
-      "判断に迷う（実際に訪れたか不確かな）場所は含めないでください。" +
-      (country ? `舞台となる国はおおむね「${country}」です。この国の中の場所を優先してください。` : "") +
       "各場所について、次の2つを持つオブジェクトを作ってください：" +
       "name＝本文での表示名（日本語のまま）、" +
       "query＝地図検索用の正式名称（英語で、可能なら『施設名, 都市/地域, 国』の形。あなたの知識で正しい綴り・所在地に補ってよい）。" +
       "例：本文に『サンダルフォードワイナリー』とあれば " +
-      '{"name":"サンダルフォードワイナリー","query":"Sandalford Wines, Swan Valley, Western Australia, Australia"}。' +
+      '{"name":"サンダルフォードワイナリー","query":"Sandalford Wines, Swan Valley, Western Australia, Australia"}、' +
+      '『ピナクルズ砂漠』なら {"name":"ピナクルズ砂漠","query":"Pinnacles Desert, Nambung National Park, Western Australia, Australia"}。' +
       "出力は name と query を持つオブジェクトの JSON 配列のみ。説明文やコードフェンスは付けないでください。" +
       "該当が無ければ [] を返します。";
 

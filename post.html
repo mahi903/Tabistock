@@ -102,7 +102,8 @@
   .dayloc-map .daypin{ width:18px; height:18px; background:var(--green); border:2.5px solid #fff; border-radius:50% 50% 50% 0; transform:rotate(-45deg); box-shadow:0 2px 8px rgba(0,0,0,.35); }
   .dayloc-list{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
   .dl-chip{ display:inline-flex; align-items:center; gap:6px; background:#faf6ee; border:1px solid #d9d2c4; border-radius:999px; padding:4px 6px 4px 10px; font-size:12px; font-weight:700; color:#182033; }
-  .dl-chip button{ background:#e7ded0; border:none; border-radius:50%; width:18px; height:18px; line-height:1; font-size:13px; color:#6b6353; cursor:pointer; padding:0; }
+  .dl-chip .dl-name{ background:none; border:none; padding:0; font:inherit; color:inherit; cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
+  .dl-chip .dl-x{ background:#e7ded0; border:none; border-radius:50%; width:18px; height:18px; line-height:1; font-size:13px; color:#6b6353; cursor:pointer; padding:0; flex-shrink:0; }
   .dayloc-foot{ display:flex; align-items:center; gap:10px; margin-top:8px; font-size:12.5px; color:var(--mut); flex-wrap:wrap; }
   .dayloc-clear{ background:#faf6ee; border:1px solid #d9d2c4; border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--green); cursor:pointer; }
   .autoall{ margin-top:14px; }
@@ -619,7 +620,10 @@ function initDayMap(wrap){
   const m=L.map(el,{worldCopyJump:true,minZoom:2}).setView(center,zoom);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:18}).addTo(m);
   wrap._map=m;
-  m.on('click',e=>{ addDayPlace(wrap,'',e.latlng.lat,e.latlng.lng); });
+  m.on('click',e=>{
+    const name=(window.prompt('この地点の名前（あとから変更できます。空欄でもOK）','')||'').trim();
+    addDayPlace(wrap,name,e.latlng.lat,e.latlng.lng);
+  });
   renderDayMarkers(wrap);
   setTimeout(()=>{m.invalidateSize(); fitDayMap(wrap);},60);
 }
@@ -654,6 +658,15 @@ function removeDayPlace(wrap,idx){
   renderDayMarkers(wrap);
   updateDayLoc(wrap);
 }
+function renameDayPlace(wrap,idx){
+  if(!wrap._places||!wrap._places[idx]) return;
+  const cur=wrap._places[idx].name||'';
+  const name=window.prompt('地点の名前',cur);
+  if(name===null) return; // キャンセル
+  wrap._places[idx].name=name.trim();
+  renderDayMarkers(wrap);
+  updateDayLoc(wrap);
+}
 function clearDayPlaces(wrap){
   wrap._places=[];
   renderDayMarkers(wrap);
@@ -674,9 +687,10 @@ function updateDayLoc(wrap){
     ps.forEach((p,i)=>{
       const chip=document.createElement('span');
       chip.className='dl-chip';
-      const label=p.name?p.name:`${p.lat}, ${p.lng}`;
-      chip.innerHTML=`<span>📍 ${esc(label)}</span><button type="button" aria-label="削除">×</button>`;
-      chip.querySelector('button').addEventListener('click',()=>removeDayPlace(wrap,i));
+      const label=p.name?p.name:`${p.lat}, ${p.lng}（名前を付ける）`;
+      chip.innerHTML=`<button type="button" class="dl-name" title="クリックで名前を編集">📍 ${esc(label)}</button><button type="button" class="dl-x" aria-label="削除">×</button>`;
+      chip.querySelector('.dl-name').addEventListener('click',()=>renameDayPlace(wrap,i));
+      chip.querySelector('.dl-x').addEventListener('click',()=>removeDayPlace(wrap,i));
       list.appendChild(chip);
     });
   }
@@ -692,7 +706,8 @@ async function autoDetectAll(){
   const wraps=[...document.querySelectorAll('[data-day]')];
   if(!wraps.length){ msg.textContent='先に日程を追加してください。'; return; }
   const cs=selectedCountries();
-  const countryEn=cs[0]?(cinfo(cs[0]).en||''):'';
+  const countriesEn=cs.map(v=>cinfo(v)&&cinfo(v).en).filter(Boolean);
+  const countryEn=countriesEn[0]||'';
   btn.disabled=true;
   let idToken;
   try{ idToken=await user.getIdToken(); }
@@ -703,7 +718,7 @@ async function autoDetectAll(){
     msg.textContent=`解析中… (${i+1}/${wraps.length})`;
     const text=(wrap.querySelector('.d-text').value||'').trim();
     if(!text){ empty++; continue; }
-    const added=await applyAutoToDay(wrap,idToken,countryEn);
+    const added=await applyAutoToDay(wrap,idToken,countryEn,countriesEn);
     if(added>0){ daysWith++; pins+=added; }
     else { miss++; }
   }
@@ -716,7 +731,7 @@ async function autoDetectAll(){
 }
 // 1日分：本文→地名抽出→座標化→ピン設置（複数）。設置できた個数を返す。
 // 再実行時はその日のピンを一旦クリアしてから入れ直す。
-async function applyAutoToDay(wrap,idToken,countryEn){
+async function applyAutoToDay(wrap,idToken,countryEn,countriesEn){
   const text=(wrap.querySelector('.d-text').value||'').trim();
   const st=wrap.querySelector('.dayloc-status');
   if(!text) return 0;
@@ -724,7 +739,7 @@ async function applyAutoToDay(wrap,idToken,countryEn){
     const r=await fetch('/api/extractPlaces',{
       method:'POST',
       headers:{'content-type':'application/json','authorization':`Bearer ${idToken}`},
-      body:JSON.stringify({text,country:countryEn})
+      body:JSON.stringify({text,country:countryEn,countries:countriesEn||[]})
     });
     if(!r.ok) throw new Error('extract '+r.status);
     const data=await r.json();
