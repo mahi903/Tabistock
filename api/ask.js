@@ -52,7 +52,8 @@ const COUNTRY_JP = {
 
 const STYLE_JP = {
   solo: "1人旅", friends: "友達と", family: "家族と", backpacker: "バックパッカー", girls: "女子旅",
-  couple: "カップル", nature: "自然・絶景", city: "都市・街歩き", local: "現地体験", "round-trip": "周遊"
+  couple: "カップル", nature: "自然・絶景", city: "都市・街歩き", local: "現地体験", "round-trip": "周遊",
+  bicycle: "自転車旅", train: "電車旅"
 };
 
 const BUDGET_JP = {

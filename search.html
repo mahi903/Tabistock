@@ -176,6 +176,8 @@
         <option value="city">都市・街歩き</option>
         <option value="local">現地体験</option>
         <option value="round-trip">周遊</option>
+        <option value="bicycle">自転車旅</option>
+        <option value="train">電車旅</option>
       </select>
     </label>
   </div>
@@ -315,6 +317,8 @@
         <option value="city">都市・街歩き</option>
         <option value="local">現地体験</option>
         <option value="round-trip">周遊</option>
+        <option value="bicycle">自転車旅</option>
+        <option value="train">電車旅</option>
       </optgroup>
     </select>
 
@@ -462,6 +466,8 @@
           <option value="city">都市・街歩き</option>
           <option value="local">現地体験</option>
           <option value="round-trip">周遊</option>
+          <option value="bicycle">自転車旅</option>
+          <option value="train">電車旅</option>
         </select>
       </div>
       <button class="fs-apply" id="fsApply" type="button">この条件で絞り込む</button>
@@ -726,7 +732,9 @@ function runSearchFilter(){
 
 if (filter === "budget") {
   matchesThisFilter = selectedValues.some(value =>
-    Number(cardValue) <= Number(value)
+    // 「50万円以上」(50plus) は Number() が NaN になり全件0件になるので特別扱い。
+    // 50plus の旅程は data-budget="50" として保存されるため、50以上を対象にする。
+    value === "50plus" ? Number(cardValue) >= 50 : Number(cardValue) <= Number(value)
   );
 } else {
   matchesThisFilter = selectedValues.some(value =>
