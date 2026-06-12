@@ -489,19 +489,22 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
           // 1セット分の距離（複製の先頭カードの左位置＝gap込み）。
           const fc = bento.children[originals.length];
           let seg = fc ? fc.offsetLeft : bento.scrollWidth / 2;
-          const speed = 38; // px/秒
-          let last = performance.now(), paused = false, idle = null;
+          const speed = 40; // px/秒
+          // iOSはscrollLeftを整数に丸めるため、小数の位置を変数で持って毎フレーム代入する
+          // （直接 += すると微小な加算が切り捨てられて動かない）。
+          let pos = 0, last = performance.now(), paused = false, idle = null;
           const loop = (now) => {
             const dt = Math.min((now - last) / 1000, 0.05); last = now;
             if (!paused && seg > 0) {
-              bento.scrollLeft += speed * dt;
-              if (bento.scrollLeft >= seg) bento.scrollLeft -= seg;
+              pos += speed * dt;
+              if (pos >= seg) pos -= seg;
+              bento.scrollLeft = pos;
             }
             requestAnimationFrame(loop);
           };
           const pause = () => {
             paused = true; clearTimeout(idle);
-            idle = setTimeout(() => { paused = false; last = performance.now(); }, 2500);
+            idle = setTimeout(() => { pos = bento.scrollLeft; last = performance.now(); paused = false; }, 2500);
           };
           ["pointerdown", "touchstart", "wheel"].forEach(ev =>
             bento.addEventListener(ev, pause, { passive: true }));
