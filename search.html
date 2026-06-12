@@ -607,7 +607,8 @@ if (filter === "budget") {
   });
 
   if (noResults) {
-  noResults.style.display = visibleCount === 0 ? "block" : "none";
+  // DB記事の読み込みが終わるまでは「該当なし」を出さない（初回同期実行で一瞬出るのを防ぐ）。
+  noResults.style.display = (window.__articlesLoaded && visibleCount === 0) ? "block" : "none";
 }
 
   // ===== PC sidebar filter + active conditions =====
@@ -753,6 +754,7 @@ runSearchFilter();
         console.error("記事の読み込みに失敗:", err);
       }
       // カード追加後にフィルタ（件数・絞り込み・チップ）と並び替えを再実行
+      window.__articlesLoaded = true; // ここで初めて「該当なし」表示を許可
       if (window.runSearchFilter) window.runSearchFilter();
       if (window.sortResultCards) window.sortResultCards();
 
