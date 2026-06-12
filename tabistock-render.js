@@ -360,6 +360,15 @@ export function renderCard(d){
   (d.styles||[]).slice(0,2).forEach(s=>{ const ss=STYLES.find(x=>x.v===s); if(ss) cardTags.push(ss.tag); });
   const budgetAttr = d.budget==='50plus' ? '50' : d.budget;
   const thumb=d.thumbUrl||(d.heroUrls&&d.heroUrls[0])||'';
+  // 検索用の隠しテキスト（画面には表示しない）。キーワード検索はカードの表示文字＋この属性を対象にする。
+  // 内容：日本語/英語の国名・地域（日英）・タイトル・リード・各DAYの要約。
+  const ci=(d.countries||[]).map(cinfo).filter(Boolean);
+  const searchParts=[];
+  ci.forEach(x=>{ searchParts.push(x.jp, x.en, REGION_JP[x.r]||'', REGION_EN[x.r]||''); });
+  if(d.region) searchParts.push(REGION_JP[d.region]||d.region, REGION_EN[d.region]||'');
+  searchParts.push(d.title||'', d.lead||'');
+  (d.days||[]).forEach(day=>{ if(day&&day.summary) searchParts.push(day.summary); });
+  const searchText=searchParts.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
   return `  <a href="./articles/view.html?id=${esc(d.id)}"
      class="trip-card"
      data-id="${esc(d.id)}"
@@ -368,6 +377,7 @@ export function renderCard(d){
      data-budget="${esc(budgetAttr||'')}"
      data-style="${esc((d.styles||[]).join(' '))}"
      data-region="${esc(d.region||'')}"
+     data-search="${esc(searchText)}"
      data-created="${esc(String(d.createdAt?.seconds||0))}"
      data-likes="0">
     <div class="trip-image"
