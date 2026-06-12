@@ -380,9 +380,8 @@ export function renderCard(d){
      data-search="${esc(searchText)}"
      data-created="${esc(String(d.createdAt?.seconds||0))}"
      data-likes="0">
-    <div class="trip-image"
-         style="background-image:
-    linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.12)),url('${esc(thumb)}');">
+    <div class="trip-image">
+      <img src="${esc(thumb)}" alt="" loading="lazy" decoding="async">
     </div>
     <div class="trip-content">
       <p class="country">${esc(c.en)}</p>
