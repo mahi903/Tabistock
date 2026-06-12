@@ -78,7 +78,8 @@ function articleToText(a) {
     const txt = String(d.text || "").replace(/\s+/g, " ").slice(0, 600);
     lines.push(`DAY${i + 1}：${sum}${txt ? " / " + txt : ""}`);
   });
-  if (a.comment) lines.push(`投稿者コメント：${String(a.comment).replace(/\s+/g, " ").slice(0, 300)}`);
+  // 投稿者コメントは要約せず全文を渡す（投稿者の生の助言を尊重するため）。
+  if (a.comment) lines.push(`投稿者コメント：${String(a.comment).replace(/\s+/g, " ")}`);
   return lines.join("\n");
 }
 
