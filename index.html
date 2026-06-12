@@ -362,11 +362,10 @@ a{color:inherit;text-decoration:none}
     <div class="rv"><p class="eyebrow">New Routes</p><h2>新着旅程</h2></div>
     <a class="more rv" href="search.html">すべて見る →</a>
   </div>
+  <!-- 中身は下部のスクリプトが「公開記事を新着順に最大4件」で差し替える。
+       下のモンゴルのタイルは、万一スクリプトが失敗したとき用のフォールバック表示。 -->
   <div class="bento">
     <a class="tile big-tile rv" href="articles/view.html?id=6F3XPkdRSrfKPuXCqn8C"><img src="images/mongolia.jpg" alt="モンゴル"><div class="tile-c"><span class="ctry">MONGOLIA</span><h3>モンゴル5泊6日｜大学生ひとり旅｜総額15万円</h3><div class="tg"><span>15万円前後</span><span>ひとり旅</span><span>自然旅</span></div></div></a>
-    <a class="tile rv" href="articles/cambodia.html"><img src="images/cambodia.jpg" alt="タイ・カンボジア"><div class="tile-c"><span class="ctry">THAI / CAMBODIA</span><h3>アンコールワットを巡る旅</h3><div class="tg"><span>低予算</span><span>世界遺産</span></div></div></a>
-    <a class="tile rv" href="articles/europe.html"><img src="images/europe.jpg" alt="ヨーロッパ"><div class="tile-c"><span class="ctry">EUROPE</span><h3>中欧・東欧 周遊ルート</h3><div class="tg"><span>周遊</span><span>複数国</span></div></div></a>
-    <a class="tile wide-tile rv" href="articles/turkey01.html"><img src="images/turkey01.jpg" alt="トルコ"><div class="tile-c"><span class="ctry">TURKEY</span><h3>トルコ縦断｜カッパドキアと絶景の街</h3><div class="tg"><span>絶景</span><span>街歩き</span></div></div></a>
   </div>
 </section>
 
@@ -425,14 +424,17 @@ document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
 // 非同期データで数値を差し替える（既に表示済みなら再アニメーション）
 window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.seen)animateCount(el)};
 </script>
-  <!-- 公開記事から統計を自動集計（渡航国・地域 / 掲載旅程 / 最安予算） -->
+  <!-- 公開記事から「統計の自動集計」と「新着旅程の動的表示」を行う -->
   <script type="module">
     import { db } from "./firebase-config.js";
     import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { cinfo, BUDGETS, STYLES, esc } from "./tabistock-render.js";
     try {
       const snap = await getDocs(query(collection(db, "articles"), where("status", "==", "published")));
       const docs = [];
-      snap.forEach(s => docs.push(s.data()));
+      snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
+
+      // --- 統計（渡航国・地域 / 掲載旅程 / 最安予算）---
       const countries = new Set();
       let minBudget = null;
       docs.forEach(d => {
@@ -444,8 +446,31 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       if (countries.size) set("statCountries", countries.size);
       set("statTrips", docs.length);
       if (minBudget != null) set("statBudget", minBudget);
+
+      // --- 新着旅程：投稿日(createdAt)が新しい順に最大4件をモザイクで表示 ---
+      const bento = document.querySelector(".bento");
+      if (bento && docs.length) {
+        const sec = d => (d.createdAt && d.createdAt.seconds) || 0;
+        const latest = [...docs].sort((a, b) => sec(b) - sec(a)).slice(0, 4);
+        // モザイクの形を維持：1件目=大タイル / 4件目=横長 / それ以外=通常
+        const sizeClass = i => i === 0 ? " big-tile" : (i === 3 ? " wide-tile" : "");
+        const tile = (d, i) => {
+          const c = cinfo((d.countries || [])[0]) || { en: "", jp: "" };
+          const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
+          const tags = [];
+          const bb = BUDGETS.find(x => x.v === d.budget); if (bb) tags.push(bb.l);
+          (d.styles || []).slice(0, 2).forEach(s => { const ss = STYLES.find(x => x.v === s); if (ss) tags.push(ss.tag); });
+          // 後から差し込むタイルはスクロール演出の監視対象外なので、最初から表示状態(rv in)で入れる
+          return `<a class="tile${sizeClass(i)} rv in" href="articles/view.html?id=${esc(d.id)}">`
+            + `<img src="${esc(thumb)}" alt="${esc(c.jp || d.title || "")}" loading="lazy" decoding="async">`
+            + `<div class="tile-c"><span class="ctry">${esc((c.en || "").toUpperCase())}</span>`
+            + `<h3>${esc(d.title || "")}</h3>`
+            + `<div class="tg">${tags.map(t => `<span>${esc(t)}</span>`).join("")}</div></div></a>`;
+        };
+        bento.innerHTML = latest.map(tile).join("");
+      }
     } catch (e) {
-      console.error("統計の集計に失敗:", e);
+      console.error("トップの集計／新着表示に失敗:", e);
     }
   </script>
   <script type="module" src="./auth-status.js"></script>
