@@ -227,10 +227,14 @@ a{color:inherit;text-decoration:none}
   .cyc-arrow{width:100%;height:40px}
   .cyc-arrow::before{content:"↓"}
   .scards{grid-template-columns:1fr 1fr}
-  .bento{grid-template-columns:1fr;grid-auto-rows:210px}
-  .big-tile{grid-column:span 1;grid-row:span 1}
-  .big-tile h3{font-size:21px}
-  .wide-tile{grid-column:span 1}
+  /* 新着旅程：スマホは縦長カードを横スクロール（JSで自動送り／指で触ると一時停止） */
+  .bento{display:flex;grid-template-columns:none;grid-auto-rows:auto;gap:14px;max-width:none;margin:0;
+    overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+    padding-bottom:4px}
+  .bento::-webkit-scrollbar{display:none}
+  .tile{flex:0 0 78%;height:min(60vh,460px);scroll-snap-align:center;border-radius:20px}
+  .big-tile,.wide-tile{grid-column:auto;grid-row:auto}
+  .tile h3,.big-tile h3{font-size:18px}
   .tile-c{justify-content:flex-end}
   .tile .tg{opacity:1;transform:none}
   .founder{flex-direction:column;text-align:center}
@@ -323,6 +327,19 @@ a{color:inherit;text-decoration:none}
   <div class="stat"><b data-count="100">0</b><span>% 学生のリアル</span></div>
 </div>
 
+<!-- ROUTES (BENTO) -->
+<section class="section" id="routes" style="padding-top:48px">
+  <div class="routes-head">
+    <div class="rv"><p class="eyebrow">New Routes</p><h2>新着旅程</h2></div>
+    <a class="more rv" href="search.html">すべて見る →</a>
+  </div>
+  <!-- 中身は下部のスクリプトが「公開記事を新着順に最大4件」で差し替える。
+       下のモンゴルのタイルは、万一スクリプトが失敗したとき用のフォールバック表示。 -->
+  <div class="bento">
+    <a class="tile big-tile rv" href="articles/view.html?id=6F3XPkdRSrfKPuXCqn8C"><img src="images/mongolia.jpg" alt="モンゴル"><div class="tile-c"><span class="ctry">MONGOLIA</span><h3>モンゴル5泊6日｜大学生ひとり旅｜総額15万円</h3><div class="tg"><span>15万円前後</span><span>ひとり旅</span><span>自然旅</span></div></div></a>
+  </div>
+</section>
+
 <!-- ABOUT -->
 <section class="section" id="about">
   <div class="about">
@@ -356,19 +373,6 @@ a{color:inherit;text-decoration:none}
   <div class="search-cta rv" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;align-items:center">
     <a class="btn btn-p" style="background:var(--green)" href="filter.html">条件を選んで検索する →</a>
     <a class="btn" style="background:transparent;color:var(--green);border:1.5px solid var(--green)" href="map.html">地図から探す →</a>
-  </div>
-</section>
-
-<!-- ROUTES (BENTO) -->
-<section class="section" id="routes">
-  <div class="routes-head">
-    <div class="rv"><p class="eyebrow">New Routes</p><h2>新着旅程</h2></div>
-    <a class="more rv" href="search.html">すべて見る →</a>
-  </div>
-  <!-- 中身は下部のスクリプトが「公開記事を新着順に最大4件」で差し替える。
-       下のモンゴルのタイルは、万一スクリプトが失敗したとき用のフォールバック表示。 -->
-  <div class="bento">
-    <a class="tile big-tile rv" href="articles/view.html?id=6F3XPkdRSrfKPuXCqn8C"><img src="images/mongolia.jpg" alt="モンゴル"><div class="tile-c"><span class="ctry">MONGOLIA</span><h3>モンゴル5泊6日｜大学生ひとり旅｜総額15万円</h3><div class="tg"><span>15万円前後</span><span>ひとり旅</span><span>自然旅</span></div></div></a>
   </div>
 </section>
 
@@ -471,6 +475,26 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
             + `<div class="tg">${tags.map(t => `<span>${esc(t)}</span>`).join("")}</div></div></a>`;
         };
         bento.innerHTML = latest.map(tile).join("");
+
+        // スマホのみ：縦長カードを一定間隔で1枚ずつ自動送り（端まで行ったら先頭へ）。
+        // 指で操作している間は止め、操作が落ち着いたら再開する。
+        if (window.matchMedia("(max-width:860px)").matches) {
+          let timer = null, idle = null;
+          const step = () => {
+            const t = bento.querySelector(".tile");
+            if (!t) return;
+            const w = t.getBoundingClientRect().width + 14; // カード幅＋gap
+            const max = bento.scrollWidth - bento.clientWidth - 4;
+            const next = bento.scrollLeft + w;
+            bento.scrollTo({ left: next > max ? 0 : next, behavior: "smooth" });
+          };
+          const start = () => { stop(); timer = setInterval(step, 3500); };
+          const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+          const pause = () => { stop(); clearTimeout(idle); idle = setTimeout(start, 2500); };
+          ["pointerdown", "touchstart", "wheel"].forEach(ev =>
+            bento.addEventListener(ev, pause, { passive: true }));
+          start();
+        }
       }
     } catch (e) {
       console.error("トップの集計／新着表示に失敗:", e);
