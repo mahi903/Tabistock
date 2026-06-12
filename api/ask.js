@@ -156,8 +156,10 @@ export default async function handler(req, res) {
       "(4) 出力は必ず次のJSON形式のみ。説明文やコードフェンスは付けない：" +
       '{"answer":"回答本文","articleIds":["記事ID1","記事ID2"]}。' +
       "answer 本文の中では『記事ID』という文字列やIDそのものは書かないでください" +
-      "（記事へのリンクは画面側が articleIds をもとに自動で表示します）。" +
-      "\n\n--- 旅程記事（ここからが資料）---\n" + corpus;
+      "（記事へのリンクは画面側が articleIds をもとに自動で表示します）。";
+
+    // 記事本文（資料）。毎回まったく同じ前置きなので、ここをプロンプトキャッシュ対象にする。
+    const corpusBlock = "--- 旅程記事（ここからが資料）---\n" + corpus;
 
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -169,7 +171,14 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 1024,
-        system: sys,
+        // system を2ブロックに分割し、それぞれに cache_control を付ける。
+        //  - 指示文：ほぼ不変 → 記事を追加してもキャッシュが効き続ける
+        //  - 記事本文：記事が変わるまで同一 → 2回目以降は入力料金が最大90%オフ
+        // （プロンプトキャッシュはGA機能。ベータヘッダ不要。最低約1024トークンで有効化）
+        system: [
+          { type: "text", text: sys, cache_control: { type: "ephemeral" } },
+          { type: "text", text: corpusBlock, cache_control: { type: "ephemeral" } }
+        ],
         messages: [{ role: "user", content: question }]
       })
     });
