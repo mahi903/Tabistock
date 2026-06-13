@@ -1820,10 +1820,14 @@ a.hero-author:hover .hero-author-name {
 .affiliate-btn:hover { background: #185c4a; }
 
 .affiliate-note {
-  display: block;
-  margin-top: 14px;
-  font-size: 12px;
-  color: #9ca3af;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: #9ca3af;
+  border-radius: 4px;
+  padding: 2px 5px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {

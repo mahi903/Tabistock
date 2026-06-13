@@ -264,7 +264,7 @@ ${specificUrl?`    <a href="${esc(specificUrl)}" target="_blank" rel="noopener s
     </a>`:matchedLinks.length?matchedLinks.join('\n'):`    <a href="${AFFILIATE_URLS['Agoda']}" target="_blank" rel="noopener sponsored" class="affiliate-btn">
       Agodaでホテルを見る <i class="fa-solid fa-arrow-up-right-from-square"></i>
     </a>`}
-    <small class="affiliate-note">※ このリンクにはアフィリエイト広告が含まれます</small>
+    <small class="affiliate-note">PR</small>
   </div>
 </section>`:'';
 
