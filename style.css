@@ -1759,6 +1759,76 @@ a.hero-author:hover .hero-author-name {
     scroll-snap-align: start;
   }
 }
+/* =========================
+   アフィリエイトセクション
+========================= */
+
+.affiliate-section {
+  max-width: 1200px;
+  margin: 32px auto;
+  padding: 0 32px;
+  box-sizing: border-box;
+}
+
+.affiliate-card {
+  background: linear-gradient(135deg, #f0faf6 0%, #e8f5f0 100%);
+  border-radius: 24px;
+  padding: 40px 48px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  text-align: center;
+}
+
+.affiliate-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #1f6f5b;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+
+.affiliate-card h2 {
+  font-size: 22px;
+  margin: 0 0 10px;
+  color: #111827;
+}
+
+.affiliate-card > p {
+  font-size: 15px;
+  color: #6c7787;
+  margin: 0 0 24px;
+}
+
+.affiliate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #1f6f5b;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 14px 32px;
+  border-radius: 100px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.affiliate-btn:hover { background: #185c4a; }
+
+.affiliate-note {
+  display: block;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+  .affiliate-section { padding: 0 22px; margin: 24px auto; }
+  .affiliate-card { padding: 28px 22px; }
+  .affiliate-card h2 { font-size: 18px; }
+  .affiliate-btn { font-size: 15px; padding: 12px 24px; }
+}
+
 .fade-in {
   opacity: 0;
   transform: translateY(30px);
