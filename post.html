@@ -222,6 +222,10 @@
     <h2><span class="num">4</span>利用サービス</h2>
     <p class="hint">使ったサービスをチェック。リストに無い国独自のものは各カテゴリの「その他」に自由入力（カンマ区切りで複数可）。</p>
     <div id="serviceBox"></div>
+    <div id="agodaUrlWrap" hidden style="margin-top:16px">
+      <label class="f">宿泊ホテルのAgodaリンク（任意）<span class="hint" style="font-weight:normal">A8.netで発行した商品リンクのURLを貼ると、記事にそのホテルへの直リンクが表示されます。</span></label>
+      <input type="url" id="agodaUrl" placeholder="https://px.a8.net/..." style="width:100%;box-sizing:border-box">
+    </div>
   </section>
 
   <!-- ===== 5. 日程 ===== -->
@@ -913,6 +917,7 @@ async function gather(){
     difficulty,
     costs, flights, flightWhen:$('flightWhen').value.trim(), flightSite:$('flightSite').value.trim(),
     services, days, comment:$('comment').value.trim(),
+    agodaUrl:$('agodaUrl').value.trim(),
     heroFiles:[...$('heroPhotos').files],
     heroExisting: window.tabistockHeroExisting || []
   };
@@ -1277,6 +1282,7 @@ window.populateForm = function(d){
   difficulty=d.difficulty||3; paintStars();
   $('flightWhen').value=d.flightWhen||''; $('flightSite').value=d.flightSite||'';
   $('comment').value=d.comment||'';
+  $('agodaUrl').value=d.agodaUrl||'';
   if(d.budget){$('budget').value=d.budget;} if(d.days_v){$('days').value=d.days_v;}
   document.querySelectorAll('input[name=country]').forEach(c=>{ c.checked=(d.countries||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
   document.querySelectorAll('input[name=style]').forEach(c=>{ c.checked=(d.styles||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
@@ -1882,6 +1888,7 @@ window.tabistockSubmit = async function(d, st, mode){
     currency: d.currency, language: d.language, safety: d.safety, difficulty: d.difficulty,
     costs: d.costs, flights: d.flights, flightWhen: d.flightWhen, flightSite: d.flightSite,
     services: d.services, comment: d.comment,
+    agodaUrl: d.agodaUrl||'',
     days, heroUrls, thumbUrl
   };
   await setDoc(articleRef, docData);
@@ -1926,6 +1933,12 @@ onAuthStateChanged(auth, async (user) => {
     a.style.background = "#f0ece3";
   }
 
+  // 管理者なら新規投稿時もAgodaUrl欄を表示
+  try{
+    const adminSnap = await getDoc(doc(db, "admins", user.uid));
+    if(adminSnap.exists()) document.getElementById('agodaUrlWrap').hidden=false;
+  }catch(e){}
+
   // 編集モード：?edit=<記事ID> があれば既存記事を読み込む
   const editId = new URLSearchParams(location.search).get("edit");
   if(editId){
@@ -1939,6 +1952,7 @@ onAuthStateChanged(auth, async (user) => {
       if(data.authorId !== user.uid && !isAdmin){
         alert("この記事を編集する権限がありません。"); location.href = "account.html"; return;
       }
+      if(isAdmin) document.getElementById('agodaUrlWrap').hidden=false;
       window.tabistockEditId = editId;
       window.tabistockEditStatus = data.status || "pending";
       window.tabistockEditCreatedAt = data.createdAt || null;
@@ -1953,6 +1967,7 @@ onAuthStateChanged(auth, async (user) => {
         costs: data.costs || {}, flights: data.flights || [],
         flightWhen: data.flightWhen || "", flightSite: data.flightSite || "",
         services: data.services || [], comment: data.comment || "",
+        agodaUrl: data.agodaUrl || "",
         days: data.days || [], heroUrls: data.heroUrls || []
       });
       // 見出し・ボタンのラベルを編集向けに変更

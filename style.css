@@ -1765,49 +1765,53 @@ a.hero-author:hover .hero-author-name {
 
 .affiliate-section {
   max-width: 1200px;
-  margin: 32px auto;
+  margin: 24px auto;
   padding: 0 32px;
   box-sizing: border-box;
 }
 
 .affiliate-card {
-  background: linear-gradient(135deg, #f0faf6 0%, #e8f5f0 100%);
-  border-radius: 24px;
-  padding: 40px 48px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-  text-align: center;
+  background: #f6fbf9;
+  border: 1px solid #d1ece4;
+  border-radius: 14px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .affiliate-eyebrow {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: #1f6f5b;
   text-transform: uppercase;
-  margin: 0 0 12px;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .affiliate-card h2 {
-  font-size: 22px;
-  margin: 0 0 10px;
+  font-size: 14px;
+  margin: 0;
   color: #111827;
+  font-weight: 600;
+  flex: 1;
 }
 
 .affiliate-card > p {
-  font-size: 15px;
-  color: #6c7787;
-  margin: 0 0 24px;
+  display: none;
 }
 
 .affiliate-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: #1f6f5b;
   color: #fff;
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
-  padding: 14px 32px;
+  padding: 8px 16px;
   border-radius: 100px;
   text-decoration: none;
   transition: background 0.2s;
@@ -1823,10 +1827,10 @@ a.hero-author:hover .hero-author-name {
 }
 
 @media (max-width: 768px) {
-  .affiliate-section { padding: 0 22px; margin: 24px auto; }
-  .affiliate-card { padding: 28px 22px; }
-  .affiliate-card h2 { font-size: 18px; }
-  .affiliate-btn { font-size: 15px; padding: 12px 24px; }
+  .affiliate-section { padding: 0 22px; margin: 20px auto; }
+  .affiliate-card { padding: 12px 16px; gap: 10px; }
+  .affiliate-card h2 { font-size: 13px; }
+  .affiliate-btn { font-size: 12px; padding: 7px 14px; }
 }
 
 .fade-in {

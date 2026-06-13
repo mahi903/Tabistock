@@ -242,15 +242,28 @@ ${gallery}
   </article>`;
   }).join('\n\n');
 
-  const agodaUrl='https://px.a8.net/svt/ejp?a8mat=4B5VO7+23M2LU+4X1W+5YZ77';
-  const affiliateSection=pc?`<section class="affiliate-section">
+  const AFFILIATE_URLS={
+    'Agoda':'https://px.a8.net/svt/ejp?a8mat=4B5VO7+23M2LU+4X1W+5YZ77',
+    // 'Klook':'',
+    // 'GetYourGuide':'',
+    // 'トリップドットコム':'',
+  };
+  const specificUrl=d.agodaUrl||'';
+  const usedServices=(d.services||[]).flatMap(s=>s.items||[]);
+  const matchedLinks=specificUrl?[]
+    :usedServices.filter(s=>AFFILIATE_URLS[s]).map(s=>`    <a href="${AFFILIATE_URLS[s]}" target="_blank" rel="noopener sponsored" class="affiliate-btn">
+      ${esc(s)}で予約する <i class="fa-solid fa-arrow-up-right-from-square"></i>
+    </a>`);
+  const affiliateSection=(specificUrl||matchedLinks.length||pc)?`<section class="affiliate-section">
   <div class="affiliate-card">
     <p class="affiliate-eyebrow">Booking</p>
-    <h2>${esc(pc.jp)}のホテルをAgodaで探す</h2>
-    <p>この記事で紹介されたエリアのホテルをAgodaで検索できます。</p>
-    <a href="${agodaUrl}" target="_blank" rel="noopener sponsored" class="affiliate-btn">
+    <h2>${specificUrl?'著者が実際に泊まった宿':matchedLinks.length?'著者が実際に使ったサービス':`${esc(pc.jp)}のホテルをAgodaで探す`}</h2>
+    <p>${specificUrl?'投稿者がこの旅行で実際に宿泊した宿です。':matchedLinks.length?'投稿者がこの旅行で実際に利用したサービスです。':'この記事で紹介されたエリアのホテルをAgodaで検索できます。'}</p>
+${specificUrl?`    <a href="${esc(specificUrl)}" target="_blank" rel="noopener sponsored" class="affiliate-btn">
+      Agodaでこの宿を見る <i class="fa-solid fa-arrow-up-right-from-square"></i>
+    </a>`:matchedLinks.length?matchedLinks.join('\n'):`    <a href="${AFFILIATE_URLS['Agoda']}" target="_blank" rel="noopener sponsored" class="affiliate-btn">
       Agodaでホテルを見る <i class="fa-solid fa-arrow-up-right-from-square"></i>
-    </a>
+    </a>`}
     <small class="affiliate-note">※ このリンクにはアフィリエイト広告が含まれます</small>
   </div>
 </section>`:'';
