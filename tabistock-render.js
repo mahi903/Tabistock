@@ -242,6 +242,19 @@ ${gallery}
   </article>`;
   }).join('\n\n');
 
+  const agodaUrl='https://px.a8.net/svt/ejp?a8mat=4B5VO7+23M2LU+4X1W+5YZ77';
+  const affiliateSection=pc?`<section class="affiliate-section">
+  <div class="affiliate-card">
+    <p class="affiliate-eyebrow">Booking</p>
+    <h2>${esc(pc.jp)}のホテルをAgodaで探す</h2>
+    <p>この記事で紹介されたエリアのホテルをAgodaで検索できます。</p>
+    <a href="${agodaUrl}" target="_blank" rel="noopener sponsored" class="affiliate-btn">
+      Agodaでホテルを見る <i class="fa-solid fa-arrow-up-right-from-square"></i>
+    </a>
+    <small class="affiliate-note">※ このリンクにはアフィリエイト広告が含まれます</small>
+  </div>
+</section>`:'';
+
   return `<main class="article-page">
   <section class="article-hero">
     <div class="hero-carousel">
@@ -315,6 +328,7 @@ ${dayCards}
   </div>
 </section>
 
+${affiliateSection}
 
 <section class="article-actions">
   <button class="action-like" id="likeBtn" type="button" aria-pressed="false" aria-label="いいね">
