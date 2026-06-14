@@ -80,6 +80,10 @@
   .thumb{ position:relative; display:inline-block; }
   .thumb-x{ position:absolute; top:-6px; right:-6px; width:20px; height:20px; padding:0; border:none; border-radius:50%; background:rgba(20,24,32,.82); color:#fff; font-size:13px; line-height:20px; text-align:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.3); }
   .thumb-x:hover{ background:#e0564b; }
+  .thumb-mv{ position:absolute; bottom:-6px; width:20px; height:20px; padding:0; border:none; border-radius:50%; background:rgba(20,24,32,.75); color:#fff; font-size:14px; line-height:20px; text-align:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+  .thumb-mv:hover{ background:#1f6f5b; }
+  .thumb-mv[data-dir="-1"]{ left:-6px; }
+  .thumb-mv[data-dir="1"]{ right:-6px; }
   .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:50; }
   .btn{ border:none; border-radius:999px; padding:13px 26px; font-size:15px; font-weight:800; cursor:pointer; }
   .btn-main{ background:var(--green); color:#fff; }
@@ -152,14 +156,13 @@
 
   <!-- ===== 1. ヒーロー ===== -->
   <section class="card">
-    <h2><span class="num">1</span>記事トップ（ヒーロー）</h2>
+    <h2><span class="num">1</span>記事トップ</h2>
 
     <label class="f">タイトル<span class="req">必須</span></label>
     <input type="text" id="title" placeholder="例：モンゴル5泊6日｜大学生ひとり旅">
 
     <label class="f">リード文（短い一言説明）<span class="req">必須</span></label>
     <textarea id="lead" placeholder="例：ゴビ砂漠、バヤンザグ、ゲル泊を巡る冒険旅" style="min-height:60px"></textarea>
-    <p class="hint" style="margin-top:4px">※この文章は記事トップと<b>検索カードの説明文</b>の両方に使われます。短めに。英語の小見出しは国から自動生成されます。</p>
 
     <div class="row2">
       <div>
@@ -189,7 +192,7 @@
       <i class="fa-solid fa-star" data-v="5"></i>
     </div>
 
-    <label class="f">カルーセル写真（記事トップに横スクロールで並ぶ写真）<span class="req">最低1枚・1枚目がサムネ</span></label>
+    <label class="f">記事トップ写真<span class="req">最低1枚・1枚目がサムネ</span></label>
     <div class="filebox">
       <input type="file" id="heroPhotos" accept="image/jpeg,image/png" multiple>
       <div class="thumbs" id="heroThumbs"></div>
@@ -235,7 +238,7 @@
     <div id="dayList"></div>
     <button class="addbtn" id="addDay" type="button">＋ 日を追加</button>
     <div class="autoall">
-      <button type="button" id="autoAll" class="autoall-btn">本文から場所を自動検出（全日）</button>
+      <button type="button" id="autoAll" class="autoall-btn">本文から場所を自動検出</button>
       <p class="autoall-note">各日の文章をAIが読んで観光地を推定し、地図にピンを置きます。間違っていたら各日の地図をタップして直せます。</p>
       <div class="autoall-msg" id="autoAllMsg"></div>
     </div>
@@ -812,14 +815,29 @@ function renderThumbs(input,container){
   const existing=input._existing||[];
   const sel=input._sel||[];
   let html='';
-  existing.forEach((u,i)=>{ html+=`<div class="thumb"><img src="${esc(u)}"><button type="button" class="thumb-x" data-ex="${i}" aria-label="削除">×</button></div>`; });
-  sel.forEach((f,i)=>{ html+=`<div class="thumb"><img src="${URL.createObjectURL(f)}"><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button></div>`; });
+  existing.forEach((u,i)=>{
+    html+=`<div class="thumb"><img src="${esc(u)}"><button type="button" class="thumb-x" data-ex="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-ex="${i}" data-dir="-1" aria-label="前へ">‹</button>`:''}${i<existing.length-1?`<button type="button" class="thumb-mv" data-ex="${i}" data-dir="1" aria-label="次へ">›</button>`:''}</div>`;
+  });
+  sel.forEach((f,i)=>{
+    html+=`<div class="thumb"><img src="${URL.createObjectURL(f)}"><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="-1" aria-label="前へ">‹</button>`:''}${i<sel.length-1?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="1" aria-label="次へ">›</button>`:''}</div>`;
+  });
   if(existing.length) html+=`<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。×で削除、追加する場合は新しく選んでください。</p>`;
   container.innerHTML=html;
   container.querySelectorAll('.thumb-x').forEach(b=>{
     b.addEventListener('click',()=>{
       if(b.dataset.ex!=null){ existing.splice(+b.dataset.ex,1); }
       else { sel.splice(+b.dataset.new,1); syncInputFiles(input); }
+      renderThumbs(input,container);
+    });
+  });
+  container.querySelectorAll('.thumb-mv').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const dir=+b.dataset.dir;
+      if(b.dataset.ex!=null){
+        const i=+b.dataset.ex; [existing[i],existing[i+dir]]=[existing[i+dir],existing[i]];
+      } else {
+        const i=+b.dataset.new; [sel[i],sel[i+dir]]=[sel[i+dir],sel[i]]; syncInputFiles(input);
+      }
       renderThumbs(input,container);
     });
   });
