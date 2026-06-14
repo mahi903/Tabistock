@@ -114,7 +114,10 @@ export function renderArticleBody(d){
   }
   const defAvatar="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e7ddcb%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2240%22%20r%3D%2218%22%20fill%3D%22%23b9ad95%22%2F%3E%3Cpath%20d%3D%22M20%2086c0-17%2013-28%2030-28s30%2011%2030%2028z%22%20fill%3D%22%23b9ad95%22%2F%3E%3C%2Fsvg%3E";
   const pc=cinfo((d.countries||[])[0]);
-  const eyebrow=pc?`${pc.en} · ${REGION_EN[pc.r]}`:'';
+  const allCountries=(d.countries||[]).map(v=>cinfo(v)).filter(Boolean);
+  const eyebrow=allCountries.length>1
+    ?allCountries.map(c=>c.en).join(' · ')
+    :pc?`${pc.en} · ${REGION_EN[pc.r]}`:'';
 
   const heroUrls=d.heroUrls||[];
   const heroImgs=heroUrls.map(u=>`    <img src="${esc(u)}" alt="${esc(d.title)}">`).join('\n');
