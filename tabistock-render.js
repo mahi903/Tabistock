@@ -254,7 +254,7 @@ ${gallery}
     :usedServices.filter(s=>AFFILIATE_URLS[s]).map(s=>`    <a href="${AFFILIATE_URLS[s]}" target="_blank" rel="noopener sponsored" class="affiliate-btn">
       ${esc(s)}で予約する <i class="fa-solid fa-arrow-up-right-from-square"></i>
     </a>`);
-  const affiliateSection=(specificUrl||matchedLinks.length)?`<section class="affiliate-section">
+  const affiliateSection=(d.authorIsAdmin&&(specificUrl||matchedLinks.length))?`<section class="affiliate-section">
   <div class="affiliate-card">
     <p class="affiliate-eyebrow">Booking</p>
     <h2>${specificUrl?'著者が実際に泊まった宿':'著者が実際に使ったサービス'}</h2>
