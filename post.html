@@ -824,27 +824,30 @@ function renderThumbs(input,container){
       renderThumbs(input,container);
     });
   });
-  // 長押しドラッグ用リスナー（containerごと）
-  container.addEventListener('touchstart',e=>{
-    const th=e.target.closest('.thumb[data-type]');
-    if(!th||e.target.closest('.thumb-x'))return;
-    const t=e.touches[0];
-    _ds.timer=setTimeout(()=>_thumbStart(th,t.clientX,t.clientY,input,container),350);
-  },{passive:true});
-  container.addEventListener('touchmove',e=>{
-    if(!_ds.el){clearTimeout(_ds.timer);return;}
-    e.preventDefault();
-    _thumbMove(e.touches[0].clientX,e.touches[0].clientY);
-  },{passive:false});
-  container.addEventListener('touchend',e=>{
-    clearTimeout(_ds.timer);
-    if(_ds.el) _thumbEnd(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
-  });
-  container.addEventListener('mousedown',e=>{
-    const th=e.target.closest('.thumb[data-type]');
-    if(!th||e.target.closest('.thumb-x'))return;
-    _ds.timer=setTimeout(()=>_thumbStart(th,e.clientX,e.clientY,input,container),350);
-  });
+  // 長押しドラッグ用リスナーは最初の1回だけ登録
+  if(!container._dragReady){
+    container._dragReady=true;
+    container.addEventListener('touchstart',e=>{
+      const th=e.target.closest('.thumb[data-type]');
+      if(!th||e.target.closest('.thumb-x'))return;
+      const t=e.touches[0];
+      _ds.timer=setTimeout(()=>_thumbStart(th,t.clientX,t.clientY,input,container),350);
+    },{passive:true});
+    container.addEventListener('touchmove',e=>{
+      if(!_ds.el){clearTimeout(_ds.timer);return;}
+      e.preventDefault();
+      _thumbMove(e.touches[0].clientX,e.touches[0].clientY);
+    },{passive:false});
+    container.addEventListener('touchend',e=>{
+      clearTimeout(_ds.timer);
+      if(_ds.el) _thumbEnd(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+    });
+    container.addEventListener('mousedown',e=>{
+      const th=e.target.closest('.thumb[data-type]');
+      if(!th||e.target.closest('.thumb-x'))return;
+      _ds.timer=setTimeout(()=>_thumbStart(th,e.clientX,e.clientY,input,container),350);
+    });
+  }
 }
 // グローバルドラッグ状態（document リスナーは1度だけ登録）
 const _ds={el:null,clone:null,input:null,container:null,timer:null};
