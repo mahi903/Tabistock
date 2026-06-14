@@ -824,70 +824,69 @@ function renderThumbs(input,container){
       renderThumbs(input,container);
     });
   });
-  setupThumbDrag(container,input);
-}
-function setupThumbDrag(container,input){
-  let dragEl=null,clone=null,longTimer=null;
-  const existing=input._existing||[], sel=input._sel||[];
-  function posClone(x,y){ if(!clone)return; clone.style.left=(x-32)+'px'; clone.style.top=(y-32)+'px'; }
-  function findTarget(x,y){
-    if(clone) clone.style.display='none';
-    const el=document.elementFromPoint(x,y);
-    if(clone) clone.style.display='';
-    return el?el.closest('.thumb[data-type]'):null;
-  }
-  function startDrag(el,x,y){
-    dragEl=el; el.classList.add('dragging');
-    clone=el.cloneNode(true);
-    clone.style.cssText='position:fixed;opacity:.85;pointer-events:none;z-index:9999;transform:scale(1.1);width:64px;height:64px;border-radius:8px;overflow:hidden;';
-    document.body.appendChild(clone); posClone(x,y);
-    navigator.vibrate&&navigator.vibrate(30);
-  }
-  function moveDrag(x,y){
-    posClone(x,y);
-    container.querySelectorAll('.thumb').forEach(t=>t.classList.remove('drag-over'));
-    const t=findTarget(x,y);
-    if(t&&t!==dragEl&&t.dataset.type===dragEl.dataset.type) t.classList.add('drag-over');
-  }
-  function endDrag(x,y){
-    if(clone){clone.remove();clone=null;}
-    if(!dragEl)return;
-    dragEl.classList.remove('dragging');
-    container.querySelectorAll('.thumb').forEach(t=>t.classList.remove('drag-over'));
-    const target=findTarget(x,y);
-    if(target&&target!==dragEl&&target.dataset.type===dragEl.dataset.type){
-      const fromI=+dragEl.dataset.idx, toI=+target.dataset.idx;
-      const arr=dragEl.dataset.type==='ex'?existing:sel;
-      const [moved]=arr.splice(fromI,1); arr.splice(toI,0,moved);
-      if(dragEl.dataset.type==='new') syncInputFiles(input);
-      renderThumbs(input,container);
-    }
-    dragEl=null;
-  }
+  // 長押しドラッグ用リスナー（containerごと）
   container.addEventListener('touchstart',e=>{
     const th=e.target.closest('.thumb[data-type]');
     if(!th||e.target.closest('.thumb-x'))return;
     const t=e.touches[0];
-    longTimer=setTimeout(()=>startDrag(th,t.clientX,t.clientY),350);
+    _ds.timer=setTimeout(()=>_thumbStart(th,t.clientX,t.clientY,input,container),350);
   },{passive:true});
   container.addEventListener('touchmove',e=>{
-    if(!dragEl){clearTimeout(longTimer);return;}
+    if(!_ds.el){clearTimeout(_ds.timer);return;}
     e.preventDefault();
-    moveDrag(e.touches[0].clientX,e.touches[0].clientY);
+    _thumbMove(e.touches[0].clientX,e.touches[0].clientY);
   },{passive:false});
   container.addEventListener('touchend',e=>{
-    clearTimeout(longTimer);
-    if(!dragEl)return;
-    endDrag(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+    clearTimeout(_ds.timer);
+    if(_ds.el) _thumbEnd(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
   });
   container.addEventListener('mousedown',e=>{
     const th=e.target.closest('.thumb[data-type]');
     if(!th||e.target.closest('.thumb-x'))return;
-    longTimer=setTimeout(()=>startDrag(th,e.clientX,e.clientY),350);
+    _ds.timer=setTimeout(()=>_thumbStart(th,e.clientX,e.clientY,input,container),350);
   });
-  document.addEventListener('mousemove',e=>{ clearTimeout(longTimer); if(dragEl) moveDrag(e.clientX,e.clientY); });
-  document.addEventListener('mouseup',e=>{ clearTimeout(longTimer); if(dragEl) endDrag(e.clientX,e.clientY); });
 }
+// グローバルドラッグ状態（document リスナーは1度だけ登録）
+const _ds={el:null,clone:null,input:null,container:null,timer:null};
+function _thumbStart(el,x,y,input,container){
+  _ds.el=el; _ds.input=input; _ds.container=container;
+  el.classList.add('dragging');
+  _ds.clone=el.cloneNode(true);
+  _ds.clone.style.cssText='position:fixed;opacity:.85;pointer-events:none;z-index:9999;transform:scale(1.1);width:64px;height:64px;border-radius:8px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.3);';
+  document.body.appendChild(_ds.clone);
+  _thumbPos(x,y);
+  navigator.vibrate&&navigator.vibrate(30);
+}
+function _thumbPos(x,y){ if(_ds.clone){_ds.clone.style.left=(x-32)+'px';_ds.clone.style.top=(y-32)+'px';} }
+function _thumbFind(x,y){
+  if(_ds.clone) _ds.clone.style.display='none';
+  const el=document.elementFromPoint(x,y);
+  if(_ds.clone) _ds.clone.style.display='';
+  return el?el.closest('.thumb[data-type]'):null;
+}
+function _thumbMove(x,y){
+  _thumbPos(x,y);
+  _ds.container&&_ds.container.querySelectorAll('.thumb').forEach(t=>t.classList.remove('drag-over'));
+  const t=_thumbFind(x,y);
+  if(t&&t!==_ds.el&&t.dataset.type===_ds.el.dataset.type) t.classList.add('drag-over');
+}
+function _thumbEnd(x,y){
+  if(_ds.clone){_ds.clone.remove();_ds.clone=null;}
+  if(!_ds.el)return;
+  _ds.el.classList.remove('dragging');
+  _ds.container&&_ds.container.querySelectorAll('.thumb').forEach(t=>t.classList.remove('drag-over'));
+  const target=_thumbFind(x,y);
+  const {el,input,container}=_ds; _ds.el=null; _ds.input=null; _ds.container=null;
+  if(target&&target!==el&&target.dataset.type===el.dataset.type){
+    const existing=input._existing||[], sel=input._sel||[];
+    const arr=el.dataset.type==='ex'?existing:sel;
+    const [moved]=arr.splice(+el.dataset.idx,1); arr.splice(+target.dataset.idx,0,moved);
+    if(el.dataset.type==='new') syncInputFiles(input);
+    renderThumbs(input,container);
+  }
+}
+document.addEventListener('mousemove',e=>{ clearTimeout(_ds.timer); if(_ds.el) _thumbMove(e.clientX,e.clientY); });
+document.addEventListener('mouseup',e=>{ clearTimeout(_ds.timer); if(_ds.el) _thumbEnd(e.clientX,e.clientY); });
 function wirePhotoInput(input,container){
   input._sel=input._sel||[];
   input.addEventListener('change',()=>{
