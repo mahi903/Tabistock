@@ -80,8 +80,9 @@
   .thumb{ position:relative; display:inline-block; }
   .thumb-x{ position:absolute; top:-6px; right:-6px; width:20px; height:20px; padding:0; border:none; border-radius:50%; background:rgba(20,24,32,.82); color:#fff; font-size:13px; line-height:20px; text-align:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.3); }
   .thumb-x:hover{ background:#e0564b; }
-  .thumb.dragging{ opacity:0.3; }
-  .thumb.drag-over{ outline:2px solid #1f6f5b; border-radius:8px; }
+  .thumb-mv{ position:absolute; bottom:2px; width:18px; height:18px; padding:0; border:none; border-radius:4px; background:rgba(20,24,32,.7); color:#fff; font-size:13px; line-height:18px; text-align:center; cursor:pointer; }
+  .thumb-mv[data-dir="-1"]{ left:2px; }
+  .thumb-mv[data-dir="1"]{ right:2px; }
   .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:50; }
   .btn{ border:none; border-radius:999px; padding:13px 26px; font-size:15px; font-weight:800; cursor:pointer; }
   .btn-main{ background:var(--green); color:#fff; }
@@ -813,8 +814,12 @@ function renderThumbs(input,container){
   const existing=input._existing||[];
   const sel=input._sel||[];
   let html='';
-  existing.forEach((u,i)=>{ html+=`<div class="thumb" data-type="ex" data-idx="${i}"><img src="${esc(u)}"><button type="button" class="thumb-x" data-ex="${i}" aria-label="削除">×</button></div>`; });
-  sel.forEach((f,i)=>{ html+=`<div class="thumb" data-type="new" data-idx="${i}"><img src="${URL.createObjectURL(f)}"><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button></div>`; });
+  existing.forEach((u,i)=>{
+    html+=`<div class="thumb"><img src="${esc(u)}"><button type="button" class="thumb-x" data-ex="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-ex="${i}" data-dir="-1">‹</button>`:''}${i<existing.length-1?`<button type="button" class="thumb-mv" data-ex="${i}" data-dir="1">›</button>`:''}</div>`;
+  });
+  sel.forEach((f,i)=>{
+    html+=`<div class="thumb"><img src="${URL.createObjectURL(f)}"><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="-1">‹</button>`:''}${i<sel.length-1?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="1">›</button>`:''}</div>`;
+  });
   if(existing.length) html+=`<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。×で削除、追加する場合は新しく選んでください。</p>`;
   container.innerHTML=html;
   container.querySelectorAll('.thumb-x').forEach(b=>{
@@ -824,72 +829,18 @@ function renderThumbs(input,container){
       renderThumbs(input,container);
     });
   });
-  // 長押しドラッグ用リスナーは最初の1回だけ登録
-  if(!container._dragReady){
-    container._dragReady=true;
-    container.addEventListener('touchstart',e=>{
-      const th=e.target.closest('.thumb[data-type]');
-      if(!th||e.target.closest('.thumb-x'))return;
-      const t=e.touches[0];
-      _ds.timer=setTimeout(()=>_thumbStart(th,t.clientX,t.clientY,input,container),350);
-    },{passive:true});
-    container.addEventListener('touchmove',e=>{
-      if(!_ds.el){clearTimeout(_ds.timer);return;}
-      e.preventDefault();
-      _thumbMove(e.touches[0].clientX,e.touches[0].clientY);
-    },{passive:false});
-    container.addEventListener('touchend',e=>{
-      clearTimeout(_ds.timer);
-      if(_ds.el) _thumbEnd(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+  container.querySelectorAll('.thumb-mv').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const dir=+b.dataset.dir;
+      if(b.dataset.ex!=null){
+        const i=+b.dataset.ex; [existing[i],existing[i+dir]]=[existing[i+dir],existing[i]];
+      } else {
+        const i=+b.dataset.new; [sel[i],sel[i+dir]]=[sel[i+dir],sel[i]]; syncInputFiles(input);
+      }
+      renderThumbs(input,container);
     });
-    container.addEventListener('mousedown',e=>{
-      const th=e.target.closest('.thumb[data-type]');
-      if(!th||e.target.closest('.thumb-x'))return;
-      _ds.timer=setTimeout(()=>_thumbStart(th,e.clientX,e.clientY,input,container),350);
-    });
-  }
+  });
 }
-// グローバルドラッグ状態（document リスナーは1度だけ登録）
-const _ds={el:null,clone:null,input:null,container:null,timer:null};
-function _thumbStart(el,x,y,input,container){
-  _ds.el=el; _ds.input=input; _ds.container=container;
-  el.classList.add('dragging');
-  _ds.clone=el.cloneNode(true);
-  _ds.clone.style.cssText='position:fixed;opacity:.85;pointer-events:none;z-index:9999;transform:scale(1.1);width:64px;height:64px;border-radius:8px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.3);';
-  document.body.appendChild(_ds.clone);
-  _thumbPos(x,y);
-  navigator.vibrate&&navigator.vibrate(30);
-}
-function _thumbPos(x,y){ if(_ds.clone){_ds.clone.style.left=(x-32)+'px';_ds.clone.style.top=(y-32)+'px';} }
-function _thumbFind(x,y){
-  if(_ds.clone) _ds.clone.style.display='none';
-  const el=document.elementFromPoint(x,y);
-  if(_ds.clone) _ds.clone.style.display='';
-  return el?el.closest('.thumb[data-type]'):null;
-}
-function _thumbMove(x,y){
-  _thumbPos(x,y);
-  _ds.container&&_ds.container.querySelectorAll('.thumb').forEach(t=>t.classList.remove('drag-over'));
-  const t=_thumbFind(x,y);
-  if(t&&t!==_ds.el&&t.dataset.type===_ds.el.dataset.type) t.classList.add('drag-over');
-}
-function _thumbEnd(x,y){
-  if(_ds.clone){_ds.clone.remove();_ds.clone=null;}
-  if(!_ds.el)return;
-  _ds.el.classList.remove('dragging');
-  _ds.container&&_ds.container.querySelectorAll('.thumb').forEach(t=>t.classList.remove('drag-over'));
-  const target=_thumbFind(x,y);
-  const {el,input,container}=_ds; _ds.el=null; _ds.input=null; _ds.container=null;
-  if(target&&target!==el&&target.dataset.type===el.dataset.type){
-    const existing=input._existing||[], sel=input._sel||[];
-    const arr=el.dataset.type==='ex'?existing:sel;
-    const [moved]=arr.splice(+el.dataset.idx,1); arr.splice(+target.dataset.idx,0,moved);
-    if(el.dataset.type==='new') syncInputFiles(input);
-    renderThumbs(input,container);
-  }
-}
-document.addEventListener('mousemove',e=>{ clearTimeout(_ds.timer); if(_ds.el) _thumbMove(e.clientX,e.clientY); });
-document.addEventListener('mouseup',e=>{ clearTimeout(_ds.timer); if(_ds.el) _thumbEnd(e.clientX,e.clientY); });
 function wirePhotoInput(input,container){
   input._sel=input._sel||[];
   input.addEventListener('change',()=>{
