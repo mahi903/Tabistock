@@ -458,7 +458,7 @@ ${heroDots}
 </div>`:'';
 
   const infoRows=[
-    `<div><span>空港・都市</span><strong>${esc(d.airport||'')}</strong></div>`,
+    `<div><span>空港または都市</span><strong>${esc(d.airport||'')}</strong></div>`,
     lay?`<div><span>乗り継ぎ時間</span><strong>${esc(lay)}</strong></div>`:'',
     `<div><span>投稿者</span><strong>${authorId
       ? `<a class="hero-author" href="../user.html?uid=${esc(authorId)}"><img class="hero-author-icon" src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="" onerror="this.src='${defAvatar}'"><span class="hero-author-name">${esc(author)}</span></a>`

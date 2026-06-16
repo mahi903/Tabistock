@@ -21,6 +21,9 @@
   .phero h1{ font-size:clamp(24px,4.4vw,38px); line-height:1.2; margin:0 0 14px; color:#fff; }
   .phero p{ color:rgba(255,255,255,.94); font-size:14px; line-height:1.85; margin:0; max-width:640px; }
   .phero p b{ color:#fff; }
+  .phero-list{ margin:12px 0; padding-left:1.25em; max-width:640px; color:rgba(255,255,255,.95); font-size:14px; line-height:1.8; }
+  .phero-list li{ margin:5px 0; }
+  .phero-list li b{ color:#fff; }
   .phero .back{ display:inline-block; margin-top:16px; font-size:13px; font-weight:700; color:#fff; text-decoration:none; opacity:.9; }
   .phero .back:hover{ opacity:1; }
   @media(max-width:600px){ .phero{ padding:30px 22px; } }
@@ -88,7 +91,13 @@
   <section class="phero">
     <p class="eyebrow">Transit / Layover</p>
     <h1>トランジットの過ごし方を投稿する</h1>
-    <p>「トランジットだけど入国してしっかり観光した。乗り換えの時間は本編の旅行記事とは別にまとめたい。自分なりの<b>乗り継ぎの過ごし方</b>を誰かに伝えたい」——そんなニーズに応えるトランジット専用の投稿フォームです。国名・空港・乗り継ぎ時間だけ書けばOK。あなたの<b>旅行記事と紐付けること</b>もできます。</p>
+    <p>こんなニーズに応えるトランジット専用の投稿フォームです。</p>
+    <ul class="phero-list">
+      <li>トランジットだけど入国してしっかり観光した</li>
+      <li>乗り換えの時間は本編の旅行記事とは別にまとめたい</li>
+      <li>自分なりの<b>乗り継ぎの過ごし方</b>を誰かに伝えたい</li>
+    </ul>
+    <p>国名・空港・乗り継ぎ時間だけ書けばOK。あなたの<b>旅行記事と紐付けること</b>もできます。</p>
     <a class="back" href="index.html">← トップに戻る</a>
   </section>
 
@@ -105,8 +114,8 @@
 
     <div class="row2">
       <div>
-        <label class="f">空港・都市<span class="req">必須</span></label>
-        <input type="text" id="airport" placeholder="例：青島／青島膠東国際空港（TAO）">
+        <label class="f">空港または都市<span class="req">必須</span></label>
+        <input type="text" id="airport" placeholder="例：ドバイ／仁川国際空港（ICN）">
       </div>
       <div>
         <label class="f">乗り継ぎ時間<span class="req">必須</span></label>
@@ -118,13 +127,13 @@
   <!-- ===== 1. 内容（任意） ===== -->
   <section class="card">
     <h2><span class="num">1</span>過ごし方の内容</h2>
-    <p class="hint">自由に書いてOK。入国の可否・移動手段・行った場所・かかった時間の目安など、次の人に役立つことを。</p>
+    <p class="hint">空港泊、行った場所、かかった時間の目安などについて。</p>
 
     <label class="f">タイトル<span class="opt">任意</span></label>
-    <input type="text" id="title" placeholder="例：青島で乗り継ぎ20時間｜市内に出て一泊観光">
+    <input type="text" id="title" placeholder="例：仁川で乗り継ぎ10時間｜市内に出てチムジルバンと食べ歩き">
 
     <label class="f">本文<span class="opt">任意</span></label>
-    <textarea id="body" placeholder="例：トランジットビザ不要で入国できました。空港から地下鉄で市内へ約40分。ビール博物館と海沿いを散歩して…"></textarea>
+    <textarea id="body" placeholder="例：トランジットビザ不要で入国できました。空港鉄道で市内へ約1時間。明洞を散歩してチムジルバンで仮眠…"></textarea>
 
     <label class="f">写真<span class="opt">任意・1枚目がサムネ</span></label>
     <div class="filebox">
