@@ -507,7 +507,8 @@ function renderPost(d, own){
   const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
   const sc = d.status==="published" ? "s-published" : (d.status==="rejected" ? "s-rejected" : (d.status==="draft" ? "s-draft" : "s-pending"));
   const sl = d.status==="published" ? "公開中" : (d.status==="rejected" ? "却下" : (d.status==="draft" ? "下書き" : "承認待ち"));
-  const editBtn = own ? `<a class="pedit" href="./post.html?edit=${esc(d.id)}">✎ 編集</a>` : "";
+  const editPage = d.type === "transit" ? "./post-transit.html" : "./post.html";
+  const editBtn = own ? `<a class="pedit" href="${editPage}?edit=${esc(d.id)}">✎ 編集</a>` : "";
   return `<div class="pcard">
     <a href="./articles/view.html?id=${esc(d.id)}" style="text-decoration:none;color:inherit;display:block">
       <div class="pthumb" style="background-image:url('${esc(thumb)}')"></div>

@@ -2027,6 +2027,8 @@ onAuthStateChanged(auth, async (user) => {
       const snap = await getDoc(doc(db, "articles", editId));
       if(!snap.exists()){ alert("記事が見つかりませんでした。"); return; }
       const data = snap.data();
+      // トランジット記事はトランジット専用の編集ページへ
+      if(data.type === "transit"){ location.replace("post-transit.html?edit=" + encodeURIComponent(editId)); return; }
       // 自分の記事か管理者のみ編集可
       let isAdmin = false;
       try{ isAdmin = (await getDoc(doc(db, "admins", user.uid))).exists(); }catch(e){}
