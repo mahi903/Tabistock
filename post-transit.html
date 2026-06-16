@@ -70,7 +70,10 @@
   .linked{ display:flex; align-items:center; gap:10px; background:#eaf5f0; border:1px solid #bfe0d3; border-radius:12px; padding:10px 12px; margin-top:10px; font-size:13px; }
   .linked .lk-t{ font-weight:700; color:var(--green-d); }
   .linked .lk-x{ margin-left:auto; background:#fff; border:1px solid #bfe0d3; border-radius:999px; padding:4px 12px; font-size:12px; font-weight:700; color:var(--green-d); cursor:pointer; }
-  .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:50; }
+  .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:130; }
+  /* 投稿ページではPWAの下部タブバーを隠す（投稿バーと重なってボタンが押せなくなるため） */
+  body.pwa .tabbar{ display:none !important; }
+  body.pwa{ padding-bottom:0 !important; }
   .btn{ border:none; border-radius:999px; padding:13px 26px; font-size:15px; font-weight:800; cursor:pointer; }
   .btn-main{ background:var(--green); color:#fff; }
   .btn-main:disabled{ opacity:.5; cursor:not-allowed; }
@@ -102,8 +105,8 @@
 
     <div class="row2">
       <div>
-        <label class="f">空港名<span class="req">必須</span></label>
-        <input type="text" id="airport" placeholder="例：青島膠東国際空港（TAO）">
+        <label class="f">空港・都市<span class="req">必須</span></label>
+        <input type="text" id="airport" placeholder="例：青島／青島膠東国際空港（TAO）">
       </div>
       <div>
         <label class="f">乗り継ぎ時間<span class="req">必須</span></label>
@@ -129,7 +132,7 @@
       <div class="thumbs" id="photoThumbs"></div>
     </div>
 
-    <label class="f">立ち寄った場所（地図）<span class="opt">任意</span></label>
+    <label class="f">ルートマップ<span class="opt">任意</span></label>
     <div class="loc" id="loc">
       <button type="button" class="loc-toggle" id="locToggle">地図で場所を設定する</button>
       <div class="loc-body">
@@ -503,16 +506,17 @@ window.tabistockTransitSubmit = async function(d, st, mode){
 
   st.className = "status"; st.textContent = editId ? "記事を更新中…" : "記事を作成中…";
 
-  // 写真：新規選択分のみアップロード。なければ既存URLを再利用。
-  let heroUrls = [];
+  // 写真：既存URLを保持したうえで、新規選択分を末尾に追加アップロードする。
+  // （以前は新規があると既存を丸ごと捨てていたため、追加保存で既存写真が消えていた）
+  // ファイル名は hero1.jpg 固定だと既存と衝突して上書きするので、ユニークなキーにする。
+  let heroUrls = (d.photoExisting || []).slice();
   if(d.photoFiles.length){
     for(let i=0;i<d.photoFiles.length;i++){
       st.textContent = `写真 ${i+1}/${d.photoFiles.length} をアップロード中…`;
       const blob = await resizeImage(d.photoFiles[i]);
-      heroUrls.push(await uploadAndGetUrl(`articles/${id}/hero${i+1}.jpg`, blob));
+      const key = `hero_${Date.now()}_${i+1}.jpg`;
+      heroUrls.push(await uploadAndGetUrl(`articles/${id}/${key}`, blob));
     }
-  }else{
-    heroUrls = (d.photoExisting || []).slice();
   }
   const thumbUrl = heroUrls[0] || "";
 

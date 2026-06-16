@@ -83,7 +83,10 @@
   .thumb-mv{ position:absolute; bottom:2px; width:18px; height:18px; padding:0; border:none; border-radius:4px; background:rgba(20,24,32,.7); color:#fff; font-size:13px; line-height:18px; text-align:center; cursor:pointer; }
   .thumb-mv[data-dir="-1"]{ left:2px; }
   .thumb-mv[data-dir="1"]{ right:2px; }
-  .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:50; }
+  .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:130; }
+  /* 投稿ページではPWAの下部タブバーを隠す（投稿バーと重なってボタンが押せなくなるため） */
+  body.pwa .tabbar{ display:none !important; }
+  body.pwa{ padding-bottom:0 !important; }
   .btn{ border:none; border-radius:999px; padding:13px 26px; font-size:15px; font-weight:800; cursor:pointer; }
   .btn-main{ background:var(--green); color:#fff; }
   .btn-main:disabled{ opacity:.5; cursor:not-allowed; }

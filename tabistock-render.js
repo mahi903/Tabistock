@@ -458,7 +458,7 @@ ${heroDots}
 </div>`:'';
 
   const infoRows=[
-    `<div><span>空港</span><strong>${esc(d.airport||'')}</strong></div>`,
+    `<div><span>空港・都市</span><strong>${esc(d.airport||'')}</strong></div>`,
     lay?`<div><span>乗り継ぎ時間</span><strong>${esc(lay)}</strong></div>`:'',
     `<div><span>投稿者</span><strong>${authorId
       ? `<a class="hero-author" href="../user.html?uid=${esc(authorId)}"><img class="hero-author-icon" src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="" onerror="this.src='${defAvatar}'"><span class="hero-author-name">${esc(author)}</span></a>`
@@ -493,11 +493,11 @@ ${heroDots}
   // 立ち寄った場所（地図は view.html の initRouteMap が d.places を読んで描画）
   const hasPlacePins=Array.isArray(d.places) && d.places.some(p=>p && typeof p.lat==='number' && typeof p.lng==='number');
   const routeSection=hasPlacePins?`<div class="section-intro">
-  <p class="eyebrow">Map</p>
-  <h2>立ち寄った場所</h2>
-  <p>乗り継ぎ中に訪れた場所をピンで表示しています。</p>
+  <p class="eyebrow">Route</p>
+  <h2>ルートマップ</h2>
+  <p>乗り継ぎ中に訪れた場所をピンで表示しています。ピンをタップすると地名が出ます。</p>
 </div>
-<section class="route-grid">
+<section class="route-grid route-grid-transit">
   <div class="info-card route-card">
     <div id="routeMap" class="route-map"></div>
   </div>
