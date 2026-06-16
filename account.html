@@ -93,9 +93,19 @@
   .s-published{background:#e9f5ef;color:#1f6f5b}
   .s-rejected{background:#fdecec;color:#b53d3d}
   .s-draft{background:#eef0f3;color:#5b6470}
+  .s-hidden{background:#eceef1;color:#7a828d}
   .pcard .pbody .prow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .pacts{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   .pedit{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#1f6f5b;text-decoration:none;border:1px solid #cfe3da;background:#f3faf7;padding:3px 10px;border-radius:999px;white-space:nowrap}
   .pedit:hover{background:#e6f3ed}
+  .pbtn{display:inline-flex;align-items:center;font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap;cursor:pointer;background:#fff}
+  .pbtn:disabled{opacity:.5;cursor:default}
+  .pbtn-hide{color:#7a828d;border:1px solid #d4d8de}
+  .pbtn-hide:hover{background:#f1f2f4}
+  .pbtn-show{color:#1f6f5b;border:1px solid #cfe3da;background:#f3faf7}
+  .pbtn-show:hover{background:#e6f3ed}
+  .pbtn-del{color:#b53d3d;border:1px solid #f0cccc}
+  .pbtn-del:hover{background:#fdf0f0}
   .posts-empty{grid-column:1/-1;color:#6c7787;font-size:13px;text-align:center;padding:26px 16px;border:1px dashed #e7ddcb;border-radius:14px}
   /* 設定行（トグル） */
   .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid #eee3d2;border-bottom:1px solid #eee3d2}
@@ -233,7 +243,7 @@ import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
   onAuthStateChanged, updateProfile, sendEmailVerification, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, getCountFromServer }
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp, collection, query, where, getDocs, getCountFromServer }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref as sRef, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -505,17 +515,26 @@ $("saveProfileBtn").onclick = async () => {
 /* ===== 自分の投稿一覧 ===== */
 function renderPost(d, own){
   const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
-  const sc = d.status==="published" ? "s-published" : (d.status==="rejected" ? "s-rejected" : (d.status==="draft" ? "s-draft" : "s-pending"));
-  const sl = d.status==="published" ? "公開中" : (d.status==="rejected" ? "却下" : (d.status==="draft" ? "下書き" : "承認待ち"));
+  const sc = d.status==="published" ? "s-published" : (d.status==="rejected" ? "s-rejected" : (d.status==="draft" ? "s-draft" : (d.status==="hidden" ? "s-hidden" : "s-pending")));
+  const sl = d.status==="published" ? "公開中" : (d.status==="rejected" ? "却下" : (d.status==="draft" ? "下書き" : (d.status==="hidden" ? "非表示" : "承認待ち")));
   const editPage = d.type === "transit" ? "./post-transit.html" : "./post.html";
-  const editBtn = own ? `<a class="pedit" href="${editPage}?edit=${esc(d.id)}">✎ 編集</a>` : "";
+  let acts = "";
+  if(own){
+    acts += `<a class="pedit" href="${editPage}?edit=${esc(d.id)}">✎ 編集</a>`;
+    if(d.status==="published"){
+      acts += `<button type="button" class="pbtn pbtn-hide" data-act="hide" data-id="${esc(d.id)}">非表示</button>`;
+    }else if(d.status==="hidden"){
+      acts += `<button type="button" class="pbtn pbtn-show" data-act="show" data-id="${esc(d.id)}">再公開</button>`;
+    }
+    acts += `<button type="button" class="pbtn pbtn-del" data-act="delete" data-id="${esc(d.id)}">削除</button>`;
+  }
   return `<div class="pcard">
     <a href="./articles/view.html?id=${esc(d.id)}" style="text-decoration:none;color:inherit;display:block">
       <div class="pthumb" style="background-image:url('${esc(thumb)}')"></div>
       <div class="pbody" style="padding-bottom:8px"><p class="ptitle" style="margin-bottom:0">${esc(d.title||"(無題)")}</p></div>
     </a>
     <div class="pbody" style="padding-top:0">
-      <div class="prow"><span class="ppill ${sc}">${sl}</span>${editBtn}</div>
+      <div class="prow"><span class="ppill ${sc}">${sl}</span><div class="pacts">${acts}</div></div>
     </div>
   </div>`;
 }
@@ -539,6 +558,31 @@ async function loadMyPosts(uid){
     box.innerHTML = `<p class="posts-empty">読み込みエラー：${esc(err.message||err)}</p>`;
   }
 }
+
+// 自分の投稿の操作（非表示／再公開／削除）。再公開は承認不要で即公開に戻す。
+$("myPosts").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-act]");
+  if(!btn) return;
+  const id = btn.dataset.id, act = btn.dataset.act;
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if(!id || !uid) return;
+  if(act === "delete" && !confirm("この投稿を削除しますか？この操作は取り消せません。")) return;
+  btn.disabled = true;
+  try{
+    if(act === "hide"){
+      await updateDoc(doc(db, "articles", id), { status: "hidden", updatedAt: serverTimestamp() });
+    }else if(act === "show"){
+      await updateDoc(doc(db, "articles", id), { status: "published", updatedAt: serverTimestamp() });
+    }else if(act === "delete"){
+      await deleteDoc(doc(db, "articles", id));
+    }
+    await loadMyPosts(uid);
+  }catch(err){
+    console.error(err);
+    btn.disabled = false;
+    alert("操作に失敗しました：" + (err.message || err));
+  }
+});
 
 async function loadSavedPosts(uid){
   const box = $("savedPosts");

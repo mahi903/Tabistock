@@ -82,15 +82,23 @@ service cloud.firestore {
                         || request.resource.data.status == 'draft');
 
       // 更新：管理者は何でも可（承認＝status変更を含む）。
-      //       著者は自分の記事を編集可。statusは自分で 'published' にはできない。
-      //       許可する遷移：同じstatusの維持／draft・rejected → pending（申請・再申請）。
+      //       著者は自分の記事を編集可。最初の公開（pending）は管理者承認が必要。
+      //       著者が許可される status 遷移：
+      //         - 同じ status の維持（本文編集など）
+      //         - draft / rejected → pending（申請・再申請）
+      //         - published → hidden（自分で非表示にする）
+      //         - hidden → published（再公開。一度承認済みなので承認不要で戻せる）
       allow update: if isAdmin()
                     || (isSignedIn()
                         && resource.data.authorId == request.auth.uid
                         && request.resource.data.authorId == request.auth.uid
                         && (request.resource.data.status == resource.data.status
                             || ((resource.data.status == 'draft' || resource.data.status == 'rejected')
-                                && request.resource.data.status == 'pending')));
+                                && request.resource.data.status == 'pending')
+                            || (resource.data.status == 'published'
+                                && request.resource.data.status == 'hidden')
+                            || (resource.data.status == 'hidden'
+                                && request.resource.data.status == 'published')));
 
       // 削除：管理者、または自分の記事
       allow delete: if isAdmin()
