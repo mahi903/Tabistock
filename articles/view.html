@@ -434,6 +434,12 @@ const id = new URLSearchParams(location.search).get("id");
 // 通知の宛先・本文に使う（IIFEで記事読み込み後にセット）
 let articleAuthorId = null, articleTitle = "";
 
+// ストーリー画像で「写真全体表示＋ぼかし背景」にする記事ID。
+// （横長サムネを縦カードに cover すると顔などが切れてしまう記事だけここに入れる）
+const STORY_BLUR_IDS = new Set([
+  "fwlRy8m6gFEKYaKeRjJD",  // プーケット（横長サムネで顔が切れるため正方形クロップ＋上下ぼかし）
+]);
+
 // 管理者UIDの一覧（バッジ表示用・公開読み取り）
 const adminSet = new Set();
 async function loadAdminSet(){
@@ -616,9 +622,30 @@ async function makeStoryImage(){
   // 写真をカード全面に cover（失敗時は緑下地）
   if(photo){
     const iw = photo.naturalWidth || photo.width, ih = photo.naturalHeight || photo.height;
-    const scale = Math.max(cardW / iw, cardH / ih);
-    const dw = iw * scale, dh = ih * scale;
-    ctx.drawImage(photo, cardX + (cardW - dw) / 2, cardY + (cardH - dh) / 2, dw, dh);
+    if(STORY_BLUR_IDS.has(id)){
+      // 顔切れ対策：写真の中央を「正方形」に切り取って表示し、上下はぼかし背景で埋める。
+      // ぼかしは「縮小→拡大」で作る（canvas filter 非対応の iOS でも動くため）。
+      const small = document.createElement("canvas");
+      const sw = 40, sh = Math.max(1, Math.round(sw * cardH / cardW));
+      small.width = sw; small.height = sh;
+      const sctx = small.getContext("2d");
+      const bScale = Math.max(sw / iw, sh / ih);
+      sctx.drawImage(photo, (sw - iw * bScale) / 2, (sh - ih * bScale) / 2, iw * bScale, ih * bScale);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(small, cardX, cardY, cardW, cardH);          // ぼかし背景
+      ctx.fillStyle = "rgba(8,18,14,0.30)";                       // 少し暗くして本体を引き立てる
+      ctx.fillRect(cardX, cardY, cardW, cardH);
+      // 中央正方形クロップ：元画像の中央から最大正方形を取り、カード幅いっぱいの正方形として中央配置。
+      const srcSide = Math.min(iw, ih);
+      const srcX = (iw - srcSide) / 2, srcY = (ih - srcSide) / 2;
+      const sq = cardW;                                           // 表示する正方形の一辺
+      const dx = cardX, dy = cardY + (cardH - sq) / 2;            // 上下中央に配置
+      ctx.drawImage(photo, srcX, srcY, srcSide, srcSide, dx, dy, sq, sq);
+    }else{
+      const scale = Math.max(cardW / iw, cardH / ih);
+      const dw = iw * scale, dh = ih * scale;
+      ctx.drawImage(photo, cardX + (cardW - dw) / 2, cardY + (cardH - dh) / 2, dw, dh);
+    }
   }else{
     const base = ctx.createLinearGradient(0, cardY, 0, cardY + cardH);
     base.addColorStop(0, "#1f6f5b"); base.addColorStop(1, "#10241d");
