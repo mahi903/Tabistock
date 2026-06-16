@@ -3465,16 +3465,16 @@ body.ov-lock{ overflow:hidden; }
   background:#e7f0ec; color:#1f6f5b; font-size:46px;
 }
 .trip-badge-transit{
-  position:absolute; top:12px; left:12px;
+  position:absolute; top:10px; left:10px;
   z-index:2;
-  display:inline-flex; align-items:center; gap:6px;
-  padding:5px 11px;
+  display:inline-flex; align-items:center; justify-content:center; gap:5px;
+  padding:3px 9px;
   border-radius:999px;
-  background:transparent;
+  background:rgba(255,255,255,.62);
   border:1.5px solid #1f6f5b;
-  color:#1f6f5b; font-size:12px; font-weight:800; letter-spacing:.03em;
-  text-shadow:0 1px 3px rgba(255,255,255,.7);
+  color:#1f6f5b; font-size:10.5px; font-weight:800; letter-spacing:.02em; line-height:1;
 }
+.trip-badge-transit i{ font-size:10px; line-height:1; }
 @media (max-width:768px){
   .transit-links{ padding:0 18px; grid-template-columns:1fr; }
 }
