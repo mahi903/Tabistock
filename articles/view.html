@@ -640,7 +640,22 @@ async function makeStoryImage(){
       const srcX = (iw - srcSide) / 2, srcY = (ih - srcSide) / 2;
       const sq = cardW;                                           // 表示する正方形の一辺
       const dx = cardX, dy = cardY + (cardH - sq) / 2;            // 上下中央に配置
-      ctx.drawImage(photo, srcX, srcY, srcSide, srcSide, dx, dy, sq, sq);
+      // いったん別キャンバスに正方形を描き、上下の縁を徐々に透明化（フェザー）して
+      // ぼかし背景へなめらかに溶け込ませる（＝上下がじわっとぼける見え方）。
+      const sqc = document.createElement("canvas");
+      sqc.width = sq; sqc.height = sq;
+      const qx = sqc.getContext("2d");
+      qx.drawImage(photo, srcX, srcY, srcSide, srcSide, 0, 0, sq, sq);
+      const feather = Math.round(sq * 0.22);                      // 縁のぼかし帯の高さ（約22%）
+      qx.globalCompositeOperation = "destination-out";
+      const gTopF = qx.createLinearGradient(0, 0, 0, feather);    // 上端：不透明→透明
+      gTopF.addColorStop(0, "rgba(0,0,0,1)"); gTopF.addColorStop(1, "rgba(0,0,0,0)");
+      qx.fillStyle = gTopF; qx.fillRect(0, 0, sq, feather);
+      const gBotF = qx.createLinearGradient(0, sq - feather, 0, sq); // 下端：透明→不透明
+      gBotF.addColorStop(0, "rgba(0,0,0,0)"); gBotF.addColorStop(1, "rgba(0,0,0,1)");
+      qx.fillStyle = gBotF; qx.fillRect(0, sq - feather, sq, feather);
+      qx.globalCompositeOperation = "source-over";
+      ctx.drawImage(sqc, dx, dy);
     }else{
       const scale = Math.max(cardW / iw, cardH / ih);
       const dw = iw * scale, dh = ih * scale;
