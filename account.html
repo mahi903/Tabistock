@@ -96,7 +96,8 @@
   .s-hidden{background:#eceef1;color:#7a828d}
   .pcard .pbody .prow{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
   .pcard .ppill{align-self:flex-start;white-space:nowrap}
-  .pacts{display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%}
+  .pacts{display:flex;align-items:stretch;gap:6px;flex-wrap:nowrap;width:100%}
+  .pacts > *{flex:1 1 0;justify-content:center;text-align:center;padding-left:4px;padding-right:4px}
   .pedit{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#1f6f5b;text-decoration:none;border:1px solid #cfe3da;background:#f3faf7;padding:3px 10px;border-radius:999px;white-space:nowrap}
   .pedit:hover{background:#e6f3ed}
   .pbtn{display:inline-flex;align-items:center;font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px;white-space:nowrap;cursor:pointer;background:#fff}
