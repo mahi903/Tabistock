@@ -521,7 +521,7 @@ function renderPost(d, own){
   const editPage = d.type === "transit" ? "./post-transit.html" : "./post.html";
   let acts = "";
   if(own){
-    acts += `<a class="pedit" href="${editPage}?edit=${esc(d.id)}">✎ 編集</a>`;
+    acts += `<a class="pedit" href="${editPage}?edit=${esc(d.id)}">編集</a>`;
     if(d.status==="published"){
       acts += `<button type="button" class="pbtn pbtn-hide" data-act="hide" data-id="${esc(d.id)}">非表示</button>`;
     }else if(d.status==="hidden"){
