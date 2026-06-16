@@ -3233,7 +3233,8 @@ a.hero-author:hover .hero-author-name {
 .chip-clear:hover{background:#f3f4f6;color:#1b2330}
 
 /* results grid sits in the right column → 2 across */
-.results-main .trip-grid{grid-template-columns:repeat(2,1fr)}
+/* padding:0 で見出し・絞り込みチップと左端をそろえる（グローバル .trip-grid の左右paddingを打ち消す） */
+.results-main .trip-grid{grid-template-columns:repeat(2,1fr);padding:0}
 
 @media (max-width:860px){
   .results-layout{grid-template-columns:1fr;gap:0}
