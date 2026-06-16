@@ -667,6 +667,26 @@ async function makeStoryImage(){
     ctx.fillStyle = base; ctx.fillRect(cardX, cardY, cardW, cardH);
   }
 
+  // 写真の彩度を少し上げる（写真領域のみ。文字・ロゴ・グラデはこの後に描くので影響なし）。
+  // ctx.filter は古い iOS で効かないため、ピクセル処理で実装。
+  if(photo){
+    try{
+      const SAT = 1.18; // 1.0=変化なし。上げるほど鮮やか
+      const x0 = Math.max(0, cardX), y0 = Math.max(0, cardY);
+      const w0 = Math.min(W - x0, cardW), h0 = Math.min(H - y0, cardH);
+      const imgd = ctx.getImageData(x0, y0, w0, h0);
+      const p = imgd.data;
+      for(let i = 0; i < p.length; i += 4){
+        const r = p[i], g = p[i + 1], b = p[i + 2];
+        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        p[i]     = Math.max(0, Math.min(255, gray + (r - gray) * SAT));
+        p[i + 1] = Math.max(0, Math.min(255, gray + (g - gray) * SAT));
+        p[i + 2] = Math.max(0, Math.min(255, gray + (b - gray) * SAT));
+      }
+      ctx.putImageData(imgd, x0, y0);
+    }catch(e){ /* getImageData 失敗時は彩度調整をスキップ */ }
+  }
+
   // 上下グラデーション（ロゴ・文字の可読性確保）
   const gTop = ctx.createLinearGradient(0, cardY, 0, cardY + cardH * 0.26);
   gTop.addColorStop(0, "rgba(8,18,14,0.55)"); gTop.addColorStop(1, "rgba(8,18,14,0)");
