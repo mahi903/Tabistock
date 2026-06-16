@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>トランジットの過ごし方を投稿する｜Tabistock</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<!-- 場所ピン用（Leaflet・無料/OpenStreetMap） -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{ --green:#1f6f5b; --green-d:#185645; --gold:#c2873f; --cream:#fffaf2; --line:#ece2d0; --ink:#2b2b2b; --mut:#6b7280; }
+  *{box-sizing:border-box}
+  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif; color:var(--ink); background:#f6f1e8; line-height:1.7; }
+  .wrap{ max-width:860px; margin:0 auto; padding:32px 20px 120px; }
+  .phero{ position:relative; overflow:hidden; border-radius:22px; padding:40px 34px; margin:0 0 28px; background:linear-gradient(150deg,#2a6f8f,#3f9ec2); color:#fff; }
+  .phero .eyebrow{ font-family:"Manrope",system-ui,sans-serif; letter-spacing:.22em; text-transform:uppercase; font-size:12px; font-weight:800; color:#ffe2a8; margin:0 0 10px; }
+  .phero h1{ font-size:clamp(24px,4.4vw,38px); line-height:1.2; margin:0 0 14px; color:#fff; }
+  .phero p{ color:rgba(255,255,255,.94); font-size:14px; line-height:1.85; margin:0; max-width:640px; }
+  .phero p b{ color:#fff; }
+  .phero .back{ display:inline-block; margin-top:16px; font-size:13px; font-weight:700; color:#fff; text-decoration:none; opacity:.9; }
+  .phero .back:hover{ opacity:1; }
+  @media(max-width:600px){ .phero{ padding:30px 22px; } }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:22px 22px 24px; margin-bottom:22px; }
+  .card > h2{ font-size:16px; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
+  .card > h2 .num{ display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:var(--green); color:#fff; border-radius:50%; font-size:12px; font-weight:800; }
+  .card .hint{ color:var(--mut); font-size:12.5px; margin:0 0 16px; }
+  label.f{ display:block; font-size:13px; font-weight:700; margin:14px 0 5px; }
+  label.f .req{ color:#d4493f; font-size:11px; margin-left:4px; }
+  label.f .opt{ color:var(--mut); font-size:11px; margin-left:4px; font-weight:600; }
+  input[type=text],input[type=number],textarea,select{
+    width:100%; min-width:0; max-width:100%; padding:9px 11px; border:1px solid #d9d2c4; border-radius:10px; font-size:14px; font-family:inherit; background:#fff; color:var(--ink); }
+  textarea{ min-height:120px; resize:vertical; }
+  .row2{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
+  @media(max-width:600px){ .row2{ grid-template-columns:minmax(0,1fr); } }
+  .filebox{ border:1px solid #d9d2c4; border-radius:10px; padding:10px; background:#fff; }
+  .thumbs{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .thumbs img{ width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--line); display:block; }
+  .thumb{ position:relative; display:inline-block; }
+  .thumb-x{ position:absolute; top:-6px; right:-6px; width:20px; height:20px; padding:0; border:none; border-radius:50%; background:rgba(20,24,32,.82); color:#fff; font-size:13px; line-height:20px; text-align:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.3); }
+  .thumb-x:hover{ background:#e0564b; }
+  /* 場所ピン */
+  .loc{ margin-top:6px; }
+  .loc-toggle{ background:#fff; border:1px solid #d9d2c4; border-radius:999px; padding:8px 14px; font-size:13px; font-weight:700; color:var(--green); cursor:pointer; }
+  .loc-body{ display:none; margin-top:10px; }
+  .loc.open .loc-body{ display:block; }
+  .loc-map{ height:240px; border-radius:10px; overflow:hidden; background:#aad3df; border:1px solid #d9d2c4; }
+  .loc-map .daypin{ width:22px; height:22px; background:radial-gradient(circle at 35% 30%,#3fa183,#1f6f5b 72%); border:2px solid #fff; border-radius:50% 50% 50% 0; transform:rotate(-45deg); box-shadow:0 4px 8px rgba(0,0,0,.4),inset -1px -1px 3px rgba(0,0,0,.25),inset 1px 1px 2px rgba(255,255,255,.35); position:relative; }
+  .loc-map .daypin::after{ content:""; position:absolute; top:50%; left:50%; width:7px; height:7px; background:#fff; border-radius:50%; transform:translate(-50%,-50%); box-shadow:inset 0 1px 2px rgba(0,0,0,.4); }
+  .loc-list{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .dl-chip{ display:inline-flex; align-items:center; gap:6px; background:#faf6ee; border:1px solid #d9d2c4; border-radius:999px; padding:4px 6px 4px 10px; font-size:12px; font-weight:700; color:#182033; }
+  .dl-chip .dl-name{ background:none; border:none; padding:0; font:inherit; color:inherit; cursor:pointer; text-decoration:underline dotted; text-underline-offset:2px; }
+  .dl-chip .dl-x{ background:#e7ded0; border:none; border-radius:50%; width:18px; height:18px; line-height:1; font-size:13px; color:#6b6353; cursor:pointer; padding:0; flex-shrink:0; }
+  .loc-foot{ display:flex; align-items:center; gap:10px; margin-top:8px; font-size:12.5px; color:var(--mut); flex-wrap:wrap; }
+  .loc-clear{ background:#faf6ee; border:1px solid #d9d2c4; border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--green); cursor:pointer; }
+  /* 親記事ピッカー */
+  .pick-btn{ border:1px dashed var(--green); color:var(--green-d); background:#fff; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer; }
+  .pick-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; margin-top:12px; }
+  .pick-card{ display:flex; gap:10px; align-items:center; text-align:left; border:1.5px solid #e1d8c8; border-radius:12px; padding:10px; background:#fff; cursor:pointer; transition:border-color .12s,background .12s; }
+  .pick-card.on{ border-color:var(--green); background:#eaf5f0; }
+  .pick-card img{ width:56px; height:56px; object-fit:cover; border-radius:9px; flex-shrink:0; background:#e9e4d8; }
+  .pick-card .pc-noimg{ width:56px; height:56px; border-radius:9px; flex-shrink:0; background:#e9e4d8; display:flex; align-items:center; justify-content:center; color:#b3a988; font-size:18px; }
+  .pick-card .pc-t{ font-size:13px; font-weight:700; line-height:1.4; }
+  .pick-card .pc-c{ font-size:11.5px; color:var(--mut); margin-top:2px; }
+  .pick-card .pc-check{ margin-left:auto; color:var(--green); font-size:16px; opacity:0; }
+  .pick-card.on .pc-check{ opacity:1; }
+  .linked{ display:flex; align-items:center; gap:10px; background:#eaf5f0; border:1px solid #bfe0d3; border-radius:12px; padding:10px 12px; margin-top:10px; font-size:13px; }
+  .linked .lk-t{ font-weight:700; color:var(--green-d); }
+  .linked .lk-x{ margin-left:auto; background:#fff; border:1px solid #bfe0d3; border-radius:999px; padding:4px 12px; font-size:12px; font-weight:700; color:var(--green-d); cursor:pointer; }
+  .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:50; }
+  .btn{ border:none; border-radius:999px; padding:13px 26px; font-size:15px; font-weight:800; cursor:pointer; }
+  .btn-main{ background:var(--green); color:#fff; }
+  .btn-main:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-ghost{ background:#fff; border:1px solid #d9d2c4; color:var(--ink); }
+  .status{ font-size:13px; color:var(--mut); }
+  .err{ color:#d4493f; font-weight:700; }
+  .ok{ color:var(--green-d); font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="phero">
+    <p class="eyebrow">Transit / Layover</p>
+    <h1>トランジットの過ごし方を投稿する</h1>
+    <p>「トランジットだけど入国してしっかり観光した。乗り換えの時間は本編の旅行記事とは別にまとめたい。自分なりの<b>乗り継ぎの過ごし方</b>を誰かに伝えたい」——そんなニーズに応えるトランジット専用の投稿フォームです。国名・空港・乗り継ぎ時間だけ書けばOK。あなたの<b>旅行記事と紐付けること</b>もできます。</p>
+    <a class="back" href="index.html">← トップに戻る</a>
+  </section>
+
+  <!-- ===== 0. 基本（必須） ===== -->
+  <section class="card">
+    <h2><span class="num">0</span>基本情報</h2>
+    <p class="hint">必須は3つだけ。国・空港・乗り継ぎ時間を入れれば投稿できます。</p>
+
+    <label class="f">投稿者ニックネーム<span class="req">登録名で自動入力</span></label>
+    <input type="text" id="author" placeholder="例：mahiro" value="mahiro" autocomplete="off">
+
+    <label class="f">経由した国<span class="req">必須</span></label>
+    <select id="country"><option value="">選択してください</option></select>
+
+    <div class="row2">
+      <div>
+        <label class="f">空港名<span class="req">必須</span></label>
+        <input type="text" id="airport" placeholder="例：青島膠東国際空港（TAO）">
+      </div>
+      <div>
+        <label class="f">乗り継ぎ時間<span class="req">必須</span></label>
+        <select id="layover"><option value="">選択してください</option></select>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 1. 内容（任意） ===== -->
+  <section class="card">
+    <h2><span class="num">1</span>過ごし方の内容</h2>
+    <p class="hint">自由に書いてOK。入国の可否・移動手段・行った場所・かかった時間の目安など、次の人に役立つことを。</p>
+
+    <label class="f">タイトル<span class="opt">任意</span></label>
+    <input type="text" id="title" placeholder="例：青島で乗り継ぎ20時間｜市内に出て一泊観光">
+
+    <label class="f">本文<span class="opt">任意</span></label>
+    <textarea id="body" placeholder="例：トランジットビザ不要で入国できました。空港から地下鉄で市内へ約40分。ビール博物館と海沿いを散歩して…"></textarea>
+
+    <label class="f">写真<span class="opt">任意・1枚目がサムネ</span></label>
+    <div class="filebox">
+      <input type="file" id="photos" accept="image/jpeg,image/png" multiple>
+      <div class="thumbs" id="photoThumbs"></div>
+    </div>
+
+    <label class="f">立ち寄った場所（地図）<span class="opt">任意</span></label>
+    <div class="loc" id="loc">
+      <button type="button" class="loc-toggle" id="locToggle">地図で場所を設定する</button>
+      <div class="loc-body">
+        <div class="loc-map" id="locMap"></div>
+        <div class="loc-foot">
+          <span id="locStatus">地図をタップするとピンを追加できます（複数OK）。</span>
+          <button type="button" class="loc-clear" id="locClear" style="display:none">全部消す</button>
+        </div>
+        <div class="loc-list" id="locList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 2. 紐付け（任意） ===== -->
+  <section class="card">
+    <h2><span class="num">2</span>この旅行の記事を紐付け</h2>
+    <p class="hint">このトランジットが含まれる、あなた自身の旅行記事を1つ選べます（任意）。記事どうしが相互リンクされます。</p>
+    <div id="parentWrap">
+      <button type="button" class="pick-btn" id="parentPick">＋ この旅行の記事を追加</button>
+      <div class="pick-list" id="parentList" style="display:none"></div>
+    </div>
+  </section>
+
+</div>
+
+<div class="bar">
+  <button class="btn btn-ghost" id="saveDraft" type="button" title="未完成でもマイページに下書きとして保存します">下書き保存</button>
+  <button class="btn btn-main" id="generate" type="button">この内容で投稿する（承認後に公開）</button>
+  <span class="status" id="status"></span>
+</div>
+
+<script>
+/* =========================================================
+   共有ボキャブラリ（検索フィルタと完全一致させる）
+========================================================= */
+const COUNTRIES = [
+  {v:'japan',jp:'日本',r:'east-asia'},{v:'korea',jp:'韓国',r:'east-asia'},
+  {v:'china',jp:'中国',r:'east-asia'},{v:'taiwan',jp:'台湾',r:'east-asia'},
+  {v:'hongkong',jp:'香港',r:'east-asia'},{v:'mongolia',jp:'モンゴル',r:'east-asia'},
+  {v:'thai',jp:'タイ',r:'southeast-asia'},{v:'cambodia',jp:'カンボジア',r:'southeast-asia'},
+  {v:'vietnam',jp:'ベトナム',r:'southeast-asia'},{v:'malaysia',jp:'マレーシア',r:'southeast-asia'},
+  {v:'singapore',jp:'シンガポール',r:'southeast-asia'},{v:'indonesia',jp:'インドネシア',r:'southeast-asia'},
+  {v:'philippines',jp:'フィリピン',r:'southeast-asia'},
+  {v:'india',jp:'インド',r:'south-asia'},{v:'nepal',jp:'ネパール',r:'south-asia'},
+  {v:'srilanka',jp:'スリランカ',r:'south-asia'},{v:'bhutan',jp:'ブータン',r:'south-asia'},
+  {v:'maldives',jp:'モルディブ',r:'south-asia'},{v:'pakistan',jp:'パキスタン',r:'south-asia'},
+  {v:'bangladesh',jp:'バングラデシュ',r:'south-asia'},
+  {v:'kazakhstan',jp:'カザフスタン',r:'central-asia'},{v:'kyrgyzstan',jp:'キルギス',r:'central-asia'},
+  {v:'uzbekistan',jp:'ウズベキスタン',r:'central-asia'},
+  {v:'turkey',jp:'トルコ',r:'west-asia'},{v:'qatar',jp:'カタール',r:'west-asia'},
+  {v:'UAE',jp:'アラブ首長国連邦',r:'west-asia'},
+  {v:'finland',jp:'フィンランド',r:'europe'},{v:'sweden',jp:'スウェーデン',r:'europe'},
+  {v:'norway',jp:'ノルウェー',r:'europe'},{v:'estonia',jp:'エストニア',r:'europe'},
+  {v:'latvia',jp:'ラトビア',r:'europe'},{v:'lithuania',jp:'リトアニア',r:'europe'},
+  {v:'croatia',jp:'クロアチア',r:'europe'},{v:'austria',jp:'オーストリア',r:'europe'},
+  {v:'hungary',jp:'ハンガリー',r:'europe'},{v:'slovakia',jp:'スロバキア',r:'europe'},
+  {v:'france',jp:'フランス',r:'europe'},{v:'uk',jp:'イギリス',r:'europe'},
+  {v:'italy',jp:'イタリア',r:'europe'},{v:'spain',jp:'スペイン',r:'europe'},
+  {v:'germany',jp:'ドイツ',r:'europe'},{v:'netherlands',jp:'オランダ',r:'europe'},
+  {v:'switzerland',jp:'スイス',r:'europe'},{v:'portugal',jp:'ポルトガル',r:'europe'},
+  {v:'greece',jp:'ギリシャ',r:'europe'},{v:'czech',jp:'チェコ',r:'europe'},
+  {v:'poland',jp:'ポーランド',r:'europe'},{v:'belgium',jp:'ベルギー',r:'europe'},
+  {v:'ireland',jp:'アイルランド',r:'europe'},{v:'denmark',jp:'デンマーク',r:'europe'},
+  {v:'iceland',jp:'アイスランド',r:'europe'},
+  {v:'usa',jp:'アメリカ',r:'north-america'},{v:'canada',jp:'カナダ',r:'north-america'},
+  {v:'mexico',jp:'メキシコ',r:'north-america'},
+  {v:'peru',jp:'ペルー',r:'south-america'},{v:'bolivia',jp:'ボリビア',r:'south-america'},
+  {v:'chile',jp:'チリ',r:'south-america'},{v:'argentina',jp:'アルゼンチン',r:'south-america'},
+  {v:'brazil',jp:'ブラジル',r:'south-america'},
+  {v:'morocco',jp:'モロッコ',r:'africa'},{v:'egypt',jp:'エジプト',r:'africa'},
+  {v:'kenya',jp:'ケニア',r:'africa'},{v:'south-africa',jp:'南アフリカ',r:'africa'},
+  {v:'australia',jp:'オーストラリア',r:'oceania'},{v:'new-zealand',jp:'ニュージーランド',r:'oceania'},
+];
+const REGION_JP={ "east-asia":"東アジア","southeast-asia":"東南アジア","south-asia":"南アジア","central-asia":"中央アジア","west-asia":"西アジア","europe":"ヨーロッパ","north-america":"北アメリカ","south-america":"南アメリカ","africa":"アフリカ","oceania":"オセアニア" };
+const REGION_ORDER=["east-asia","southeast-asia","south-asia","central-asia","west-asia","europe","north-america","south-america","africa","oceania"];
+
+/* =========================================================
+   ユーティリティ
+========================================================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const cinfo=v=>COUNTRIES.find(c=>c.v===v);
+
+/* =========================================================
+   フォーム生成
+========================================================= */
+// 国セレクト（地域グループ）
+(function(){
+  const sel=$('country');
+  REGION_ORDER.forEach(r=>{
+    const list=COUNTRIES.filter(c=>c.r===r);
+    if(!list.length) return;
+    const og=document.createElement('optgroup'); og.label=REGION_JP[r];
+    list.forEach(c=>og.appendChild(new Option(c.jp,c.v)));
+    sel.appendChild(og);
+  });
+})();
+// 乗り継ぎ時間（1〜48時間）
+(function(){
+  const sel=$('layover');
+  for(let h=1;h<=48;h++) sel.appendChild(new Option(`${h}時間`, String(h)));
+})();
+
+/* =========================================================
+   写真サムネ（複数・削除可）
+========================================================= */
+function renderThumbs(input, box){
+  box.innerHTML='';
+  const existing = input._existing || [];
+  existing.forEach((url,i)=>{
+    const w=document.createElement('span'); w.className='thumb';
+    w.innerHTML=`<img src="${esc(url)}" alt=""><button type="button" class="thumb-x" aria-label="削除">×</button>`;
+    w.querySelector('.thumb-x').addEventListener('click',()=>{ existing.splice(i,1); renderThumbs(input,box); });
+    box.appendChild(w);
+  });
+  const files = input._files || [];
+  files.forEach((file,i)=>{
+    const w=document.createElement('span'); w.className='thumb';
+    const img=document.createElement('img'); img.alt=''; img.src=URL.createObjectURL(file);
+    w.appendChild(img);
+    const x=document.createElement('button'); x.type='button'; x.className='thumb-x'; x.textContent='×';
+    x.addEventListener('click',()=>{ files.splice(i,1); renderThumbs(input,box); });
+    w.appendChild(x);
+    box.appendChild(w);
+  });
+}
+function wirePhotoInput(input, box){
+  input._files = input._files || [];
+  input.addEventListener('change',()=>{
+    [...input.files].forEach(f=>input._files.push(f));
+    input.value=''; // 同じファイルを選び直せるように
+    renderThumbs(input, box);
+  });
+}
+wirePhotoInput($('photos'), $('photoThumbs'));
+
+/* =========================================================
+   立ち寄った場所（Leaflet・複数ピン）
+========================================================= */
+let _map=null, _markers=[], _places=[];
+$('locToggle').addEventListener('click',()=>{
+  const box=$('loc'); box.classList.toggle('open');
+  if(box.classList.contains('open')) initMap();
+});
+$('locClear').addEventListener('click',()=>{ _places=[]; renderMarkers(); updateLoc(); });
+$('country').addEventListener('change',()=>{ if(_map && !_places.length) recenterMap(); });
+
+function initMap(){
+  if(typeof L==='undefined') return;
+  const el=$('locMap');
+  if(_map){ setTimeout(()=>{_map.invalidateSize(); fitMap();},60); return; }
+  let center=[20,0], zoom=2;
+  if(_places.length){ center=[_places[0].lat,_places[0].lng]; zoom=8; }
+  else { const ll=COUNTRY_LL[$('country').value]; if(ll){ center=ll; zoom=5; } }
+  _map=L.map(el,{worldCopyJump:true,minZoom:2}).setView(center,zoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap',maxZoom:18}).addTo(_map);
+  _map.on('click',e=>{
+    const name=(window.prompt('この地点の名前（あとから変更できます。空欄でもOK）','')||'').trim();
+    _places.push({name,lat:+e.latlng.lat.toFixed(5),lng:+e.latlng.lng.toFixed(5)});
+    renderMarkers(); updateLoc();
+  });
+  renderMarkers();
+  setTimeout(()=>{_map.invalidateSize(); fitMap();},60);
+}
+function recenterMap(){ const ll=COUNTRY_LL[$('country').value]; if(ll && _map) _map.setView(ll,5); }
+function fitMap(){
+  if(!_map) return;
+  if(_places.length>1) _map.fitBounds(L.latLngBounds(_places.map(p=>[p.lat,p.lng])).pad(0.3));
+  else if(_places.length===1) _map.setView([_places[0].lat,_places[0].lng],8);
+}
+function renderMarkers(){
+  if(!_map) return;
+  _markers.forEach(mk=>_map.removeLayer(mk)); _markers=[];
+  _places.forEach(p=>{
+    const icon=L.divIcon({className:'',html:`<div class="daypin"></div>`,iconSize:[22,22],iconAnchor:[11,21]});
+    const mk=L.marker([p.lat,p.lng],{icon}).addTo(_map);
+    if(p.name) mk.bindPopup(esc(p.name));
+    _markers.push(mk);
+  });
+}
+function updateLoc(){
+  const st=$('locStatus'), clr=$('locClear'), list=$('locList');
+  if(_places.length){ st.textContent=`ピン${_places.length}個を設定中（地図タップで追加・チップの×で削除）`; clr.style.display=''; }
+  else { st.textContent='地図をタップするとピンを追加できます（複数OK）。'; clr.style.display='none'; }
+  list.innerHTML='';
+  _places.forEach((p,i)=>{
+    const chip=document.createElement('span'); chip.className='dl-chip';
+    const label=p.name?p.name:`${p.lat}, ${p.lng}（名前を付ける）`;
+    chip.innerHTML=`<button type="button" class="dl-name">📍 ${esc(label)}</button><button type="button" class="dl-x" aria-label="削除">×</button>`;
+    chip.querySelector('.dl-name').addEventListener('click',()=>{
+      const name=window.prompt('地点の名前',p.name||''); if(name===null) return;
+      p.name=name.trim(); renderMarkers(); updateLoc();
+    });
+    chip.querySelector('.dl-x').addEventListener('click',()=>{ _places.splice(i,1); renderMarkers(); updateLoc(); });
+    list.appendChild(chip);
+  });
+}
+
+/* =========================================================
+   親記事（自分の旅行記事）ピッカー
+========================================================= */
+let _selectedParent=null; // {id,title,country,thumbUrl}
+function renderParent(){
+  const wrap=$('parentWrap');
+  if(_selectedParent){
+    wrap.innerHTML=`<div class="linked">
+      <span class="lk-t">紐付け中：${esc(_selectedParent.title||'(無題)')}</span>
+      <button type="button" class="lk-x" id="parentUnlink">解除</button>
+    </div>`;
+    $('parentUnlink').addEventListener('click',()=>{ _selectedParent=null; renderParent(); });
+  }else{
+    wrap.innerHTML=`<button type="button" class="pick-btn" id="parentPick">＋ この旅行の記事を追加</button>
+      <div class="pick-list" id="parentList" style="display:none"></div>`;
+    $('parentPick').addEventListener('click',openParentPicker);
+  }
+}
+async function openParentPicker(){
+  const list=$('parentList');
+  list.style.display='grid';
+  list.innerHTML=`<p class="hint" style="grid-column:1/-1">読み込み中…</p>`;
+  const items = await (window.loadMyItineraries ? window.loadMyItineraries() : Promise.resolve([]));
+  if(!items.length){
+    list.innerHTML=`<p class="hint" style="grid-column:1/-1">紐付けできる旅行記事がまだありません。先に旅程を投稿してください。</p>`;
+    return;
+  }
+  list.innerHTML='';
+  items.forEach(a=>{
+    const c=cinfo((a.countries||[])[0]); const cjp=c?c.jp:'';
+    const card=document.createElement('div'); card.className='pick-card';
+    const img=a.thumbUrl
+      ? `<img src="${esc(a.thumbUrl)}" alt="">`
+      : `<span class="pc-noimg"><i class="fa-solid fa-image"></i></span>`;
+    card.innerHTML=`${img}<div><div class="pc-t">${esc(a.title||'(無題)')}</div><div class="pc-c">${esc(cjp)}</div></div><span class="pc-check"><i class="fa-solid fa-circle-check"></i></span>`;
+    card.addEventListener('click',()=>{
+      _selectedParent={ id:a.id, title:a.title||'', country:(a.countries||[])[0]||'', thumbUrl:a.thumbUrl||'' };
+      renderParent();
+    });
+    list.appendChild(card);
+  });
+}
+$('parentPick').addEventListener('click',openParentPicker);
+
+/* =========================================================
+   入力収集・検証
+========================================================= */
+function gather(){
+  const c=cinfo($('country').value);
+  return {
+    author: $('author').value.trim(),
+    country: $('country').value,
+    region: c ? c.r : "",
+    airport: $('airport').value.trim(),
+    layover: $('layover').value,
+    title: $('title').value.trim(),
+    body: $('body').value.trim(),
+    photoFiles: ($('photos')._files||[]).slice(),
+    photoExisting: ($('photos')._existing||[]).slice(),
+    places: _places.slice(),
+    parentId: _selectedParent ? _selectedParent.id : null,
+  };
+}
+function validate(d){
+  const e=[];
+  if(!d.country) e.push('経由した国');
+  if(!d.airport) e.push('空港名');
+  if(!d.layover) e.push('乗り継ぎ時間');
+  return e;
+}
+function validateDraft(d){
+  // 下書きは国だけあれば保存可
+  return d.country ? [] : ['経由した国'];
+}
+
+/* =========================================================
+   投稿ボタン（実処理は下部 module の window.tabistockTransitSubmit）
+========================================================= */
+$('generate').addEventListener('click',async()=>{
+  const st=$('status');
+  if(!window.tabistockReady){ st.className='status err'; st.textContent='Firebaseに接続中です。数秒待って再度お試しください。'; return; }
+  if(!window.tabistockUser){ st.className='status err'; st.textContent='ログインが必要です。'; setTimeout(()=>location.href='account.html',800); return; }
+  const d=gather();
+  const errs=validate(d);
+  if(errs.length){ st.className='status err'; st.textContent='未入力：'+errs.join(' / '); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  $('generate').disabled=true; $('saveDraft').disabled=true;
+  try{ await window.tabistockTransitSubmit(d, st, 'publish'); }
+  catch(err){ console.error(err); st.className='status err'; st.textContent='エラー：'+(err&&err.message||err)+'（HEIC写真はJPEGに変換してください）'; }
+  finally{ $('generate').disabled=false; $('saveDraft').disabled=false; }
+});
+$('saveDraft').addEventListener('click',async()=>{
+  const st=$('status');
+  if(!window.tabistockReady){ st.className='status err'; st.textContent='Firebaseに接続中です。数秒待って再度お試しください。'; return; }
+  if(!window.tabistockUser){ st.className='status err'; st.textContent='ログインが必要です。'; setTimeout(()=>location.href='account.html',800); return; }
+  const d=gather();
+  const errs=validateDraft(d);
+  if(errs.length){ st.className='status err'; st.textContent='下書き保存に最低限必要：'+errs.join(' / '); window.scrollTo({top:0,behavior:'smooth'}); return; }
+  $('generate').disabled=true; $('saveDraft').disabled=true;
+  try{ await window.tabistockTransitSubmit(d, st, 'draft'); }
+  catch(err){ console.error(err); st.className='status err'; st.textContent='エラー：'+(err&&err.message||err)+'（HEIC写真はJPEGに変換してください）'; }
+  finally{ $('generate').disabled=false; $('saveDraft').disabled=false; }
+});
+
+/* フォームへ反映（編集読込・親プリセットで共用。部分オブジェクトOK） */
+window.populateForm = function(d){
+  d=d||{};
+  if('author' in d) $('author').value=d.author||'mahiro';
+  if(d.country){ $('country').value=d.country; }
+  if('airport' in d) $('airport').value=d.airport||'';
+  if(d.layover){ $('layover').value=String(d.layover); }
+  if('title' in d) $('title').value=d.title||'';
+  if('body' in d) $('body').value=d.body||'';
+  if('places' in d){
+    _places = Array.isArray(d.places) ? d.places.filter(p=>p&&typeof p.lat==='number'&&typeof p.lng==='number').map(p=>({name:p.name||'',lat:p.lat,lng:p.lng})) : [];
+    updateLoc();
+  }
+  if(d.heroUrls && d.heroUrls.length){ $('photos')._existing=d.heroUrls.slice(); renderThumbs($('photos'),$('photoThumbs')); }
+  if(d.parent){ _selectedParent=d.parent; }
+  renderParent();
+};
+</script>
+
+<script type="module">
+import { auth, db, storage } from "./firebase-config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { collection, doc, setDoc, getDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { COUNTRY_LL } from "./tabistock-render.js";
+window.COUNTRY_LL = COUNTRY_LL;
+
+window.tabistockReady = false;
+window.tabistockUser = null;
+window.tabistockNickname = "";
+
+/* 画像リサイズ（長辺1600px / JPEG 0.82） */
+function loadImage(file){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=URL.createObjectURL(file); }); }
+async function resizeImage(file,maxEdge=1600,q=0.82){
+  const img=await loadImage(file);
+  const scale=Math.min(1,maxEdge/Math.max(img.width,img.height));
+  const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  cv.getContext('2d').drawImage(img,0,0,w,h);
+  return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
+}
+async function uploadAndGetUrl(path, blob){
+  const r = ref(storage, path);
+  await uploadBytes(r, blob, { contentType: "image/jpeg" });
+  return await getDownloadURL(r);
+}
+
+// 親記事ピッカー用：自分の旅行記事（トランジット以外）を取得
+window.loadMyItineraries = async function(){
+  const user = window.tabistockUser; if(!user) return [];
+  const snap = await getDocs(query(collection(db, "articles"), where("authorId", "==", user.uid)));
+  const docs=[];
+  snap.forEach(s=>{ const a={id:s.id, ...s.data()}; if(a.type!=="transit") docs.push(a); });
+  docs.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+  return docs;
+};
+
+window.tabistockTransitSubmit = async function(d, st, mode){
+  const user = window.tabistockUser;
+  const nickname = window.tabistockNickname || d.author;
+  const editId = window.tabistockEditId || null;
+
+  const articleRef = editId ? doc(db, "articles", editId) : doc(collection(db, "articles"));
+  const id = articleRef.id;
+
+  let status;
+  if(mode === "draft"){ status = "draft"; }
+  else if(!editId){ status = "pending"; }
+  else { const prev = window.tabistockEditStatus || "pending"; status = (prev === "published" || prev === "pending") ? prev : "pending"; }
+
+  st.className = "status"; st.textContent = editId ? "記事を更新中…" : "記事を作成中…";
+
+  // 写真：新規選択分のみアップロード。なければ既存URLを再利用。
+  let heroUrls = [];
+  if(d.photoFiles.length){
+    for(let i=0;i<d.photoFiles.length;i++){
+      st.textContent = `写真 ${i+1}/${d.photoFiles.length} をアップロード中…`;
+      const blob = await resizeImage(d.photoFiles[i]);
+      heroUrls.push(await uploadAndGetUrl(`articles/${id}/hero${i+1}.jpg`, blob));
+    }
+  }else{
+    heroUrls = (d.photoExisting || []).slice();
+  }
+  const thumbUrl = heroUrls[0] || "";
+
+  const region = d.region || "";
+  const places = (d.places||[])
+    .filter(p=>p && typeof p.lat==='number' && typeof p.lng==='number')
+    .map(p=>({ name:p.name||'', lat:p.lat, lng:p.lng }));
+
+  st.textContent = "保存中…";
+  const docData = {
+    type: "transit",
+    authorId: user.uid,
+    authorNickname: nickname,
+    status,
+    createdAt: (editId && window.tabistockEditCreatedAt) ? window.tabistockEditCreatedAt : serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    countries: [d.country], region,
+    styles: ["transit"],
+    airport: d.airport,
+    layover: Number(d.layover) || null,
+    title: d.title,
+    body: d.body,
+    places,
+    heroUrls, thumbUrl,
+    parentId: d.parentId || null,
+  };
+  await setDoc(articleRef, docData);
+  window.tabistockEditStatus = status;
+
+  st.className = "status ok";
+  if(mode === "draft"){ st.textContent = "下書きを保存しました。マイページの「あなたの投稿」から続きを編集できます。"; }
+  else if(editId){ st.textContent = (status === "published") ? "記事を更新しました（公開中）。" : "記事を更新しました。管理者の承認後に公開されます。"; }
+  else { st.textContent = "投稿しました！管理者の承認後に公開されます。（記事ID: "+id+"）"; }
+  window.scrollTo({ top:0, behavior:"smooth" });
+  if(mode === "draft" || editId){ setTimeout(()=>{ location.href = "account.html"; }, 1400); }
+};
+
+onAuthStateChanged(auth, async (user) => {
+  window.tabistockReady = true;
+  if(!user){
+    window.tabistockUser = null;
+    alert("トランジット記事の投稿にはログインが必要です。ログインページへ移動します。");
+    location.href = "account.html";
+    return;
+  }
+  window.tabistockUser = user;
+  let nick = user.displayName || "";
+  try{ const snap = await getDoc(doc(db, "users", user.uid)); if(snap.exists() && snap.data().nickname) nick = snap.data().nickname; }catch(e){}
+  window.tabistockNickname = nick;
+  const a = document.getElementById("author");
+  if(a){ if(nick) a.value = nick; a.readOnly = true; a.style.background = "#f0ece3"; }
+
+  // ?parent=<記事ID>：親記事を事前選択
+  const parentId = new URLSearchParams(location.search).get("parent");
+  if(parentId){
+    try{
+      const snap = await getDoc(doc(db, "articles", parentId));
+      if(snap.exists()){
+        const data = snap.data();
+        if(data.authorId === user.uid && data.type !== "transit"){
+          window.__presetParent = { id: parentId, title: data.title||'', country:(data.countries||[])[0]||'', thumbUrl:data.thumbUrl||'' };
+          if(window.populateForm) window.populateForm({ parent: window.__presetParent });
+        }
+      }
+    }catch(e){ console.error(e); }
+  }
+
+  // 編集モード：?edit=<記事ID>
+  const editId = new URLSearchParams(location.search).get("edit");
+  if(editId){
+    try{
+      const snap = await getDoc(doc(db, "articles", editId));
+      if(!snap.exists()){ alert("記事が見つかりませんでした。"); return; }
+      const data = snap.data();
+      if(data.type !== "transit"){ alert("この記事はトランジット記事ではありません。"); location.href="post.html?edit="+editId; return; }
+      let isAdmin = false;
+      try{ isAdmin = (await getDoc(doc(db, "admins", user.uid))).exists(); }catch(e){}
+      if(data.authorId !== user.uid && !isAdmin){ alert("この記事を編集する権限がありません。"); location.href = "account.html"; return; }
+      window.tabistockEditId = editId;
+      window.tabistockEditStatus = data.status || "pending";
+      window.tabistockEditCreatedAt = data.createdAt || null;
+      // 親記事の表示用情報を取得
+      let parent=null;
+      if(data.parentId){
+        try{ const p=await getDoc(doc(db,"articles",data.parentId)); if(p.exists()){ const pd=p.data(); parent={id:data.parentId,title:pd.title||'',country:(pd.countries||[])[0]||'',thumbUrl:pd.thumbUrl||''}; } }catch(e){}
+      }
+      window.populateForm({
+        author: data.authorNickname || nick,
+        country: (data.countries||[])[0] || "",
+        airport: data.airport || "",
+        layover: data.layover || "",
+        title: data.title || "",
+        body: data.body || "",
+        places: data.places || [],
+        heroUrls: data.heroUrls || [],
+        parent
+      });
+      const gen = document.getElementById("generate");
+      if(gen) gen.textContent = (data.status === "published") ? "この内容で更新する" : "更新して申請する（承認後に公開）";
+      const sd = document.getElementById("saveDraft"); if(sd) sd.textContent = "下書きとして保存";
+    }catch(e){ console.error(e); alert("記事の読み込みに失敗しました。"); }
+  }
+});
+</script>
+<script type="module" src="./auth-status.js"></script>
+<!-- Vercel Web Analytics -->
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
