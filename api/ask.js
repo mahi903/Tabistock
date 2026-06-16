@@ -53,7 +53,7 @@ const COUNTRY_JP = {
 const STYLE_JP = {
   solo: "1人旅", friends: "友達と", family: "家族と", backpacker: "バックパッカー", girls: "女子旅",
   couple: "カップル", nature: "自然・絶景", city: "都市・街歩き", local: "現地体験", "round-trip": "周遊",
-  bicycle: "自転車旅", train: "電車旅"
+  bicycle: "自転車旅", train: "電車旅", transit: "トランジット"
 };
 
 const BUDGET_JP = {
@@ -67,10 +67,15 @@ function articleToText(a) {
   const budget = BUDGET_JP[a.budget] || a.budget || "";
   const lines = [];
   lines.push(`【記事ID】${a.id}`);
+  if (a.type === "transit") lines.push("種別：トランジット（乗り継ぎ）記事");
   lines.push(`タイトル：${a.title || ""}`);
   if (countries) lines.push(`国：${countries}`);
   if (budget) lines.push(`予算：${budget}`);
   if (styles) lines.push(`スタイル：${styles}`);
+  // トランジット記事は空港・乗り継ぎ時間・本文を渡す（days/budget は無い）
+  if (a.airport) lines.push(`空港：${a.airport}`);
+  if (a.layover) lines.push(`乗り継ぎ時間：${a.layover}時間`);
+  if (a.body) lines.push(`本文：${String(a.body).replace(/\s+/g, " ").slice(0, 800)}`);
   if (a.lead) lines.push(`リード：${String(a.lead).replace(/\s+/g, " ").slice(0, 300)}`);
   const days = Array.isArray(a.days) ? a.days : [];
   days.forEach((d, i) => {

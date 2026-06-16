@@ -178,6 +178,7 @@
         <option value="round-trip">周遊</option>
         <option value="bicycle">自転車旅</option>
         <option value="train">電車旅</option>
+        <option value="transit">トランジット</option>
       </select>
     </label>
   </div>
@@ -319,6 +320,9 @@
         <option value="round-trip">周遊</option>
         <option value="bicycle">自転車旅</option>
         <option value="train">電車旅</option>
+      </optgroup>
+      <optgroup label="乗り継ぎ">
+        <option value="transit">トランジット</option>
       </optgroup>
     </select>
 
@@ -468,6 +472,7 @@
           <option value="round-trip">周遊</option>
           <option value="bicycle">自転車旅</option>
           <option value="train">電車旅</option>
+          <option value="transit">トランジット</option>
         </select>
       </div>
       <button class="fs-apply" id="fsApply" type="button">この条件で絞り込む</button>
@@ -573,8 +578,17 @@ function runSearchFilter(){
   const keyword = params.get("q");
   let visibleCount = 0;
 
+  // 案b：トランジット記事は通常の「すべて」一覧には出さない。
+  // スタイル=トランジットを選んだとき、またはキーワード検索時のみ表示する。
+  const wantTransit = (filters.style || []).includes("transit");
+
   tripCards.forEach(card => {
     let isMatch = true;
+
+    // トランジットカードの表示可否（案b）
+    if (card.dataset.type === "transit" && !wantTransit && !keyword) {
+      isMatch = false;
+    }
 
     for (const filter in filters) {
       const cardValue = card.dataset[filter] || "";

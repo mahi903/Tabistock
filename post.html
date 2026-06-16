@@ -250,6 +250,16 @@
     <textarea id="comment" placeholder="例：4月でも朝晩はかなり寒いので防寒着は必須です。英語はほとんど通じないので…"></textarea>
   </section>
 
+  <!-- ===== 7. トランジット記事を紐付け（任意） ===== -->
+  <section class="card">
+    <h2><span class="num">7</span>トランジット記事を追加<span style="font-size:11px;color:#888;margin-left:6px">任意</span></h2>
+    <p class="hint">この旅の途中で投稿した「トランジット（乗り継ぎ）」記事があれば、この旅程に紐付けできます。紐付けると記事どうしが相互にリンクされます。</p>
+    <div id="transitPickList" class="transit-pick-list">
+      <p class="hint" id="transitPickEmpty">あなたのトランジット記事を読み込み中…</p>
+    </div>
+    <p class="hint" style="margin-top:10px"><a href="post-transit.html">＋ トランジット記事を新しく投稿する</a></p>
+  </section>
+
 </div>
 
 <div class="bar">
@@ -1816,9 +1826,9 @@ drawerFilterBtns.forEach(btn => {
 <script type="module">
 import { auth, db, storage } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { COUNTRY_LL } from "./tabistock-render.js";
+import { COUNTRY_LL, esc } from "./tabistock-render.js";
 // 各日ミニ地図が国を中心に表示できるよう、座標表をグローバルへ
 window.COUNTRY_LL = COUNTRY_LL;
 
@@ -1831,6 +1841,41 @@ async function uploadAndGetUrl(path, blob){
   await uploadBytes(r, blob, { contentType: "image/jpeg" });
   return await getDownloadURL(r);
 }
+
+// ---- トランジット記事の紐付けピッカー ----
+// 自分のトランジット記事を一覧表示し、この旅程に紐付けるものを複数選べる。
+// 正本の parentId はトランジット側に保存する（保存時に更新）。
+window.__myTransitsCache = [];
+window.tabistockLoadTransitPicker = async function(uid, currentParentId){
+  const listEl = document.getElementById('transitPickList');
+  if(!listEl) return;
+  try{
+    const snap = await getDocs(query(collection(db, "articles"), where("authorId", "==", uid)));
+    const items = [];
+    snap.forEach(s => { const a = s.data(); if(a.type === "transit") items.push({ id: s.id, ...a }); });
+    items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+    window.__myTransitsCache = items;
+    if(!items.length){
+      listEl.innerHTML = '<p class="hint">まだトランジット記事がありません。下のリンクから投稿できます。</p>';
+      return;
+    }
+    listEl.innerHTML = items.map(t=>{
+      const c = (t.countries||[])[0] || '';
+      const lay = (Number(t.layover)>0) ? `乗り継ぎ${Number(t.layover)}時間` : '';
+      const sub = [t.airport||'', lay].filter(Boolean).join('・');
+      const title = t.title || (c ? c+'でのトランジット' : 'トランジット記事');
+      const checked = (currentParentId && t.parentId === currentParentId) ? 'checked' : '';
+      const linkedElse = t.parentId && t.parentId !== currentParentId;
+      return `<label class="transit-pick-item" style="display:flex;gap:10px;align-items:flex-start;padding:11px 2px;border-bottom:1px solid #eee;cursor:pointer">
+        <input type="checkbox" class="transit-pick-cb" value="${esc(t.id)}" ${checked} style="margin-top:3px;width:18px;height:18px;flex:none">
+        <span><strong>${esc(title)}</strong>${sub?`<br><small style="color:#888">${esc(sub)}</small>`:''}${linkedElse?'<br><small style="color:#c0792e">※ いまは別の旅程に紐付け中（選ぶとこちらへ付け替わります）</small>':''}</span>
+      </label>`;
+    }).join('');
+  }catch(e){ console.warn("トランジット記事の読み込みに失敗:", e); }
+};
+window.tabistockGetSelectedTransits = function(){
+  return [...document.querySelectorAll('.transit-pick-cb:checked')].map(c=>c.value);
+};
 
 window.tabistockSubmit = async function(d, st, mode){
   const user = window.tabistockUser;
@@ -1910,6 +1955,25 @@ window.tabistockSubmit = async function(d, st, mode){
   };
   await setDoc(articleRef, docData);
   window.tabistockEditStatus = status; // 続けて編集した場合に備えて更新
+
+  // 選択されたトランジット記事の parentId を、この旅程ID に更新する。
+  // 外したものは（この旅程に紐付いていた場合のみ）parentId を解除する。
+  try{
+    const selected = window.tabistockGetSelectedTransits ? window.tabistockGetSelectedTransits() : [];
+    const all = window.__myTransitsCache || [];
+    for(const t of all){
+      const shouldLink = selected.includes(t.id);
+      const linkedHere = (t.parentId || null) === id;
+      if(shouldLink && (t.parentId || null) !== id){
+        st.textContent = "トランジット記事を紐付け中…";
+        await updateDoc(doc(db, "articles", t.id), { parentId: id, updatedAt: serverTimestamp() });
+        t.parentId = id; // キャッシュも更新（連続保存に備える）
+      }else if(!shouldLink && linkedHere){
+        await updateDoc(doc(db, "articles", t.id), { parentId: null, updatedAt: serverTimestamp() });
+        t.parentId = null;
+      }
+    }
+  }catch(e){ console.warn("トランジット記事の紐付け更新に失敗:", e); }
 
   st.className = "status ok";
   if(mode === "draft"){
@@ -1999,6 +2063,9 @@ onAuthStateChanged(auth, async (user) => {
       alert("記事の読み込みに失敗しました。");
     }
   }
+
+  // トランジット記事ピッカーを読み込む（新規=親なし／編集=この記事IDを親として既存リンクをチェック）
+  window.tabistockLoadTransitPicker(user.uid, window.tabistockEditId || null);
 });
 </script>
   <script type="module" src="./auth-status.js"></script>

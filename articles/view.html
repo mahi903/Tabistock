@@ -423,7 +423,7 @@ drawerFilterBtns.forEach(btn => {
 <!-- ===== 記事をFirebaseから読み込んで描画 ===== -->
 <script type="module">
 import { db, auth } from "../firebase-config.js";
-import { doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, orderBy, getCountFromServer, serverTimestamp }
+import { doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, where, orderBy, getCountFromServer, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { renderArticleBody, esc, para } from "../tabistock-render.js";
@@ -1090,18 +1090,27 @@ function initRouteMap(d){
   const esc2 = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   // 各日の places（新形式）を展開。無ければ旧形式 lat/lng を1ピンとして扱う。
   const pts = [];
-  (d.days||[]).forEach((day,i)=>{
-    const dayNo = i+1;
-    if(Array.isArray(day.places) && day.places.length){
-      day.places.forEach(p=>{
-        if(typeof p.lat==='number' && typeof p.lng==='number'){
-          pts.push({ n:dayNo, lat:p.lat, lng:p.lng, name:p.name||'', summary:day.summary||'', date:day.date||'' });
-        }
-      });
-    }else if(typeof day.lat==='number' && typeof day.lng==='number'){
-      pts.push({ n:dayNo, lat:day.lat, lng:day.lng, name:'', summary:day.summary||'', date:day.date||'' });
-    }
-  });
+  if(d.type==='transit'){
+    // トランジット記事はトップレベルの places を立ち寄り地点として表示。
+    (d.places||[]).forEach(p=>{
+      if(p && typeof p.lat==='number' && typeof p.lng==='number'){
+        pts.push({ n:0, lat:p.lat, lng:p.lng, name:p.name||'', summary:'', date:'' });
+      }
+    });
+  }else{
+    (d.days||[]).forEach((day,i)=>{
+      const dayNo = i+1;
+      if(Array.isArray(day.places) && day.places.length){
+        day.places.forEach(p=>{
+          if(typeof p.lat==='number' && typeof p.lng==='number'){
+            pts.push({ n:dayNo, lat:p.lat, lng:p.lng, name:p.name||'', summary:day.summary||'', date:day.date||'' });
+          }
+        });
+      }else if(typeof day.lat==='number' && typeof day.lng==='number'){
+        pts.push({ n:dayNo, lat:day.lat, lng:day.lng, name:'', summary:day.summary||'', date:day.date||'' });
+      }
+    });
+  }
   if(!pts.length) return;
 
   const map = L.map(el, { worldCopyJump:true, scrollWheelZoom:false, minZoom:2 });
@@ -1112,8 +1121,9 @@ function initRouteMap(d){
   const latlngs = pts.map(p=>[p.lat, p.lng]);
   pts.forEach(p=>{
     const icon = L.divIcon({ className:'', html:`<div class="mappin"></div>`, iconSize:[26,26], iconAnchor:[13,25] });
-    const head = p.name ? esc2(p.name) : `DAY ${p.n}`;
-    const sub = [p.name?`DAY ${p.n}`:'', p.date?esc2(p.date):'', esc2(p.summary)].filter(Boolean).join('・');
+    const dayLabel = p.n ? `DAY ${p.n}` : '';
+    const head = p.name ? esc2(p.name) : (dayLabel || '立ち寄り地点');
+    const sub = [p.name?dayLabel:'', p.date?esc2(p.date):'', esc2(p.summary)].filter(Boolean).join('・');
     L.marker([p.lat,p.lng], { icon }).addTo(map)
       .bindPopup(`<strong>${head}</strong>${sub?'<br>'+sub:''}`);
   });
@@ -1156,6 +1166,44 @@ function initRouteMap(d){
     articleAuthorId = d.authorId || null;
     articleTitle = d.title || "";
     document.title = (d.title || "旅程") + "｜Tabistock";
+
+    // トランジット記事 ⇄ 旅程記事の相互リンク
+    if(d.type === "transit"){
+      // 親（この旅行の記事）の情報を取得して表示に渡す
+      if(d.parentId){
+        try{
+          const ps = await getDoc(doc(db, "articles", d.parentId));
+          if(ps.exists()){
+            const pd = ps.data();
+            if(pd.status === "published" || pd.authorId === (auth.currentUser&&auth.currentUser.uid)){
+              d.parentInfo = {
+                id: d.parentId,
+                title: pd.title || "",
+                countries: pd.countries || [],
+                thumbUrl: pd.thumbUrl || (pd.heroUrls && pd.heroUrls[0]) || ""
+              };
+            }
+          }
+        }catch(e){ console.warn("親記事の取得に失敗:", e); }
+      }
+    }else{
+      // この旅程に紐づく公開中のトランジット記事を取得
+      try{
+        const cs = await getDocs(query(
+          collection(db, "articles"),
+          where("parentId", "==", id),
+          where("status", "==", "published")
+        ));
+        const kids = [];
+        cs.forEach(s => { const k = s.data(); kids.push({
+          id: s.id, title: k.title || "", countries: k.countries || [],
+          country: (k.countries||[])[0] || "", airport: k.airport || "",
+          layover: k.layover, thumbUrl: k.thumbUrl || (k.heroUrls && k.heroUrls[0]) || ""
+        }); });
+        if(kids.length) d.childTransits = kids;
+      }catch(e){ console.warn("トランジット記事の取得に失敗:", e); }
+    }
+
     root.innerHTML = renderArticleBody(d);
     initInteractions();
     initComments();

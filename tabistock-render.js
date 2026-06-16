@@ -63,7 +63,9 @@ export const STYLES=[
   {v:'solo',l:'1人旅',tag:'ひとり旅'},{v:'friends',l:'友達と',tag:'友達旅'},{v:'family',l:'家族と',tag:'家族旅'},
   {v:'backpacker',l:'バックパッカー',tag:'バックパッカー'},{v:'girls',l:'女子旅',tag:'女子旅'},{v:'couple',l:'カップル',tag:'カップル'},
   {v:'nature',l:'自然・絶景',tag:'自然旅'},{v:'city',l:'都市・街歩き',tag:'街歩き'},{v:'local',l:'現地体験',tag:'現地体験'},{v:'round-trip',l:'周遊',tag:'周遊'},
-  {v:'bicycle',l:'自転車旅',tag:'自転車旅'},{v:'train',l:'電車旅',tag:'電車旅'}
+  {v:'bicycle',l:'自転車旅',tag:'自転車旅'},{v:'train',l:'電車旅',tag:'電車旅'},
+  // トランジットは特別スタイル（投稿フォームの選択肢には出さず、トランジット記事に自動付与）
+  {v:'transit',l:'トランジット',tag:'トランジット'}
 ];
 export const COST_ITEMS=[
   {k:'flight',l:'航空券'},{k:'stay',l:'宿泊'},{k:'food',l:'食費'},{k:'transit',l:'交通'},
@@ -96,6 +98,8 @@ export function buildTags(d){
 
 // 記事本文（hero〜投稿者カード）。view.html の #article-root に挿入する。
 export function renderArticleBody(d){
+  // トランジット記事は専用の簡易レイアウトで描画
+  if(d.type==='transit') return renderTransitBody(d);
   const stars='★'.repeat(d.difficulty||0)+'☆'.repeat(5-(d.difficulty||0));
   const period=fmtPeriod(d.dateStart,d.dateEnd);
   const tags=buildTags(d);
@@ -268,6 +272,9 @@ ${specificUrl?`    <a href="${esc(specificUrl)}" target="_blank" rel="noopener s
   </div>
 </section>`:'';
 
+  // この旅程に紐づくトランジット記事（view.html が d.childTransits をセット）
+  const transitLinks=transitLinksSection(d.childTransits);
+
   return `<main class="article-page">
   <section class="article-hero">
     <div class="hero-carousel">
@@ -343,6 +350,8 @@ ${dayCards}
 
 ${affiliateSection}
 
+${transitLinks}
+
 <section class="article-actions">
   <button class="action-like" id="likeBtn" type="button" aria-pressed="false" aria-label="いいね">
     <i class="fa-regular fa-heart"></i>
@@ -379,8 +388,192 @@ ${affiliateSection}
 </section>`;
 }
 
+// 乗り継ぎ時間（数値）→「20時間」。値が無ければ空。
+export const fmtLayover=h=>{ const n=Number(h); return (n&&n>0)?`${n}時間`:''; };
+
+// トランジット記事に紐づく「経由地」リンク群（旅程記事の本文に差し込む）。
+// items: [{id,title,country,airport,layover,thumbUrl}]
+function transitLinksSection(items){
+  if(!Array.isArray(items) || !items.length) return '';
+  const cards=items.map(t=>{
+    const c=cinfo((t.countries||[t.country])[0]||t.country);
+    const cjp=c?c.jp:'';
+    const lay=fmtLayover(t.layover);
+    const sub=[t.airport||'', lay?`乗り継ぎ${lay}`:''].filter(Boolean).join('・');
+    const thumb=t.thumbUrl||'';
+    const img=thumb
+      ? `<img src="${esc(thumb)}" alt="" loading="lazy">`
+      : `<span class="transit-link-noimg"><i class="fa-solid fa-plane-departure"></i></span>`;
+    return `  <a class="transit-link-card" href="./view.html?id=${esc(t.id)}">
+    ${img}
+    <div class="transit-link-body">
+      <span class="transit-link-badge">Transit · ${esc(cjp)}</span>
+      <strong>${esc(t.title||(cjp+'でのトランジット'))}</strong>
+      ${sub?`<span class="transit-link-sub">${esc(sub)}</span>`:''}
+    </div>
+  </a>`;
+  }).join('\n');
+  return `<div class="section-intro">
+  <p class="eyebrow">Layover</p>
+  <h2>この旅のトランジット</h2>
+  <p>乗り継ぎ中の過ごし方を別記事にまとめています。</p>
+</div>
+<section class="transit-links">
+${cards}
+</section>`;
+}
+
+// トランジット記事の本文（hero〜投稿者カード）。view.html の #article-root に挿入。
+function renderTransitBody(d){
+  const author=d.authorNickname||d.author||'';
+  const authorId=d.authorId||'';
+  const adminBadge=d.authorIsAdmin?' <i class="fa-solid fa-circle-check admin-badge" title="管理者"></i>':'';
+  const authorNameHTML=authorId
+    ? `<a class="author-name-link" href="../user.html?uid=${esc(authorId)}">${esc(author)}</a>`
+    : esc(author);
+  const authorPhoto=d.authorPhotoURL||'';
+  const authorBio=d.authorBio||'旅程を投稿しています。';
+  let igUrl='';
+  if(d.authorInstagram){
+    const ig=String(d.authorInstagram).trim();
+    igUrl=/^https?:\/\//.test(ig)?ig:('https://www.instagram.com/'+ig.replace(/^@/,'')+'/');
+  }
+  const defAvatar="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e7ddcb%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2240%22%20r%3D%2218%22%20fill%3D%22%23b9ad95%22%2F%3E%3Cpath%20d%3D%22M20%2086c0-17%2013-28%2030-28s30%2011%2030%2028z%22%20fill%3D%22%23b9ad95%22%2F%3E%3C%2Fsvg%3E";
+  const c=cinfo((d.countries||[])[0]);
+  const cjp=c?c.jp:'';
+  const cen=c?c.en:'';
+  const title=d.title||(cjp?`${cjp}でのトランジット`:'トランジット');
+  const lay=fmtLayover(d.layover);
+
+  const heroUrls=d.heroUrls||[];
+  const heroImgs=heroUrls.map(u=>`    <img src="${esc(u)}" alt="${esc(title)}">`).join('\n');
+  const heroDots=heroUrls.map(()=>'    <span></span>').join('\n');
+  const heroCarousel=heroUrls.length?`    <div class="hero-carousel">
+    <div class="hero-images">
+${heroImgs}
+  </div>
+  <div class="hero-dots">
+${heroDots}
+</div>
+</div>`:'';
+
+  const infoRows=[
+    `<div><span>空港</span><strong>${esc(d.airport||'')}</strong></div>`,
+    lay?`<div><span>乗り継ぎ時間</span><strong>${esc(lay)}</strong></div>`:'',
+    `<div><span>投稿者</span><strong>${authorId
+      ? `<a class="hero-author" href="../user.html?uid=${esc(authorId)}"><img class="hero-author-icon" src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="" onerror="this.src='${defAvatar}'"><span class="hero-author-name">${esc(author)}</span></a>`
+      : `<span class="hero-author"><img class="hero-author-icon" src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="" onerror="this.src='${defAvatar}'"><span class="hero-author-name">${esc(author)}</span></span>`}</strong></div>`
+  ].filter(Boolean).join('\n      ');
+
+  // 親（この旅行の記事）へのリンク
+  const pInfo=d.parentInfo;
+  let parentSection='';
+  if(pInfo && pInfo.id){
+    const pc=cinfo((pInfo.countries||[pInfo.country])[0]||pInfo.country);
+    const pcjp=pc?pc.jp:'';
+    const pImg=pInfo.thumbUrl
+      ? `<img src="${esc(pInfo.thumbUrl)}" alt="" loading="lazy">`
+      : `<span class="transit-link-noimg"><i class="fa-solid fa-suitcase-rolling"></i></span>`;
+    parentSection=`<div class="section-intro">
+  <p class="eyebrow">Trip</p>
+  <h2>この旅行の記事</h2>
+  <p>このトランジットが含まれる旅程はこちら。</p>
+</div>
+<section class="transit-links">
+  <a class="transit-link-card" href="./view.html?id=${esc(pInfo.id)}">
+    ${pImg}
+    <div class="transit-link-body">
+      <span class="transit-link-badge">Trip${pcjp?' · '+esc(pcjp):''}</span>
+      <strong>${esc(pInfo.title||'旅程記事')}</strong>
+    </div>
+  </a>
+</section>`;
+  }
+
+  // 立ち寄った場所（地図は view.html の initRouteMap が d.places を読んで描画）
+  const hasPlacePins=Array.isArray(d.places) && d.places.some(p=>p && typeof p.lat==='number' && typeof p.lng==='number');
+  const routeSection=hasPlacePins?`<div class="section-intro">
+  <p class="eyebrow">Map</p>
+  <h2>立ち寄った場所</h2>
+  <p>乗り継ぎ中に訪れた場所をピンで表示しています。</p>
+</div>
+<section class="route-grid">
+  <div class="info-card route-card">
+    <div id="routeMap" class="route-map"></div>
+  </div>
+</section>`:'';
+
+  const bodySection=d.body?`<section class="tips-section">
+  <div class="tips-card">
+    <p class="tips-eyebrow">Layover Notes</p>
+    <h2>乗り継ぎの過ごし方</h2>
+    <p class="tips-text">
+      ${para(d.body)}
+    </p>
+  </div>
+</section>`:'';
+
+  return `<main class="article-page">
+  <section class="article-hero">
+${heroCarousel}
+  <div class="hero-text">
+    <p class="hero-eyebrow">Transit${cen?' · '+esc(cen):''}</p>
+    <h1>${esc(title)}</h1>
+    <div class="hero-info">
+      ${infoRows}
+    </div>
+    <div class="hero-tags">
+      <span>トランジット</span>
+      ${cjp?`<span>${esc(cjp)}</span>`:''}
+    </div>
+  </div>
+</section>
+</main>
+
+${parentSection}
+
+${bodySection}
+
+${routeSection}
+
+<section class="article-actions">
+  <button class="action-like" id="likeBtn" type="button" aria-pressed="false" aria-label="いいね">
+    <i class="fa-regular fa-heart"></i>
+    <span class="like-count" id="likeCount">0</span>
+  </button>
+  <button class="action-save" id="saveBtn" type="button" aria-pressed="false" aria-label="保存">
+    <i class="fa-regular fa-bookmark"></i>
+    <span>保存</span>
+  </button>
+  <button class="action-share" id="shareBtn" type="button" aria-label="共有する">
+    <i class="fa-solid fa-arrow-up-from-bracket"></i>
+    <span>共有</span>
+  </button>
+</section>
+
+<section class="author-card">
+  <img src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="投稿者アイコン" class="author-icon" onerror="this.src='${defAvatar}'">
+  <div class="author-info">
+    <p class="author-label">Author</p>
+    <div class="author-name-row">
+      <h2>${authorNameHTML}${adminBadge}</h2>
+      <button class="author-follow" id="followBtn" type="button" aria-pressed="false" data-uid="${esc(authorId)}" style="display:none">
+        <i class="fa-solid fa-plus"></i><span>フォロー</span>
+      </button>
+    </div>
+    <p>${esc(authorBio)}</p>
+    ${igUrl?`<div class="author-socials">
+      <a href="${esc(igUrl)}" target="_blank" rel="noopener" class="author-social" aria-label="Instagram">
+        <i class="fa-brands fa-instagram"></i>
+      </a>
+    </div>`:''}
+  </div>
+</section>`;
+}
+
 // 検索カード（search / index 用）。リンクは articles/view.html?id=
 export function renderCard(d){
+  if(d.type==='transit') return renderTransitCard(d);
   const c=cinfo((d.countries||[])[0]) || {en:'', jp:''};
   const cardTags=[];
   const bb=BUDGETS.find(x=>x.v===d.budget); if(bb) cardTags.push(bb.l);
@@ -399,6 +592,7 @@ export function renderCard(d){
   return `  <a href="./articles/view.html?id=${esc(d.id)}"
      class="trip-card"
      data-id="${esc(d.id)}"
+     data-type="itinerary"
      data-country="${esc((d.countries||[]).join(' '))}"
      data-days="${esc(d.days_v||'')}"
      data-budget="${esc(budgetAttr||'')}"
@@ -417,6 +611,50 @@ export function renderCard(d){
 
       <div class="tags">
 ${cardTags.map(t=>`        <span>${esc(t)}</span>`).join('\n')}
+      </div>
+    </div>
+  </a>`;
+}
+
+// トランジット記事の検索カード。予算/日数のかわりに空港・乗り継ぎ時間を見せる。
+function renderTransitCard(d){
+  const c=cinfo((d.countries||[])[0]) || {en:'', jp:''};
+  const lay=fmtLayover(d.layover);
+  const title=d.title||(c.jp?`${c.jp}でのトランジット`:'トランジット');
+  const thumb=d.thumbUrl||(d.heroUrls&&d.heroUrls[0])||'';
+  const sub=[d.airport||'', lay?`乗り継ぎ${lay}`:''].filter(Boolean).join('・');
+  // 検索用テキスト：国（日英）・地域・空港・タイトル・本文・「トランジット/乗り継ぎ」キーワード
+  const searchParts=[];
+  if(c.jp){ searchParts.push(c.jp, c.en, REGION_JP[c.r]||'', REGION_EN[c.r]||''); }
+  if(d.region) searchParts.push(REGION_JP[d.region]||d.region, REGION_EN[d.region]||'');
+  searchParts.push(d.title||'', d.airport||'', String(d.body||'').slice(0,200), 'トランジット','乗り継ぎ','transit','layover');
+  const searchText=searchParts.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+  const imgHTML=thumb
+    ? `<img src="${esc(thumb)}" alt="" loading="lazy" decoding="async">`
+    : `<span class="trip-image-noimg"><i class="fa-solid fa-plane-departure"></i></span>`;
+  return `  <a href="./articles/view.html?id=${esc(d.id)}"
+     class="trip-card trip-card-transit"
+     data-id="${esc(d.id)}"
+     data-type="transit"
+     data-country="${esc((d.countries||[]).join(' '))}"
+     data-days=""
+     data-budget=""
+     data-style="transit"
+     data-region="${esc(d.region||'')}"
+     data-search="${esc(searchText)}"
+     data-created="${esc(String(d.createdAt?.seconds||0))}"
+     data-likes="0">
+    <div class="trip-image">
+      ${imgHTML}
+      <span class="trip-badge-transit"><i class="fa-solid fa-plane-departure"></i> Transit</span>
+    </div>
+    <div class="trip-content">
+      <p class="country">${esc(c.en)}</p>
+      <h3>${esc(title)}</h3>
+      ${sub?`<p>${esc(sub)}</p>`:''}
+      <div class="tags">
+        <span>トランジット</span>
+        ${c.jp?`<span>${esc(c.jp)}</span>`:''}
       </div>
     </div>
   </a>`;
