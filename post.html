@@ -83,6 +83,10 @@
   .thumb-mv{ position:absolute; bottom:2px; width:18px; height:18px; padding:0; border:none; border-radius:4px; background:rgba(20,24,32,.7); color:#fff; font-size:13px; line-height:18px; text-align:center; cursor:pointer; }
   .thumb-mv[data-dir="-1"]{ left:2px; }
   .thumb-mv[data-dir="1"]{ right:2px; }
+  .thumb-loading{ width:64px; height:64px; border-radius:8px; border:1px solid var(--line); background:#f1f3f5; }
+  .thumb-loading img{ opacity:0; }
+  .thumb-loading::after{ content:''; position:absolute; top:50%; left:50%; width:18px; height:18px; margin:-9px 0 0 -9px; border:2px solid #c7ccd1; border-top-color:#1f6f5b; border-radius:50%; animation:thumbspin .7s linear infinite; }
+  @keyframes thumbspin{ to{ transform:rotate(360deg); } }
   .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:130; }
   /* 投稿ページではPWAの下部タブバーを隠す（投稿バーと重なってボタンが押せなくなるため） */
   body.pwa .tabbar{ display:none !important; }
@@ -851,15 +855,20 @@ function renderThumbs(input,container){
     html+=`<div class="thumb"><img src="${esc(u)}"><button type="button" class="thumb-x" data-ex="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-ex="${i}" data-dir="-1">‹</button>`:''}${i<existing.length-1?`<button type="button" class="thumb-mv" data-ex="${i}" data-dir="1">›</button>`:''}</div>`;
   });
   sel.forEach((f,i)=>{
-    html+=`<div class="thumb"><img data-prev="${i}" alt=""><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="-1">‹</button>`:''}${i<sel.length-1?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="1">›</button>`:''}</div>`;
+    html+=`<div class="thumb thumb-loading" data-prevwrap="${i}"><img data-prev="${i}" alt=""><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="-1">‹</button>`:''}${i<sel.length-1?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="1">›</button>`:''}</div>`;
   });
   if(existing.length) html+=`<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。×で削除、追加する場合は新しく選んでください。</p>`;
   container.innerHTML=html;
-  // フル解像度を避け、縮小プレビューを後から差し込む（メモリ対策）
-  sel.forEach((f,i)=>{
-    const img=container.querySelector(`img[data-prev="${i}"]`);
-    if(img) makePreviewURL(f).then(url=>{ img.src=url; });
-  });
+  // フル解像度を避け、縮小プレビューを1枚ずつ順番に差し込む。
+  // （同時デコードを避けて落ちにくく＋できた順に表示して進捗が見える）
+  (async()=>{
+    for(let i=0;i<sel.length;i++){
+      const img=container.querySelector(`img[data-prev="${i}"]`);
+      if(img){ try{ img.src=await makePreviewURL(sel[i]); }catch(e){} }
+      const wrap=container.querySelector(`[data-prevwrap="${i}"]`);
+      if(wrap) wrap.classList.remove('thumb-loading');
+    }
+  })();
   container.querySelectorAll('.thumb-x').forEach(b=>{
     b.addEventListener('click',()=>{
       if(b.dataset.ex!=null){ existing.splice(+b.dataset.ex,1); }

@@ -3416,7 +3416,7 @@ body.ov-lock{ overflow:hidden; }
 /* 記事本文に差し込む「親/子」リンクカード群 */
 .transit-links{
   max-width:760px;
-  margin:6px auto 8px;
+  margin:6px auto 36px;
   padding:0 22px;
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(260px,1fr));

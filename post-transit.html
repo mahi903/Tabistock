@@ -45,6 +45,10 @@
   .thumb{ position:relative; display:inline-block; }
   .thumb-x{ position:absolute; top:-6px; right:-6px; width:20px; height:20px; padding:0; border:none; border-radius:50%; background:rgba(20,24,32,.82); color:#fff; font-size:13px; line-height:20px; text-align:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.3); }
   .thumb-x:hover{ background:#e0564b; }
+  .thumb-loading{ width:64px; height:64px; border-radius:8px; border:1px solid var(--line); background:#f1f3f5; }
+  .thumb-loading img{ opacity:0; }
+  .thumb-loading::after{ content:''; position:absolute; top:50%; left:50%; width:18px; height:18px; margin:-9px 0 0 -9px; border:2px solid #c7ccd1; border-top-color:#1f6f5b; border-radius:50%; animation:thumbspin .7s linear infinite; }
+  @keyframes thumbspin{ to{ transform:rotate(360deg); } }
   /* 場所ピン */
   .loc{ margin-top:6px; }
   .loc-toggle{ background:#fff; border:1px solid #d9d2c4; border-radius:999px; padding:8px 14px; font-size:13px; font-weight:700; color:var(--green); cursor:pointer; }
@@ -278,16 +282,24 @@ async function renderThumbs(input, box){
     box.appendChild(w);
   });
   const files = input._files || [];
+  const pending=[];
   files.forEach((file)=>{
-    const w=document.createElement('span'); w.className='thumb';
+    const w=document.createElement('span'); w.className='thumb thumb-loading';
     const img=document.createElement('img'); img.alt='';
     w.appendChild(img);
     const x=document.createElement('button'); x.type='button'; x.className='thumb-x'; x.textContent='×';
     x.addEventListener('click',()=>{ const idx=files.indexOf(file); if(idx>-1) files.splice(idx,1); revokePreview(file); renderThumbs(input,box); });
     w.appendChild(x);
     box.appendChild(w);
-    makePreviewURL(file).then(url=>{ img.src=url; });
+    pending.push({file,img,w});
   });
+  // 1枚ずつ順番に生成（同時デコードを避けて落ちにくく＋できた順に表示）
+  (async()=>{
+    for(const it of pending){
+      try{ it.img.src=await makePreviewURL(it.file); }catch(e){}
+      it.w.classList.remove('thumb-loading');
+    }
+  })();
 }
 function wirePhotoInput(input, box){
   input._files = input._files || [];

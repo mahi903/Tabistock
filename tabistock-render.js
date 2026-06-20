@@ -249,25 +249,16 @@ ${gallery}
   </article>`;
   }).join('\n\n');
 
-  const AFFILIATE_URLS={
-    'Agoda':'https://px.a8.net/svt/ejp?a8mat=4B5VO7+23M2LU+4X1W+5YZ77',
-    // 'Klook':'',
-    // 'GetYourGuide':'',
-    // 'トリップドットコム':'',
-  };
   const specificUrl=d.agodaUrl||'';
-  const usedServices=(d.services||[]).flatMap(s=>s.items||[]);
-  const matchedLinks=specificUrl?[]
-    :usedServices.filter(s=>AFFILIATE_URLS[s]).map(s=>`    <a href="${AFFILIATE_URLS[s]}" target="_blank" rel="noopener sponsored" class="affiliate-btn">
-      ${esc(s)}で予約する <i class="fa-solid fa-arrow-up-right-from-square"></i>
-    </a>`);
-  const affiliateSection=(d.authorIsAdmin&&(specificUrl||matchedLinks.length))?`<section class="affiliate-section">
+  // 予約欄は「著者がAgodaリンクを実際に入力したとき」だけ出す。
+  // （サービス選択だけで自動の汎用リンクは出さない）
+  const affiliateSection=(d.authorIsAdmin&&specificUrl)?`<section class="affiliate-section">
   <div class="affiliate-card">
     <p class="affiliate-eyebrow">Booking</p>
-    <h2>${specificUrl?'著者が実際に泊まった宿':'著者が実際に使ったサービス'}</h2>
-${specificUrl?`    <a href="${esc(specificUrl)}" target="_blank" rel="noopener sponsored" class="affiliate-btn">
+    <h2>著者が実際に泊まった宿</h2>
+    <a href="${esc(specificUrl)}" target="_blank" rel="noopener sponsored" class="affiliate-btn">
       Agodaでこの宿を見る <i class="fa-solid fa-arrow-up-right-from-square"></i>
-    </a>`:matchedLinks.join('\n')}
+    </a>
     <small class="affiliate-note">PR</small>
   </div>
 </section>`:'';
