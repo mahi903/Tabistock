@@ -1280,10 +1280,10 @@ ${cardTags.map(t=>`        <span>${esc(t)}</span>`).join('\n')}
 }
 
 /* =========================================================
-   画像リサイズ（長辺1600px / JPEG 0.82）
+   画像リサイズ（長辺1280px / JPEG 0.82）
 ========================================================= */
 function loadImage(file){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=URL.createObjectURL(file); }); }
-async function resizeImage(file,maxEdge=1600,q=0.82){
+async function resizeImage(file,maxEdge=1280,q=0.82){
   // メモリ節約：縮小しながらデコード（createImageBitmap）。
   // まず幅 maxEdge で読み込み、縦長で長辺がまだ大きければ小さいbitmapから再縮小。
   // 失敗時（古い端末など）は従来の <img> デコード方式へフォールバック。
