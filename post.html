@@ -823,6 +823,26 @@ function syncInputFiles(input){
   (input._sel||[]).forEach(f=>dt.items.add(f));
   input.files=dt.files;
 }
+// 小さなプレビューURLを作る。
+// 重要：フル解像度のまま <img> に渡すと iPhone でメモリ切れ→タブが落ちる。
+// createImageBitmap で「縮小しながらデコード」してメモリを激減させる。
+// 古い端末などで使えない場合は従来どおり原本URLにフォールバック。
+async function makePreviewURL(file){
+  if(file._previewURL) return file._previewURL;
+  try{
+    const bmp = await createImageBitmap(file, { resizeWidth:400, resizeQuality:'low', imageOrientation:'from-image' });
+    const cv=document.createElement('canvas'); cv.width=bmp.width; cv.height=bmp.height;
+    cv.getContext('2d').drawImage(bmp,0,0); bmp.close();
+    const blob = await new Promise(r=>cv.toBlob(r,'image/jpeg',0.7));
+    file._previewURL = URL.createObjectURL(blob);
+  }catch(e){
+    file._previewURL = URL.createObjectURL(file);
+  }
+  return file._previewURL;
+}
+function revokePreview(file){
+  if(file && file._previewURL){ URL.revokeObjectURL(file._previewURL); file._previewURL=null; }
+}
 function renderThumbs(input,container){
   const existing=input._existing||[];
   const sel=input._sel||[];
@@ -831,14 +851,19 @@ function renderThumbs(input,container){
     html+=`<div class="thumb"><img src="${esc(u)}"><button type="button" class="thumb-x" data-ex="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-ex="${i}" data-dir="-1">‹</button>`:''}${i<existing.length-1?`<button type="button" class="thumb-mv" data-ex="${i}" data-dir="1">›</button>`:''}</div>`;
   });
   sel.forEach((f,i)=>{
-    html+=`<div class="thumb"><img src="${URL.createObjectURL(f)}"><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="-1">‹</button>`:''}${i<sel.length-1?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="1">›</button>`:''}</div>`;
+    html+=`<div class="thumb"><img data-prev="${i}" alt=""><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="-1">‹</button>`:''}${i<sel.length-1?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="1">›</button>`:''}</div>`;
   });
   if(existing.length) html+=`<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。×で削除、追加する場合は新しく選んでください。</p>`;
   container.innerHTML=html;
+  // フル解像度を避け、縮小プレビューを後から差し込む（メモリ対策）
+  sel.forEach((f,i)=>{
+    const img=container.querySelector(`img[data-prev="${i}"]`);
+    if(img) makePreviewURL(f).then(url=>{ img.src=url; });
+  });
   container.querySelectorAll('.thumb-x').forEach(b=>{
     b.addEventListener('click',()=>{
       if(b.dataset.ex!=null){ existing.splice(+b.dataset.ex,1); }
-      else { sel.splice(+b.dataset.new,1); syncInputFiles(input); }
+      else { const f=sel[+b.dataset.new]; sel.splice(+b.dataset.new,1); revokePreview(f); syncInputFiles(input); }
       renderThumbs(input,container);
     });
   });
@@ -1259,12 +1284,27 @@ ${cardTags.map(t=>`        <span>${esc(t)}</span>`).join('\n')}
 ========================================================= */
 function loadImage(file){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=URL.createObjectURL(file); }); }
 async function resizeImage(file,maxEdge=1600,q=0.82){
-  const img=await loadImage(file);
-  const scale=Math.min(1,maxEdge/Math.max(img.width,img.height));
-  const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
-  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-  cv.getContext('2d').drawImage(img,0,0,w,h);
-  return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
+  // メモリ節約：縮小しながらデコード（createImageBitmap）。
+  // まず幅 maxEdge で読み込み、縦長で長辺がまだ大きければ小さいbitmapから再縮小。
+  // 失敗時（古い端末など）は従来の <img> デコード方式へフォールバック。
+  try{
+    let bmp = await createImageBitmap(file, { resizeWidth:maxEdge, imageOrientation:'from-image' });
+    if(Math.max(bmp.width,bmp.height) > maxEdge){
+      const scale = maxEdge/Math.max(bmp.width,bmp.height);
+      const bmp2 = await createImageBitmap(bmp, { resizeWidth:Math.round(bmp.width*scale), resizeHeight:Math.round(bmp.height*scale) });
+      bmp.close(); bmp = bmp2;
+    }
+    const cv=document.createElement('canvas'); cv.width=bmp.width; cv.height=bmp.height;
+    cv.getContext('2d').drawImage(bmp,0,0); bmp.close();
+    return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
+  }catch(e){
+    const img=await loadImage(file);
+    const scale=Math.min(1,maxEdge/Math.max(img.width,img.height));
+    const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(img,0,0,w,h);
+    return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
+  }
 }
 
 /* =========================================================

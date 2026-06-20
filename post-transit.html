@@ -248,7 +248,27 @@ const cinfo=v=>COUNTRIES.find(c=>c.v===v);
 /* =========================================================
    写真サムネ（複数・削除可）
 ========================================================= */
-function renderThumbs(input, box){
+// 小さなプレビューURLを作る。
+// 重要：フル解像度のまま <img> に渡すと iPhone でメモリ切れ→タブが落ちる。
+// createImageBitmap で「縮小しながらデコード」してメモリを激減させる。
+// 古い端末などで使えない場合は従来どおり原本URLにフォールバック。
+async function makePreviewURL(file){
+  if(file._previewURL) return file._previewURL;
+  try{
+    const bmp = await createImageBitmap(file, { resizeWidth:400, resizeQuality:'low', imageOrientation:'from-image' });
+    const cv=document.createElement('canvas'); cv.width=bmp.width; cv.height=bmp.height;
+    cv.getContext('2d').drawImage(bmp,0,0); bmp.close();
+    const blob = await new Promise(r=>cv.toBlob(r,'image/jpeg',0.7));
+    file._previewURL = URL.createObjectURL(blob);
+  }catch(e){
+    file._previewURL = URL.createObjectURL(file);
+  }
+  return file._previewURL;
+}
+function revokePreview(file){
+  if(file && file._previewURL){ URL.revokeObjectURL(file._previewURL); file._previewURL=null; }
+}
+async function renderThumbs(input, box){
   box.innerHTML='';
   const existing = input._existing || [];
   existing.forEach((url,i)=>{
@@ -258,14 +278,15 @@ function renderThumbs(input, box){
     box.appendChild(w);
   });
   const files = input._files || [];
-  files.forEach((file,i)=>{
+  files.forEach((file)=>{
     const w=document.createElement('span'); w.className='thumb';
-    const img=document.createElement('img'); img.alt=''; img.src=URL.createObjectURL(file);
+    const img=document.createElement('img'); img.alt='';
     w.appendChild(img);
     const x=document.createElement('button'); x.type='button'; x.className='thumb-x'; x.textContent='×';
-    x.addEventListener('click',()=>{ files.splice(i,1); renderThumbs(input,box); });
+    x.addEventListener('click',()=>{ const idx=files.indexOf(file); if(idx>-1) files.splice(idx,1); revokePreview(file); renderThumbs(input,box); });
     w.appendChild(x);
     box.appendChild(w);
+    makePreviewURL(file).then(url=>{ img.src=url; });
   });
 }
 function wirePhotoInput(input, box){
@@ -477,12 +498,27 @@ window.tabistockNickname = "";
 /* 画像リサイズ（長辺1600px / JPEG 0.82） */
 function loadImage(file){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=URL.createObjectURL(file); }); }
 async function resizeImage(file,maxEdge=1600,q=0.82){
-  const img=await loadImage(file);
-  const scale=Math.min(1,maxEdge/Math.max(img.width,img.height));
-  const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
-  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-  cv.getContext('2d').drawImage(img,0,0,w,h);
-  return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
+  // メモリ節約：縮小しながらデコード（createImageBitmap）。
+  // まず幅 maxEdge で読み込み、縦長で長辺がまだ大きければ小さいbitmapから再縮小。
+  // 失敗時（古い端末など）は従来の <img> デコード方式へフォールバック。
+  try{
+    let bmp = await createImageBitmap(file, { resizeWidth:maxEdge, imageOrientation:'from-image' });
+    if(Math.max(bmp.width,bmp.height) > maxEdge){
+      const scale = maxEdge/Math.max(bmp.width,bmp.height);
+      const bmp2 = await createImageBitmap(bmp, { resizeWidth:Math.round(bmp.width*scale), resizeHeight:Math.round(bmp.height*scale) });
+      bmp.close(); bmp = bmp2;
+    }
+    const cv=document.createElement('canvas'); cv.width=bmp.width; cv.height=bmp.height;
+    cv.getContext('2d').drawImage(bmp,0,0); bmp.close();
+    return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
+  }catch(e){
+    const img=await loadImage(file);
+    const scale=Math.min(1,maxEdge/Math.max(img.width,img.height));
+    const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(img,0,0,w,h);
+    return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
+  }
 }
 async function uploadAndGetUrl(path, blob){
   const r = ref(storage, path);
