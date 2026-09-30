@@ -42,9 +42,10 @@
   .me .nick{font-size:20px;font-weight:800;margin:6px 0}
   .me .email{color:#6c7787;font-size:13px;margin:0 0 18px}
   .me .actions{display:flex;flex-direction:column;gap:10px}
-  .me .actions a,.me .actions button{display:flex;align-items:center;justify-content:center;width:100%;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:700;line-height:1;text-decoration:none;text-align:center;cursor:pointer;font-family:inherit;border:none}
+  .me .actions a,.me .actions button{display:flex;align-items:center;justify-content:center;width:100%;padding:12px 14px;border-radius:4px;font-size:13px;font-weight:700;line-height:1;text-decoration:none;text-align:center;cursor:pointer;font-family:inherit;border:none}
   .a-main{background:#e2683b;color:#fff}
   .a-ghost{background:#faf6ee;color:#1f6f5b;border:1.5px solid #1f6f5b !important}
+  .sub-link{display:block;text-align:right;margin-top:12px;font-size:12px;font-weight:700;color:#1f6f5b;text-decoration:underline;text-underline-offset:3px}
   .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-top:8px}
   .badge.warn{background:#fff3e6;color:#c4691f}
   .badge.ok{background:#e9f5ef;color:#1f6f5b}
@@ -185,9 +186,7 @@
         <button class="a-ghost" id="editToggleBtn" type="button" style="flex:1">プロフィールを編集</button>
         <a class="a-main" href="./post.html" style="flex:1">投稿する</a>
       </div>
-      <div class="actions" style="margin-top:10px">
-        <a class="a-ghost" href="./post-transit.html" style="flex:1">✈ トランジット記事を投稿する</a>
-      </div>
+      <a class="sub-link" href="./post-transit.html">トランジット記事を投稿する →</a>
       <div class="msg" id="avatarMsg" style="margin-top:12px"></div>
 
       <!-- プロフィール編集（ボタンで開閉・初期は非表示） -->
