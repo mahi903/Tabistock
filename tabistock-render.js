@@ -690,7 +690,7 @@ ${heroDots}
   <section class="article-hero">
 ${heroCarousel}
   <div class="hero-text">
-    <p class="hero-eyebrow">Transit${cen?' · '+esc(cen):''}</p>
+    <p class="hero-eyebrow is-transit">Transit${cen?' · '+esc(cen):''}</p>
     <h1>${esc(title)}</h1>
     <div class="hero-info">
       ${infoRows}

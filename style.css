@@ -38,7 +38,7 @@ a {
 }
 
 /* ===== COMMON HEADER (matches index.html .hd) ===== */
-.hd{position:sticky;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:18px 6%;transition:.4s ease;background:rgba(246,239,228,.85);backdrop-filter:blur(16px);box-shadow:0 4px 18px rgba(0,0,0,.04)}
+.hd{position:sticky;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:18px 6%;transition:.4s ease;background:rgba(251, 249, 244,.85);backdrop-filter:blur(16px);box-shadow:0 4px 18px rgba(0,0,0,.04)}
 .hd.scrolled{padding:14px 6%;box-shadow:0 6px 24px rgba(0,0,0,.08)}
 .hd .logo{font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;font-size:28px;font-weight:900;letter-spacing:-0.04em;color:var(--green)}
 .hd-r{display:flex;align-items:center;gap:14px}
@@ -87,7 +87,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(246, 239, 228, 0.85);
+  background: rgba(251, 249, 244, 0.85);
   backdrop-filter: blur(16px);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
   position: sticky;
@@ -3552,3 +3552,108 @@ body.ov-lock{ overflow:hidden; }
 
   .site-footer { margin-top: 40px; padding-top: 30px; padding-bottom: 30px; }
 }
+
+/* =========================
+   記事ページ（スマホ）：カードをやめて、写真を横幅いっぱいに（ニュース・メディア記事の形）
+========================= */
+@media (max-width: 768px) {
+  .article-hero {
+    margin: 0 0 6px;
+    width: 100%;
+    max-width: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+  .hero-carousel { width: 100%; }
+  .hero-images {
+    margin: 0;
+    width: 100%;
+    border-radius: 0;
+    height: 75vw;
+  }
+  .hero-images img { width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
+  .hero-text { padding-left: 18px; padding-right: 18px; }
+}
+
+/* =========================
+   記事ページ（スマホ）：本文もカードをやめて、細い線で区切る（上から読み流せる形）
+========================= */
+@media (max-width: 768px) {
+  /* 通貨・言語・治安：背景をなくし、上下の線で区切る */
+  .hero-basic-info {
+    background: transparent;
+    border-radius: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 2px 0;
+  }
+  .hero-basic-info div { padding: 8px 12px; border-right-color: var(--line); }
+  .hero-basic-info div:first-child { padding-left: 0; }
+
+  /* 旅行時期・難易度・投稿者：箱をやめて縦線区切り */
+  .hero-info { gap: 0; }
+  .hero-info div {
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--line);
+    border-radius: 0;
+    padding: 2px 12px;
+  }
+  .hero-info div:first-child { border-left: none; padding-left: 0; }
+
+  /* 旅の概要：ボタンをやめて、線で区切った一覧に */
+  .overview-tabs { gap: 0; padding-left: 18px; padding-right: 18px; }
+  .overview-tabs > * {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: none;
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+  .overview-tabs > *:first-child { border-top: 1px solid var(--line); }
+  .ov-tab:hover { transform: none; box-shadow: none; }
+
+  /* DAY：カードをやめて、線で区切った一覧に */
+  .day-grid { gap: 0; padding-left: 18px; padding-right: 18px; }
+  .day-card {
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    border-bottom: 1px solid var(--line);
+    padding: 14px 2px !important; /* 上の「記事ページ」ブロックの !important を上書き */
+  }
+  .day-card:first-child { border-top: 1px solid var(--line); }
+
+  /* 投稿者からのひとこと：箱をやめて、左の緑線だけ残す */
+  .tips-section { padding-left: 18px; padding-right: 18px; }
+  .tips-card {
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    border: none;
+    border-left: 3px solid var(--green);
+    padding: 4px 0 4px 14px;
+  }
+  .tips-card::before { display: none; }
+
+  /* 投稿者：白い箱をやめて、上下の線で区切る */
+  .author-card {
+    margin-left: 18px;
+    margin-right: 18px;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 12px 0;
+  }
+  .comments-section { padding-left: 18px; padding-right: 18px; }
+  .section-intro { padding-left: 18px; padding-right: 18px; }
+  .article-actions { padding-left: 18px; padding-right: 18px; }
+}
+
+/* 記事上部の「MONGOLIA · EAST ASIA」は非表示（シェア画像用にHTMLには残す）。トランジット記事の「Transit」は残す */
+.hero-eyebrow:not(.is-transit) { display: none; }
