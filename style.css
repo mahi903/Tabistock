@@ -3821,3 +3821,134 @@ body.ov-lock{ overflow:hidden; }
   .route-card { background: transparent; box-shadow: none; border: none; padding: 0; }
   .route-card .route-map { border-radius: 14px; }
 }
+
+/* =========================
+   ルートマップ（共通）：白い縁取りで地図を見やすく。
+   スマホで横スクロール用カードの幅指定（min-width）が効いて左に寄るのを打ち消す
+========================= */
+.route-card {
+  min-width: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  flex: none !important;
+  margin: 0 !important;
+  padding: 6px !important;
+  background: #fff !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 6px 18px rgba(30, 40, 50, 0.06) !important;
+}
+.route-card .route-map { border-radius: 13px; }
+
+/* =========================
+   記事ページ（PC）修正：写真は横いっぱいにせず、本文と同じ幅で縦横比固定（noteのような形）。
+   DAYは縦に積む（写真が多いと横に広がりすぎるため）
+========================= */
+@media (min-width: 769px) {
+  .hero-carousel {
+    max-width: 816px;
+    margin: 32px auto 0;
+    border-radius: 14px;
+  }
+  .hero-images {
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border-radius: 14px;
+  }
+
+  .day-grid { grid-template-columns: minmax(0, 1fr); }
+  .day-card { display: block; min-width: 0; }
+  .day-card > * { min-width: 0; }
+  .day-content { margin-top: 12px; }
+  .day-text p { max-width: none; }
+  .photo-slider { max-width: 100%; min-width: 0; }
+}
+
+/* =========================
+   記事ページ（広いPC）：3列レイアウト。左＝投稿者、中央＝記事、右＝目次・検索・同じ国の記事
+   （articles/view.html の buildPcLayout が組み立てる）
+========================= */
+.pc-side { display: none; }
+.article-layout .section-intro,
+.article-layout .day-card,
+.article-layout .tips-section,
+.article-layout #comments { scroll-margin-top: 100px; }
+
+@media (min-width: 1300px) {
+  .article-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 880px minmax(0, 1fr);
+    align-items: start;
+  }
+  .article-center { min-width: 0; }
+  .pc-side { display: block; align-self: stretch; padding-top: 32px; }
+  .pc-left { justify-self: end; width: 220px; padding-right: 8px; }
+  .pc-right { justify-self: start; width: 240px; padding-left: 8px; }
+  .pc-sticky { position: sticky; top: 100px; }
+
+  /* 左：投稿者 */
+  .pc-author + .pc-author { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .pc-author-head { display: flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; }
+  .pc-author-head img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--line); }
+  .pc-author-head strong { font-size: 16px; line-height: 1.35; }
+  .pc-author-head:hover strong { text-decoration: underline; }
+  .pc-author p { margin: 14px 0 14px; font-size: 13px; line-height: 1.8; color: var(--ink-2); }
+  .pc-author-actions { display: flex; align-items: center; gap: 10px; }
+  .pc-author-actions .author-follow { margin: 0; }
+  .pc-author-ig { color: var(--ink-2); font-size: 19px; }
+
+  /* 右：目次 */
+  .pc-side-title {
+    margin: 0 0 10px;
+    font-family: "Manrope", sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .14em;
+    color: var(--terra);
+  }
+  .pc-toc ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); }
+  .pc-toc li a {
+    display: block;
+    margin-left: -2px;
+    padding: 6px 0 6px 14px;
+    border-left: 2px solid transparent;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--ink-2);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pc-toc li.sub a { padding-left: 26px; font-weight: 500; font-size: 12.5px; }
+  .pc-toc li a:hover { color: var(--green); }
+  .pc-toc li a.on { color: var(--green); border-left-color: var(--green); }
+
+  /* 右：検索 */
+  .pc-search {
+    display: flex;
+    align-items: center;
+    margin-top: 26px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 4px 4px 14px;
+  }
+  .pc-search input { flex: 1; min-width: 0; border: none; outline: none; background: none; font: inherit; font-size: 13px; color: var(--ink); }
+  .pc-search button {
+    width: 30px; height: 30px; border: none; border-radius: 50%;
+    background: var(--green); color: #fff; cursor: pointer; font-size: 12px;
+  }
+
+  /* 右：同じ国の記事 */
+  .pc-related { margin-top: 26px; }
+  .pc-related-list { display: flex; flex-direction: column; gap: 12px; }
+  .pc-rel { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+  .pc-rel img, .pc-rel-noimg { width: 64px; height: 48px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: var(--line); }
+  .pc-rel span {
+    font-size: 12.5px; font-weight: 700; line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .pc-rel:hover span { color: var(--green); }
+}

@@ -603,10 +603,10 @@ drawerFilterBtns.forEach(btn => {
 <!-- ===== 記事をFirebaseから読み込んで描画 ===== -->
 <script type="module">
 import { db, auth } from "../firebase-config.js";
-import { doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, where, orderBy, getCountFromServer, serverTimestamp }
+import { doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, where, orderBy, limit, getCountFromServer, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { renderArticleBody, esc, para } from "../tabistock-render.js";
+import { renderArticleBody, esc, para, cinfo } from "../tabistock-render.js";
 import { sendNotification } from "../notify.js";
 
 const root = document.getElementById("article-root");
@@ -1033,6 +1033,112 @@ function wireFollowBtn(btn){
   });
 }
 
+// =========================
+// PC（広い画面）だけの3列レイアウト：左＝投稿者、右＝目次・検索・同じ国の記事
+// スマホや狭い画面では CSS で非表示（今まで通り1列）
+// =========================
+const SIDE_AVATAR = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e9dcc6%22%2F%3E%3C%2Fsvg%3E";
+function buildPcLayout(d){
+  const comments = document.getElementById("comments");
+  const layout = document.createElement("div");
+  layout.className = "article-layout";
+  layout.innerHTML = `<aside class="pc-side pc-left" aria-label="投稿者"></aside><div class="article-center"></div><aside class="pc-side pc-right" aria-label="目次と検索"></aside>`;
+  root.parentNode.insertBefore(layout, root);
+  const center = layout.querySelector(".article-center");
+  center.appendChild(root);
+  if(comments) center.appendChild(comments);
+
+  // 左：投稿者（共同投稿なら全員）
+  const left = layout.querySelector(".pc-left");
+  left.innerHTML = `<div class="pc-sticky">` + (d.authors || []).map(a => {
+    let ig = "";
+    if(a.instagram){
+      const v = String(a.instagram).trim();
+      ig = /^https?:\/\//.test(v) ? v : ("https://www.instagram.com/" + v.replace(/^@/, "") + "/");
+    }
+    return `<div class="pc-author">
+      <a class="pc-author-head" href="../user.html?uid=${esc(a.id)}">
+        <img src="${a.photoURL ? esc(a.photoURL) : SIDE_AVATAR}" alt="" onerror="this.src='${SIDE_AVATAR}'">
+        <strong>${esc(a.nickname)}</strong>
+      </a>
+      <p>${esc(a.bio || "旅程を投稿しています。")}</p>
+      <div class="pc-author-actions">
+        <button class="author-follow" type="button" aria-pressed="false" data-uid="${esc(a.id)}" style="display:none"><i class="fa-solid fa-plus"></i><span>フォロー</span></button>
+        ${ig ? `<a class="pc-author-ig" href="${esc(ig)}" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>` : ""}
+      </div>
+    </div>`;
+  }).join("") + `</div>`;
+  left.querySelectorAll(".author-follow").forEach(wireFollowBtn);
+
+  // 右：目次（各セクション見出し・各DAY・コメント）
+  const items = [];
+  root.querySelectorAll(".section-intro, .day-card, .tips-section").forEach((el, i) => {
+    let label = "", sub = false;
+    if(el.classList.contains("section-intro")){
+      const h = el.querySelector("h2"); label = h ? h.textContent.trim() : "";
+    }else if(el.classList.contains("day-card")){
+      const l = el.querySelector(".day-label"), t = el.querySelector(".day-title");
+      label = ((l ? l.textContent.trim().replace(/\.$/, "") : "") + "　" + (t ? t.textContent.trim() : "")).trim();
+      sub = true;
+    }else{
+      const h = el.querySelector("h2"); label = h ? h.textContent.trim() : "";
+    }
+    if(!label) return;
+    if(!el.id) el.id = "sec-" + i;
+    items.push({ id: el.id, label, sub });
+  });
+  if(comments) items.push({ id: "comments", label: "コメント", sub: false });
+
+  const c0 = cinfo((d.countries || [])[0]);
+  const right = layout.querySelector(".pc-right");
+  right.innerHTML = `<div class="pc-sticky">
+    ${items.length ? `<nav class="pc-toc"><p class="pc-side-title">目次</p><ol>${items.map(it =>
+      `<li class="${it.sub ? "sub" : ""}"><a href="#${esc(it.id)}" data-id="${esc(it.id)}">${esc(it.label)}</a></li>`).join("")}</ol></nav>` : ""}
+    <form class="pc-search" action="../search.html" method="get" role="search">
+      <input type="search" name="q" placeholder="旅先・キーワードで検索" aria-label="記事を検索">
+      <button type="submit" aria-label="検索"><i class="fa-solid fa-magnifying-glass"></i></button>
+    </form>
+    <div class="pc-related" hidden><p class="pc-side-title">${c0 ? esc(c0.jp) + "の旅" : "ほかの旅"}</p><div class="pc-related-list"></div></div>
+  </div>`;
+
+  // 目次：今読んでいる場所に色をつける
+  const links = [...right.querySelectorAll(".pc-toc a")];
+  if(links.length){
+    const targets = links.map(a => document.getElementById(a.dataset.id)).filter(Boolean);
+    let ticking = false;
+    const update = () => {
+      ticking = false;
+      let cur = null;
+      for(const t of targets){ if(!t.hidden && t.getBoundingClientRect().top < 160) cur = t.id; }
+      links.forEach(a => a.classList.toggle("on", a.dataset.id === cur));
+    };
+    window.addEventListener("scroll", () => { if(!ticking){ ticking = true; requestAnimationFrame(update); } }, { passive: true });
+    update();
+  }
+
+  // 同じ国の記事（自分以外・最大4件）
+  if(c0){
+    getDocs(query(collection(db, "articles"),
+      where("countries", "array-contains", c0.v), where("status", "==", "published"), limit(6)))
+      .then(snap => {
+        const rows = [];
+        snap.forEach(s => {
+          if(s.id === id || rows.length >= 4) return;
+          const a = s.data();
+          const img = a.thumbUrl || (a.heroUrls && a.heroUrls[0]) || "";
+          rows.push(`<a class="pc-rel" href="./view.html?id=${esc(s.id)}">
+            ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : `<span class="pc-rel-noimg"></span>`}
+            <span>${esc(a.title || "旅程")}</span></a>`);
+        });
+        if(rows.length){
+          right.querySelector(".pc-related-list").innerHTML = rows.join("");
+          right.querySelector(".pc-related").hidden = false;
+        }
+      })
+      .catch(e => console.warn("同じ国の記事の取得に失敗:", e));
+  }
+}
+
 // いいね（Firestore: articles/{id}/likes/{uid}・要ログイン）
 function wireLike(){
   const likeBtn = root.querySelector("#likeBtn"), likeCount = root.querySelector("#likeCount");
@@ -1457,6 +1563,7 @@ function initRouteMap(d){
     initInteractions();
     initComments();
     initRouteMap(d);
+    buildPcLayout(d);
   }catch(err){
     console.error(err);
     showError("読み込み中にエラーが発生しました。");
