@@ -14,32 +14,26 @@
 <style>
   :root{ --green:#1f6f5b; --green-d:#185645; --gold:#c2873f; --cream:#fffaf2; --line:#ece2d0; --ink:#2b2b2b; --mut:#6b7280; }
   *{box-sizing:border-box}
-  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif; color:var(--ink); background:#f6f1e8; line-height:1.7; }
-  .wrap{ max-width:860px; margin:0 auto; padding:32px 20px 120px; }
-  .phero{ position:relative; overflow:hidden; border-radius:22px; padding:40px 34px; margin:0 0 28px; background:linear-gradient(150deg,#2a6f8f,#3f9ec2); color:#fff; }
-  .phero .eyebrow{ font-family:"Manrope",system-ui,sans-serif; letter-spacing:.22em; text-transform:uppercase; font-size:12px; font-weight:800; color:#ffe2a8; margin:0 0 10px; }
-  .phero h1{ font-size:clamp(24px,4.4vw,38px); line-height:1.2; margin:0 0 14px; color:#fff; }
-  .phero p{ color:rgba(255,255,255,.94); font-size:14px; line-height:1.85; margin:0; max-width:640px; }
-  .phero p b{ color:#fff; }
-  .phero-list{ margin:12px 0; padding-left:1.25em; max-width:640px; color:rgba(255,255,255,.95); font-size:14px; line-height:1.8; }
-  .phero-list li{ margin:5px 0; }
-  .phero-list li b{ color:#fff; }
-  .phero .back{ display:inline-block; margin-top:16px; font-size:13px; font-weight:700; color:#fff; text-decoration:none; opacity:.9; }
+  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif; color:var(--ink); background:#f6f1e8; line-height:1.55; }
+  .wrap{ max-width:860px; margin:0 auto; padding:16px 14px 110px; }
+  .phero{ position:relative; border-radius:16px; padding:14px 18px; margin:0 0 16px; background:linear-gradient(150deg,#2a6f8f,#3f9ec2); color:#fff; }
+  .phero .eyebrow{ font-family:"Manrope",system-ui,sans-serif; letter-spacing:.2em; text-transform:uppercase; font-size:10px; font-weight:800; color:#ffe2a8; margin:0 0 2px; }
+  .phero h1{ font-size:20px; line-height:1.3; margin:0 0 4px; color:#fff; }
+  .phero p{ color:rgba(255,255,255,.94); font-size:12.5px; line-height:1.5; margin:0; }
+  .phero .back{ position:absolute; top:12px; right:16px; font-size:12px; font-weight:700; color:#fff; text-decoration:none; opacity:.85; }
   .phero .back:hover{ opacity:1; }
-  @media(max-width:600px){ .phero{ padding:30px 22px; } }
-  .card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:22px 22px 24px; margin-bottom:22px; }
-  .card > h2{ font-size:16px; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
-  .card > h2 .num{ display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:var(--green); color:#fff; border-radius:50%; font-size:12px; font-weight:800; }
-  .card .hint{ color:var(--mut); font-size:12.5px; margin:0 0 16px; }
-  label.f{ display:block; font-size:13px; font-weight:700; margin:14px 0 5px; }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 14px 16px; margin-bottom:12px; }
+  .card > h2{ font-size:15px; margin:0 0 2px; display:flex; align-items:center; gap:8px; }
+  .card > h2 .num{ display:inline-flex; width:22px; height:22px; align-items:center; justify-content:center; background:var(--green); color:#fff; border-radius:50%; font-size:12px; font-weight:800; }
+  .card .hint{ color:var(--mut); font-size:12px; margin:0 0 8px; }
+  label.f{ display:block; font-size:12.5px; font-weight:700; margin:10px 0 3px; }
   label.f .req{ color:#d4493f; font-size:11px; margin-left:4px; }
   label.f .opt{ color:var(--mut); font-size:11px; margin-left:4px; font-weight:600; }
   input[type=text],input[type=number],textarea,select{
-    width:100%; min-width:0; max-width:100%; padding:9px 11px; border:1px solid #d9d2c4; border-radius:10px; font-size:14px; font-family:inherit; background:#fff; color:var(--ink); }
-  textarea{ min-height:120px; resize:vertical; }
-  .row2{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
-  @media(max-width:600px){ .row2{ grid-template-columns:minmax(0,1fr); } }
-  .filebox{ border:1px solid #d9d2c4; border-radius:10px; padding:10px; background:#fff; }
+    width:100%; min-width:0; max-width:100%; padding:7px 10px; border:1px solid #d9d2c4; border-radius:8px; font-size:14px; font-family:inherit; background:#fff; color:var(--ink); }
+  textarea{ min-height:96px; resize:vertical; }
+  .row2{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+  .filebox{ border:1px solid #d9d2c4; border-radius:8px; padding:8px; background:#fff; }
   .thumbs{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
   .thumbs img{ width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--line); display:block; }
   .thumb{ position:relative; display:inline-block; }
@@ -51,7 +45,7 @@
   @keyframes thumbspin{ to{ transform:rotate(360deg); } }
   /* 場所ピン */
   .loc{ margin-top:6px; }
-  .loc-toggle{ background:#fff; border:1px solid #d9d2c4; border-radius:999px; padding:8px 14px; font-size:13px; font-weight:700; color:var(--green); cursor:pointer; }
+  .loc-toggle{ background:#fff; border:1px solid #d9d2c4; border-radius:999px; padding:6px 12px; font-size:13px; font-weight:700; color:var(--green); cursor:pointer; }
   .loc-body{ display:none; margin-top:10px; }
   .loc.open .loc-body{ display:block; }
   .loc-map{ height:240px; border-radius:10px; overflow:hidden; background:#aad3df; border:1px solid #d9d2c4; }
@@ -64,7 +58,7 @@
   .loc-foot{ display:flex; align-items:center; gap:10px; margin-top:8px; font-size:12.5px; color:var(--mut); flex-wrap:wrap; }
   .loc-clear{ background:#faf6ee; border:1px solid #d9d2c4; border-radius:999px; padding:5px 12px; font-size:12px; font-weight:700; color:var(--green); cursor:pointer; }
   /* 親記事ピッカー */
-  .pick-btn{ border:1px dashed var(--green); color:var(--green-d); background:#fff; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer; }
+  .pick-btn{ border:1px dashed var(--green); color:var(--green-d); background:#fff; border-radius:8px; padding:8px 14px; font-size:13px; font-weight:700; cursor:pointer; }
   .pick-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; margin-top:12px; }
   .pick-card{ display:flex; gap:10px; align-items:center; text-align:left; border:1.5px solid #e1d8c8; border-radius:12px; padding:10px; background:#fff; cursor:pointer; transition:border-color .12s,background .12s; }
   .pick-card.on{ border-color:var(--green); background:#eaf5f0; }
@@ -77,11 +71,11 @@
   .linked{ display:flex; align-items:center; gap:10px; background:#eaf5f0; border:1px solid #bfe0d3; border-radius:12px; padding:10px 12px; margin-top:10px; font-size:13px; }
   .linked .lk-t{ font-weight:700; color:var(--green-d); }
   .linked .lk-x{ margin-left:auto; background:#fff; border:1px solid #bfe0d3; border-radius:999px; padding:4px 12px; font-size:12px; font-weight:700; color:var(--green-d); cursor:pointer; }
-  .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:130; }
+  .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:10px 16px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:130; }
   /* 投稿ページではPWAの下部タブバーを隠す（投稿バーと重なってボタンが押せなくなるため） */
   body.pwa .tabbar{ display:none !important; }
   body.pwa{ padding-bottom:0 !important; }
-  .btn{ border:none; border-radius:999px; padding:13px 26px; font-size:15px; font-weight:800; cursor:pointer; }
+  .btn{ border:none; border-radius:999px; padding:10px 22px; font-size:14px; font-weight:800; cursor:pointer; }
   .btn-main{ background:var(--green); color:#fff; }
   .btn-main:disabled{ opacity:.5; cursor:not-allowed; }
   .btn-ghost{ background:#fff; border:1px solid #d9d2c4; color:var(--ink); }
@@ -93,22 +87,16 @@
 <body>
 <div class="wrap">
   <section class="phero">
+    <a class="back" href="index.html">← トップ</a>
     <p class="eyebrow">Transit / Layover</p>
-    <h1>トランジットの過ごし方を投稿する</h1>
-    <p>こんなニーズに応えるトランジット専用の投稿フォームです。</p>
-    <ul class="phero-list">
-      <li>トランジットだけど入国してしっかり観光した</li>
-      <li>乗り換えの時間は本編の旅行記事とは別にまとめたい</li>
-      <li>自分なりの<b>乗り継ぎの過ごし方</b>を誰かに伝えたい</li>
-    </ul>
-    <p>国名・空港・乗り継ぎ時間だけ書けばOK。あなたの<b>旅行記事と紐付けること</b>もできます。</p>
-    <a class="back" href="index.html">← トップに戻る</a>
+    <h1>トランジットを投稿する</h1>
+    <p>乗り継ぎ中の過ごし方を、旅行記事とは別にまとめられます。管理者の承認後に公開されます。</p>
   </section>
 
   <!-- ===== 0. 基本（必須） ===== -->
   <section class="card">
     <h2><span class="num">0</span>基本情報</h2>
-    <p class="hint">必須は3つだけ。国・空港・乗り継ぎ時間を入れれば投稿できます。</p>
+    <p class="hint">必須は国・空港・乗り継ぎ時間の3つだけです。</p>
 
     <label class="f">投稿者ニックネーム<span class="req">登録名で自動入力</span></label>
     <input type="text" id="author" placeholder="例：mahiro" value="mahiro" autocomplete="off">
@@ -121,7 +109,7 @@
     <div class="row2">
       <div>
         <label class="f">空港または都市<span class="req">必須</span></label>
-        <input type="text" id="airport" placeholder="例：ドバイ／仁川国際空港（ICN）">
+        <input type="text" id="airport" placeholder="例：仁川空港（ICN）">
       </div>
       <div>
         <label class="f">乗り継ぎ時間<span class="req">必須</span></label>
@@ -164,7 +152,7 @@
   <!-- ===== 2. 紐付け（任意） ===== -->
   <section class="card">
     <h2><span class="num">2</span>この旅行の記事を紐付け</h2>
-    <p class="hint">このトランジットが含まれる旅行記事を1つ選べます（任意）。記事どうしが相互リンクされます。共同投稿の場合は、共同投稿者が同じ旅行記事だけが選べます。</p>
+    <p class="hint">旅行記事と相互リンクできます（任意）。共同投稿は、共同投稿者が同じ記事だけ選べます。</p>
     <div id="parentWrap">
       <button type="button" class="pick-btn" id="parentPick">＋ この旅行の記事を追加</button>
       <div class="pick-list" id="parentList" style="display:none"></div>
@@ -175,7 +163,7 @@
 
 <div class="bar">
   <button class="btn btn-ghost" id="saveDraft" type="button" title="未完成でもマイページに下書きとして保存します">下書き保存</button>
-  <button class="btn btn-main" id="generate" type="button">この内容で投稿する（承認後に公開）</button>
+  <button class="btn btn-main" id="generate" type="button">投稿する</button>
   <span class="status" id="status"></span>
 </div>
 
@@ -778,7 +766,7 @@ onAuthStateChanged(auth, async (user) => {
         parent
       });
       const gen = document.getElementById("generate");
-      if(gen) gen.textContent = (data.status === "published") ? "この内容で更新する" : "更新して申請する（承認後に公開）";
+      if(gen) gen.textContent = (data.status === "published") ? "この内容で更新する" : "更新して申請する";
       const sd = document.getElementById("saveDraft"); if(sd) sd.textContent = "下書きとして保存";
     }catch(e){ console.error(e); alert("記事の読み込みに失敗しました。"); }
   }
