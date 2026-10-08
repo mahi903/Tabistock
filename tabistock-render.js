@@ -96,6 +96,60 @@ export function buildTags(d){
   return tags;
 }
 
+const DEF_AVATAR="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e7ddcb%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2240%22%20r%3D%2218%22%20fill%3D%22%23b9ad95%22%2F%3E%3Cpath%20d%3D%22M20%2086c0-17%2013-28%2030-28s30%2011%2030%2028z%22%20fill%3D%22%23b9ad95%22%2F%3E%3C%2Fsvg%3E";
+
+// 記事の投稿者一覧（共同投稿なら複数）。view.html が d.authors を詰めて渡す。
+// 無ければ従来の単独著者フィールドから1人分を組み立てる。
+function authorsOf(d){
+  if(Array.isArray(d.authors) && d.authors.length) return d.authors;
+  return [{ id:d.authorId||'', nickname:d.authorNickname||d.author||'', photoURL:d.authorPhotoURL||'',
+            bio:d.authorBio||'', instagram:d.authorInstagram||'', isAdmin:!!d.authorIsAdmin }];
+}
+
+// hero の「投稿者」欄：アイコン＋名前を人数分並べる
+function heroAuthorsHTML(authors){
+  return `<span class="hero-authors">${authors.map(a=>{
+    const inner=`<img class="hero-author-icon" src="${a.photoURL?esc(a.photoURL):DEF_AVATAR}" alt="" onerror="this.src='${DEF_AVATAR}'"><span class="hero-author-name">${esc(a.nickname)}</span>`;
+    return a.id
+      ? `<a class="hero-author" href="../user.html?uid=${esc(a.id)}">${inner}</a>`
+      : `<span class="hero-author">${inner}</span>`;
+  }).join('')}</span>`;
+}
+
+// 記事末尾の投稿者カード：人数分
+function authorCardsHTML(authors){
+  const cards=authors.map(a=>{
+    const adminBadge=a.isAdmin?' <i class="fa-solid fa-circle-check admin-badge" title="管理者"></i>':'';
+    const nameHTML=a.id
+      ? `<a class="author-name-link" href="../user.html?uid=${esc(a.id)}">${esc(a.nickname)}</a>`
+      : esc(a.nickname);
+    let igUrl='';
+    if(a.instagram){
+      const ig=String(a.instagram).trim();
+      igUrl=/^https?:\/\//.test(ig)?ig:('https://www.instagram.com/'+ig.replace(/^@/,'')+'/');
+    }
+    return `<section class="author-card">
+  <img src="${a.photoURL?esc(a.photoURL):DEF_AVATAR}" alt="投稿者アイコン" class="author-icon" onerror="this.src='${DEF_AVATAR}'">
+  <div class="author-info">
+    <p class="author-label">Author</p>
+    <div class="author-name-row">
+      <h2>${nameHTML}${adminBadge}</h2>
+      <button class="author-follow" type="button" aria-pressed="false" data-uid="${esc(a.id)}" style="display:none">
+        <i class="fa-solid fa-plus"></i><span>フォロー</span>
+      </button>
+    </div>
+    <p>${esc(a.bio||'旅程を投稿しています。')}</p>
+    ${igUrl?`<div class="author-socials">
+      <a href="${esc(igUrl)}" target="_blank" rel="noopener" class="author-social" aria-label="Instagram">
+        <i class="fa-brands fa-instagram"></i>
+      </a>
+    </div>`:''}
+  </div>
+</section>`;
+  }).join('\n');
+  return authors.length>1?`<div class="author-cards">\n${cards}\n</div>`:cards;
+}
+
 // 記事本文（hero〜投稿者カード）。view.html の #article-root に挿入する。
 export function renderArticleBody(d){
   // トランジット記事は専用の簡易レイアウトで描画
@@ -103,20 +157,6 @@ export function renderArticleBody(d){
   const stars='★'.repeat(d.difficulty||0)+'☆'.repeat(5-(d.difficulty||0));
   const period=fmtPeriod(d.dateStart,d.dateEnd);
   const tags=buildTags(d);
-  const author=d.authorNickname||d.author||'';
-  const authorId=d.authorId||'';
-  const adminBadge=d.authorIsAdmin?' <i class="fa-solid fa-circle-check admin-badge" title="管理者"></i>':'';
-  const authorNameHTML=authorId
-    ? `<a class="author-name-link" href="../user.html?uid=${esc(authorId)}">${esc(author)}</a>`
-    : esc(author);
-  const authorPhoto=d.authorPhotoURL||'';
-  const authorBio=d.authorBio||'旅程を投稿しています。';
-  let igUrl='';
-  if(d.authorInstagram){
-    const ig=String(d.authorInstagram).trim();
-    igUrl=/^https?:\/\//.test(ig)?ig:('https://www.instagram.com/'+ig.replace(/^@/,'')+'/');
-  }
-  const defAvatar="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e7ddcb%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2240%22%20r%3D%2218%22%20fill%3D%22%23b9ad95%22%2F%3E%3Cpath%20d%3D%22M20%2086c0-17%2013-28%2030-28s30%2011%2030%2028z%22%20fill%3D%22%23b9ad95%22%2F%3E%3C%2Fsvg%3E";
   const pc=cinfo((d.countries||[])[0]);
   const allCountries=(d.countries||[]).map(v=>cinfo(v)).filter(Boolean);
   const eyebrow=allCountries.length>1
@@ -292,9 +332,7 @@ ${heroDots}
 <div class="hero-info">
       <div><span>旅行時期</span><strong>${esc(period)}</strong></div>
       <div><span>旅の難易度</span><strong>${stars}</strong></div>
-      <div><span>投稿者</span><strong>${authorId
-        ? `<a class="hero-author" href="../user.html?uid=${esc(authorId)}"><img class="hero-author-icon" src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="" onerror="this.src='${defAvatar}'"><span class="hero-author-name">${esc(author)}</span></a>`
-        : `<span class="hero-author"><img class="hero-author-icon" src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="" onerror="this.src='${defAvatar}'"><span class="hero-author-name">${esc(author)}</span></span>`}</strong></div>
+      <div><span>投稿者</span><strong>${heroAuthorsHTML(authorsOf(d))}</strong></div>
     </div>
     <div class="hero-tags">
 ${tags.map(t=>`      <span>${esc(t)}</span>`).join('\n')}
@@ -358,25 +396,7 @@ ${transitLinks}
   </button>
 </section>
 
-<section class="author-card">
-  <img src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="投稿者アイコン" class="author-icon" onerror="this.src='${defAvatar}'">
-
-  <div class="author-info">
-    <p class="author-label">Author</p>
-    <div class="author-name-row">
-      <h2>${authorNameHTML}${adminBadge}</h2>
-      <button class="author-follow" id="followBtn" type="button" aria-pressed="false" data-uid="${esc(authorId)}" style="display:none">
-        <i class="fa-solid fa-plus"></i><span>フォロー</span>
-      </button>
-    </div>
-    <p>${esc(authorBio)}</p>
-    ${igUrl?`<div class="author-socials">
-      <a href="${esc(igUrl)}" target="_blank" rel="noopener" class="author-social" aria-label="Instagram">
-        <i class="fa-brands fa-instagram"></i>
-      </a>
-    </div>`:''}
-  </div>
-</section>`;
+${authorCardsHTML(authorsOf(d))}`;
 }
 
 // 乗り継ぎ時間（数値）→「20時間」。値が無ければ空。
@@ -416,20 +436,6 @@ ${cards}
 
 // トランジット記事の本文（hero〜投稿者カード）。view.html の #article-root に挿入。
 function renderTransitBody(d){
-  const author=d.authorNickname||d.author||'';
-  const authorId=d.authorId||'';
-  const adminBadge=d.authorIsAdmin?' <i class="fa-solid fa-circle-check admin-badge" title="管理者"></i>':'';
-  const authorNameHTML=authorId
-    ? `<a class="author-name-link" href="../user.html?uid=${esc(authorId)}">${esc(author)}</a>`
-    : esc(author);
-  const authorPhoto=d.authorPhotoURL||'';
-  const authorBio=d.authorBio||'旅程を投稿しています。';
-  let igUrl='';
-  if(d.authorInstagram){
-    const ig=String(d.authorInstagram).trim();
-    igUrl=/^https?:\/\//.test(ig)?ig:('https://www.instagram.com/'+ig.replace(/^@/,'')+'/');
-  }
-  const defAvatar="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e7ddcb%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2240%22%20r%3D%2218%22%20fill%3D%22%23b9ad95%22%2F%3E%3Cpath%20d%3D%22M20%2086c0-17%2013-28%2030-28s30%2011%2030%2028z%22%20fill%3D%22%23b9ad95%22%2F%3E%3C%2Fsvg%3E";
   const c=cinfo((d.countries||[])[0]);
   const cjp=c?c.jp:'';
   const cen=c?c.en:'';
@@ -451,9 +457,7 @@ ${heroDots}
   const infoRows=[
     `<div><span>空港または都市</span><strong>${esc(d.airport||'')}</strong></div>`,
     lay?`<div><span>乗り継ぎ時間</span><strong>${esc(lay)}</strong></div>`:'',
-    `<div><span>投稿者</span><strong>${authorId
-      ? `<a class="hero-author" href="../user.html?uid=${esc(authorId)}"><img class="hero-author-icon" src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="" onerror="this.src='${defAvatar}'"><span class="hero-author-name">${esc(author)}</span></a>`
-      : `<span class="hero-author"><img class="hero-author-icon" src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="" onerror="this.src='${defAvatar}'"><span class="hero-author-name">${esc(author)}</span></span>`}</strong></div>`
+    `<div><span>投稿者</span><strong>${heroAuthorsHTML(authorsOf(d))}</strong></div>`
   ].filter(Boolean).join('\n      ');
 
   // 親（この旅行の記事）へのリンク
@@ -542,24 +546,7 @@ ${routeSection}
   </button>
 </section>
 
-<section class="author-card">
-  <img src="${authorPhoto?esc(authorPhoto):defAvatar}" alt="投稿者アイコン" class="author-icon" onerror="this.src='${defAvatar}'">
-  <div class="author-info">
-    <p class="author-label">Author</p>
-    <div class="author-name-row">
-      <h2>${authorNameHTML}${adminBadge}</h2>
-      <button class="author-follow" id="followBtn" type="button" aria-pressed="false" data-uid="${esc(authorId)}" style="display:none">
-        <i class="fa-solid fa-plus"></i><span>フォロー</span>
-      </button>
-    </div>
-    <p>${esc(authorBio)}</p>
-    ${igUrl?`<div class="author-socials">
-      <a href="${esc(igUrl)}" target="_blank" rel="noopener" class="author-social" aria-label="Instagram">
-        <i class="fa-brands fa-instagram"></i>
-      </a>
-    </div>`:''}
-  </div>
-</section>`;
+${authorCardsHTML(authorsOf(d))}`;
 }
 
 // 検索カード（search / index 用）。リンクは articles/view.html?id=

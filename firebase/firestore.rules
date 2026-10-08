@@ -68,39 +68,81 @@ service cloud.firestore {
     }
 
     // ---- 記事 ----
+    // 共同投稿（Instagram のコラボ投稿と同じ仕組み）：
+    //   coAuthorInvites … 招待中の uid（元の投稿者が追加・取り消し）
+    //   coAuthorIds     … 承認済みの共同投稿者 uid（本人が承認して入る。投稿者欄に並び、編集もできる）
     match /articles/{articleId} {
 
-      // 公開記事は誰でも閲覧可。下書き/承認待ちは本人と管理者のみ。
+      // 著者・共同投稿者が許可される status 遷移：
+      //   - 同じ status の維持（本文編集など）
+      //   - draft / rejected → pending（申請・再申請）
+      //   - published → hidden（自分で非表示にする）
+      //   - hidden → published（再公開。一度承認済みなので承認不要で戻せる）
+      function okStatusChange() {
+        let a = resource.data.status;
+        let b = request.resource.data.status;
+        return b == a
+            || ((a == 'draft' || a == 'rejected') && b == 'pending')
+            || (a == 'published' && b == 'hidden')
+            || (a == 'hidden' && b == 'published');
+      }
+      function coIds(d)     { return d.get('coAuthorIds', []); }
+      function invites(d)   { return d.get('coAuthorInvites', []); }
+      function onlyChanged(keys) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+      }
+
+      // 公開記事は誰でも閲覧可。下書き/承認待ちは本人・共同投稿者・招待された人・管理者のみ。
+      // （一覧クエリでも評価できるよう、配列は get() を使わず直接参照する）
       allow read: if resource.data.status == 'published'
                   || (isSignedIn() && resource.data.authorId == request.auth.uid)
+                  || (isSignedIn() && request.auth.uid in resource.data.coAuthorIds)
+                  || (isSignedIn() && request.auth.uid in resource.data.coAuthorInvites)
                   || isAdmin();
 
       // 作成：ログイン必須・自分を著者にする・status は 'pending'（申請）か 'draft'（下書き）。
+      //       共同投稿者は承認制なので、作成時点では招待（最大5人）だけ入れられる。
       allow create: if isSignedIn()
                     && request.resource.data.authorId == request.auth.uid
                     && (request.resource.data.status == 'pending'
-                        || request.resource.data.status == 'draft');
+                        || request.resource.data.status == 'draft')
+                    && coIds(request.resource.data).size() == 0
+                    && invites(request.resource.data).size() <= 5;
 
-      // 更新：管理者は何でも可（承認＝status変更を含む）。
-      //       著者は自分の記事を編集可。最初の公開（pending）は管理者承認が必要。
-      //       著者が許可される status 遷移：
-      //         - 同じ status の維持（本文編集など）
-      //         - draft / rejected → pending（申請・再申請）
-      //         - published → hidden（自分で非表示にする）
-      //         - hidden → published（再公開。一度承認済みなので承認不要で戻せる）
+      // 更新：管理者は何でも可（承認＝status変更を含む）。最初の公開（pending）は管理者承認が必要。
       allow update: if isAdmin()
+                    // 元の投稿者：本文編集・招待の追加/取り消し。共同投稿者は「外す」だけ可
+                    //（勝手に追加はできない＝必ず招待→本人の承認を通る）
                     || (isSignedIn()
                         && resource.data.authorId == request.auth.uid
                         && request.resource.data.authorId == request.auth.uid
-                        && (request.resource.data.status == resource.data.status
-                            || ((resource.data.status == 'draft' || resource.data.status == 'rejected')
-                                && request.resource.data.status == 'pending')
-                            || (resource.data.status == 'published'
-                                && request.resource.data.status == 'hidden')
-                            || (resource.data.status == 'hidden'
-                                && request.resource.data.status == 'published')));
+                        && coIds(request.resource.data).toSet().difference(coIds(resource.data).toSet()).size() == 0
+                        && invites(request.resource.data).size() <= 5
+                        && okStatusChange())
+                    // 共同投稿者：本文編集（著者・共同投稿者・招待は変えられない）
+                    || (isSignedIn()
+                        && request.auth.uid in coIds(resource.data)
+                        && request.resource.data.authorId == resource.data.authorId
+                        && coIds(request.resource.data) == coIds(resource.data)
+                        && invites(request.resource.data) == invites(resource.data)
+                        && okStatusChange())
+                    // 共同投稿者：自分だけ抜ける
+                    || (isSignedIn()
+                        && request.auth.uid in coIds(resource.data)
+                        && onlyChanged(['coAuthorIds'])
+                        && coIds(request.resource.data).toSet()
+                           == coIds(resource.data).toSet().difference([request.auth.uid].toSet()))
+                    // 招待された人：承認（招待から自分を外し、共同投稿者に自分を足す）または辞退（外すだけ）
+                    || (isSignedIn()
+                        && request.auth.uid in invites(resource.data)
+                        && onlyChanged(['coAuthorIds', 'coAuthorInvites'])
+                        && invites(request.resource.data).toSet()
+                           == invites(resource.data).toSet().difference([request.auth.uid].toSet())
+                        && (coIds(request.resource.data).toSet()
+                              == coIds(resource.data).toSet().union([request.auth.uid].toSet())
+                            || coIds(request.resource.data).toSet() == coIds(resource.data).toSet()));
 
-      // 削除：管理者、または自分の記事
+      // 削除：管理者、または元の投稿者（共同投稿者は「抜ける」だけ）
       allow delete: if isAdmin()
                     || (isSignedIn() && resource.data.authorId == request.auth.uid);
 

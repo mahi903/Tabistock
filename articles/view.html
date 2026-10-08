@@ -432,7 +432,7 @@ import { sendNotification } from "../notify.js";
 const root = document.getElementById("article-root");
 const id = new URLSearchParams(location.search).get("id");
 // 通知の宛先・本文に使う（IIFEで記事読み込み後にセット）
-let articleAuthorId = null, articleTitle = "";
+let articleAuthorIds = [], articleTitle = "";
 
 // ストーリー画像で「写真全体表示＋ぼかし背景」にする記事ID。
 // （横長サムネを縦カードに cover すると顔などが切れてしまう記事だけここに入れる）
@@ -811,8 +811,10 @@ function openShareMenu(showToast){
 
 // フォロー（Firestore: users/{me}/following/{target} ＋ users/{target}/followers/{me}・要ログイン）
 function wireFollow(){
-  const btn = root.querySelector("#followBtn");
-  if(!btn) return;
+  // 共同投稿では投稿者カードが複数あるので、ボタンごとに配線する
+  root.querySelectorAll(".author-follow").forEach(wireFollowBtn);
+}
+function wireFollowBtn(btn){
   const target = btn.getAttribute("data-uid");
   if(!target){ btn.style.display = "none"; return; }
   let me = null, following = false, busy = false;
@@ -882,7 +884,7 @@ function wireLike(){
       if(liked){ await deleteDoc(ref); liked = false; }
       else {
         await setDoc(ref, { createdAt: serverTimestamp() }); liked = true;
-        sendNotification({ toUid: articleAuthorId, type: "like", articleId: id, articleTitle });
+        articleAuthorIds.forEach(toUid => sendNotification({ toUid, type: "like", articleId: id, articleTitle }));
       }
       paint();
       await refreshCount();
@@ -1119,7 +1121,7 @@ function initComments(){
             createdAt: serverTimestamp()
           });
           inp.value = "";
-          sendNotification({ toUid: articleAuthorId, type: "comment", articleId: id, articleTitle });
+          articleAuthorIds.forEach(toUid => sendNotification({ toUid, type: "comment", articleId: id, articleTitle }));
           await loadComments();
         }catch(e){ console.error(e); alert("投稿できませんでした。"); }
         finally{ btn.disabled = false; }
@@ -1211,21 +1213,26 @@ function initRouteMap(d){
       // 公開前でも本人/管理者はルール上読めるが、ここでは注意表示
       console.log("この記事はまだ公開（承認）されていません。status =", d.status);
     }
-    // 執筆者の公開プロフィール（アイコン・自己紹介・SNS）を反映
-    if(d.authorId){
+    // 執筆者（共同投稿なら全員）の公開プロフィール（アイコン・自己紹介・SNS）を反映
+    const authorIds = [d.authorId, ...(Array.isArray(d.coAuthorIds) ? d.coAuthorIds : [])]
+      .filter((u, i, arr) => u && arr.indexOf(u) === i);
+    d.authors = await Promise.all(authorIds.map(async (uid) => {
+      const a = { id: uid, nickname: uid === d.authorId ? (d.authorNickname || "") : "", photoURL: "", bio: "", instagram: "",
+                  isAdmin: adminSet.has(uid) };
       try{
-        const ps = await getDoc(doc(db, "publicProfiles", d.authorId));
+        const ps = await getDoc(doc(db, "publicProfiles", uid));
         if(ps.exists()){
           const p = ps.data();
-          if(p.nickname) d.authorNickname = p.nickname;
-          if(p.photoURL) d.authorPhotoURL = p.photoURL;
-          if(p.bio) d.authorBio = p.bio;
-          if(p.instagram) d.authorInstagram = p.instagram;
+          if(p.nickname) a.nickname = p.nickname;
+          if(p.photoURL) a.photoURL = p.photoURL;
+          if(p.bio) a.bio = p.bio;
+          if(p.instagram) a.instagram = p.instagram;
         }
       }catch(e){ console.warn("公開プロフィールの取得に失敗:", e); }
-    }
-    d.authorIsAdmin = d.authorId ? adminSet.has(d.authorId) : false;
-    articleAuthorId = d.authorId || null;
+      if(!a.nickname) a.nickname = "旅人";
+      return a;
+    }));
+    articleAuthorIds = authorIds;
     articleTitle = d.title || "";
     document.title = (d.title || "旅程") + "｜Tabistock";
 

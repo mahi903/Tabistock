@@ -806,6 +806,12 @@ a {
 a.hero-author:hover .hero-author-name {
   text-decoration: underline;
 }
+/* 共同投稿：投稿者を横に並べる（はみ出したら折り返し） */
+.hero-authors {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
 
 .hero-basic-info {
   display: grid;
@@ -1897,6 +1903,22 @@ a.hero-author:hover .hero-author-name {
 @media (max-width: 768px) {
   .author-card {
     margin: 24px 22px 56px;
+  }
+}
+
+/* 共同投稿：投稿者カードを縦に詰めて並べる */
+.author-cards .author-card {
+  margin-bottom: 12px;
+}
+.author-cards .author-card + .author-card {
+  margin-top: 0;
+}
+.author-cards .author-card:last-child {
+  margin-bottom: 72px;
+}
+@media (max-width: 768px) {
+  .author-cards .author-card:last-child {
+    margin-bottom: 56px;
   }
 }
 

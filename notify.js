@@ -23,7 +23,7 @@ export async function sendNotification({ toUid, type, articleId = "", articleTit
   try {
     const nick = await myNickname(user.uid);
     await addDoc(collection(db, "users", toUid, "notifications"), {
-      type,                       // 'like' | 'comment' | 'follow' | 'dm'
+      type,                       // 'like' | 'comment' | 'follow' | 'dm' | 'collab'
       fromUid: user.uid,
       fromNickname: nick,
       articleId,
@@ -43,6 +43,10 @@ export async function sendNotification({ toUid, type, articleId = "", articleTit
         title = nick + "さんがコメントしました";
         text = articleTitle || "";
         url = "/articles/view.html?id=" + encodeURIComponent(articleId);
+      } else if (type === "collab") {
+        title = nick + "さんから共同投稿の招待が届きました";
+        text = articleTitle || "";
+        url = "/account.html#collab";
       } else if (type === "follow") {
         title = nick + "さんにフォローされました";
         url = "/user.html?uid=" + encodeURIComponent(user.uid);

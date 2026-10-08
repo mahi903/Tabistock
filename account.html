@@ -109,6 +109,12 @@
   .pbtn-show:hover{background:#e6f3ed}
   .pbtn-del{color:#b53d3d;border:1px solid #f0cccc}
   .pbtn-del:hover{background:#fdf0f0}
+  /* 共同投稿 */
+  .s-collab{background:#f4eefc;color:#6b4bb0}
+  .ppills{display:flex;gap:6px;flex-wrap:wrap}
+  .pbtn-ok{color:#fff;border:1px solid #1f6f5b;background:#1f6f5b}
+  .pbtn-ok:hover{background:#185a4a}
+  .invite-from{font-size:12px;color:#6c7787;margin:0 0 4px}
   .posts-empty{grid-column:1/-1;color:#6c7787;font-size:13px;text-align:center;padding:26px 16px;border:1px dashed #e7ddcb;border-radius:14px}
   /* 設定行（トグル） */
   .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid #eee3d2;border-bottom:1px solid #eee3d2}
@@ -204,6 +210,11 @@
         <div class="msg" id="profileMsg" style="margin-top:12px"></div>
       </div>
 
+      <div id="collabInvitesWrap" hidden>
+        <div class="section-title" id="collab">共同投稿の招待 <span class="count" id="inviteCount"></span></div>
+        <div id="collabInvites" class="posts"></div>
+      </div>
+
       <div class="section-title">自分の投稿 <span class="count" id="postCount"></span></div>
       <div id="myPosts" class="posts"></div>
 
@@ -244,7 +255,7 @@ import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
   onAuthStateChanged, updateProfile, sendEmailVerification, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp, collection, query, where, getDocs, getCountFromServer }
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp, collection, query, where, getDocs, getCountFromServer, arrayUnion, arrayRemove }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref as sRef, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
@@ -514,7 +525,7 @@ $("saveProfileBtn").onclick = async () => {
 };
 
 /* ===== 自分の投稿一覧 ===== */
-function renderPost(d, own){
+function renderPost(d, own, collab){
   const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
   const sc = d.status==="published" ? "s-published" : (d.status==="rejected" ? "s-rejected" : (d.status==="draft" ? "s-draft" : (d.status==="hidden" ? "s-hidden" : "s-pending")));
   const sl = d.status==="published" ? "公開中" : (d.status==="rejected" ? "却下" : (d.status==="draft" ? "下書き" : (d.status==="hidden" ? "非表示" : "承認待ち")));
@@ -527,7 +538,10 @@ function renderPost(d, own){
     }else if(d.status==="hidden"){
       acts += `<button type="button" class="pbtn pbtn-show" data-act="show" data-id="${esc(d.id)}">再公開</button>`;
     }
-    acts += `<button type="button" class="pbtn pbtn-del" data-act="delete" data-id="${esc(d.id)}">削除</button>`;
+    // 削除は元の投稿者だけ。共同投稿者は「抜ける」（自分のプロフィールから外れる）
+    acts += collab
+      ? `<button type="button" class="pbtn pbtn-del" data-act="leave" data-id="${esc(d.id)}">抜ける</button>`
+      : `<button type="button" class="pbtn pbtn-del" data-act="delete" data-id="${esc(d.id)}">削除</button>`;
   }
   return `<div class="pcard">
     <a href="./articles/view.html?id=${esc(d.id)}" style="text-decoration:none;color:inherit;display:block">
@@ -535,7 +549,7 @@ function renderPost(d, own){
       <div class="pbody" style="padding-bottom:8px"><p class="ptitle" style="margin-bottom:0">${esc(d.title||"(無題)")}</p></div>
     </a>
     <div class="pbody" style="padding-top:0">
-      <div class="prow"><span class="ppill ${sc}">${sl}</span><div class="pacts">${acts}</div></div>
+      <div class="prow"><div class="ppills"><span class="ppill ${sc}">${sl}</span>${collab?`<span class="ppill s-collab">共同投稿</span>`:""}</div><div class="pacts">${acts}</div></div>
     </div>
   </div>`;
 }
@@ -543,9 +557,14 @@ async function loadMyPosts(uid){
   const box = $("myPosts");
   box.innerHTML = `<p class="posts-empty">読み込み中…</p>`;
   try{
-    const snap = await getDocs(query(collection(db, "articles"), where("authorId", "==", uid)));
+    // 自分が投稿した記事 ＋ 共同投稿者として参加している記事
+    const [snap, coSnap] = await Promise.all([
+      getDocs(query(collection(db, "articles"), where("authorId", "==", uid))),
+      getDocs(query(collection(db, "articles"), where("coAuthorIds", "array-contains", uid))).catch(e => { console.warn("共同投稿の読み込みに失敗:", e); return null; })
+    ]);
     const docs = [];
     snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
+    if(coSnap) coSnap.forEach(s => { if(!docs.some(x => x.id === s.id)) docs.push({ id: s.id, ...s.data(), _collab: true }); });
     docs.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
     $("postCount").textContent = docs.length ? `${docs.length}件` : "";
     $("postStat").textContent = docs.filter(d => d.status === "published").length;
@@ -553,7 +572,7 @@ async function loadMyPosts(uid){
       box.innerHTML = `<p class="posts-empty">まだ投稿がありません。<br><a href="./post.html">最初の旅程を投稿する →</a></p>`;
       return;
     }
-    box.innerHTML = docs.map(d => renderPost(d, true)).join("");
+    box.innerHTML = docs.map(d => renderPost(d, true, !!d._collab)).join("");
   }catch(err){
     console.error(err);
     box.innerHTML = `<p class="posts-empty">読み込みエラー：${esc(err.message||err)}</p>`;
@@ -568,6 +587,7 @@ $("myPosts").addEventListener("click", async (e) => {
   const uid = auth.currentUser && auth.currentUser.uid;
   if(!id || !uid) return;
   if(act === "delete" && !confirm("この投稿を削除しますか？この操作は取り消せません。")) return;
+  if(act === "leave" && !confirm("この共同投稿から抜けますか？あなたのプロフィールに表示されなくなり、編集もできなくなります。")) return;
   btn.disabled = true;
   try{
     if(act === "hide"){
@@ -576,8 +596,66 @@ $("myPosts").addEventListener("click", async (e) => {
       await updateDoc(doc(db, "articles", id), { status: "published", updatedAt: serverTimestamp() });
     }else if(act === "delete"){
       await deleteDoc(doc(db, "articles", id));
+    }else if(act === "leave"){
+      await updateDoc(doc(db, "articles", id), { coAuthorIds: arrayRemove(uid) });
     }
     await loadMyPosts(uid);
+  }catch(err){
+    console.error(err);
+    btn.disabled = false;
+    alert("操作に失敗しました：" + (err.message || err));
+  }
+});
+
+// 共同投稿の招待（Instagram の「コラボ」と同じ。承認すると投稿者欄に並び、編集もできる）
+async function loadCollabInvites(uid){
+  const wrap = $("collabInvitesWrap"), box = $("collabInvites");
+  try{
+    const snap = await getDocs(query(collection(db, "articles"), where("coAuthorInvites", "array-contains", uid)));
+    const docs = [];
+    snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
+    wrap.hidden = !docs.length;
+    $("inviteCount").textContent = docs.length ? `${docs.length}件` : "";
+    box.innerHTML = docs.map(d => {
+      const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
+      return `<div class="pcard">
+    <a href="./articles/view.html?id=${esc(d.id)}" style="text-decoration:none;color:inherit;display:block">
+      <div class="pthumb" style="background-image:url('${esc(thumb)}')"></div>
+      <div class="pbody" style="padding-bottom:8px">
+        <p class="invite-from"><b>${esc(d.authorNickname||"ある旅人")}</b>さんから共同投稿の招待</p>
+        <p class="ptitle" style="margin-bottom:0">${esc(d.title||"(無題)")}</p>
+      </div>
+    </a>
+    <div class="pbody" style="padding-top:0">
+      <div class="pacts">
+        <button type="button" class="pbtn pbtn-ok" data-inv="accept" data-id="${esc(d.id)}">承認する</button>
+        <button type="button" class="pbtn pbtn-hide" data-inv="decline" data-id="${esc(d.id)}">辞退</button>
+      </div>
+    </div>
+  </div>`;
+    }).join("");
+    if(docs.length && location.hash === "#collab") wrap.scrollIntoView({ behavior: "smooth" });
+  }catch(err){
+    console.error("共同投稿の招待の読み込みに失敗:", err);
+    wrap.hidden = true;
+  }
+}
+
+$("collabInvites").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-inv]");
+  if(!btn) return;
+  const id = btn.dataset.id, act = btn.dataset.inv;
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if(!id || !uid) return;
+  btn.disabled = true;
+  try{
+    const ref = doc(db, "articles", id);
+    if(act === "accept"){
+      await updateDoc(ref, { coAuthorInvites: arrayRemove(uid), coAuthorIds: arrayUnion(uid) });
+    }else{
+      await updateDoc(ref, { coAuthorInvites: arrayRemove(uid) });
+    }
+    await Promise.all([loadCollabInvites(uid), loadMyPosts(uid)]);
   }catch(err){
     console.error(err);
     btn.disabled = false;
@@ -691,6 +769,7 @@ onAuthStateChanged(auth, async (user) => {
       : '<span class="badge warn">メール未確認（受信ボックスを確認）</span>';
     setAvatar(photo, nick);
     loadMyPosts(user.uid);
+    loadCollabInvites(user.uid);
     loadSavedPosts(user.uid);
     loadFollowCounts(user.uid);
     updatePushUI();

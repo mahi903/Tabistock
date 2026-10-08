@@ -25,6 +25,8 @@ post.html の入力項目（gather() が作るJSON）をそのまま土台にし
 |---|---|---|
 | authorId | string | 著者の uid |
 | authorNickname | string | 著者ニックネーム（表示用・非正規化） |
+| coAuthorIds | array<string> | 共同投稿者の uid（承認済み）。投稿者欄に並び、記事の編集もできる |
+| coAuthorInvites | array<string> | 共同投稿に招待中の uid。相手がマイページで承認すると coAuthorIds へ移る |
 | status | string | `pending`（承認待ち） / `published`（公開） / `rejected` |
 | createdAt | timestamp | 作成日時 |
 | updatedAt | timestamp | 更新日時 |
@@ -62,6 +64,13 @@ articles/{articleId}/
   day1-1.jpg, day1-2.jpg, ...    ← 各日の写真
   thumb.jpg                       ← サムネ（= hero1 を流用 or 別保存）
 ```
+
+## 共同投稿（Instagram のコラボ投稿と同じ）
+
+1. 元の投稿者が post.html で友達を検索して招待 → `coAuthorInvites` に入り、相手に通知（type: `collab`）
+2. 相手がマイページ（account.html の「共同投稿の招待」）で承認 → `coAuthorIds` へ移る（辞退なら消えるだけ）
+3. 承認後は記事の投稿者欄・投稿者カードに全員が並び、全員のプロフィールに記事が出る
+4. 編集：元の投稿者と共同投稿者のどちらも可。招待・取り消し・削除は元の投稿者だけ。共同投稿者は「抜ける」ことができる
 
 ## 承認フロー
 

@@ -213,13 +213,22 @@ function renderPost(d){
     // 公開記事のみ取得（status=='published'）
     const box = document.getElementById("posts");
     try{
-      const snap = await getDocs(query(
-        collection(db, "articles"),
-        where("authorId", "==", uid),
-        where("status", "==", "published")
-      ));
+      // 本人の投稿 ＋ 共同投稿者として参加している投稿（どちらも公開中のみ）
+      const [snap, coSnap] = await Promise.all([
+        getDocs(query(
+          collection(db, "articles"),
+          where("authorId", "==", uid),
+          where("status", "==", "published")
+        )),
+        getDocs(query(
+          collection(db, "articles"),
+          where("coAuthorIds", "array-contains", uid),
+          where("status", "==", "published")
+        )).catch(e => { console.warn("共同投稿の読み込みに失敗:", e); return null; })
+      ]);
       const docs = [];
       snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
+      if(coSnap) coSnap.forEach(s => { if(!docs.some(x => x.id === s.id)) docs.push({ id: s.id, ...s.data() }); });
       docs.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
       document.getElementById("postStat").textContent = docs.length;
       document.getElementById("postCount").textContent = docs.length ? `${docs.length}件` : "";
