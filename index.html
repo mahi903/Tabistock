@@ -81,6 +81,25 @@ a{color:inherit;text-decoration:none}
 .hd.scrolled .hd-search input::placeholder{color:var(--muted)}
 .hd-search button{border:none;border-radius:999px;background:var(--green);color:#fff;width:34px;height:34px;cursor:pointer;font-size:14px}
 
+/* ===== トップを写真なし（紙の背景）にする試し =====
+   <body class="plain-hero"> を外せば、写真ありの元の見た目に戻る */
+.plain-hero .hero-bg,.plain-hero .hero::after{display:none}
+.plain-hero .hero{min-height:0;color:var(--ink)}
+/* 写真の代わりに、歩いた旅の足跡をごく薄く（下にいくほど消える）。文字やボタンには影響させない */
+.plain-hero .hero::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:url('images/footsteps.svg') center top/cover no-repeat;
+  -webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
+.plain-hero .hero-inner{color:var(--ink);padding-top:150px;padding-bottom:64px}
+.plain-hero .hero h1 em{color:var(--terra)}
+.plain-hero .hsearch{box-shadow:0 2px 12px rgba(27,35,48,.06);border:1px solid var(--sand)}
+.plain-hero .hquick a{color:var(--ink);text-shadow:none}
+.plain-hero .hquick a svg{background:rgba(31,111,91,.09);color:var(--green)}
+.plain-hero .hquick a:hover svg{background:rgba(31,111,91,.16)}
+.plain-hero .hd .logo{color:var(--green)}
+.plain-hero .hd-search{background:#fff;border-color:var(--sand)}
+.plain-hero .hd-search input{color:var(--ink)}
+.plain-hero .hd-search input::placeholder{color:var(--muted)}
+
 /* ===== HAMBURGER (mobile) ===== */
 .burger{display:none;flex-direction:column;justify-content:center;gap:5px;width:44px;height:44px;border:none;background:none;cursor:pointer;padding:0}
 .burger span{display:block;width:24px;height:2px;background:var(--ink);margin:0 auto;border-radius:2px;transition:.3s}
@@ -259,6 +278,7 @@ a{color:inherit;text-decoration:none}
   .hsearch input{padding:6px 0}
   .hsearch button{padding:8px 13px;font-size:13px;border-radius:8px}
   .hquick{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-top:18px}
+  .plain-hero .hero-inner{padding-top:104px;padding-bottom:34px}
   .hquick a{gap:4px;font-size:10.5px;white-space:nowrap;letter-spacing:-.02em}
   .hquick a svg{width:18px;height:18px;padding:10px}
   #routes{padding-top:22px !important;padding-bottom:24px}
@@ -281,7 +301,7 @@ a{color:inherit;text-decoration:none}
 @media(prefers-reduced-motion:reduce){#tabi-splash .ts-logo{animation-duration:.01s;animation-delay:0s}}
 </style>
 </head>
-<body>
+<body class="plain-hero">
 
 <!-- 起動スプラッシュ -->
 <div id="tabi-splash" aria-hidden="true">
