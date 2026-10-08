@@ -3520,3 +3520,35 @@ body.ov-lock{ overflow:hidden; }
 @media (max-width:768px){
   .transit-links{ padding:0 18px; grid-template-columns:1fr; }
 }
+
+/* =========================
+   記事ページ（スマホ）：全体の余白を詰める
+   ※左右の余白は変えず、上下だけを小さくする
+========================= */
+@media (max-width: 768px) {
+  .hero-text { padding-top: 10px; padding-bottom: 16px; }
+  .hero-eyebrow { margin-bottom: 6px; }
+  .hero-text h1 { margin-top: 4px; margin-bottom: 8px; }
+  .hero-lead { margin-top: 4px; margin-bottom: 10px; }
+  .hero-basic-info { margin-top: 8px; margin-bottom: 10px; }
+  .hero-info { margin-bottom: 10px; gap: 8px; }
+  .hero-tags { gap: 6px; }
+
+  .section-intro { margin-top: 24px; margin-bottom: 0; }
+  .section-intro .eyebrow { margin-bottom: 4px; }
+  .section-intro p:not(.eyebrow) { margin-top: 2px; margin-bottom: 6px; }
+
+  .overview-tabs { gap: 8px; padding-bottom: 2px; }
+  .overview-tabs > * { padding-top: 13px; padding-bottom: 13px; }
+
+  .day-grid { margin-top: 10px; margin-bottom: 18px; gap: 10px; }
+  .day-card { padding-top: 11px; padding-bottom: 11px; }
+
+  .tips-section { margin-top: 18px; margin-bottom: 18px; }
+  .tips-card { padding-top: 20px; padding-bottom: 20px; }
+
+  .author-card { margin-top: 14px; margin-bottom: 28px; }
+  .comments-section { margin-top: 20px; }
+
+  .site-footer { margin-top: 40px; padding-top: 30px; padding-bottom: 30px; }
+}
