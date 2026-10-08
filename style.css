@@ -3657,3 +3657,167 @@ body.ov-lock{ overflow:hidden; }
 
 /* 記事上部の「MONGOLIA · EAST ASIA」は非表示（シェア画像用にHTMLには残す）。トランジット記事の「Transit」は残す */
 .hero-eyebrow:not(.is-transit) { display: none; }
+
+/* =========================
+   記事ページ（共通）：共同投稿の投稿者欄の線が二重にならないように
+========================= */
+@media (max-width: 768px) {
+  .author-cards .author-card + .author-card { border-top: none; }
+}
+
+/* =========================
+   トランジット記事（スマホ）：リンクカードをやめて、線で区切った一覧に
+========================= */
+@media (max-width: 768px) {
+  .transit-links { gap: 0; }
+  .transit-link-card {
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 12px 0;
+  }
+  .transit-link-card:first-child { border-top: 1px solid var(--line); }
+  .transit-link-card:hover { transform: none; box-shadow: none; }
+  .transit-link-card > img,
+  .transit-link-noimg { border-radius: 10px; }
+  .route-grid { padding-left: 18px; padding-right: 18px; }
+  .route-card { background: transparent; box-shadow: none; border: none; padding: 0; }
+  .route-card .route-map { border-radius: 14px; }
+}
+
+/* =========================
+   記事ページ（PC）：スマホと同じ記事形式。写真を横幅いっぱい、本文は読みやすい幅の1カラム
+========================= */
+@media (min-width: 769px) {
+  .article-hero {
+    display: block;
+    max-width: none;
+    width: 100%;
+    margin: 0 0 8px;
+    min-height: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    overflow: visible;
+  }
+  .hero-carousel { position: relative; overflow: hidden; }
+  .hero-images {
+    position: static;
+    width: 100%;
+    max-width: none;
+    height: min(50vw, 560px);
+    min-height: 0;
+    margin: 0;
+    border-radius: 0;
+  }
+  .hero-images img { width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
+  .hero-text {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 30px 32px 8px;
+    box-sizing: border-box;
+  }
+  .hero-text h1 { font-size: 30px; margin-bottom: 10px; }
+  .hero-lead { font-size: 15px; margin-bottom: 18px; }
+
+  /* 本文の各セクションを同じ幅（880px）にそろえる */
+  .section-intro,
+  .overview-tabs,
+  .info-grid,
+  .day-grid,
+  .tips-section,
+  .article-actions,
+  .comments-section,
+  .transit-links,
+  .route-grid {
+    max-width: 880px;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+  .author-card { max-width: 816px; }
+
+  /* 通貨・言語・治安 / 旅行時期・難易度・投稿者 */
+  .hero-basic-info {
+    background: transparent;
+    border-radius: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 2px 0;
+  }
+  .hero-basic-info div { padding: 10px 16px; border-right-color: var(--line); }
+  .hero-basic-info div:first-child { padding-left: 0; }
+  .hero-info { gap: 0; }
+  .hero-info div {
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--line);
+    border-radius: 0;
+    padding: 2px 18px;
+  }
+  .hero-info div:first-child { border-left: none; padding-left: 0; }
+
+  /* 旅の概要：横並びのボタン → 線で区切った一覧 */
+  .overview-tabs { flex-direction: column; gap: 0; }
+  .overview-tabs > * {
+    flex: none;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: none;
+    padding: 16px 2px;
+  }
+  .overview-tabs > *:first-child { border-top: 1px solid var(--line); }
+  .ov-tab:hover { transform: none; box-shadow: none; color: var(--green); }
+
+  /* DAY：カード → 線で区切る */
+  .day-grid { gap: 0; margin-top: 16px; }
+  .day-card {
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    border-bottom: 1px solid var(--line);
+    padding: 26px 2px;
+    align-items: start;
+  }
+  .day-card:first-child { border-top: 1px solid var(--line); }
+
+  /* 投稿者のコメント：左の緑線だけ */
+  .tips-card {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    border-left: 3px solid var(--green);
+    border-radius: 0;
+    padding: 6px 0 6px 22px;
+  }
+  .tips-card::before { display: none; }
+
+  /* 投稿者欄 */
+  .author-card {
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 0;
+  }
+  .author-cards .author-card + .author-card { border-top: none; }
+
+  /* トランジット記事のリンク */
+  .transit-links { grid-template-columns: 1fr; gap: 0; }
+  .transit-link-card {
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 14px 0;
+  }
+  .transit-link-card:first-child { border-top: 1px solid var(--line); }
+  .transit-link-card:hover { transform: none; box-shadow: none; }
+  .transit-link-card > img,
+  .transit-link-noimg { border-radius: 10px; }
+  .route-card { background: transparent; box-shadow: none; border: none; padding: 0; }
+  .route-card .route-map { border-radius: 14px; }
+}

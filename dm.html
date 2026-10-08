@@ -18,12 +18,12 @@
 <style>
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{margin:0;font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;color:#182033;background:#f7f1e8;min-height:100%}
+  body{margin:0;font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;color:#1b2330;background:#fbf9f4 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .2 0 0 0 .16 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");min-height:100%}
   a{color:#1f6f5b}
 
   /* 上部バー */
-  .dm-top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;background:rgba(247,241,232,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid #e7ddcb}
-  .dm-back{appearance:none;border:none;background:none;color:#182033;font-size:22px;line-height:1;cursor:pointer;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+  .dm-top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;background:rgba(247,241,232,.86);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid #e9dcc6}
+  .dm-back{appearance:none;border:none;background:none;color:#1b2330;font-size:22px;line-height:1;cursor:pointer;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%}
   .dm-back:active{background:#ece3d3}
   .dm-top .dm-title{font-size:18px;font-weight:800;margin:0}
   .dm-peer{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;min-width:0}
@@ -40,7 +40,7 @@
   .conv .cmid{min-width:0;flex:1}
   .conv .cnm{font-size:15px;font-weight:800;margin:0 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .conv .clast{font-size:13px;color:#6c7787;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .conv.unread .clast{color:#182033;font-weight:700}
+  .conv.unread .clast{color:#1b2330;font-weight:700}
   .conv .cright{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
   .conv .ctime{font-size:11px;color:#9aa3b0}
   .conv .cbadge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#e2683b;color:#fff;font-size:11px;font-weight:800;display:none;align-items:center;justify-content:center}
@@ -55,12 +55,12 @@
   .row.you{align-self:flex-start}
   .bubble{padding:10px 14px;border-radius:18px;font-size:15px;line-height:1.5;word-break:break-word;white-space:pre-wrap}
   .row.me .bubble{background:#1f6f5b;color:#fff;border-bottom-right-radius:6px}
-  .row.you .bubble{background:#fff;color:#182033;border:1px solid #e7ddcb;border-bottom-left-radius:6px}
+  .row.you .bubble{background:#fff;color:#1b2330;border:1px solid #e9dcc6;border-bottom-left-radius:6px}
   .daysep{align-self:center;font-size:11px;color:#8a93a0;background:#ece3d3;padding:3px 12px;border-radius:999px;margin:8px 0}
   .msgs-empty{align-self:center;color:#9aa3b0;font-size:13px;padding:40px 20px;text-align:center}
 
   /* 入力バー */
-  .composer{display:flex;align-items:flex-end;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);background:rgba(247,241,232,.92);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid #e7ddcb}
+  .composer{display:flex;align-items:flex-end;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 10px);background:rgba(247,241,232,.92);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid #e9dcc6}
   .composer textarea{flex:1;resize:none;border:1px solid #e0d6c4;background:#fff;border-radius:20px;padding:10px 16px;font-family:inherit;font-size:15px;line-height:1.4;max-height:120px;outline:none}
   .composer textarea:focus{border-color:#1f6f5b}
   .send-btn{flex-shrink:0;width:42px;height:42px;border-radius:50%;border:none;background:#1f6f5b;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s,opacity .2s}
