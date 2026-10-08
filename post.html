@@ -69,6 +69,25 @@
   .cres-none{ font-size:12px; color:var(--mut); }
   .linkbtn{ background:none; border:none; padding:6px 0 0; font-size:12px; font-weight:700; color:var(--green); cursor:pointer; }
   #countryBox{ margin-top:6px; }
+  /* 複数選択の「プルダウン風」欄：普段は選択内容の1行だけ、タップで下からリスト */
+  .pick-field{ display:flex; align-items:center; gap:8px; width:100%; padding:7px 10px; border:1px solid #d9d2c4; border-radius:8px; background:#fff; font:inherit; font-size:14px; color:var(--ink); text-align:left; cursor:pointer; }
+  .pick-field > span{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pick-field .pf-ph{ color:#9aa2af; }
+  .pick-field svg{ flex-shrink:0; color:#7a828d; }
+  .psheet-bg{ position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:400; opacity:0; transition:opacity .2s; }
+  .psheet-bg.open{ opacity:1; }
+  .psheet{ position:fixed; left:0; right:0; bottom:0; z-index:401; background:#fff; border-radius:16px 16px 0 0; max-width:560px; margin:0 auto; max-height:80vh; display:flex; flex-direction:column; transform:translateY(100%); transition:transform .22s ease; padding-bottom:env(safe-area-inset-bottom); }
+  .psheet.open{ transform:none; }
+  .psheet-head{ display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; border-bottom:1px solid #eeeef1; }
+  .psheet-head b{ font-size:15px; }
+  .psheet-done{ border:none; background:none; color:var(--green); font:inherit; font-size:15px; font-weight:800; cursor:pointer; padding:4px 2px; }
+  .psheet-body{ overflow-y:auto; padding:4px 16px 16px; -webkit-overflow-scrolling:touch; }
+  /* シート内ではチップを縦のリストに（右にチェック） */
+  .psheet-body .chips{ flex-direction:column; gap:0; margin:0; }
+  .psheet-body .chip{ border:none; border-bottom:1px solid #eeeef1; border-radius:0; padding:13px 2px; font-size:15px; background:none; justify-content:space-between; flex-direction:row-reverse; }
+  .psheet-body .chip input{ width:20px; height:20px; accent-color:var(--green); }
+  .psheet-body .chip.on{ background:none; color:var(--green-d); }
+  .psheet-body input[type=text]{ margin-top:12px !important; }
   .sub{ border:1px dashed #d9d2c4; border-radius:10px; padding:10px; margin:8px 0; position:relative; background:#fcfaf5; }
   .sub .del{ position:absolute; top:8px; right:8px; border:none; background:#f1e7d6; color:#7a6a4f; border-radius:8px; padding:3px 9px; font-size:12px; cursor:pointer; }
   .sub h4{ margin:0 0 8px; font-size:13px; color:var(--green-d); }
@@ -239,7 +258,7 @@
   <!-- ===== 4. 利用サービス ===== -->
   <section class="card">
     <h2><span class="num">4</span>利用サービス</h2>
-    <p class="hint">使ったサービスをチェック。リストに無い国独自のものは各カテゴリの「その他」に自由入力（カンマ区切りで複数可）。</p>
+    <p class="hint">使ったサービスを選んでください。リストに無いものは「その他」に自由入力できます。</p>
     <div id="serviceBox"></div>
     <div id="agodaUrlWrap" hidden style="margin-top:16px">
       <label class="f">宿泊ホテルのAgodaリンク（任意）<span class="hint" style="font-weight:normal">A8.netで発行した商品リンクのURLを貼ると、記事にそのホテルへの直リンクが表示されます。</span></label>
@@ -801,14 +820,61 @@ function attachAirlineAC(input){
   list.addEventListener('mousedown',e=>{ const it=e.target.closest('.ac-item'); if(it){ e.preventDefault(); pick(Number(it.dataset.i)); } });
 }
 // サービス
+// ---- 複数選択の「プルダウン風」欄 ----
+// 中身（チェックボックスと「その他」欄）はそのまま使う（保存・編集時の読み込みはこれまでどおり）。
+// 普段は中身を隠して選択内容を1行で見せ、タップしたら中身をシートへ移して選ばせ、閉じたら元に戻す。
+const _pickRefreshers=[];
+let _psheet=null, _psheetBg=null, _pickOpen=null;
+function _ensurePickSheet(){
+  if(_psheet) return;
+  _psheetBg=document.createElement('div'); _psheetBg.className='psheet-bg'; _psheetBg.hidden=true;
+  _psheet=document.createElement('div'); _psheet.className='psheet'; _psheet.hidden=true;
+  _psheet.setAttribute('role','dialog'); _psheet.setAttribute('aria-modal','true');
+  _psheet.innerHTML=`<div class="psheet-head"><b></b><button type="button" class="psheet-done">完了</button></div><div class="psheet-body"></div>`;
+  document.body.append(_psheetBg,_psheet);
+  _psheetBg.addEventListener('click',_closePickSheet);
+  _psheet.querySelector('.psheet-done').addEventListener('click',_closePickSheet);
+}
+function _closePickSheet(){
+  if(!_pickOpen) return;
+  const { content, home, refresh }=_pickOpen; _pickOpen=null;
+  home.after(content); content.hidden=true; refresh();
+  _psheet.classList.remove('open'); _psheetBg.classList.remove('open');
+  setTimeout(()=>{ _psheet.hidden=true; _psheetBg.hidden=true; },220);
+}
+function makePicker(content, { title, placeholder }){
+  const field=document.createElement('button'); field.type='button'; field.className='pick-field';
+  const home=document.createComment('picker');
+  content.before(field, home); content.hidden=true;
+  const refresh=()=>{
+    const vals=[...content.querySelectorAll('input[type=checkbox]:checked')].map(c=>c.closest('label').textContent.trim());
+    const other=content.querySelector('input[type=text]');
+    if(other && other.value.trim()) vals.push(other.value.trim());
+    field.innerHTML=`<span class="${vals.length?'':'pf-ph'}">${esc(vals.length?vals.join('、'):placeholder)}</span>`+
+      `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
+  };
+  field.addEventListener('click',()=>{
+    _ensurePickSheet();
+    _psheet.querySelector('.psheet-head b').textContent=title;
+    _psheet.querySelector('.psheet-body').append(content); content.hidden=false;
+    _pickOpen={ content, home, refresh };
+    _psheet.hidden=false; _psheetBg.hidden=false;
+    requestAnimationFrame(()=>{ _psheet.classList.add('open'); _psheetBg.classList.add('open'); });
+  });
+  _pickRefreshers.push(refresh); refresh();
+}
+window.refreshPickers=()=>_pickRefreshers.forEach(f=>f());
+makePicker($('styleBox'), { title: '旅スタイル（複数選択可）', placeholder: '選択してください' });
+
 SERVICE_CATS.forEach((cat,ci)=>{
   const box=$('serviceBox');
   const wrap=document.createElement('div'); wrap.style.marginBottom='12px';
   const chips=cat.opts.map(o=>`<label class="chip"><input type="checkbox" data-svc="${ci}" value="${esc(o)}"> ${esc(o)}</label>`).join('');
-  wrap.innerHTML=`<label class="f">${cat.k}</label><div class="chips">${chips}</div>
-    <input type="text" data-svc-other="${ci}" placeholder="その他（自由入力・${esc(cat.ex)}）" style="margin-top:8px">`;
+  wrap.innerHTML=`<label class="f">${cat.k}</label><div class="svc-body"><div class="chips">${chips}</div>
+    <input type="text" data-svc-other="${ci}" placeholder="その他（自由入力・${esc(cat.ex)}）" style="margin-top:8px"></div>`;
   box.appendChild(wrap);
   wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',()=>cb.closest('.chip').classList.toggle('on',cb.checked)));
+  makePicker(wrap.querySelector('.svc-body'), { title: cat.k, placeholder: '選択してください' });
 });
 // 日程
 let dayN=0;
@@ -1623,6 +1689,7 @@ window.populateForm = function(d){
     renderThumbs($('heroPhotos'), $('heroThumbs'));
   }
   updateMeta();
+  window.refreshPickers();   // 読み込んだ選択内容を1行表示に反映
 };
 </script>
 
