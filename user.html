@@ -49,6 +49,11 @@
   .socials a{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:#faf6ee;border:1px solid #e7ddcb;color:#1f6f5b;font-size:20px;text-decoration:none}
   .section-title{font-size:15px;font-weight:800;margin:26px 0 12px;display:flex;align-items:center;justify-content:space-between}
   .section-title .count{font-size:12px;color:#6c7787;font-weight:700}
+  /* 投稿の種類タブ（Instagram のプロフィールのアイコンタブ風） */
+  .ptabs{display:flex;border-bottom:1px solid #e7ddcb;margin:24px 0 12px}
+  .ptab{flex:1;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 0 9px;color:#a3a9b3;cursor:pointer;display:flex;justify-content:center}
+  .ptab.on{color:#182033;border-bottom-color:#182033}
+  .posts[hidden]{display:none}
   .posts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media(max-width:480px){.posts{grid-template-columns:1fr 1fr;gap:10px}}
   .pcard{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid #e7ddcb;border-radius:14px;overflow:hidden;transition:box-shadow .15s}
@@ -82,6 +87,13 @@ import { sendNotification } from "./notify.js";
 const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const root = document.getElementById("profileRoot");
 const uid = new URLSearchParams(location.search).get("uid");
+// タブは読み込み後に描画されるので、ページ全体でクリックを受ける
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("#ptabs .ptab"); if(!t) return;
+  document.querySelectorAll("#ptabs .ptab").forEach(x => { const on = x === t; x.classList.toggle("on", on); x.setAttribute("aria-selected", on); });
+  document.getElementById("posts").hidden = t.dataset.tab !== "trips";
+  document.getElementById("transitPosts").hidden = t.dataset.tab !== "transit";
+});
 
 function showError(msg){
   root.innerHTML = `<div class="me" style="text-align:center">
@@ -140,8 +152,16 @@ function renderPost(d){
       <p class="bio">${esc(bio)}</p>
       <div class="actions" id="actionSlot"></div>
       ${ig ? `<div class="socials"><a href="${esc(ig)}" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a></div>` : ''}
-      <div class="section-title">投稿 <span class="count" id="postCount"></span></div>
+      <nav class="ptabs" id="ptabs" role="tablist">
+        <button type="button" class="ptab on" data-tab="trips" role="tab" aria-label="旅程" title="旅程">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg>
+        </button>
+        <button type="button" class="ptab" data-tab="transit" role="tab" aria-label="トランジット" title="トランジット">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+        </button>
+      </nav>
       <div id="posts" class="posts"><p class="posts-empty">読み込み中…</p></div>
+      <div id="transitPosts" class="posts" hidden></div>
     </div>`;
 
     document.title = nick + "｜Tabistock";
@@ -231,10 +251,14 @@ function renderPost(d){
       if(coSnap) coSnap.forEach(s => { if(!docs.some(x => x.id === s.id)) docs.push({ id: s.id, ...s.data() }); });
       docs.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
       document.getElementById("postStat").textContent = docs.length;
-      document.getElementById("postCount").textContent = docs.length ? `${docs.length}件` : "";
-      box.innerHTML = docs.length
-        ? docs.map(renderPost).join("")
-        : `<p class="posts-empty">まだ公開された投稿はありません。</p>`;
+      // 旅程とトランジットをタブで分ける
+      const trips = docs.filter(d => d.type !== "transit"), transits = docs.filter(d => d.type === "transit");
+      box.innerHTML = trips.length
+        ? trips.map(renderPost).join("")
+        : `<p class="posts-empty">まだ公開された旅程はありません。</p>`;
+      document.getElementById("transitPosts").innerHTML = transits.length
+        ? transits.map(renderPost).join("")
+        : `<p class="posts-empty">まだ公開されたトランジット記事はありません。</p>`;
     }catch(err){
       console.error(err);
       box.innerHTML = `<p class="posts-empty">投稿を読み込めませんでした。</p>`;

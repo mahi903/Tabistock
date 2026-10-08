@@ -82,6 +82,12 @@
   .fempty{color:#6c7787;font-size:13px;text-align:center;padding:34px 16px}
   .section-title{font-size:15px;font-weight:800;margin:26px 0 12px;display:flex;align-items:center;justify-content:space-between}
   .section-title .count{font-size:12px;color:#6c7787;font-weight:700}
+  /* 投稿の種類タブ（Instagram のプロフィールのアイコンタブ風） */
+  .ptabs{display:flex;border-bottom:1px solid #e7ddcb;margin:24px 0 12px}
+  .ptab{flex:1;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 0 9px;color:#a3a9b3;cursor:pointer;position:relative;display:flex;justify-content:center}
+  .ptab.on{color:#182033;border-bottom-color:#182033}
+  .ptab-dot{position:absolute;top:7px;left:calc(50% + 8px);width:7px;height:7px;border-radius:50%;background:#e0245e}
+  .ptab-sub{font-size:12.5px;font-weight:800;color:#6c7787;margin:4px 0 8px;display:flex;align-items:center;gap:6px}
   .posts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media(max-width:480px){.posts{grid-template-columns:1fr 1fr;gap:10px}}
   .pcard{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid #e7ddcb;border-radius:14px;overflow:hidden;transition:box-shadow .15s}
@@ -220,16 +226,34 @@
         <div class="msg" id="profileMsg" style="margin-top:12px"></div>
       </div>
 
-      <div id="collabInvitesWrap" hidden>
-        <div class="section-title" id="collab">共同投稿の招待 <span class="count" id="inviteCount"></span></div>
-        <div id="collabInvites" class="posts"></div>
+      <nav class="ptabs" id="ptabs" role="tablist">
+        <button type="button" class="ptab on" data-tab="trips" role="tab" aria-label="旅程" title="旅程">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg>
+        </button>
+        <button type="button" class="ptab" data-tab="transit" role="tab" aria-label="トランジット" title="トランジット">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+        </button>
+        <button type="button" class="ptab" data-tab="collab" role="tab" aria-label="共同投稿" title="共同投稿">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3.2 2.5-5.5 5.5-5.5s5.5 2.3 5.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 13.7c2.8-.3 5 1.6 5 4.8"/></svg>
+          <span class="ptab-dot" id="inviteDot" hidden></span>
+        </button>
+        <button type="button" class="ptab" data-tab="saved" role="tab" aria-label="保存した投稿" title="保存した投稿">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.5-6 4.5z"/></svg>
+        </button>
+      </nav>
+      <div id="ppanels">
+        <div data-panel="trips"><div id="myPosts" class="posts"></div></div>
+        <div data-panel="transit" hidden><div id="transitPosts" class="posts"></div></div>
+        <div data-panel="collab" hidden>
+          <div id="collabInvitesWrap" hidden>
+            <div class="ptab-sub" id="collab">招待 <span class="count" id="inviteCount"></span></div>
+            <div id="collabInvites" class="posts"></div>
+            <div class="ptab-sub" style="margin-top:16px">共同投稿</div>
+          </div>
+          <div id="collabPosts" class="posts"></div>
+        </div>
+        <div data-panel="saved" hidden><div id="savedPosts" class="posts"></div></div>
       </div>
-
-      <div class="section-title">自分の投稿 <span class="count" id="postCount"></span></div>
-      <div id="myPosts" class="posts"></div>
-
-      <div class="section-title">保存した投稿 <span class="count" id="savedCount"></span></div>
-      <div id="savedPosts" class="posts"></div>
 
       <div class="setrow" style="margin-top:26px">
         <div>
@@ -554,8 +578,8 @@ function renderPost(d, own, collab){
   </div>`;
 }
 async function loadMyPosts(uid){
-  const box = $("myPosts");
-  box.innerHTML = `<p class="posts-empty">読み込み中…</p>`;
+  const boxes = { trips: $("myPosts"), transit: $("transitPosts"), collab: $("collabPosts") };
+  Object.values(boxes).forEach(b => { b.innerHTML = `<p class="posts-empty">読み込み中…</p>`; });
   try{
     // 自分が投稿した記事 ＋ 共同投稿者として参加している記事
     const [snap, coSnap] = await Promise.all([
@@ -566,21 +590,50 @@ async function loadMyPosts(uid){
     snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
     if(coSnap) coSnap.forEach(s => { if(!docs.some(x => x.id === s.id)) docs.push({ id: s.id, ...s.data(), _collab: true }); });
     docs.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-    $("postCount").textContent = docs.length ? `${docs.length}件` : "";
     $("postStat").textContent = docs.filter(d => d.status === "published").length;
-    if(!docs.length){
-      box.innerHTML = `<p class="posts-empty">まだ投稿がありません。<br><a href="./post.html">最初の旅程を投稿する →</a></p>`;
-      return;
+    // ①旅程・②トランジット＝自分が投稿主の記事、③共同投稿＝複数人の記事すべて（自分が投稿主のものも含む）
+    const owned = docs.filter(d => !d._collab);
+    const lists = {
+      trips:   owned.filter(d => d.type !== "transit"),
+      transit: owned.filter(d => d.type === "transit"),
+      collab:  docs.filter(d => d._collab || (d.coAuthorIds || []).length || (d.coAuthorInvites || []).length)
+    };
+    const empty = {
+      trips:   `まだ旅程がありません。<br><a href="./post.html">最初の旅程を投稿する →</a>`,
+      transit: `まだトランジット記事がありません。<br><a href="./post-transit.html">トランジット記事を投稿する →</a>`,
+      collab:  `共同投稿はまだありません。<br>投稿の編集画面から、一緒に旅した友達を招待できます。`
+    };
+    for(const k in boxes){
+      boxes[k].innerHTML = lists[k].length
+        ? lists[k].map(d => renderPost(d, true, !!d._collab)).join("")
+        : `<p class="posts-empty">${empty[k]}</p>`;
     }
-    box.innerHTML = docs.map(d => renderPost(d, true, !!d._collab)).join("");
   }catch(err){
     console.error(err);
-    box.innerHTML = `<p class="posts-empty">読み込みエラー：${esc(err.message||err)}</p>`;
+    Object.values(boxes).forEach(b => { b.innerHTML = `<p class="posts-empty">読み込みエラー：${esc(err.message||err)}</p>`; });
   }
 }
 
+// 投稿の種類タブ（URL の #trips / #transit / #collab / #saved でも開ける）
+function selectTab(name){
+  if(!document.querySelector(`#ptabs [data-tab="${name}"]`)) name = "trips";
+  document.querySelectorAll("#ptabs .ptab").forEach(t => {
+    const on = t.dataset.tab === name;
+    t.classList.toggle("on", on); t.setAttribute("aria-selected", on);
+  });
+  document.querySelectorAll("#ppanels [data-panel]").forEach(p => { p.hidden = p.dataset.panel !== name; });
+}
+$("ptabs").addEventListener("click", (e) => {
+  const t = e.target.closest(".ptab"); if(!t) return;
+  selectTab(t.dataset.tab);
+  history.replaceState(null, "", "#" + t.dataset.tab);
+});
+selectTab((location.hash || "").slice(1));
+// マイページを開いたまま通知（#collab など）をタップした場合も切り替える
+window.addEventListener("hashchange", () => selectTab((location.hash || "").slice(1)));
+
 // 自分の投稿の操作（非表示／再公開／削除）。再公開は承認不要で即公開に戻す。
-$("myPosts").addEventListener("click", (e) => {
+$("ppanels").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-menu]");
   if(btn) openPostSheet(btn.dataset.menu);
 });
@@ -740,7 +793,8 @@ async function loadCollabInvites(uid){
     </div>
   </div>`;
     }).join("");
-    if(docs.length && location.hash === "#collab") wrap.scrollIntoView({ behavior: "smooth" });
+    $("inviteDot").hidden = !docs.length;
+    if(docs.length && location.hash === "#collab") $("ptabs").scrollIntoView({ behavior: "smooth" });
   }catch(err){
     console.error("共同投稿の招待の読み込みに失敗:", err);
     wrap.hidden = true;
@@ -785,7 +839,6 @@ async function loadSavedPosts(uid){
         if(a.exists()) docs.push({ id: a.id, ...a.data() });
       }catch(err){ /* 読めない記事はスキップ */ }
     }
-    $("savedCount").textContent = docs.length ? `${docs.length}件` : "";
     if(!docs.length){
       box.innerHTML = `<p class="posts-empty">保存した投稿はありません。<br>記事ページの「保存」ボタンでここに追加されます。</p>`;
       return;
