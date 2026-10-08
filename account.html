@@ -115,6 +115,8 @@
   .pbtn-ok{color:#fff;border:1px solid #1f6f5b;background:#1f6f5b}
   .pbtn-ok:hover{background:#185a4a}
   .invite-from{font-size:12px;color:#6c7787;margin:0 0 4px}
+  .phandover{width:100%;justify-content:center;color:#6b4bb0;border:1px solid #ddd0f2;background:#faf7fe}
+  .phandover:hover{background:#f4eefc}
   .posts-empty{grid-column:1/-1;color:#6c7787;font-size:13px;text-align:center;padding:26px 16px;border:1px dashed #e7ddcb;border-radius:14px}
   /* 設定行（トグル） */
   .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid #eee3d2;border-bottom:1px solid #eee3d2}
@@ -260,6 +262,7 @@ import { doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp, collection,
 import { ref as sRef, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { enablePush, disablePush, isPushSupported } from "./push.js";
+import { sendNotification } from "./notify.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -543,13 +546,17 @@ function renderPost(d, own, collab){
       ? `<button type="button" class="pbtn pbtn-del" data-act="leave" data-id="${esc(d.id)}">抜ける</button>`
       : `<button type="button" class="pbtn pbtn-del" data-act="delete" data-id="${esc(d.id)}">削除</button>`;
   }
+  // 元の投稿者は、承認済みの共同投稿者に投稿者を譲れる（自分の旅ではない記事を代筆した場合など）
+  const handover = (own && !collab && Array.isArray(d.coAuthorIds) && d.coAuthorIds.length)
+    ? `<button type="button" class="pbtn phandover" data-act="handover" data-id="${esc(d.id)}">投稿者を譲る</button>`
+    : "";
   return `<div class="pcard">
     <a href="./articles/view.html?id=${esc(d.id)}" style="text-decoration:none;color:inherit;display:block">
       <div class="pthumb" style="background-image:url('${esc(thumb)}')"></div>
       <div class="pbody" style="padding-bottom:8px"><p class="ptitle" style="margin-bottom:0">${esc(d.title||"(無題)")}</p></div>
     </a>
     <div class="pbody" style="padding-top:0">
-      <div class="prow"><div class="ppills"><span class="ppill ${sc}">${sl}</span>${collab?`<span class="ppill s-collab">共同投稿</span>`:""}</div><div class="pacts">${acts}</div></div>
+      <div class="prow"><div class="ppills"><span class="ppill ${sc}">${sl}</span>${collab?`<span class="ppill s-collab">共同投稿</span>`:""}</div><div class="pacts">${acts}</div>${handover}</div>
     </div>
   </div>`;
 }
@@ -588,6 +595,7 @@ $("myPosts").addEventListener("click", async (e) => {
   if(!id || !uid) return;
   if(act === "delete" && !confirm("この投稿を削除しますか？この操作は取り消せません。")) return;
   if(act === "leave" && !confirm("この共同投稿から抜けますか？あなたのプロフィールに表示されなくなり、編集もできなくなります。")) return;
+  if(act === "handover"){ await handOver(id, uid); return; }
   btn.disabled = true;
   try{
     if(act === "hide"){
@@ -606,6 +614,40 @@ $("myPosts").addEventListener("click", async (e) => {
     alert("操作に失敗しました：" + (err.message || err));
   }
 });
+
+// 投稿者を共同投稿者に譲る。自分は共同投稿者として残る（あとで「抜ける」こともできる）。
+async function handOver(id, uid){
+  try{
+    const snap = await getDoc(doc(db, "articles", id));
+    if(!snap.exists()) return;
+    const d = snap.data();
+    const ids = Array.isArray(d.coAuthorIds) ? d.coAuthorIds : [];
+    if(!ids.length) return;
+    const profs = await Promise.all(ids.map(async u => {
+      try{ const p = await getDoc(doc(db, "publicProfiles", u)); return (p.exists() && p.data().nickname) || "旅人"; }
+      catch(e){ return "旅人"; }
+    }));
+    let idx = 0;
+    if(ids.length > 1){
+      const ans = prompt("誰に投稿者を譲りますか？番号を入力してください。\n" + profs.map((n, i) => `${i+1}. ${n}`).join("\n"));
+      if(ans == null) return;
+      idx = parseInt(ans, 10) - 1;
+      if(!(idx >= 0 && idx < ids.length)){ alert("番号が正しくありません。"); return; }
+    }
+    const to = ids[idx], toName = profs[idx];
+    if(!confirm(`「${d.title || "(無題)"}」の投稿者を ${toName} さんに譲りますか？\n\nあなたは共同投稿者として残り、編集は続けられます（完全に外れたいときは、あとで「抜ける」を押してください）。\n記事の削除や招待の管理は ${toName} さんしかできなくなります。`)) return;
+    await updateDoc(doc(db, "articles", id), {
+      authorId: to,
+      authorNickname: toName,
+      coAuthorIds: [...ids.filter(u => u !== to), uid]
+    });
+    sendNotification({ toUid: to, type: "handover", articleId: id, articleTitle: d.title || "" });
+    await loadMyPosts(uid);
+  }catch(err){
+    console.error(err);
+    alert("操作に失敗しました：" + (err.message || err));
+  }
+}
 
 // 共同投稿の招待（Instagram の「コラボ」と同じ。承認すると投稿者欄に並び、編集もできる）
 async function loadCollabInvites(uid){

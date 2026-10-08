@@ -23,7 +23,7 @@ export async function sendNotification({ toUid, type, articleId = "", articleTit
   try {
     const nick = await myNickname(user.uid);
     await addDoc(collection(db, "users", toUid, "notifications"), {
-      type,                       // 'like' | 'comment' | 'follow' | 'dm' | 'collab'
+      type,                       // 'like' | 'comment' | 'follow' | 'dm' | 'collab' | 'handover'
       fromUid: user.uid,
       fromNickname: nick,
       articleId,
@@ -41,6 +41,10 @@ export async function sendNotification({ toUid, type, articleId = "", articleTit
         url = "/articles/view.html?id=" + encodeURIComponent(articleId);
       } else if (type === "comment") {
         title = nick + "さんがコメントしました";
+        text = articleTitle || "";
+        url = "/articles/view.html?id=" + encodeURIComponent(articleId);
+      } else if (type === "handover") {
+        title = nick + "さんから投稿者を引き継ぎました";
         text = articleTitle || "";
         url = "/articles/view.html?id=" + encodeURIComponent(articleId);
       } else if (type === "collab") {

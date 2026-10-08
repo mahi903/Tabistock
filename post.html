@@ -96,19 +96,6 @@
   .btn-main:disabled{ opacity:.5; cursor:not-allowed; }
   .btn-ghost{ background:#fff; border:1px solid #d9d2c4; color:var(--ink); }
   .status{ font-size:13px; color:var(--mut); }
-  /* 共同投稿者（Instagram のコラボ投稿のように投稿者欄に並ぶ） */
-  .collab-sel{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 8px; }
-  .collab-chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid #d9d2c4; border-radius:999px; padding:4px 6px 4px 4px; font-size:13px; background:#fff; }
-  .collab-chip img{ width:24px; height:24px; border-radius:50%; object-fit:cover; background:#e7ddcb; }
-  .collab-chip small{ color:var(--mut); font-size:11px; }
-  .collab-chip .collab-x{ border:none; background:#f1e7d6; color:#7a6a4f; border-radius:50%; width:20px; height:20px; padding:0; line-height:20px; cursor:pointer; }
-  .collab-results{ border:1px solid var(--line); border-radius:10px; margin-top:6px; overflow:hidden; }
-  .collab-results:empty{ display:none; }
-  .collab-res{ display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border:none; border-bottom:1px solid var(--line); background:#fff; font-size:14px; text-align:left; cursor:pointer; }
-  .collab-res:last-child{ border-bottom:none; }
-  .collab-res:hover{ background:#f6f2ea; }
-  .collab-res img{ width:28px; height:28px; border-radius:50%; object-fit:cover; background:#e7ddcb; }
-  .collab-none{ padding:9px 12px; font-size:13px; color:var(--mut); }
   .err{ color:#d4493f; font-weight:700; }
   .ok{ color:var(--green-d); font-weight:700; }
   .stars{ display:flex; gap:4px; font-size:22px; color:#d9d2c4; cursor:pointer; width:max-content; }
@@ -154,13 +141,7 @@
     <label class="f">投稿者ニックネーム<span class="req">必須・登録名で自動入力</span></label>
     <input type="text" id="author" placeholder="例：mahiro" value="mahiro" autocomplete="off">
 
-    <label class="f">共同投稿者<span class="req" style="background:#eef0f3;color:#5b6470">任意</span></label>
-    <p class="hint" style="margin:0 0 6px">一緒に旅した友達を招待できます。相手が承認すると、投稿者欄に2人とも表示され、どちらも編集できるようになります。</p>
-    <div id="collabSel" class="collab-sel"></div>
-    <div id="collabSearchWrap">
-      <input type="text" id="collabSearch" placeholder="ニックネームで検索" autocomplete="off">
-      <div id="collabResults" class="collab-results"></div>
-    </div>
+    <div id="collabBox"></div>
 
     <label class="f">国（複数選択可）<span class="req">必須</span></label>
     <p class="hint" style="margin:0 0 6px">周遊なら複数チェック。地域は最初に選んだ国から自動で決まります。</p>
@@ -285,7 +266,7 @@
     <div id="transitPickList" class="transit-pick-list">
       <p class="hint" id="transitPickEmpty">あなたのトランジット記事を読み込み中…</p>
     </div>
-    <p class="hint" style="margin-top:10px"><a href="post-transit.html">＋ トランジット記事を新しく投稿する</a></p>
+    <p class="hint" style="margin-top:10px"><a id="newTransitLink" href="post-transit.html">＋ トランジット記事を新しく投稿する</a></p>
   </section>
 
 </div>
@@ -1899,10 +1880,10 @@ drawerFilterBtns.forEach(btn => {
 <script type="module">
 import { auth, db, storage } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, doc, setDoc, getDoc, getDocs, query, where, orderBy, startAt, endAt, limit, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { COUNTRY_LL, esc } from "./tabistock-render.js";
-import { sendNotification } from "./notify.js";
+import { initCollabBox, loadCollabFrom, isMember, collabFields, notifyNewInvites, sameMembers, currentMembers } from "./collab.js";
 // 各日ミニ地図が国を中心に表示できるよう、座標表をグローバルへ
 window.COUNTRY_LL = COUNTRY_LL;
 
@@ -1917,117 +1898,61 @@ async function uploadAndGetUrl(path, blob){
 }
 
 // ---- トランジット記事の紐付けピッカー ----
-// 自分のトランジット記事を一覧表示し、この旅程に紐付けるものを複数選べる。
+// 自分が投稿者・共同投稿者のトランジット記事のうち、この旅程と「同じメンバー」のものだけを選べる
+//（共同投稿の旅程に、元の投稿者だけのトランジット記事が紛れ込まないように）。
 // 正本の parentId はトランジット側に保存する（保存時に更新）。
-window.__myTransitsCache = [];
+window.__myTransitsCache = [];   // 候補（メンバー絞り込み前）
+window.__shownTransits = [];     // 画面に出しているもの（保存時はこれだけを付け外しする）
+let transitPickerLoaded = false, transitParentId = null;
 window.tabistockLoadTransitPicker = async function(uid, currentParentId){
-  const listEl = document.getElementById('transitPickList');
-  if(!listEl) return;
+  transitParentId = currentParentId;
   try{
-    const snap = await getDocs(query(collection(db, "articles"), where("authorId", "==", uid)));
+    const [own, co] = await Promise.all([
+      getDocs(query(collection(db, "articles"), where("authorId", "==", uid))),
+      getDocs(query(collection(db, "articles"), where("coAuthorIds", "array-contains", uid))).catch(() => null)
+    ]);
     const items = [];
-    snap.forEach(s => { const a = s.data(); if(a.type === "transit") items.push({ id: s.id, ...a }); });
+    const add = s => { const a = s.data(); if(a.type === "transit" && !items.some(x => x.id === s.id)) items.push({ id: s.id, ...a }); };
+    own.forEach(add); if(co) co.forEach(add);
     items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
     window.__myTransitsCache = items;
-    if(!items.length){
-      listEl.innerHTML = '<p class="hint">まだトランジット記事がありません。下のリンクから投稿できます。</p>';
-      return;
-    }
-    listEl.innerHTML = items.map(t=>{
-      const c = (t.countries||[])[0] || '';
-      const lay = (Number(t.layover)>0) ? `乗り継ぎ${Number(t.layover)}時間` : '';
-      const sub = [t.airport||'', lay].filter(Boolean).join('・');
-      const title = t.title || (c ? c+'でのトランジット' : 'トランジット記事');
-      const checked = (currentParentId && t.parentId === currentParentId) ? 'checked' : '';
-      const linkedElse = t.parentId && t.parentId !== currentParentId;
-      return `<label class="transit-pick-item" style="display:flex;gap:10px;align-items:flex-start;padding:11px 2px;border-bottom:1px solid #eee;cursor:pointer">
-        <input type="checkbox" class="transit-pick-cb" value="${esc(t.id)}" ${checked} style="margin-top:3px;width:18px;height:18px;flex:none">
+    transitPickerLoaded = true;
+    window.tabistockRenderTransitPicker();
+  }catch(e){ console.warn("トランジット記事の読み込みに失敗:", e); }
+};
+window.tabistockRenderTransitPicker = function(){
+  const listEl = document.getElementById('transitPickList');
+  if(!listEl || !transitPickerLoaded) return;
+  // 共同投稿者を変えて描き直しても、チェック状態は保つ
+  const checkedNow = listEl.dataset.rendered
+    ? new Set(window.tabistockGetSelectedTransits())
+    : null;
+  const items = window.__myTransitsCache.filter(sameMembers);
+  window.__shownTransits = items;
+  listEl.dataset.rendered = "1";
+  const shared = currentMembers().length > 1;
+  if(!items.length){
+    listEl.innerHTML = shared
+      ? '<p class="hint">この旅程と同じメンバーのトランジット記事がありません。トランジット記事でも同じ人を共同投稿者に招待すると、ここに表示されます。</p>'
+      : '<p class="hint">まだトランジット記事がありません。下のリンクから投稿できます。</p>';
+    return;
+  }
+  listEl.innerHTML = (shared ? '<p class="hint" style="margin:0 0 4px">共同投稿者が同じトランジット記事だけを表示しています。</p>' : '') + items.map(t=>{
+    const c = (t.countries||[])[0] || '';
+    const lay = (Number(t.layover)>0) ? `乗り継ぎ${Number(t.layover)}時間` : '';
+    const sub = [t.airport||'', lay].filter(Boolean).join('・');
+    const title = t.title || (c ? c+'でのトランジット' : 'トランジット記事');
+    const isChecked = checkedNow ? checkedNow.has(t.id) : (transitParentId && t.parentId === transitParentId);
+    const linkedElse = t.parentId && t.parentId !== transitParentId;
+    return `<label class="transit-pick-item" style="display:flex;gap:10px;align-items:flex-start;padding:11px 2px;border-bottom:1px solid #eee;cursor:pointer">
+        <input type="checkbox" class="transit-pick-cb" value="${esc(t.id)}" ${isChecked?'checked':''} style="margin-top:3px;width:18px;height:18px;flex:none">
         <span><strong>${esc(title)}</strong>${sub?`<br><small style="color:#888">${esc(sub)}</small>`:''}${linkedElse?'<br><small style="color:#c0792e">※ いまは別の旅程に紐付け中（選ぶとこちらへ付け替わります）</small>':''}</span>
       </label>`;
-    }).join('');
-  }catch(e){ console.warn("トランジット記事の読み込みに失敗:", e); }
+  }).join('');
 };
 window.tabistockGetSelectedTransits = function(){
   return [...document.querySelectorAll('.transit-pick-cb:checked')].map(c=>c.value);
 };
-
-// ---- 共同投稿者（Instagram のコラボ投稿と同じ仕組み） ----
-// coAuthorInvites：招待中（相手がマイページで承認すると coAuthorIds へ移る）
-// coAuthorIds：承認済み。投稿者欄に並び、記事の編集もできる。
-// 招待・取り消しができるのは元の投稿者（と管理者）だけ。
-const COLLAB_MAX = 5;
-const DEF_AVATAR = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e7ddcb%22%2F%3E%3C%2Fsvg%3E";
-const collab = {
-  ownerId: null,       // 元の投稿者（新規なら自分）
-  ids: [],             // 承認済み
-  invites: [],         // 招待中
-  origInvites: [],     // 読み込み時点の招待（新しく招待した人にだけ通知するため）
-  canManage: true,     // 招待・取り消しできるか
-  profiles: {}         // uid -> { nickname, photoURL }
-};
-async function collabProfile(uid){
-  if(collab.profiles[uid]) return collab.profiles[uid];
-  let p = { nickname: "旅人", photoURL: "" };
-  try{
-    const s = await getDoc(doc(db, "publicProfiles", uid));
-    if(s.exists()) p = { nickname: s.data().nickname || "旅人", photoURL: s.data().photoURL || "" };
-  }catch(e){}
-  return (collab.profiles[uid] = p);
-}
-async function renderCollab(){
-  const sel = document.getElementById("collabSel");
-  const all = [...collab.ids.map(u => [u, "承認済み"]), ...collab.invites.map(u => [u, "招待中"])];
-  await Promise.all(all.map(([u]) => collabProfile(u)));
-  sel.innerHTML = all.map(([u, label]) => {
-    const p = collab.profiles[u];
-    return `<span class="collab-chip"><img src="${esc(p.photoURL || DEF_AVATAR)}" alt="">${esc(p.nickname)} <small>${label}</small>` +
-      (collab.canManage ? `<button type="button" class="collab-x" data-uid="${esc(u)}" aria-label="外す">×</button>` : "") + `</span>`;
-  }).join("") || (collab.canManage ? "" : `<span class="hint">なし</span>`);
-  document.getElementById("collabSearchWrap").hidden = !collab.canManage || all.length >= COLLAB_MAX;
-}
-document.getElementById("collabSel").addEventListener("click", (e) => {
-  const x = e.target.closest(".collab-x");
-  if(!x) return;
-  const u = x.dataset.uid;
-  collab.ids = collab.ids.filter(v => v !== u);
-  collab.invites = collab.invites.filter(v => v !== u);
-  renderCollab();
-});
-let collabTimer = null;
-document.getElementById("collabSearch").addEventListener("input", (e) => {
-  clearTimeout(collabTimer);
-  const q = e.target.value.trim();
-  const box = document.getElementById("collabResults");
-  if(!q){ box.innerHTML = ""; return; }
-  collabTimer = setTimeout(async () => {
-    try{
-      // ニックネームの前方一致
-      const snap = await getDocs(query(collection(db, "publicProfiles"), orderBy("nickname"), startAt(q), endAt(q + "\uf8ff"), limit(8)));
-      const me = window.tabistockUser && window.tabistockUser.uid;
-      const rows = [];
-      snap.forEach(s => {
-        const u = s.id;
-        if(u === me || u === collab.ownerId || collab.ids.includes(u) || collab.invites.includes(u)) return;
-        const p = { nickname: s.data().nickname || "旅人", photoURL: s.data().photoURL || "" };
-        collab.profiles[u] = p;
-        rows.push(`<button type="button" class="collab-res" data-uid="${esc(u)}"><img src="${esc(p.photoURL || DEF_AVATAR)}" alt="">${esc(p.nickname)}</button>`);
-      });
-      box.innerHTML = rows.join("") || `<div class="collab-none">見つかりませんでした</div>`;
-    }catch(err){
-      console.warn("ユーザー検索に失敗:", err);
-      box.innerHTML = `<div class="collab-none">検索できませんでした</div>`;
-    }
-  }, 250);
-});
-document.getElementById("collabResults").addEventListener("click", (e) => {
-  const b = e.target.closest(".collab-res");
-  if(!b) return;
-  if(collab.ids.length + collab.invites.length >= COLLAB_MAX) return;
-  collab.invites.push(b.dataset.uid);
-  document.getElementById("collabSearch").value = "";
-  document.getElementById("collabResults").innerHTML = "";
-  renderCollab();
-});
 
 window.tabistockSubmit = async function(d, st, mode){
   const user = window.tabistockUser;
@@ -2089,13 +2014,8 @@ window.tabistockSubmit = async function(d, st, mode){
   }
 
   st.textContent = "保存中…";
-  // 共同投稿者や管理者が編集しても、元の投稿者は変えない
-  const isOwner = !editId || collab.ownerId === user.uid;
   const docData = {
-    authorId: editId ? collab.ownerId : user.uid,
-    authorNickname: isOwner ? nickname : (window.tabistockEditAuthorNickname || nickname),
-    coAuthorIds: collab.ids.slice(),
-    coAuthorInvites: collab.invites.slice(),
+    ...collabFields(!editId, nickname, window.tabistockEditAuthorNickname),
     status,
     createdAt: (editId && window.tabistockEditCreatedAt) ? window.tabistockEditCreatedAt : serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -2112,16 +2032,13 @@ window.tabistockSubmit = async function(d, st, mode){
   await setDoc(articleRef, docData);
   window.tabistockEditStatus = status; // 続けて編集した場合に備えて更新
 
-  // 新しく招待した人に通知
-  const newInvites = collab.invites.filter(u => !collab.origInvites.includes(u));
-  newInvites.forEach(toUid => sendNotification({ toUid, type: "collab", articleId: id, articleTitle: d.title }));
-  collab.origInvites = collab.invites.slice();
+  notifyNewInvites(id, d.title);
 
   // 選択されたトランジット記事の parentId を、この旅程ID に更新する。
   // 外したものは（この旅程に紐付いていた場合のみ）parentId を解除する。
   try{
     const selected = window.tabistockGetSelectedTransits ? window.tabistockGetSelectedTransits() : [];
-    const all = window.__myTransitsCache || [];
+    const all = window.__shownTransits || [];
     for(const t of all){
       const shouldLink = selected.includes(t.id);
       const linkedHere = (t.parentId || null) === id;
@@ -2129,6 +2046,7 @@ window.tabistockSubmit = async function(d, st, mode){
         st.textContent = "トランジット記事を紐付け中…";
         await updateDoc(doc(db, "articles", t.id), { parentId: id, updatedAt: serverTimestamp() });
         t.parentId = id; // キャッシュも更新（連続保存に備える）
+        transitParentId = id;
       }else if(!shouldLink && linkedHere){
         await updateDoc(doc(db, "articles", t.id), { parentId: null, updatedAt: serverTimestamp() });
         t.parentId = null;
@@ -2175,8 +2093,7 @@ onAuthStateChanged(auth, async (user) => {
     a.style.background = "#f0ece3";
   }
 
-  collab.ownerId = user.uid;
-  renderCollab();
+  initCollabBox(document.getElementById("collabBox"), { me: user.uid, onChange: () => window.tabistockRenderTransitPicker && window.tabistockRenderTransitPicker() });
 
   // 管理者なら新規投稿時もAgodaUrl欄を表示
   try{
@@ -2196,18 +2113,14 @@ onAuthStateChanged(auth, async (user) => {
       // 自分の記事か管理者のみ編集可
       let isAdmin = false;
       try{ isAdmin = (await getDoc(doc(db, "admins", user.uid))).exists(); }catch(e){}
-      const coIds = Array.isArray(data.coAuthorIds) ? data.coAuthorIds : [];
-      if(data.authorId !== user.uid && !coIds.includes(user.uid) && !isAdmin){
+      if(!isMember(data, user.uid) && !isAdmin){
         alert("この記事を編集する権限がありません。"); location.href = "account.html"; return;
       }
-      // 共同投稿者の状態を復元（招待・取り消しは元の投稿者と管理者だけ）
-      collab.ownerId = data.authorId;
-      collab.ids = coIds.slice();
-      collab.invites = Array.isArray(data.coAuthorInvites) ? data.coAuthorInvites.slice() : [];
-      collab.origInvites = collab.invites.slice();
-      collab.canManage = data.authorId === user.uid || isAdmin;
+      loadCollabFrom(data, { isAdmin });
       window.tabistockEditAuthorNickname = data.authorNickname || "";
-      renderCollab();
+      // この旅程から新しくトランジット記事を作ると、紐付けと共同投稿者が最初から入る
+      const ntl = document.getElementById("newTransitLink");
+      if(ntl) ntl.href = "post-transit.html?parent=" + encodeURIComponent(editId);
       if(isAdmin) document.getElementById('agodaUrlWrap').hidden=false;
       window.tabistockEditId = editId;
       window.tabistockEditStatus = data.status || "pending";

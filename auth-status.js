@@ -188,6 +188,9 @@ if (el) {
       } else if (n.type === "dm") {
         txt = `<b>${name}</b>さんからメッセージが届きました`;
         href = `${base}dm.html?to=${encodeURIComponent(n.fromUid || "")}`;
+      } else if (n.type === "handover") {
+        txt = `<b>${name}</b>さんから「${title}」の投稿者を引き継ぎました`;
+        href = `${base}articles/view.html?id=${encodeURIComponent(n.articleId || "")}`;
       } else if (n.type === "collab") {
         txt = `<b>${name}</b>さんから「${title}」の共同投稿に招待されました`;
         href = `${base}account.html#collab`;
@@ -199,7 +202,7 @@ if (el) {
         href = `${base}articles/view.html?id=${encodeURIComponent(n.articleId || "")}`;
       }
       return `<a class="notif-item ${n.read ? "" : "unread"}" href="${href}">` +
-        `<span class="notif-ic">${ICON[n.type] || ICON.like}</span>` +
+        `<span class="notif-ic">${ICON[n.type === "handover" ? "collab" : n.type] || ICON.like}</span>` +
         `<span><span class="notif-tx">${txt}</span><span class="notif-tm">${timeAgo(n.createdAt)}</span></span>` +
         `</a>`;
     }).join("");

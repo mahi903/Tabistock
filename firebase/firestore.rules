@@ -119,6 +119,15 @@ service cloud.firestore {
                         && coIds(request.resource.data).toSet().difference(coIds(resource.data).toSet()).size() == 0
                         && invites(request.resource.data).size() <= 5
                         && okStatusChange())
+                    // 元の投稿者：承認済みの共同投稿者に投稿者を譲る（自分は共同投稿者として残る）
+                    || (isSignedIn()
+                        && resource.data.authorId == request.auth.uid
+                        && request.resource.data.authorId in coIds(resource.data)
+                        && onlyChanged(['authorId', 'authorNickname', 'coAuthorIds'])
+                        && coIds(request.resource.data).toSet()
+                           == coIds(resource.data).toSet()
+                                .difference([request.resource.data.authorId].toSet())
+                                .union([request.auth.uid].toSet()))
                     // 共同投稿者：本文編集（著者・共同投稿者・招待は変えられない）
                     || (isSignedIn()
                         && request.auth.uid in coIds(resource.data)
