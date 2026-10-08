@@ -150,11 +150,13 @@
     ];
     const regionToCont = {};
     CONTINENTS.forEach(ct => ct.regions.forEach(r => { regionToCont[r] = ct.k; }));
-    const contOfCountry = c => { const info = cinfo(c); return info ? regionToCont[info.r] : null; };
+    // 「その他」地域の国・島は、地図上では近い大陸のボタンにまとめる
+    const MAP_CONT_OF = { greenland:'north-america', 'puerto-rico':'north-america', antarctica:'south-america', hawaii:'oceania', guam:'oceania', saipan:'oceania' };
+    const contOfCountry = c => { if(MAP_CONT_OF[c]) return MAP_CONT_OF[c]; const info = cinfo(c); return info ? regionToCont[info.r] : null; };
     // 大陸ごとの範囲（投稿の有無に関係なく、その大陸の全対象国の座標から算出）
     const contBounds = {};
     CONTINENTS.forEach(ct => {
-      const lls = COUNTRIES.filter(co => ct.regions.includes(co.r)).map(co => COUNTRY_LL[co.v]).filter(Boolean);
+      const lls = COUNTRIES.filter(co => contOfCountry(co.v) === ct.k && co.v !== 'antarctica').map(co => COUNTRY_LL[co.v]).filter(Boolean);
       if(lls.length) contBounds[ct.k] = L.latLngBounds(lls);
     });
 

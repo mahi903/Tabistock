@@ -326,6 +326,96 @@ const COUNTRIES = [
   {v:'morocco',jp:'モロッコ',en:'Morocco',r:'africa'},{v:'egypt',jp:'エジプト',en:'Egypt',r:'africa'},
   {v:'kenya',jp:'ケニア',en:'Kenya',r:'africa'},{v:'south-africa',jp:'南アフリカ',en:'South Africa',r:'africa'},
   {v:'australia',jp:'オーストラリア',en:'Australia',r:'oceania'},{v:'new-zealand',jp:'ニュージーランド',en:'New Zealand',r:'oceania'},
+  // 追加分（2）
+  {v:'timor-leste',jp:'東ティモール',en:'Timor-Leste',r:'southeast-asia'},
+  {v:'iraq',jp:'イラク',en:'Iraq',r:'west-asia'},
+  {v:'palestine',jp:'パレスチナ',en:'Palestine',r:'west-asia'},
+  {v:'vatican',jp:'バチカン',en:'Vatican City',r:'europe'},
+  {v:'san-marino',jp:'サンマリノ',en:'San Marino',r:'europe'},
+  {v:'liechtenstein',jp:'リヒテンシュタイン',en:'Liechtenstein',r:'europe'},
+  {v:'andorra',jp:'アンドラ',en:'Andorra',r:'europe'},
+  {v:'kosovo',jp:'コソボ',en:'Kosovo',r:'europe'},
+  {v:'ukraine',jp:'ウクライナ',en:'Ukraine',r:'europe'},
+  {v:'greenland',jp:'グリーンランド',en:'Greenland',r:'other'},
+  {v:'belize',jp:'ベリーズ',en:'Belize',r:'north-america'},
+  {v:'honduras',jp:'ホンジュラス',en:'Honduras',r:'north-america'},
+  {v:'el-salvador',jp:'エルサルバドル',en:'El Salvador',r:'north-america'},
+  {v:'nicaragua',jp:'ニカラグア',en:'Nicaragua',r:'north-america'},
+  {v:'dominican-republic',jp:'ドミニカ共和国',en:'Dominican Republic',r:'north-america'},
+  {v:'bahamas',jp:'バハマ',en:'Bahamas',r:'north-america'},
+  {v:'puerto-rico',jp:'プエルトリコ',en:'Puerto Rico',r:'other'},
+  {v:'antarctica',jp:'南極',en:'Antarctica',r:'other'},
+  {v:'algeria',jp:'アルジェリア',en:'Algeria',r:'africa'},
+  {v:'cape-verde',jp:'カーボベルデ',en:'Cape Verde',r:'africa'},
+  {v:'seychelles',jp:'セーシェル',en:'Seychelles',r:'africa'},
+  {v:'mozambique',jp:'モザンビーク',en:'Mozambique',r:'africa'},
+  {v:'malawi',jp:'マラウイ',en:'Malawi',r:'africa'},
+  {v:'samoa',jp:'サモア',en:'Samoa',r:'oceania'},
+  {v:'tonga',jp:'トンガ',en:'Tonga',r:'oceania'},
+  {v:'vanuatu',jp:'バヌアツ',en:'Vanuatu',r:'oceania'},
+  {v:'cook-islands',jp:'クック諸島',en:'Cook Islands',r:'oceania'},
+  {v:'papua-new-guinea',jp:'パプアニューギニア',en:'Papua New Guinea',r:'oceania'},
+  // 追加分
+  {v:'macau',jp:'マカオ',en:'Macau',r:'east-asia'},
+  {v:'laos',jp:'ラオス',en:'Laos',r:'southeast-asia'},
+  {v:'myanmar',jp:'ミャンマー',en:'Myanmar',r:'southeast-asia'},
+  {v:'brunei',jp:'ブルネイ',en:'Brunei',r:'southeast-asia'},
+  {v:'tajikistan',jp:'タジキスタン',en:'Tajikistan',r:'central-asia'},
+  {v:'turkmenistan',jp:'トルクメニスタン',en:'Turkmenistan',r:'central-asia'},
+  {v:'georgia',jp:'ジョージア',en:'Georgia',r:'west-asia'},
+  {v:'armenia',jp:'アルメニア',en:'Armenia',r:'west-asia'},
+  {v:'azerbaijan',jp:'アゼルバイジャン',en:'Azerbaijan',r:'west-asia'},
+  {v:'jordan',jp:'ヨルダン',en:'Jordan',r:'west-asia'},
+  {v:'israel',jp:'イスラエル',en:'Israel',r:'west-asia'},
+  {v:'lebanon',jp:'レバノン',en:'Lebanon',r:'west-asia'},
+  {v:'oman',jp:'オマーン',en:'Oman',r:'west-asia'},
+  {v:'saudi',jp:'サウジアラビア',en:'Saudi Arabia',r:'west-asia'},
+  {v:'bahrain',jp:'バーレーン',en:'Bahrain',r:'west-asia'},
+  {v:'kuwait',jp:'クウェート',en:'Kuwait',r:'west-asia'},
+  {v:'iran',jp:'イラン',en:'Iran',r:'west-asia'},
+  {v:'slovenia',jp:'スロベニア',en:'Slovenia',r:'europe'},
+  {v:'bosnia',jp:'ボスニア・ヘルツェゴビナ',en:'Bosnia and Herzegovina',r:'europe'},
+  {v:'montenegro',jp:'モンテネグロ',en:'Montenegro',r:'europe'},
+  {v:'serbia',jp:'セルビア',en:'Serbia',r:'europe'},
+  {v:'albania',jp:'アルバニア',en:'Albania',r:'europe'},
+  {v:'north-macedonia',jp:'北マケドニア',en:'North Macedonia',r:'europe'},
+  {v:'bulgaria',jp:'ブルガリア',en:'Bulgaria',r:'europe'},
+  {v:'romania',jp:'ルーマニア',en:'Romania',r:'europe'},
+  {v:'moldova',jp:'モルドバ',en:'Moldova',r:'europe'},
+  {v:'malta',jp:'マルタ',en:'Malta',r:'europe'},
+  {v:'cyprus',jp:'キプロス',en:'Cyprus',r:'europe'},
+  {v:'luxembourg',jp:'ルクセンブルク',en:'Luxembourg',r:'europe'},
+  {v:'monaco',jp:'モナコ',en:'Monaco',r:'europe'},
+  {v:'russia',jp:'ロシア',en:'Russia',r:'europe'},
+  {v:'cuba',jp:'キューバ',en:'Cuba',r:'north-america'},
+  {v:'guatemala',jp:'グアテマラ',en:'Guatemala',r:'north-america'},
+  {v:'costarica',jp:'コスタリカ',en:'Costa Rica',r:'north-america'},
+  {v:'panama',jp:'パナマ',en:'Panama',r:'north-america'},
+  {v:'jamaica',jp:'ジャマイカ',en:'Jamaica',r:'north-america'},
+  {v:'colombia',jp:'コロンビア',en:'Colombia',r:'south-america'},
+  {v:'ecuador',jp:'エクアドル',en:'Ecuador',r:'south-america'},
+  {v:'uruguay',jp:'ウルグアイ',en:'Uruguay',r:'south-america'},
+  {v:'paraguay',jp:'パラグアイ',en:'Paraguay',r:'south-america'},
+  {v:'tunisia',jp:'チュニジア',en:'Tunisia',r:'africa'},
+  {v:'tanzania',jp:'タンザニア',en:'Tanzania',r:'africa'},
+  {v:'ethiopia',jp:'エチオピア',en:'Ethiopia',r:'africa'},
+  {v:'uganda',jp:'ウガンダ',en:'Uganda',r:'africa'},
+  {v:'rwanda',jp:'ルワンダ',en:'Rwanda',r:'africa'},
+  {v:'ghana',jp:'ガーナ',en:'Ghana',r:'africa'},
+  {v:'senegal',jp:'セネガル',en:'Senegal',r:'africa'},
+  {v:'namibia',jp:'ナミビア',en:'Namibia',r:'africa'},
+  {v:'botswana',jp:'ボツワナ',en:'Botswana',r:'africa'},
+  {v:'zambia',jp:'ザンビア',en:'Zambia',r:'africa'},
+  {v:'zimbabwe',jp:'ジンバブエ',en:'Zimbabwe',r:'africa'},
+  {v:'madagascar',jp:'マダガスカル',en:'Madagascar',r:'africa'},
+  {v:'mauritius',jp:'モーリシャス',en:'Mauritius',r:'africa'},
+  {v:'hawaii',jp:'ハワイ',en:'Hawaii',r:'other'},
+  {v:'guam',jp:'グアム',en:'Guam',r:'other'},
+  {v:'saipan',jp:'サイパン',en:'Saipan',r:'other'},
+  {v:'palau',jp:'パラオ',en:'Palau',r:'oceania'},
+  {v:'fiji',jp:'フィジー',en:'Fiji',r:'oceania'},
+  {v:'new-caledonia',jp:'ニューカレドニア',en:'New Caledonia',r:'oceania'},
+  {v:'tahiti',jp:'タヒチ',en:'Tahiti',r:'oceania'},
 ];
 // 国 → [通貨, 言語]。投稿フォームに欄は出さず、選んだ国からこの表で自動セットして記事に載せる。
 const COUNTRY_CL={
@@ -338,11 +428,99 @@ const COUNTRY_CL={
   usa:['米ドル','英語'],canada:['カナダドル','英語・フランス語'],mexico:['メキシコペソ','スペイン語'],
   peru:['ソル','スペイン語'],bolivia:['ボリビアーノ','スペイン語'],chile:['チリペソ','スペイン語'],argentina:['アルゼンチンペソ','スペイン語'],brazil:['レアル','ポルトガル語'],
   morocco:['モロッコ・ディルハム','アラビア語・フランス語'],egypt:['エジプトポンド','アラビア語'],kenya:['ケニアシリング','スワヒリ語・英語'],'south-africa':['ランド','英語'],
-  australia:['オーストラリアドル','英語'],'new-zealand':['ニュージーランドドル','英語']
+  australia:['オーストラリアドル','英語'],'new-zealand':['ニュージーランドドル','英語'],
+  'timor-leste':['米ドル','テトゥン語・ポルトガル語'],
+  iraq:['イラク・ディナール','アラビア語・クルド語'],
+  palestine:['新シェケル','アラビア語'],
+  vatican:['ユーロ','イタリア語・ラテン語'],
+  'san-marino':['ユーロ','イタリア語'],
+  liechtenstein:['スイスフラン','ドイツ語'],
+  andorra:['ユーロ','カタルーニャ語'],
+  kosovo:['ユーロ','アルバニア語・セルビア語'],
+  ukraine:['フリヴニャ','ウクライナ語'],
+  greenland:['デンマーク・クローネ','グリーンランド語・デンマーク語'],
+  belize:['ベリーズドル','英語・スペイン語'],
+  honduras:['レンピラ','スペイン語'],
+  'el-salvador':['米ドル','スペイン語'],
+  nicaragua:['コルドバ','スペイン語'],
+  'dominican-republic':['ドミニカ・ペソ','スペイン語'],
+  bahamas:['バハマドル','英語'],
+  'puerto-rico':['米ドル','スペイン語・英語'],
+  antarctica:['米ドル（ツアー料金）','英語'],
+  algeria:['アルジェリア・ディナール','アラビア語・フランス語'],
+  'cape-verde':['エスクード','ポルトガル語'],
+  seychelles:['セーシェル・ルピー','英語・フランス語'],
+  mozambique:['メティカル','ポルトガル語'],
+  malawi:['マラウイ・クワチャ','英語・チェワ語'],
+  samoa:['タラ','サモア語・英語'],
+  tonga:['パアンガ','トンガ語・英語'],
+  vanuatu:['バツ','ビスラマ語・英語・フランス語'],
+  'cook-islands':['ニュージーランドドル','英語・マオリ語'],
+  'papua-new-guinea':['キナ','英語・トク・ピシン'],
+  macau:['マカオパタカ','広東語・ポルトガル語'],
+  laos:['キープ','ラオ語'],
+  myanmar:['チャット','ミャンマー語'],
+  brunei:['ブルネイドル','マレー語'],
+  tajikistan:['ソモニ','タジク語'],
+  turkmenistan:['マナト','トルクメン語'],
+  georgia:['ラリ','ジョージア語'],
+  armenia:['ドラム','アルメニア語'],
+  azerbaijan:['マナト','アゼルバイジャン語'],
+  jordan:['ヨルダン・ディナール','アラビア語'],
+  israel:['新シェケル','ヘブライ語'],
+  lebanon:['レバノン・ポンド','アラビア語'],
+  oman:['オマーン・リアル','アラビア語'],
+  saudi:['サウジ・リヤル','アラビア語'],
+  bahrain:['バーレーン・ディナール','アラビア語'],
+  kuwait:['クウェート・ディナール','アラビア語'],
+  iran:['イラン・リアル','ペルシャ語'],
+  slovenia:['ユーロ','スロベニア語'],
+  bosnia:['兌換マルク','ボスニア語'],
+  montenegro:['ユーロ','モンテネグロ語'],
+  serbia:['セルビア・ディナール','セルビア語'],
+  albania:['レク','アルバニア語'],
+  'north-macedonia':['デナル','マケドニア語'],
+  bulgaria:['レフ','ブルガリア語'],
+  romania:['レウ','ルーマニア語'],
+  moldova:['モルドバ・レウ','ルーマニア語'],
+  malta:['ユーロ','マルタ語・英語'],
+  cyprus:['ユーロ','ギリシャ語・トルコ語'],
+  luxembourg:['ユーロ','ルクセンブルク語・フランス語・ドイツ語'],
+  monaco:['ユーロ','フランス語'],
+  russia:['ルーブル','ロシア語'],
+  cuba:['キューバ・ペソ','スペイン語'],
+  guatemala:['ケツァル','スペイン語'],
+  costarica:['コロン','スペイン語'],
+  panama:['バルボア・米ドル','スペイン語'],
+  jamaica:['ジャマイカドル','英語'],
+  colombia:['コロンビア・ペソ','スペイン語'],
+  ecuador:['米ドル','スペイン語'],
+  uruguay:['ウルグアイ・ペソ','スペイン語'],
+  paraguay:['グアラニー','スペイン語・グアラニー語'],
+  tunisia:['チュニジア・ディナール','アラビア語'],
+  tanzania:['タンザニア・シリング','スワヒリ語・英語'],
+  ethiopia:['ブル','アムハラ語'],
+  uganda:['ウガンダ・シリング','英語・スワヒリ語'],
+  rwanda:['ルワンダ・フラン','キニヤルワンダ語・英語'],
+  ghana:['セディ','英語'],
+  senegal:['CFAフラン','フランス語'],
+  namibia:['ナミビアドル','英語'],
+  botswana:['プラ','英語・ツワナ語'],
+  zambia:['ザンビア・クワチャ','英語'],
+  zimbabwe:['米ドル・ジンバブエドル','英語'],
+  madagascar:['アリアリ','マダガスカル語・フランス語'],
+  mauritius:['モーリシャス・ルピー','英語・フランス語'],
+  hawaii:['米ドル','英語'],
+  guam:['米ドル','英語'],
+  saipan:['米ドル','英語'],
+  palau:['米ドル','パラオ語・英語'],
+  fiji:['フィジードル','英語・フィジー語'],
+  'new-caledonia':['CFPフラン','フランス語'],
+  tahiti:['CFPフラン','フランス語']
 };
-const REGION_JP={ "east-asia":"東アジア","southeast-asia":"東南アジア","south-asia":"南アジア","central-asia":"中央アジア","west-asia":"西アジア","europe":"ヨーロッパ","north-america":"北アメリカ","south-america":"南アメリカ","africa":"アフリカ","oceania":"オセアニア" };
-const REGION_EN={ "east-asia":"East Asia","southeast-asia":"Southeast Asia","south-asia":"South Asia","central-asia":"Central Asia","west-asia":"West Asia","europe":"Europe","north-america":"North America","south-america":"South America","africa":"Africa","oceania":"Oceania" };
-const REGION_ORDER=["east-asia","southeast-asia","south-asia","central-asia","west-asia","europe","north-america","south-america","africa","oceania"];
+const REGION_JP={ "east-asia":"東アジア","southeast-asia":"東南アジア","south-asia":"南アジア","central-asia":"中央アジア","west-asia":"西アジア","europe":"ヨーロッパ","north-america":"北アメリカ","south-america":"南アメリカ","africa":"アフリカ","oceania":"オセアニア","other":"その他" };
+const REGION_EN={ "east-asia":"East Asia","southeast-asia":"Southeast Asia","south-asia":"South Asia","central-asia":"Central Asia","west-asia":"West Asia","europe":"Europe","north-america":"North America","south-america":"South America","africa":"Africa","oceania":"Oceania","other":"Other" };
+const REGION_ORDER=["east-asia","southeast-asia","south-asia","central-asia","west-asia","europe","north-america","south-america","africa","oceania","other"];
 const BUDGETS=[{v:'10',l:'〜10万円'},{v:'20',l:'〜20万円'},{v:'30',l:'〜30万円'},{v:'40',l:'〜40万円'},{v:'50',l:'〜50万円'},{v:'50plus',l:'50万円以上'}];
 const DAYS_OPT=[{v:'daytrip',l:'日帰り'},{v:'1night',l:'1泊'},{v:'3-5',l:'3〜5日'},{v:'1w',l:'1週間'},{v:'2w',l:'2週間'},{v:'3w-plus',l:'3週間以上'}];
 const STYLES=[
@@ -419,13 +597,18 @@ function renderCountrySel(){
     $('countryAllToggle').textContent=box.hidden?'一覧から選ぶ ▾':'一覧を閉じる ▴';
   });
   // ひらがなはカタカナに寄せて検索（「とるこ」でもトルコが出る）
+  // 漢字の国名はひらがなでも引けるよう読みを持つ（「なんきょく」→南極、「どばい」→UAE など）
+  const COUNTRY_YOMI={ japan:'にほん にっぽん', korea:'かんこく', china:'ちゅうごく', taiwan:'たいわん', hongkong:'ほんこん',
+    UAE:'あらぶしゅちょうこくれんぽう どばい あぶだび', 'south-africa':'みなみあふりか', 'timor-leste':'ひがしてぃもーる',
+    'dominican-republic':'どみにかきょうわこく', antarctica:'なんきょく', 'cook-islands':'くっくしょとう', 'north-macedonia':'きたまけどにあ',
+    usa:'べいこく', uk:'えいこく' };
   const toKata=t=>t.replace(/[\u3041-\u3096]/g,ch=>String.fromCharCode(ch.charCodeAt(0)+0x60));
   $('countrySearch').addEventListener('input',()=>{
     const q=$('countrySearch').value.trim();
     const res=$('countryResults');
     if(!q){ res.innerHTML=''; return; }
     const qk=toKata(q), ql=q.toLowerCase();
-    const hits=COUNTRIES.filter(c=>c.jp.includes(qk)||c.en.toLowerCase().includes(ql)||c.v.toLowerCase().includes(ql)).slice(0,12);
+    const hits=COUNTRIES.filter(c=>c.jp.includes(qk)||c.en.toLowerCase().includes(ql)||c.v.toLowerCase().includes(ql)||toKata(COUNTRY_YOMI[c.v]||'').includes(qk)).slice(0,12);
     res.innerHTML=hits.length
       ? hits.map(c=>`<button type="button" class="chip${countryOrder.includes(c.v)?' on':''}" data-v="${c.v}">${c.jp}</button>`).join('')
       : '<span class="cres-none">見つかりませんでした。「一覧から選ぶ」から探せます。</span>';
@@ -1468,6 +1651,7 @@ const HEADER_HTML = `  <header class="hd" id="hd">
           <option value="taiwan">台湾</option>
           <option value="hongkong">香港</option>
           <option value="mongolia">モンゴル</option>
+          <option value="macau">マカオ</option>
         </optgroup>
         <optgroup label="東南アジア">
           <option value="thai">タイ</option>
@@ -1477,6 +1661,10 @@ const HEADER_HTML = `  <header class="hd" id="hd">
           <option value="singapore">シンガポール</option>
           <option value="indonesia">インドネシア</option>
           <option value="philippines">フィリピン</option>
+          <option value="laos">ラオス</option>
+          <option value="myanmar">ミャンマー</option>
+          <option value="brunei">ブルネイ</option>
+          <option value="timor-leste">東ティモール</option>
         </optgroup>
         <optgroup label="南アジア">
           <option value="india">インド</option>
@@ -1491,11 +1679,26 @@ const HEADER_HTML = `  <header class="hd" id="hd">
           <option value="kazakhstan">カザフスタン</option>
           <option value="kyrgyzstan">キルギス</option>
           <option value="uzbekistan">ウズベキスタン</option>
+          <option value="tajikistan">タジキスタン</option>
+          <option value="turkmenistan">トルクメニスタン</option>
         </optgroup>
         <optgroup label="西アジア">
           <option value="turkey">トルコ</option>
           <option value="qatar">カタール</option>
           <option value="UAE">アラブ首長国連邦</option>
+          <option value="georgia">ジョージア</option>
+          <option value="armenia">アルメニア</option>
+          <option value="azerbaijan">アゼルバイジャン</option>
+          <option value="jordan">ヨルダン</option>
+          <option value="israel">イスラエル</option>
+          <option value="lebanon">レバノン</option>
+          <option value="oman">オマーン</option>
+          <option value="saudi">サウジアラビア</option>
+          <option value="bahrain">バーレーン</option>
+          <option value="kuwait">クウェート</option>
+          <option value="iran">イラン</option>
+          <option value="iraq">イラク</option>
+          <option value="palestine">パレスチナ</option>
         </optgroup>
         <optgroup label="ヨーロッパ">
           <option value="finland">フィンランド</option>
@@ -1523,11 +1726,42 @@ const HEADER_HTML = `  <header class="hd" id="hd">
           <option value="ireland">アイルランド</option>
           <option value="denmark">デンマーク</option>
           <option value="iceland">アイスランド</option>
+          <option value="slovenia">スロベニア</option>
+          <option value="bosnia">ボスニア・ヘルツェゴビナ</option>
+          <option value="montenegro">モンテネグロ</option>
+          <option value="serbia">セルビア</option>
+          <option value="albania">アルバニア</option>
+          <option value="north-macedonia">北マケドニア</option>
+          <option value="bulgaria">ブルガリア</option>
+          <option value="romania">ルーマニア</option>
+          <option value="moldova">モルドバ</option>
+          <option value="malta">マルタ</option>
+          <option value="cyprus">キプロス</option>
+          <option value="luxembourg">ルクセンブルク</option>
+          <option value="monaco">モナコ</option>
+          <option value="russia">ロシア</option>
+          <option value="vatican">バチカン</option>
+          <option value="san-marino">サンマリノ</option>
+          <option value="liechtenstein">リヒテンシュタイン</option>
+          <option value="andorra">アンドラ</option>
+          <option value="kosovo">コソボ</option>
+          <option value="ukraine">ウクライナ</option>
         </optgroup>
         <optgroup label="北アメリカ">
           <option value="usa">アメリカ</option>
           <option value="canada">カナダ</option>
           <option value="mexico">メキシコ</option>
+          <option value="cuba">キューバ</option>
+          <option value="guatemala">グアテマラ</option>
+          <option value="costarica">コスタリカ</option>
+          <option value="panama">パナマ</option>
+          <option value="jamaica">ジャマイカ</option>
+          <option value="belize">ベリーズ</option>
+          <option value="honduras">ホンジュラス</option>
+          <option value="el-salvador">エルサルバドル</option>
+          <option value="nicaragua">ニカラグア</option>
+          <option value="dominican-republic">ドミニカ共和国</option>
+          <option value="bahamas">バハマ</option>
         </optgroup>
         <optgroup label="南アメリカ">
           <option value="peru">ペルー</option>
@@ -1535,16 +1769,55 @@ const HEADER_HTML = `  <header class="hd" id="hd">
           <option value="chile">チリ</option>
           <option value="argentina">アルゼンチン</option>
           <option value="brazil">ブラジル</option>
+          <option value="colombia">コロンビア</option>
+          <option value="ecuador">エクアドル</option>
+          <option value="uruguay">ウルグアイ</option>
+          <option value="paraguay">パラグアイ</option>
         </optgroup>
         <optgroup label="アフリカ">
           <option value="morocco">モロッコ</option>
           <option value="egypt">エジプト</option>
           <option value="kenya">ケニア</option>
           <option value="south-africa">南アフリカ</option>
+          <option value="tunisia">チュニジア</option>
+          <option value="tanzania">タンザニア</option>
+          <option value="ethiopia">エチオピア</option>
+          <option value="uganda">ウガンダ</option>
+          <option value="rwanda">ルワンダ</option>
+          <option value="ghana">ガーナ</option>
+          <option value="senegal">セネガル</option>
+          <option value="namibia">ナミビア</option>
+          <option value="botswana">ボツワナ</option>
+          <option value="zambia">ザンビア</option>
+          <option value="zimbabwe">ジンバブエ</option>
+          <option value="madagascar">マダガスカル</option>
+          <option value="mauritius">モーリシャス</option>
+          <option value="algeria">アルジェリア</option>
+          <option value="cape-verde">カーボベルデ</option>
+          <option value="seychelles">セーシェル</option>
+          <option value="mozambique">モザンビーク</option>
+          <option value="malawi">マラウイ</option>
         </optgroup>
         <optgroup label="オセアニア">
           <option value="australia">オーストラリア</option>
           <option value="new-zealand">ニュージーランド</option>
+          <option value="palau">パラオ</option>
+          <option value="fiji">フィジー</option>
+          <option value="new-caledonia">ニューカレドニア</option>
+          <option value="tahiti">タヒチ</option>
+          <option value="samoa">サモア</option>
+          <option value="tonga">トンガ</option>
+          <option value="vanuatu">バヌアツ</option>
+          <option value="cook-islands">クック諸島</option>
+          <option value="papua-new-guinea">パプアニューギニア</option>
+        </optgroup>
+        <optgroup label="その他">
+          <option value="greenland">グリーンランド</option>
+          <option value="antarctica">南極</option>
+          <option value="hawaii">ハワイ</option>
+          <option value="guam">グアム</option>
+          <option value="saipan">サイパン</option>
+          <option value="puerto-rico">プエルトリコ</option>
         </optgroup>
       </select>
     </label>
@@ -1609,6 +1882,7 @@ const HEADER_HTML = `  <header class="hd" id="hd">
         <option value="taiwan">台湾</option>
         <option value="hongkong">香港</option>
         <option value="mongolia">モンゴル</option>
+        <option value="macau">マカオ</option>
       </optgroup>
       <optgroup label="東南アジア">
         <option value="thai">タイ</option>
@@ -1618,6 +1892,10 @@ const HEADER_HTML = `  <header class="hd" id="hd">
         <option value="singapore">シンガポール</option>
         <option value="indonesia">インドネシア</option>
         <option value="philippines">フィリピン</option>
+        <option value="laos">ラオス</option>
+        <option value="myanmar">ミャンマー</option>
+        <option value="brunei">ブルネイ</option>
+        <option value="timor-leste">東ティモール</option>
       </optgroup>
       <optgroup label="南アジア">
         <option value="india">インド</option>
@@ -1632,11 +1910,26 @@ const HEADER_HTML = `  <header class="hd" id="hd">
         <option value="kazakhstan">カザフスタン</option>
         <option value="kyrgyzstan">キルギス</option>
         <option value="uzbekistan">ウズベキスタン</option>
+        <option value="tajikistan">タジキスタン</option>
+        <option value="turkmenistan">トルクメニスタン</option>
       </optgroup>
       <optgroup label="西アジア">
         <option value="turkey">トルコ</option>
         <option value="qatar">カタール</option>
         <option value="UAE">アラブ首長国連邦</option>
+        <option value="georgia">ジョージア</option>
+        <option value="armenia">アルメニア</option>
+        <option value="azerbaijan">アゼルバイジャン</option>
+        <option value="jordan">ヨルダン</option>
+        <option value="israel">イスラエル</option>
+        <option value="lebanon">レバノン</option>
+        <option value="oman">オマーン</option>
+        <option value="saudi">サウジアラビア</option>
+        <option value="bahrain">バーレーン</option>
+        <option value="kuwait">クウェート</option>
+        <option value="iran">イラン</option>
+        <option value="iraq">イラク</option>
+        <option value="palestine">パレスチナ</option>
       </optgroup>
       <optgroup label="ヨーロッパ">
         <option value="finland">フィンランド</option>
@@ -1664,11 +1957,42 @@ const HEADER_HTML = `  <header class="hd" id="hd">
         <option value="ireland">アイルランド</option>
         <option value="denmark">デンマーク</option>
         <option value="iceland">アイスランド</option>
+        <option value="slovenia">スロベニア</option>
+        <option value="bosnia">ボスニア・ヘルツェゴビナ</option>
+        <option value="montenegro">モンテネグロ</option>
+        <option value="serbia">セルビア</option>
+        <option value="albania">アルバニア</option>
+        <option value="north-macedonia">北マケドニア</option>
+        <option value="bulgaria">ブルガリア</option>
+        <option value="romania">ルーマニア</option>
+        <option value="moldova">モルドバ</option>
+        <option value="malta">マルタ</option>
+        <option value="cyprus">キプロス</option>
+        <option value="luxembourg">ルクセンブルク</option>
+        <option value="monaco">モナコ</option>
+        <option value="russia">ロシア</option>
+        <option value="vatican">バチカン</option>
+        <option value="san-marino">サンマリノ</option>
+        <option value="liechtenstein">リヒテンシュタイン</option>
+        <option value="andorra">アンドラ</option>
+        <option value="kosovo">コソボ</option>
+        <option value="ukraine">ウクライナ</option>
       </optgroup>
       <optgroup label="北アメリカ">
         <option value="usa">アメリカ</option>
         <option value="canada">カナダ</option>
         <option value="mexico">メキシコ</option>
+        <option value="cuba">キューバ</option>
+        <option value="guatemala">グアテマラ</option>
+        <option value="costarica">コスタリカ</option>
+        <option value="panama">パナマ</option>
+        <option value="jamaica">ジャマイカ</option>
+        <option value="belize">ベリーズ</option>
+        <option value="honduras">ホンジュラス</option>
+        <option value="el-salvador">エルサルバドル</option>
+        <option value="nicaragua">ニカラグア</option>
+        <option value="dominican-republic">ドミニカ共和国</option>
+        <option value="bahamas">バハマ</option>
       </optgroup>
       <optgroup label="南アメリカ">
         <option value="peru">ペルー</option>
@@ -1676,16 +2000,55 @@ const HEADER_HTML = `  <header class="hd" id="hd">
         <option value="chile">チリ</option>
         <option value="argentina">アルゼンチン</option>
         <option value="brazil">ブラジル</option>
+        <option value="colombia">コロンビア</option>
+        <option value="ecuador">エクアドル</option>
+        <option value="uruguay">ウルグアイ</option>
+        <option value="paraguay">パラグアイ</option>
       </optgroup>
       <optgroup label="アフリカ">
         <option value="morocco">モロッコ</option>
         <option value="egypt">エジプト</option>
         <option value="kenya">ケニア</option>
         <option value="south-africa">南アフリカ</option>
+        <option value="tunisia">チュニジア</option>
+        <option value="tanzania">タンザニア</option>
+        <option value="ethiopia">エチオピア</option>
+        <option value="uganda">ウガンダ</option>
+        <option value="rwanda">ルワンダ</option>
+        <option value="ghana">ガーナ</option>
+        <option value="senegal">セネガル</option>
+        <option value="namibia">ナミビア</option>
+        <option value="botswana">ボツワナ</option>
+        <option value="zambia">ザンビア</option>
+        <option value="zimbabwe">ジンバブエ</option>
+        <option value="madagascar">マダガスカル</option>
+        <option value="mauritius">モーリシャス</option>
+        <option value="algeria">アルジェリア</option>
+        <option value="cape-verde">カーボベルデ</option>
+        <option value="seychelles">セーシェル</option>
+        <option value="mozambique">モザンビーク</option>
+        <option value="malawi">マラウイ</option>
       </optgroup>
       <optgroup label="オセアニア">
         <option value="australia">オーストラリア</option>
         <option value="new-zealand">ニュージーランド</option>
+        <option value="palau">パラオ</option>
+        <option value="fiji">フィジー</option>
+        <option value="new-caledonia">ニューカレドニア</option>
+        <option value="tahiti">タヒチ</option>
+        <option value="samoa">サモア</option>
+        <option value="tonga">トンガ</option>
+        <option value="vanuatu">バヌアツ</option>
+        <option value="cook-islands">クック諸島</option>
+        <option value="papua-new-guinea">パプアニューギニア</option>
+      </optgroup>
+      <optgroup label="その他">
+        <option value="greenland">グリーンランド</option>
+        <option value="antarctica">南極</option>
+        <option value="hawaii">ハワイ</option>
+        <option value="guam">グアム</option>
+        <option value="saipan">サイパン</option>
+        <option value="puerto-rico">プエルトリコ</option>
       </optgroup>
     </select>
 
