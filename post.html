@@ -625,9 +625,7 @@ function addDay(data){
     }
     updateDayLoc(wrap);
     if(data.photoUrls && data.photoUrls.length){
-      const ex = data.photoUrls.slice();
-      wrap._existingPhotos = ex;       // gather が参照（splice で同期）
-      fileIn._existing = ex;           // renderThumbs が同じ配列を参照
+      fileIn._items = data.photoUrls.map(url => ({ url }));
       renderThumbs(fileIn, th);
     }
   }
@@ -820,13 +818,15 @@ $('stars').addEventListener('click',e=>{ if(e.target.dataset.v){ difficulty=Numb
 function paintStars(){ document.querySelectorAll('#stars i').forEach(i=>i.classList.toggle('on',Number(i.dataset.v)<=difficulty)); }
 paintStars();
 
-// 写真プレビュー＆個別削除
-// input.files は直接いじれないので、選択ファイルを input._sel に保持し
-// DataTransfer で input.files に同期する（追加選択も保持できる）。
-// 既存写真（編集時）は input._existing（URL配列）として一緒に表示・削除する。
+// 写真プレビュー＆個別削除・並べ替え
+// 既存写真（編集時のURL）と新しく選んだ写真を、input._items の1本の配列で順番どおりに持つ。
+//   { url }  … 保存済みの写真
+//   { file } … 新しく選んだ写真（保存時にアップロード）
+// これで「既存＋追加」を混ぜて並べ替えられる。保存時もこの順番のまま photoUrls になる。
+// input.files は直接いじれないので、DataTransfer で新規分だけを input.files に同期する。
 function syncInputFiles(input){
   const dt=new DataTransfer();
-  (input._sel||[]).forEach(f=>dt.items.add(f));
+  (input._items||[]).forEach(it=>{ if(it.file) dt.items.add(it.file); });
   input.files=dt.files;
 }
 // 小さなプレビューURLを作る。
@@ -850,50 +850,50 @@ function revokePreview(file){
   if(file && file._previewURL){ URL.revokeObjectURL(file._previewURL); file._previewURL=null; }
 }
 function renderThumbs(input,container){
-  const existing=input._existing||[];
-  const sel=input._sel||[];
+  const items=input._items||(input._items=[]);
   let html='';
-  existing.forEach((u,i)=>{
-    html+=`<div class="thumb"><img src="${esc(u)}"><button type="button" class="thumb-x" data-ex="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-ex="${i}" data-dir="-1">‹</button>`:''}${i<existing.length-1?`<button type="button" class="thumb-mv" data-ex="${i}" data-dir="1">›</button>`:''}</div>`;
+  items.forEach((it,i)=>{
+    const mv=(i>0?`<button type="button" class="thumb-mv" data-i="${i}" data-dir="-1">‹</button>`:'')
+            +(i<items.length-1?`<button type="button" class="thumb-mv" data-i="${i}" data-dir="1">›</button>`:'');
+    const x=`<button type="button" class="thumb-x" data-i="${i}" aria-label="削除">×</button>`;
+    html+= it.url
+      ? `<div class="thumb"><img src="${esc(it.url)}">${x}${mv}</div>`
+      : `<div class="thumb thumb-loading" data-prevwrap="${i}"><img data-prev="${i}" alt="">${x}${mv}</div>`;
   });
-  sel.forEach((f,i)=>{
-    html+=`<div class="thumb thumb-loading" data-prevwrap="${i}"><img data-prev="${i}" alt=""><button type="button" class="thumb-x" data-new="${i}" aria-label="削除">×</button>${i>0?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="-1">‹</button>`:''}${i<sel.length-1?`<button type="button" class="thumb-mv" data-new="${i}" data-dir="1">›</button>`:''}</div>`;
-  });
-  if(existing.length) html+=`<p class="hint" style="width:100%;margin:6px 0 0">既存の写真。×で削除、追加する場合は新しく選んでください。</p>`;
+  if(items.length>1) html+=`<p class="hint" style="width:100%;margin:6px 0 0">‹ › で順番を入れ替え、×で削除できます。追加した写真は最後に並びます。</p>`;
   container.innerHTML=html;
   // フル解像度を避け、縮小プレビューを1枚ずつ順番に差し込む。
   // （同時デコードを避けて落ちにくく＋できた順に表示して進捗が見える）
   (async()=>{
-    for(let i=0;i<sel.length;i++){
+    for(let i=0;i<items.length;i++){
+      if(!items[i].file) continue;
       const img=container.querySelector(`img[data-prev="${i}"]`);
-      if(img){ try{ img.src=await makePreviewURL(sel[i]); }catch(e){} }
+      if(img){ try{ img.src=await makePreviewURL(items[i].file); }catch(e){} }
       const wrap=container.querySelector(`[data-prevwrap="${i}"]`);
       if(wrap) wrap.classList.remove('thumb-loading');
     }
   })();
   container.querySelectorAll('.thumb-x').forEach(b=>{
     b.addEventListener('click',()=>{
-      if(b.dataset.ex!=null){ existing.splice(+b.dataset.ex,1); }
-      else { const f=sel[+b.dataset.new]; sel.splice(+b.dataset.new,1); revokePreview(f); syncInputFiles(input); }
+      const [rm]=items.splice(+b.dataset.i,1);
+      if(rm && rm.file) revokePreview(rm.file);
+      syncInputFiles(input);
       renderThumbs(input,container);
     });
   });
   container.querySelectorAll('.thumb-mv').forEach(b=>{
     b.addEventListener('click',()=>{
-      const dir=+b.dataset.dir;
-      if(b.dataset.ex!=null){
-        const i=+b.dataset.ex; [existing[i],existing[i+dir]]=[existing[i+dir],existing[i]];
-      } else {
-        const i=+b.dataset.new; [sel[i],sel[i+dir]]=[sel[i+dir],sel[i]]; syncInputFiles(input);
-      }
+      const i=+b.dataset.i, j=i+(+b.dataset.dir);
+      [items[i],items[j]]=[items[j],items[i]];
+      syncInputFiles(input);
       renderThumbs(input,container);
     });
   });
 }
 function wirePhotoInput(input,container){
-  input._sel=input._sel||[];
+  input._items=input._items||[];
   input.addEventListener('change',()=>{
-    [...input.files].forEach(f=>input._sel.push(f));
+    [...input.files].forEach(file=>input._items.push({ file }));
     syncInputFiles(input);
     renderThumbs(input,container);
   });
@@ -941,8 +941,8 @@ async function gather(){
       date:'',
       summary:w.querySelector('.d-sum').value.trim(),
       text:w.querySelector('.d-text').value.trim(),
-      files:[...w.querySelector('.d-photos').files],
-      existingPhotos: w._existingPhotos || [],
+      photos:(w.querySelector('.d-photos')._items||[]).slice(),   // 既存URL＋新規ファイルを順番どおりに
+      files:(w.querySelector('.d-photos')._items||[]).filter(it=>it.file).map(it=>it.file),
       places,
       // 旧レンダラー互換：先頭ピンを lat/lng にも残す
       lat: places.length ? places[0].lat : null,
@@ -984,8 +984,8 @@ async function gather(){
     costs, flights, flightWhen:$('flightWhen').value.trim(), flightSite:$('flightSite').value.trim(),
     services, days, comment:$('comment').value.trim(),
     agodaUrl:$('agodaUrl').value.trim(),
-    heroFiles:[...$('heroPhotos').files],
-    heroExisting: window.tabistockHeroExisting || []
+    heroPhotos:($('heroPhotos')._items||[]).slice(),          // 既存URL＋新規ファイルを順番どおりに
+    heroFiles:($('heroPhotos')._items||[]).filter(it=>it.file).map(it=>it.file)
   };
 }
 function validate(d){
@@ -998,7 +998,7 @@ function validate(d){
   if(!d.safety) e.push('治安');
   if(!d.flights.length) e.push('航空券（最低1航路）');
   if(!d.flightWhen) e.push('予約時期'); if(!d.flightSite) e.push('予約サイト');
-  if(!d.heroFiles.length && !(d.heroExisting&&d.heroExisting.length)) e.push('カルーセル写真（最低1枚／サムネにも使用）');
+  if(!d.heroPhotos.length) e.push('カルーセル写真（最低1枚／サムネにも使用）');
   if(!d.days.length) e.push('日程（最低1日）');
   d.days.forEach((day,i)=>{ if(!day.summary||!day.text) e.push(`DAY${i+1}の入力`); });
   if(!d.comment) e.push('投稿者コメント');
@@ -1387,8 +1387,7 @@ window.populateForm = function(d){
   $('dayList').innerHTML=''; dayN=0; (d.days||[]).forEach(day=>addDay(day)); if(!(d.days||[]).length) addDay();
   // カルーセル（ヒーロー）写真の既存分
   if(d.heroUrls && d.heroUrls.length){
-    window.tabistockHeroExisting = d.heroUrls.slice();
-    $('heroPhotos')._existing = window.tabistockHeroExisting; // 同じ配列を参照（splice で同期）
+    $('heroPhotos')._items = d.heroUrls.map(url => ({ url }));
     renderThumbs($('heroPhotos'), $('heroThumbs'));
   }
   updateMeta();
@@ -1976,33 +1975,31 @@ window.tabistockSubmit = async function(d, st, mode){
 
   st.className = "status"; st.textContent = editId ? "記事を更新中…" : "記事を作成中…";
 
-  // ヒーロー写真：新しく選んだ場合のみアップロード。なければ既存URLを再利用。
-  let heroUrls = [];
-  if(d.heroFiles.length){
-    for(let i=0;i<d.heroFiles.length;i++){
-      st.textContent = `ヒーロー写真 ${i+1}/${d.heroFiles.length} をアップロード中…`;
-      const blob = await window.resizeImage(d.heroFiles[i]);
-      heroUrls.push(await uploadAndGetUrl(`articles/${id}/hero${i+1}.jpg`, blob));
+  // 写真は「既存URL＋新規ファイル」の並び順のまま保存する。新規分だけアップロード。
+  // ファイル名は day1-1.jpg のような連番だと既存写真と衝突して上書きするので、毎回ユニークにする。
+  const stamp = Date.now();
+  async function savePhotos(items, prefix, label){
+    const urls = [];
+    const total = items.filter(it => it.file).length;
+    let n = 0;
+    for(let j=0;j<items.length;j++){
+      const it = items[j];
+      if(it.url){ urls.push(it.url); continue; }
+      n++;
+      st.textContent = `${label} ${n}/${total} をアップロード中…`;
+      const blob = await window.resizeImage(it.file);
+      urls.push(await uploadAndGetUrl(`articles/${id}/${prefix}_${stamp}_${j+1}.jpg`, blob));
     }
-  }else{
-    heroUrls = (d.heroExisting || []).slice();
+    return urls;
   }
+
+  const heroUrls = await savePhotos(d.heroPhotos || [], "hero", "ヒーロー写真");
   const thumbUrl = heroUrls[0] || "";
 
-  // 各日の写真：新しく選んだ場合のみアップロード。なければ既存URLを再利用。
   const days = [];
   for(let i=0;i<d.days.length;i++){
     const day = d.days[i];
-    let photoUrls = [];
-    if(day.files.length){
-      for(let j=0;j<day.files.length;j++){
-        st.textContent = `DAY${i+1} 写真 ${j+1}/${day.files.length} をアップロード中…`;
-        const blob = await window.resizeImage(day.files[j]);
-        photoUrls.push(await uploadAndGetUrl(`articles/${id}/day${i+1}-${j+1}.jpg`, blob));
-      }
-    }else{
-      photoUrls = (day.existingPhotos || []).slice();
-    }
+    const photoUrls = await savePhotos(day.photos || [], `day${i+1}`, `DAY${i+1} 写真`);
     const dayObj = { date: day.date, summary: day.summary, text: day.text, photoUrls };
     const places = Array.isArray(day.places)
       ? day.places.filter(p=>p && typeof p.lat==='number' && typeof p.lng==='number')
