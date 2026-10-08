@@ -14,34 +14,32 @@
 <style>
   :root{ --green:#1f6f5b; --green-d:#185645; --gold:#c2873f; --cream:#fffaf2; --line:#ece2d0; --ink:#2b2b2b; --mut:#6b7280; }
   *{box-sizing:border-box}
-  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif; color:var(--ink); background:#f6f1e8; line-height:1.7; }
-  .wrap{ max-width:860px; margin:0 auto; padding:32px 20px 120px; }
+  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif; color:var(--ink); background:#f6f1e8; line-height:1.55; }
+  .wrap{ max-width:860px; margin:0 auto; padding:16px 14px 110px; }
   .top{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
   h1.page{ font-size:24px; margin:0; }
   .lead{ color:var(--mut); font-size:14px; margin:4px 0 28px; }
-  .phero{ position:relative; overflow:hidden; border-radius:22px; padding:40px 34px; margin:0 0 28px; background:linear-gradient(150deg,#1f6f5b,#2f9e7f); color:#fff; }
-  .phero .eyebrow{ font-family:"Manrope",system-ui,sans-serif; letter-spacing:.22em; text-transform:uppercase; font-size:12px; font-weight:800; color:#ffd9a0; margin:0 0 10px; }
-  .phero h1{ font-size:clamp(26px,4.4vw,40px); line-height:1.2; margin:0 0 14px; color:#fff; }
-  .phero p{ color:rgba(255,255,255,.92); font-size:14px; line-height:1.8; margin:0; max-width:600px; }
-  .phero p b{ color:#fff; }
-  .phero .back{ display:inline-block; margin-top:16px; font-size:13px; font-weight:700; color:#fff; text-decoration:none; opacity:.9; }
+  .phero{ position:relative; border-radius:16px; padding:14px 18px; margin:0 0 16px; background:linear-gradient(150deg,#1f6f5b,#2f9e7f); color:#fff; }
+  .phero .eyebrow{ font-family:"Manrope",system-ui,sans-serif; letter-spacing:.2em; text-transform:uppercase; font-size:10px; font-weight:800; color:#ffd9a0; margin:0 0 2px; }
+  .phero h1{ font-size:20px; line-height:1.3; margin:0 0 4px; color:#fff; }
+  .phero p{ color:rgba(255,255,255,.92); font-size:12.5px; line-height:1.5; margin:0; }
+  .phero .back{ position:absolute; top:12px; right:16px; font-size:12px; font-weight:700; color:#fff; text-decoration:none; opacity:.85; }
   .phero .back:hover{ opacity:1; }
-  @media(max-width:600px){ .phero{ padding:30px 22px; } }
-  .card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:22px 22px 24px; margin-bottom:22px; }
-  .card > h2{ font-size:16px; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
-  .card > h2 .num{ display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:var(--green); color:#fff; border-radius:50%; font-size:12px; font-weight:800; }
-  .card .hint{ color:var(--mut); font-size:12.5px; margin:0 0 16px; }
-  label.f{ display:block; font-size:13px; font-weight:700; margin:14px 0 5px; }
+  .card{ background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 14px 16px; margin-bottom:12px; }
+  .card > h2{ font-size:15px; margin:0 0 2px; display:flex; align-items:center; gap:8px; }
+  .card > h2 .num{ display:inline-flex; width:22px; height:22px; align-items:center; justify-content:center; background:var(--green); color:#fff; border-radius:50%; font-size:12px; font-weight:800; }
+  .card .hint{ color:var(--mut); font-size:12px; margin:0 0 8px; }
+  label.f{ display:block; font-size:12.5px; font-weight:700; margin:10px 0 3px; }
   label.f .req{ color:#d4493f; font-size:11px; margin-left:4px; }
   label.f .opt{ color:var(--mut); font-size:11px; margin-left:4px; font-weight:600; }
   input[type=text],input[type=number],input[type=date],textarea,select{
-    width:100%; min-width:0; max-width:100%; padding:9px 11px; border:1px solid #d9d2c4; border-radius:10px; font-size:14px; font-family:inherit; background:#fff; color:var(--ink); }
+    width:100%; min-width:0; max-width:100%; padding:7px 10px; border:1px solid #d9d2c4; border-radius:8px; font-size:14px; font-family:inherit; background:#fff; color:var(--ink); }
   /* iOS の日付入力は本来の幅が広く右にはみ出すため、見た目をリセットして枠に収める */
   input[type=date]{ -webkit-appearance:none; appearance:none; }
-  textarea{ min-height:90px; resize:vertical; }
-  .row2{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
-  .row3{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:12px; }
-  @media(max-width:600px){ .row2,.row3{ grid-template-columns:minmax(0,1fr); } }
+  textarea{ min-height:72px; resize:vertical; }
+  .row2{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+  .row3{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:8px; }
+  @media(max-width:600px){ .row3{ grid-template-columns:minmax(0,1fr); } }
   /* 航空会社オートコンプリート（欄の直下に候補を表示） */
   .ac-wrap{ position:relative; }
   .ac-list{ position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:60; background:#fff; border:1px solid #d9d2c4; border-radius:10px; box-shadow:0 10px 28px rgba(0,0,0,.14); max-height:240px; overflow-y:auto; -webkit-overflow-scrolling:touch; }
@@ -57,14 +55,21 @@
   .trip-btn.on{ background:#eaf5f0; color:var(--green-d); }
   .route-grid{ display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:8px; }
   .route-arrow{ font-size:20px; font-weight:700; color:var(--green-d); text-align:center; user-select:none; }
-  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
-  .chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid #d9d2c4; border-radius:999px; padding:6px 12px; font-size:13px; cursor:pointer; background:#fff; user-select:none; }
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+  .chip{ display:inline-flex; align-items:center; gap:6px; border:1px solid #d9d2c4; border-radius:999px; padding:4px 10px; font-size:12.5px; cursor:pointer; background:#fff; user-select:none; }
   .chip input{ accured:0; margin:0; }
   .chip.on{ background:#eaf5f0; border-color:var(--green); color:var(--green-d); font-weight:700; }
-  details.region{ border:1px solid var(--line); border-radius:10px; margin-bottom:8px; }
-  details.region>summary{ cursor:pointer; padding:9px 12px; font-weight:700; font-size:13px; }
-  details.region .chips{ padding:0 12px 12px; }
-  .sub{ border:1px dashed #d9d2c4; border-radius:12px; padding:14px; margin:12px 0; position:relative; background:#fcfaf5; }
+  details.region{ border:1px solid var(--line); border-radius:8px; margin-bottom:6px; }
+  details.region>summary{ cursor:pointer; padding:6px 10px; font-weight:700; font-size:12.5px; }
+  details.region .chips{ padding:0 10px 10px; }
+  /* 国選び：検索＋選択済みチップ（一覧は「一覧から選ぶ」で開く） */
+  .csel-x{ border:none; background:rgba(31,111,91,.15); color:var(--green-d); border-radius:50%; width:18px; height:18px; padding:0; line-height:18px; font-size:12px; cursor:pointer; margin-left:2px; }
+  #countryResults:empty{ display:none; }
+  #countryResults{ margin-top:6px; }
+  .cres-none{ font-size:12px; color:var(--mut); }
+  .linkbtn{ background:none; border:none; padding:6px 0 0; font-size:12px; font-weight:700; color:var(--green); cursor:pointer; }
+  #countryBox{ margin-top:6px; }
+  .sub{ border:1px dashed #d9d2c4; border-radius:10px; padding:10px; margin:8px 0; position:relative; background:#fcfaf5; }
   .sub .del{ position:absolute; top:8px; right:8px; border:none; background:#f1e7d6; color:#7a6a4f; border-radius:8px; padding:3px 9px; font-size:12px; cursor:pointer; }
   .sub h4{ margin:0 0 8px; font-size:13px; color:var(--green-d); }
   .addbtn{ border:1px dashed var(--green); color:var(--green-d); background:#fff; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; cursor:pointer; margin-top:6px; }
@@ -74,7 +79,7 @@
   .costgrid .yen input{ padding-left:22px; text-align:right; }
   .total{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; padding-top:12px; border-top:2px solid var(--line); font-weight:800; }
   .total b{ color:var(--green-d); font-size:18px; }
-  .filebox{ border:1px solid #d9d2c4; border-radius:10px; padding:10px; background:#fff; }
+  .filebox{ border:1px solid #d9d2c4; border-radius:8px; padding:8px; background:#fff; }
   .thumbs{ display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
   .thumbs img{ width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--line); display:block; }
   .thumb{ position:relative; display:inline-block; }
@@ -87,11 +92,11 @@
   .thumb-loading img{ opacity:0; }
   .thumb-loading::after{ content:''; position:absolute; top:50%; left:50%; width:18px; height:18px; margin:-9px 0 0 -9px; border:2px solid #c7ccd1; border-top-color:#1f6f5b; border-radius:50%; animation:thumbspin .7s linear infinite; }
   @keyframes thumbspin{ to{ transform:rotate(360deg); } }
-  .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:14px 20px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:130; }
+  .bar{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:10px 16px; display:flex; gap:12px; align-items:center; justify-content:center; box-shadow:0 -6px 20px rgba(0,0,0,.06); z-index:130; }
   /* 投稿ページではPWAの下部タブバーを隠す（投稿バーと重なってボタンが押せなくなるため） */
   body.pwa .tabbar{ display:none !important; }
   body.pwa{ padding-bottom:0 !important; }
-  .btn{ border:none; border-radius:999px; padding:13px 26px; font-size:15px; font-weight:800; cursor:pointer; }
+  .btn{ border:none; border-radius:999px; padding:10px 22px; font-size:14px; font-weight:800; cursor:pointer; }
   .btn-main{ background:var(--green); color:#fff; }
   .btn-main:disabled{ opacity:.5; cursor:not-allowed; }
   .btn-ghost{ background:#fff; border:1px solid #d9d2c4; color:var(--ink); }
@@ -127,16 +132,15 @@
 <body>
 <div class="wrap">
   <section class="phero">
+    <a class="back" href="index.html">← トップ</a>
     <p class="eyebrow">Post a Trip</p>
     <h1 id="pageH1">旅程を投稿する</h1>
-    <p>投稿された記事は、管理者が内容を確認・承認したあとに公開されます（あらし対策のための<b>承認制</b>です）。写真はアップロード時に自動でリサイズ・圧縮されるので、そのまま選ぶだけでOKです。</p>
-    <a class="back" href="index.html">← トップに戻る</a>
+    <p>管理者の承認後に公開されます。</p>
   </section>
 
   <!-- ===== 0. 基本設定 ===== -->
   <section class="card">
     <h2><span class="num">0</span>基本設定</h2>
-    <p class="hint">検索用メタは検索の選択肢と同じ値を使うので表記ブレは起きません。</p>
 
     <label class="f">投稿者ニックネーム<span class="req">必須・登録名で自動入力</span></label>
     <input type="text" id="author" placeholder="例：mahiro" value="mahiro" autocomplete="off">
@@ -144,8 +148,12 @@
     <div id="collabBox"></div>
 
     <label class="f">国（複数選択可）<span class="req">必須</span></label>
-    <p class="hint" style="margin:0 0 6px">周遊なら複数チェック。地域は最初に選んだ国から自動で決まります。</p>
-    <div id="countryBox"></div>
+    <p class="hint" style="margin:0 0 6px">周遊なら複数選べます。1つ目に選んだ国で地域が決まります。</p>
+    <div id="countrySel" class="chips" style="margin:0 0 6px"></div>
+    <input type="text" id="countrySearch" placeholder="国名で検索（例：トルコ／turkey）" autocomplete="off">
+    <div id="countryResults" class="chips"></div>
+    <button type="button" class="linkbtn" id="countryAllToggle">一覧から選ぶ ▾</button>
+    <div id="countryBox" hidden></div>
 
     <div class="row2">
       <div>
@@ -273,7 +281,7 @@
 
 <div class="bar">
   <button class="btn btn-ghost" id="saveDraft" type="button" title="未完成でもマイページに下書きとして保存します（あなただけが見られます）">下書き保存</button>
-  <button class="btn btn-main" id="generate" type="button">この内容で投稿する（承認後に公開）</button>
+  <button class="btn btn-main" id="generate" type="button">投稿する</button>
   <span class="status" id="status"></span>
 </div>
 
@@ -369,7 +377,23 @@ const pad=n=>String(n).padStart(2,'0');
 /* =========================================================
    フォーム生成
 ========================================================= */
-// 国チェックボックス（地域ごと）
+// 国選び。地域ごとのチェックボックス（一覧）は裏で正本として持ち、
+// 普段は検索窓＋選択済みチップで操作する。countryOrder＝選んだ順（1つ目で地域が決まる）。
+let countryOrder=[];
+function countryCb(v){ return document.querySelector(`input[name=country][value="${v}"]`); }
+function setCountry(v,on){
+  const cb=countryCb(v); if(!cb) return;
+  cb.checked=on; cb.closest('.chip').classList.toggle('on',on);
+  countryOrder=countryOrder.filter(x=>x!==v);
+  if(on) countryOrder.push(v);
+  renderCountrySel(); updateMeta();
+}
+function renderCountrySel(){
+  $('countrySel').innerHTML=countryOrder.map(v=>{
+    const c=cinfo(v); if(!c) return '';
+    return `<span class="chip on">${c.jp}<button type="button" class="csel-x" data-v="${v}" aria-label="外す">×</button></span>`;
+  }).join('');
+}
 (function(){
   const box=$('countryBox');
   REGION_ORDER.forEach(r=>{
@@ -382,10 +406,34 @@ const pad=n=>String(n).padStart(2,'0');
       const lab=document.createElement('label'); lab.className='chip';
       lab.innerHTML=`<input type="checkbox" name="country" value="${c.v}"> ${c.jp}`;
       const cb=lab.querySelector('input');
-      cb.addEventListener('change',()=>{ lab.classList.toggle('on',cb.checked); updateMeta(); });
+      cb.addEventListener('change',()=>setCountry(c.v,cb.checked));
       chips.appendChild(lab);
     });
     box.appendChild(d);
+  });
+  $('countrySel').addEventListener('click',e=>{
+    const x=e.target.closest('.csel-x'); if(x) setCountry(x.dataset.v,false);
+  });
+  $('countryAllToggle').addEventListener('click',()=>{
+    box.hidden=!box.hidden;
+    $('countryAllToggle').textContent=box.hidden?'一覧から選ぶ ▾':'一覧を閉じる ▴';
+  });
+  // ひらがなはカタカナに寄せて検索（「とるこ」でもトルコが出る）
+  const toKata=t=>t.replace(/[\u3041-\u3096]/g,ch=>String.fromCharCode(ch.charCodeAt(0)+0x60));
+  $('countrySearch').addEventListener('input',()=>{
+    const q=$('countrySearch').value.trim();
+    const res=$('countryResults');
+    if(!q){ res.innerHTML=''; return; }
+    const qk=toKata(q), ql=q.toLowerCase();
+    const hits=COUNTRIES.filter(c=>c.jp.includes(qk)||c.en.toLowerCase().includes(ql)||c.v.toLowerCase().includes(ql)).slice(0,12);
+    res.innerHTML=hits.length
+      ? hits.map(c=>`<button type="button" class="chip${countryOrder.includes(c.v)?' on':''}" data-v="${c.v}">${c.jp}</button>`).join('')
+      : '<span class="cres-none">見つかりませんでした。「一覧から選ぶ」から探せます。</span>';
+  });
+  $('countryResults').addEventListener('click',e=>{
+    const b=e.target.closest('[data-v]'); if(!b) return;
+    setCountry(b.dataset.v,!countryOrder.includes(b.dataset.v));
+    $('countrySearch').value=''; $('countryResults').innerHTML='';
   });
 })();
 // 予算・日数
@@ -904,7 +952,7 @@ wirePhotoInput($('heroPhotos'),$('heroThumbs'));
 
 
 /* メタ情報のプレビュー＆eyebrow自動入力 */
-function selectedCountries(){ return [...document.querySelectorAll('input[name=country]:checked')].map(c=>c.value); }
+function selectedCountries(){ return countryOrder.filter(v=>{ const cb=countryCb(v); return cb && cb.checked; }); }
 /* 選んだ国から通貨・言語を自動生成（周遊は「／」で連結）。記事に載せる用。 */
 function autoCurrency(){ return [...new Set(selectedCountries().map(v=>(COUNTRY_CL[v]||[])[0]).filter(Boolean))].join('／'); }
 function autoLanguage(){ return [...new Set(selectedCountries().map(v=>(COUNTRY_CL[v]||[])[1]).filter(Boolean))].join('／'); }
@@ -1366,6 +1414,7 @@ window.populateForm = function(d){
   $('agodaUrl').value=d.agodaUrl||'';
   if(d.budget){$('budget').value=d.budget;} if(d.days_v){$('days').value=d.days_v;}
   document.querySelectorAll('input[name=country]').forEach(c=>{ c.checked=(d.countries||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
+  countryOrder=(d.countries||[]).filter(v=>countryCb(v)); renderCountrySel();
   document.querySelectorAll('input[name=style]').forEach(c=>{ c.checked=(d.styles||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
   if(d.costs) document.querySelectorAll('[data-cost]').forEach(i=>i.value=d.costs[i.dataset.cost]||'');
   calcCost();
@@ -2139,7 +2188,7 @@ onAuthStateChanged(auth, async (user) => {
       // 見出し・ボタンのラベルを編集向けに変更
       const h1 = document.getElementById("pageH1"); if(h1) h1.textContent = (data.status === "draft") ? "下書きを編集する" : "投稿を編集する";
       const gen = document.getElementById("generate");
-      if(gen) gen.textContent = (data.status === "published") ? "この内容で更新する" : "更新して申請する（承認後に公開）";
+      if(gen) gen.textContent = (data.status === "published") ? "この内容で更新する" : "更新して申請する";
       const sd = document.getElementById("saveDraft"); if(sd) sd.textContent = "下書きとして保存";
       const stEl = document.getElementById("status");
       if(stEl){ stEl.className = "status"; stEl.textContent = ""; }
