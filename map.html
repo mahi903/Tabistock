@@ -153,10 +153,17 @@
     // 「その他」地域の国・島は、地図上では近い大陸のボタンにまとめる
     const MAP_CONT_OF = { greenland:'north-america', 'puerto-rico':'north-america', antarctica:'south-america', hawaii:'oceania', guam:'oceania', saipan:'oceania' };
     const contOfCountry = c => { if(MAP_CONT_OF[c]) return MAP_CONT_OF[c]; const info = cinfo(c); return info ? regionToCont[info.r] : null; };
+    // 日付変更線をまたぐ地域（オセアニア：サモア・トンガ・タヒチ・ハワイなど）は、
+    // 西経を +360° して東側へ連続させる。そうしないと範囲が地球を一周して中心がアフリカ沖になる。
+    const WRAP_CONT = new Set(['oceania']);
+    const llOf = c => {
+      const ll = COUNTRY_LL[c]; if(!ll) return null;
+      return (WRAP_CONT.has(contOfCountry(c)) && ll[1] < 0) ? [ll[0], ll[1] + 360] : ll;
+    };
     // 大陸ごとの範囲（投稿の有無に関係なく、その大陸の全対象国の座標から算出）
     const contBounds = {};
     CONTINENTS.forEach(ct => {
-      const lls = COUNTRIES.filter(co => contOfCountry(co.v) === ct.k && co.v !== 'antarctica').map(co => COUNTRY_LL[co.v]).filter(Boolean);
+      const lls = COUNTRIES.filter(co => contOfCountry(co.v) === ct.k && co.v !== 'antarctica').map(co => llOf(co.v)).filter(Boolean);
       if(lls.length) contBounds[ct.k] = L.latLngBounds(lls);
     });
 
@@ -269,7 +276,7 @@
 
         let placed = 0;
         Object.keys(byCountry).forEach(c => {
-          const ll = COUNTRY_LL[c];
+          const ll = llOf(c);
           if(!ll) return;                 // 座標未登録の国はスキップ
           const ct = contOfCountry(c);
           if(!ct) return;
