@@ -32,6 +32,7 @@
   .s-pending{background:#fff3e6;color:#c4691f}
   .s-published{background:#e9f5ef;color:#1f6f5b}
   .s-rejected{background:#fdecec;color:#b53d3d}
+  .s-draft{background:#eeeef1;color:#5b6472}
   .actions{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
   .actions a,.actions button{display:block;text-align:center;padding:9px 14px;border-radius:999px;font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;font-family:inherit;border:none;white-space:nowrap}
   .b-view{background:#faf6ee;color:#1f6f5b;border:1.5px solid #1f6f5b !important}
@@ -62,6 +63,7 @@
         <button id="tab-pending" class="on" type="button">承認待ち</button>
         <button id="tab-published" type="button">公開中</button>
         <button id="tab-rejected" type="button">却下</button>
+        <button id="tab-draft" type="button">下書き</button>
         <button id="tab-users" type="button" style="margin-left:auto">ユーザー</button>
       </div>
       <div id="msg"></div>
@@ -91,8 +93,9 @@ async function loadList(){
     const snap = await getDocs(qy);
     const docs = [];
     snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
-    // 新しい順（createdAt があれば）
-    docs.sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+    // 新しい順（下書きは最後に保存した順）
+    const ts = d => (currentTab==="draft" ? (d.updatedAt?.seconds || d.createdAt?.seconds) : d.createdAt?.seconds) || 0;
+    docs.sort((a,b) => ts(b) - ts(a));
     if(!docs.length){ $("list").innerHTML = `<div class="empty">該当する投稿はありません。</div>`; return; }
     $("list").innerHTML = docs.map(renderItem).join("");
     bindButtons();
@@ -104,9 +107,24 @@ async function loadList(){
 
 function renderItem(d){
   const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
-  const statusClass = d.status==="published" ? "s-published" : (d.status==="rejected" ? "s-rejected" : "s-pending");
-  const statusLabel = d.status==="published" ? "公開中" : (d.status==="rejected" ? "却下" : "承認待ち");
+  const isDraft = d.status==="draft";
+  const statusClass = isDraft ? "s-draft" : d.status==="published" ? "s-published" : (d.status==="rejected" ? "s-rejected" : "s-pending");
+  const statusLabel = isDraft ? "下書き" : d.status==="published" ? "公開中" : (d.status==="rejected" ? "却下" : "承認待ち");
   let actions = `<a class="b-view" href="./articles/view.html?id=${esc(d.id)}" target="_blank">プレビュー</a>`;
+  // 下書きは書いている途中なので、見るだけ（公開・却下・削除はしない）
+  if(isDraft){
+    const t = d.updatedAt?.seconds || d.createdAt?.seconds;
+    const when = t ? new Date(t*1000).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "";
+    return `<div class="item" id="row-${esc(d.id)}">
+    <div class="thumb" style="background-image:url('${esc(thumb)}')"></div>
+    <div class="meta">
+      <h3>${esc(d.title||"(無題)")}<span class="status-pill ${statusClass}">${statusLabel}</span></h3>
+      <p class="who">投稿者：${esc(d.authorNickname||"?")}${d.type==="transit"?"（トランジット）":""}${when?`　最終保存：${esc(when)}`:""}</p>
+      <p class="lead">${esc(d.lead||"")}</p>
+    </div>
+    <div class="actions">${actions}</div>
+  </div>`;
+  }
   if(d.status!=="published") actions += `<button class="b-approve" data-act="publish" data-id="${esc(d.id)}">公開する</button>`;
   if(d.status!=="rejected")  actions += `<button class="b-reject" data-act="reject" data-id="${esc(d.id)}">却下</button>`;
   actions += `<button class="b-del" data-act="delete" data-id="${esc(d.id)}">削除</button>`;
@@ -182,7 +200,7 @@ async function loadUsers(){
   }
 }
 
-const TABS = ["pending","published","rejected","users"];
+const TABS = ["pending","published","rejected","draft","users"];
 TABS.forEach(t => {
   $("tab-"+t).addEventListener("click", () => {
     currentTab = t;

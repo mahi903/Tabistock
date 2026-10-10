@@ -301,7 +301,7 @@
 </div>
 
 <div class="bar">
-  <button class="btn btn-ghost" id="saveDraft" type="button" title="未完成でもマイページに下書きとして保存します（あなただけが見られます）">下書き保存</button>
+  <button class="btn btn-ghost" id="saveDraft" type="button" title="未完成でもマイページに下書きとして保存します">下書き保存</button>
   <button class="btn btn-main" id="generate" type="button">投稿する</button>
   <span class="status" id="status"></span>
 </div>
@@ -1636,7 +1636,7 @@ $('generate').addEventListener('click',async()=>{
   }finally{ $('generate').disabled=false; $('saveDraft').disabled=false; }
 });
 
-/* 下書き保存（タイトルだけあれば保存可能・本人だけが見られる） */
+/* 下書き保存（タイトルだけあれば保存可能・本人と管理者が見られる） */
 $('saveDraft').addEventListener('click',async()=>{
   const st=$('status');
   if(!window.tabistockReady){ st.className='status err'; st.textContent='Firebaseに接続中です。数秒待って再度お試しください。'; return; }
