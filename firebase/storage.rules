@@ -26,13 +26,15 @@ service firebase.storage {
       // 画像は公開（サイト訪問者が見られる必要があるため）
       allow read: if true;
 
-      // アップロードはログインユーザーのみ。5MB以下・画像形式に限定。
-      allow write: if isSignedIn()
-                   && request.resource.size < 5 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
+      // 新しいアップロードだけ許可（ログイン必須・5MB以下・画像のみ）。
+      // ファイル名は毎回ユニークなので、既存の写真の上書き（update）は不要＝禁止。
+      allow create: if isSignedIn()
+                    && request.resource.size < 5 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
 
-      // 削除はログインユーザー（運用上は管理者が記事ごと整理）
-      allow delete: if isSignedIn();
+      // 削除・上書きはサイトからは不可（他人の記事の写真を消せないように）。
+      // 整理が必要なときは管理者が Firebase コンソールから行う。
+      allow update, delete: if false;
     }
   }
 }

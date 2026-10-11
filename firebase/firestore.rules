@@ -14,7 +14,8 @@ service cloud.firestore {
 
     // ---- ユーザープロフィール（非公開・email等を含む） ----
     match /users/{uid} {
-      allow read:   if isSignedIn();
+      // メールアドレスを含むので、読めるのは本人と管理者だけ（他人のプロフィールは publicProfiles を使う）
+      allow read:   if isSignedIn() && (request.auth.uid == uid || isAdmin());
       allow create: if isSignedIn() && request.auth.uid == uid;
       allow update: if request.auth.uid == uid || isAdmin();
       allow delete: if isAdmin();
