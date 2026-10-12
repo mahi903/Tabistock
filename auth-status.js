@@ -2,7 +2,7 @@
 // 記事ページ(/articles/)からは ../ で account.html へ繋ぐ。
 import { auth, db } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { doc, getDoc, collection, query, where, orderBy, limit, onSnapshot, writeBatch }
+import { doc, getDoc, getDocs, collection, query, where, orderBy, limit, onSnapshot, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -498,4 +498,54 @@ if (el) {
     requestAnimationFrame(() => { scheduled = false; scan(); });
   });
   mo.observe(document.documentElement, { childList: true, subtree: true });
+})();
+
+
+/* =========================================================
+   書きかけの下書きのお知らせ
+   - ログイン中の人に下書きがあれば、画面下に「続きを書く」を出す
+   - 1回のアクセス（タブ）につき1度だけ。投稿ページ・マイページ・管理画面では出さない
+========================================================= */
+(function initDraftNudge() {
+  const page = location.pathname.split("/").pop();
+  if (["post.html", "post-transit.html", "account.html", "admin.html"].includes(page)) return;
+  const KEY = "tabistockDraftNudge";
+  try { if (sessionStorage.getItem(KEY)) return; } catch (e) {}
+
+  const stop = onAuthStateChanged(auth, async (user) => {
+    stop();
+    if (!user) return;
+    let drafts = [];
+    try {
+      const snap = await getDocs(query(collection(db, "articles"),
+        where("authorId", "==", user.uid), where("status", "==", "draft")));
+      snap.forEach(s => drafts.push({ id: s.id, ...s.data() }));
+    } catch (e) { console.warn("下書きの確認に失敗:", e); return; }
+    if (!drafts.length) return;
+    const ts = d => (d.updatedAt && d.updatedAt.seconds) || (d.createdAt && d.createdAt.seconds) || 0;
+    drafts.sort((a, b) => ts(b) - ts(a));
+    const d = drafts[0];
+    const href = base + (d.type === "transit" ? "post-transit.html" : "post.html") + "?edit=" + encodeURIComponent(d.id);
+    const title = d.title || (d.type === "transit" ? "トランジット記事" : "無題の旅程");
+
+    const bar = document.createElement("div");
+    bar.id = "draftNudge";
+    bar.setAttribute("role", "status");
+    bar.style.cssText = 'position:fixed;left:50%;transform:translate(-50%,20px);opacity:0;transition:transform .3s ease,opacity .3s ease;bottom:calc(env(safe-area-inset-bottom) + 16px);z-index:110;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;background:#fff;color:#1b2330;border:1px solid #e9dcc6;padding:10px 10px 10px 16px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.16);font-family:"Noto Sans JP",-apple-system,sans-serif';
+    bar.innerHTML =
+      `<div style="min-width:0">` +
+        `<div style="font-size:11px;font-weight:800;color:#e2683b;margin-bottom:2px">書きかけの旅程があります${drafts.length > 1 ? `（${drafts.length}件）` : ""}</div>` +
+        `<div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw">${esc(title)}</div>` +
+      `</div>` +
+      `<a href="${href}" style="flex-shrink:0;background:#1f6f5b;color:#fff;font-size:12.5px;font-weight:800;padding:9px 14px;border-radius:999px;text-decoration:none;white-space:nowrap">続きを書く</a>` +
+      `<button type="button" aria-label="閉じる" style="flex-shrink:0;border:none;background:none;color:#9aa2af;font-size:20px;line-height:1;cursor:pointer;padding:0 4px">×</button>`;
+    const remember = () => { try { sessionStorage.setItem(KEY, "1"); } catch (e) {} };
+    bar.querySelector("button").addEventListener("click", () => { remember(); bar.remove(); });
+    bar.querySelector("a").addEventListener("click", remember);
+    remember(); // 1タブにつき1回だけ
+    setTimeout(() => {
+      document.body.appendChild(bar);
+      requestAnimationFrame(() => { bar.style.transform = "translate(-50%,0)"; bar.style.opacity = "1"; });
+    }, 1200);
+  });
 })();
