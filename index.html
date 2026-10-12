@@ -211,6 +211,16 @@ a{color:inherit;text-decoration:none}
 .big-tile{grid-column:span 2;grid-row:span 2}
 .big-tile h3{font-size:26px}
 .wide-tile{grid-column:span 2}
+/* 新着の読み込み中（スケルトン） */
+.skel{background:linear-gradient(100deg,#efe7d8 30%,#f7f2e9 50%,#efe7d8 70%);background-size:300% 100%;animation:skel 1.4s ease-in-out infinite}
+.skel-card{pointer-events:none}
+.tile.skel::before,.tile.skel::after{display:none}
+.skel-line{display:block;height:10px;border-radius:6px;margin:4px 0 8px;background:#efe7d8}
+.skel-line.short{width:55%}
+.routes-msg{grid-column:1/-1;margin:0;padding:24px 0;text-align:center;color:var(--muted);font-size:14px}
+.routes-msg a{color:var(--green);font-weight:800}
+@keyframes skel{0%{background-position:100% 0}100%{background-position:0 0}}
+@media (prefers-reduced-motion:reduce){.skel{animation:none}}
 
 /* ===== FOUNDER (compact) ===== */
 .founder{max-width:900px;margin:0 auto;background:#fff;border:1px solid var(--sand);border-radius:26px;
@@ -387,10 +397,18 @@ a{color:inherit;text-decoration:none}
     <a class="more rv" href="search.html">すべて見る →</a>
   </div>
   <!-- 中身は下部のスクリプトが「公開記事を新着順に最大4件」で差し替える。
-       下のモンゴルのタイルは、万一スクリプトが失敗したとき用のフォールバック表示。 -->
-  <div class="bento">
-    <a class="tile big-tile rv" href="articles/view.html?id=6F3XPkdRSrfKPuXCqn8C"><img src="images/mongolia.jpg" alt="モンゴル"><div class="tile-c"><span class="ctry">MONGOLIA</span><h3>モンゴル5泊6日｜大学生ひとり旅｜総額15万円</h3><div class="tg"><span>15万円前後</span><span>ひとり旅</span><span>自然旅</span></div></div></a>
+       読み込み中は灰色の仮カード（スケルトン）を出しておく（古い記事を一瞬見せないため）。 -->
+  <div class="bento" id="newRoutes" aria-busy="true">
+    <div class="tile big-tile skel"></div><div class="tile skel"></div><div class="tile skel"></div><div class="tile wide-tile skel"></div>
   </div>
+  <script>
+    // スマホは2列カードの形の仮カードに差し替え（本物と同じ形にしてガタつきを防ぐ）
+    if (window.matchMedia("(max-width:860px)").matches) {
+      var nr = document.getElementById("newRoutes");
+      nr.classList.add("mgrid");
+      nr.innerHTML = new Array(5).join('<div class="mcard skel-card"><div class="mc-img skel"></div><div class="mc-b"><span class="skel-line"></span><span class="skel-line short"></span></div></div>');
+    }
+  </script>
 </section>
 
 <!-- ABOUT -->
@@ -490,8 +508,13 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       if (minBudget != null) set("statBudget", minBudget);
 
       // --- 新着旅程：投稿日(createdAt)が新しい順に最大4件をモザイクで表示 ---
-      const bento = document.querySelector(".bento");
+      const bento = document.getElementById("newRoutes");
+      if (bento && !docs.length) {
+        bento.removeAttribute("aria-busy");
+        bento.innerHTML = `<p class="routes-msg">まだ公開された旅程はありません。</p>`;
+      }
       if (bento && docs.length) {
+        bento.removeAttribute("aria-busy");
         const sec = d => (d.createdAt && d.createdAt.seconds) || 0;
         const latest = [...docs].sort((a, b) => sec(b) - sec(a)).slice(0, 4);
         // モザイクの形を維持：1件目=大タイル / 4件目=横長 / それ以外=通常
@@ -528,6 +551,12 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       }
     } catch (e) {
       console.error("トップの集計／新着表示に失敗:", e);
+      // 失敗したら仮カードのままにせず、一覧ページへの案内を出す
+      const bento = document.getElementById("newRoutes");
+      if (bento) {
+        bento.removeAttribute("aria-busy");
+        bento.innerHTML = `<p class="routes-msg">新着旅程を読み込めませんでした。<a href="search.html">旅程一覧を見る →</a></p>`;
+      }
     }
   </script>
   <script type="module" src="./auth-status.js"></script>
