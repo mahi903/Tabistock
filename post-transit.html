@@ -693,11 +693,22 @@ window.tabistockTransitSubmit = async function(d, st, mode){
   if(mode === "draft"){ st.textContent = "下書きを保存しました。マイページの「あなたの投稿」から続きを編集できます。"; }
   else if(editId){ st.textContent = (status === "published") ? "記事を更新しました（公開中）。" : "記事を更新しました。管理者の承認後に公開されます。"; }
   else { st.textContent = "投稿しました！管理者の承認後に公開されます。（記事ID: "+id+"）"; }
-  window.scrollTo({ top:0, behavior:"smooth" });
   // 保存できたら、このページでもう一度押しても同じ記事の更新になるようにする（新しい記事が二重にできないように）
   window.tabistockEditId = id;
   window.tabistockEditStatus = status;
-  // 新規投稿も含めて、保存後はマイページへ移動する
+  if(mode === "draft"){
+    // 下書き保存はこのページに残って、そのまま続きを書けるようにする。
+    // 保存済みの写真は「アップロード済み」に置き換え、次の保存で同じ写真を二重にアップロードしない。
+    try{
+      $('photos')._existing = heroUrls.slice(); $('photos')._files = []; $('photos').value = "";
+      renderThumbs($('photos'), $('photoThumbs'));
+    }catch(e){ console.warn("写真の表示更新に失敗:", e); }
+    history.replaceState(null, "", "post-transit.html?edit=" + encodeURIComponent(id));
+    st.textContent = "下書きを保存しました。このまま続きを書けます。";
+    return;
+  }
+  // 投稿（申請）・公開中の更新は、保存後にマイページへ移動する
+  window.scrollTo({ top:0, behavior:"smooth" });
   setTimeout(()=>{ location.href = "account.html"; }, 1600);
 };
 
