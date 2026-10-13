@@ -259,13 +259,15 @@ a{color:inherit;text-decoration:none}
   .bento::-webkit-scrollbar{display:none}
   /* 新着旅程（スマホ）：2列の白カード。下に About・Founder が続くので4件だけ */
   .bento.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow:visible;padding-bottom:0}
-  .mcard{display:block;background:#fff;border-radius:12px;overflow:hidden;color:var(--ink);text-decoration:none;box-shadow:0 2px 10px rgba(27,35,48,.07)}
-  .mc-img{aspect-ratio:4/3;background:var(--sand)}
+  /* 写真の上に文字を直接のせる（ストーリー画像と同じ見せ方）。縦長 4:5 */
+  .mcard{position:relative;display:block;aspect-ratio:4/5;border-radius:14px;overflow:hidden;background:var(--sand);color:#fff;text-decoration:none;box-shadow:0 4px 14px rgba(27,35,48,.12)}
+  .mc-img{position:absolute;inset:0}
   .mc-img img{width:100%;height:100%;object-fit:cover;display:block}
-  .mc-b{padding:8px 10px 10px}
-  .mc-b h3{font-size:12.5px;line-height:1.4;font-weight:800;margin:0 0 6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.8em}
-  .mc-meta{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin:0}
-  .mc-meta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mcard::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 38%,rgba(0,0,0,.28) 60%,rgba(0,0,0,.78) 100%);pointer-events:none}
+  .mc-b{position:absolute;left:0;right:0;bottom:0;z-index:1;padding:10px 11px 12px}
+  .mc-meta{margin:0 0 4px;font-family:"Manrope",sans-serif;font-size:10px;font-weight:800;letter-spacing:.06em;color:#7fd9bf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mc-b h3{font-size:13px;line-height:1.4;font-weight:800;margin:0;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .skel-card.mcard::after{display:none}
   /* 新着旅程のカード：1画面に2枚弱並ぶ大きさ（1画面目を詰めたのに合わせて小さく） */
   .bento{gap:10px}
   .tile{flex:0 0 44%;height:230px;border-radius:14px}
@@ -406,7 +408,7 @@ a{color:inherit;text-decoration:none}
     if (window.matchMedia("(max-width:860px)").matches) {
       var nr = document.getElementById("newRoutes");
       nr.classList.add("mgrid");
-      nr.innerHTML = new Array(5).join('<div class="mcard skel-card"><div class="mc-img skel"></div><div class="mc-b"><span class="skel-line"></span><span class="skel-line short"></span></div></div>');
+      nr.innerHTML = new Array(5).join('<div class="mcard skel-card skel"></div>');
     }
   </script>
 </section>
@@ -534,14 +536,15 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
         };
         // スマホ：Trip.com のような2列の白カード（写真＋タイトル＋国）。PC：従来のモザイク。
         if (window.matchMedia("(max-width:860px)").matches) {
+          // ストーリー画像のように、写真の上に国名とタイトルを直接のせる
           const card = d => {
-            const cs = (d.countries || []).map(v => (cinfo(v) || {}).jp).filter(Boolean);
-            const c = { jp: cs.slice(0, 2).join("・") + (cs.length > 2 ? "…" : "") };   // 周遊は2か国まで並べる
+            const cs = (d.countries || []).map(v => (cinfo(v) || {}).en).filter(Boolean);
+            const ctry = cs.slice(0, 2).join(" · ") + (cs.length > 2 ? " …" : "");   // 周遊は2か国まで並べる
             const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
             return `<a class="mcard" href="articles/view.html?id=${esc(d.id)}">`
               + `<div class="mc-img"><img src="${esc(thumb)}" alt="" loading="lazy" decoding="async"></div>`
-              + `<div class="mc-b"><h3>${esc(d.title || "")}</h3>`
-              + `<p class="mc-meta"><span>${esc(c.jp || "")}</span></p></div></a>`;
+              + `<div class="mc-b"><p class="mc-meta">${esc(ctry)}</p>`
+              + `<h3>${esc(d.title || "")}</h3></div></a>`;
           };
           bento.classList.add("mgrid");
           bento.innerHTML = latest.map(card).join("");
