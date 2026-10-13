@@ -314,6 +314,11 @@ a{color:inherit;text-decoration:none}
 .founder img{width:min(160px,42vw);height:min(160px,42vw);border:none;margin:24px 0 22px}
 .founder .bio{text-align:left;color:var(--ink-2,#4b5563);font-size:14.5px;line-height:1.95}
 @media(max-width:860px){.founder{flex-direction:column;text-align:center}.founder h3{font-size:26px}}
+/* Founder の Instagram（個人）アイコン */
+.founder-ig{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;margin-top:18px;border-radius:50%;border:1px solid var(--sand);color:var(--ink);background:#fff;transition:.2s}
+.founder-ig:hover{color:var(--green);border-color:var(--green)}
+/* フッターは白にして、Founder と区切る */
+.foot{background:#fff;border-top:1px solid var(--sand)}
 </style>
 <style>
 /* 起動スプラッシュ（PWAでアプリとして開いた時だけ・1起動につき1回） */
@@ -450,6 +455,9 @@ a{color:inherit;text-decoration:none}
     <p class="role">Tabistock 創設者</p>
     <img src="images/founder.jpg" alt="Tabistock 創設者 飯野真優" loading="lazy" decoding="async">
     <p class="bio">大学に通いながら、休学・留学等せずに20以上の国と地域へ。観光地の写真だけでなく、費用、移動、現地の空気感などの旅のリアルを残せる場所として、Tabistockを開設しました。</p>
+    <a class="founder-ig" href="https://www.instagram.com/mahiro.9.3/" target="_blank" rel="noopener" aria-label="飯野真優の Instagram（@mahiro.9.3）">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.4" cy="6.6" r="1" fill="currentColor" stroke="none"/></svg>
+    </a>
   </div>
 </section>
 
