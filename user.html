@@ -64,6 +64,7 @@
   .posts-empty{grid-column:1/-1;color:#6c7787;font-size:13px;text-align:center;padding:26px 16px;border:1px dashed #e9dcc6;border-radius:14px}
   .loading{color:#6c7787;font-size:14px;text-align:center;padding:60px 20px}
 </style>
+<link rel="stylesheet" href="./trip-card.css">
 </head>
 <body>
   <div class="top">
@@ -83,6 +84,7 @@ import { doc, getDoc, setDoc, deleteDoc, collection, query, where, getDocs, getC
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { sendNotification } from "./notify.js";
+import { renderCard } from "./tabistock-render.js";
 
 const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 const root = document.getElementById("profileRoot");
@@ -109,12 +111,9 @@ function igUrlOf(ig){
   return /^https?:\/\//.test(s) ? s : ("https://www.instagram.com/" + s.replace(/^@/,"") + "/");
 }
 
+// 検索結果と同じ旅カード（trip-card.css）
 function renderPost(d){
-  const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
-  return `<a class="pcard" href="./articles/view.html?id=${esc(d.id)}">
-    <div class="pthumb" style="background-image:url('${esc(thumb)}')"></div>
-    <div class="pbody"><p class="ptitle">${esc(d.title||"(無題)")}</p></div>
-  </a>`;
+  return renderCard({ ...d, title: d.title || "(無題)" });
 }
 
 (async () => {
@@ -160,8 +159,8 @@ function renderPost(d){
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
         </button>
       </nav>
-      <div id="posts" class="posts"><p class="posts-empty">読み込み中…</p></div>
-      <div id="transitPosts" class="posts" hidden></div>
+      <div id="posts" class="posts tcards"><p class="posts-empty">読み込み中…</p></div>
+      <div id="transitPosts" class="posts tcards" hidden></div>
     </div>`;
 
     document.title = nick + "｜Tabistock";

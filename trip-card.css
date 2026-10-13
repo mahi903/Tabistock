@@ -1,0 +1,87 @@
+/* =========================================================
+   旅カード（検索結果と同じ見た目）。プロフィール・マイページで共通利用。
+   style.css を読み込まないページ用に、カード単体で完結させている。
+   .tcards の中の .trip-card（tabistock-render.js の renderCard が出力）に効く。
+========================================================= */
+.tcards .trip-card,
+.tcards .tc-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(34, 40, 49, 0.07);
+  text-decoration: none;
+  color: #1b2330;
+}
+.tcards .tc-wrap .trip-card { box-shadow: none; border-radius: 0; flex: 1; }
+.tcards .trip-image {
+  position: relative;
+  height: 100px;
+  flex: none;
+  overflow: hidden;
+  background: #e9dcc6;
+}
+.tcards .trip-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tcards .trip-image::after { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.08); pointer-events: none; }
+.tcards .trip-content { padding: 9px 10px 11px; display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.tcards .trip-content .country {
+  min-height: 1.4em;
+  margin: 0 0 3px;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  color: #1f6f5b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tcards .trip-content h3 {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  font-weight: 800;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.9em;
+}
+.tcards .trip-content p:not(.country) {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #4b5563;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 3em;
+}
+.tcards .tags { display: flex; flex-wrap: nowrap; overflow: hidden; gap: 4px; margin-top: auto; padding-top: 8px; }
+.tcards .tags span { flex: none; font-size: 9px; padding: 3px 7px; border-radius: 999px; background: #eef5f1; color: #1f6f5b; white-space: nowrap; }
+
+/* トランジット記事のカード */
+.tcards .trip-badge-transit {
+  position: absolute; top: 8px; left: 8px; z-index: 1;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 999px;
+  background: rgba(255, 255, 255, .92); color: #1f6f5b;
+  font-size: 9.5px; font-weight: 800;
+}
+.tcards .trip-image-noimg {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; color: #1f6f5b; font-size: 26px;
+  background: linear-gradient(160deg, #cfe3d9, #eef5f1);
+}
+
+@media (min-width: 600px) {
+  .tcards .trip-image { height: 130px; }
+  .tcards .trip-content { padding: 12px 14px 14px; }
+  .tcards .trip-content .country { font-size: 10.5px; }
+  .tcards .trip-content h3 { font-size: 14px; }
+  .tcards .trip-content p:not(.country) { font-size: 11.5px; }
+  .tcards .tags span { font-size: 10px; padding: 4px 8px; }
+}

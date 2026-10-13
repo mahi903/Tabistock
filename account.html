@@ -143,6 +143,8 @@
   .toggle.on .knob{transform:translateX(19px)}
   .toggle:disabled{opacity:.45;cursor:default}
 </style>
+<link rel="stylesheet" href="./trip-card.css">
+<style>.tc-meta{padding:0 8px 6px 10px}</style>
 </head>
 <body>
   <div class="top">
@@ -243,17 +245,17 @@
         </button>
       </nav>
       <div id="ppanels">
-        <div data-panel="trips"><div id="myPosts" class="posts"></div></div>
-        <div data-panel="transit" hidden><div id="transitPosts" class="posts"></div></div>
+        <div data-panel="trips"><div id="myPosts" class="posts tcards"></div></div>
+        <div data-panel="transit" hidden><div id="transitPosts" class="posts tcards"></div></div>
         <div data-panel="collab" hidden>
           <div id="collabInvitesWrap" hidden>
             <div class="ptab-sub" id="collab">招待 <span class="count" id="inviteCount"></span></div>
             <div id="collabInvites" class="posts"></div>
             <div class="ptab-sub" style="margin-top:16px">共同投稿</div>
           </div>
-          <div id="collabPosts" class="posts"></div>
+          <div id="collabPosts" class="posts tcards"></div>
         </div>
-        <div data-panel="saved" hidden><div id="savedPosts" class="posts"></div></div>
+        <div data-panel="saved" hidden><div id="savedPosts" class="posts tcards"></div></div>
       </div>
 
       <div class="setrow" style="margin-top:26px">
@@ -294,6 +296,7 @@ import { doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp, collection,
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref as sRef, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { renderCard } from "./tabistock-render.js";
 import { enablePush, disablePush, isPushSupported } from "./push.js";
 import { sendNotification } from "./notify.js";
 
@@ -565,17 +568,13 @@ const STATUS_LABEL = { published:"公開中", pending:"承認待ち", rejected:"
 const ICON_MENU = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h16M4 15h16"/></svg>';
 const postCache = {};   // id -> 記事データ（メニューで使う）
 function renderPost(d, own, collab){
-  const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
   const st = STATUS_LABEL[d.status] ? d.status : "pending";
   if(own) postCache[d.id] = { ...d, _collab: !!collab };
-  return `<div class="pcard">
-    <a href="./articles/view.html?id=${esc(d.id)}" style="text-decoration:none;color:inherit;display:block">
-      <div class="pthumb" style="background-image:url('${esc(thumb)}')"></div>
-      <div class="pbody" style="padding-bottom:4px"><p class="ptitle" style="margin-bottom:0">${esc(d.title||"(無題)")}</p></div>
-    </a>
-    <div class="pbody" style="padding-top:0;padding-bottom:6px">
-      <div class="pmeta">${own ? `<span class="pstat s-${st}">${STATUS_LABEL[st]}</span>${collab ? `<span class="pcollab">共同投稿</span>` : ""}<button type="button" class="pmenu" data-menu="${esc(d.id)}" aria-label="メニュー">${ICON_MENU}</button>` : ""}</div>
-    </div>
+  // 検索結果と同じ旅カード（trip-card.css）。自分の投稿は下に状態とメニューを付ける
+  const card = renderCard({ ...d, title: d.title || "(無題)" });
+  if(!own) return card;
+  return `<div class="tc-wrap">${card}
+    <div class="pmeta tc-meta"><span class="pstat s-${st}">${STATUS_LABEL[st]}</span>${collab ? `<span class="pcollab">共同投稿</span>` : ""}<button type="button" class="pmenu" data-menu="${esc(d.id)}" aria-label="メニュー">${ICON_MENU}</button></div>
   </div>`;
 }
 async function loadMyPosts(uid){
