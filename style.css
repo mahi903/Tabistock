@@ -3971,3 +3971,84 @@ body.ov-lock{ overflow:hidden; }
 @media (max-width: 768px) {
   .photo-slider img { height: 300px !important; border-radius: 12px; }
 }
+
+/* =========================
+   検索結果のカード：全部同じ高さにそろえて短く。
+   国名は1行、タイトル・リード文は2行まで（はみ出したら「…」）、タグは1行
+========================= */
+.results-main .trip-grid { gap: 16px; align-items: stretch; }
+.results-main .trip-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(34, 40, 49, 0.07);
+}
+.results-main .trip-image { height: 150px; flex: none; }
+.results-main .trip-content {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.results-main .trip-content .country {
+  min-height: 1.4em;
+  margin: 0 0 5px;
+  font-size: 11px;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.results-main .trip-content h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.9em;
+}
+.results-main .trip-content p:not(.country) {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  font-weight: 500;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 3.2em;
+}
+.results-main .tags {
+  margin-top: auto;
+  padding-top: 10px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  gap: 5px;
+}
+.results-main .tags span {
+  flex: none;
+  font-size: 10.5px;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .results-main .trip-grid { gap: 10px; }
+  .results-main .trip-card { border-radius: 12px; }
+  .results-main .trip-image { height: 100px; }
+  .results-main .trip-content { padding: 9px 10px 11px; }
+  .results-main .trip-content .country { font-size: 9.5px; margin-bottom: 3px; }
+  .results-main .trip-content h3 { font-size: 12.5px; margin-bottom: 4px; }
+  .results-main .trip-content p:not(.country) { font-size: 10.5px; line-height: 1.5; min-height: 3em; }
+  .results-main .tags { padding-top: 8px; gap: 4px; }
+  .results-main .tags span { font-size: 9px; padding: 3px 7px; }
+}
+/* PC（広い画面）は3列 */
+@media (min-width: 1024px) {
+  .results-main .trip-grid { grid-template-columns: repeat(3, 1fr); }
+  .results-main .trip-image { height: 135px; }
+}

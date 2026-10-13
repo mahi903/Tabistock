@@ -761,7 +761,7 @@ export function renderCard(d){
       <img src="${esc(thumb)}" alt="" loading="lazy" decoding="async">
     </div>
     <div class="trip-content">
-      <p class="country">${esc(ci.length>1?ci.map(x=>x.en).join(' · '):c.en)}</p>
+      <p class="country">${esc(ci.length>3?ci.slice(0,2).map(x=>x.en).join(' · ')+` ほか${ci.length-2}か国`:(ci.length>1?ci.map(x=>x.en).join(' · '):c.en))}</p>
       <h3>${esc(d.title)}</h3>
       <p>${esc(String(d.lead||'').replace(/\n+/g,' '))}</p>
 
