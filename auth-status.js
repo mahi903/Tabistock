@@ -307,6 +307,66 @@ if (el) {
 })();
 
 /* =========================================================
+   アカウントボタン（PCのヘッダー右端）
+   - ハンバーガーメニューが出ない広い画面だけ表示（スマホはドロワーから行ける）
+   - ログイン中：自分のアイコン → マイページ / 未ログイン：「ログイン」ボタン
+========================================================= */
+(function initAccountButton() {
+  const hdr = document.querySelector(".hd-r");
+  if (!hdr) return;
+
+  if (!document.getElementById("acctBtnStyle")) {
+    const s = document.createElement("style");
+    s.id = "acctBtnStyle";
+    s.textContent = `
+.hd-acct{display:none;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;font-family:"Noto Sans JP",-apple-system,sans-serif}
+.hd-acct.show{display:inline-flex}
+.hd-acct.login{padding:9px 18px;border-radius:999px;background:#1f6f5b;color:#fff;font-size:13px;font-weight:800;white-space:nowrap}
+.hd-acct.login:hover{background:#175243}
+.hd-acct.me{width:38px;height:38px;border-radius:50%;overflow:hidden;background:#e9dcc6;border:2px solid #fff;box-shadow:0 0 0 1.5px #1f6f5b}
+.hd-acct.me img{width:100%;height:100%;object-fit:cover;display:block}
+.hd-acct.me span{font-size:15px;font-weight:800;color:#1f6f5b}`;
+    document.head.appendChild(s);
+  }
+
+  const a = document.createElement("a");
+  a.className = "hd-acct";
+  a.href = base + "account.html";
+  const burger = hdr.querySelector(".burger");
+  if (burger) hdr.insertBefore(a, burger); else hdr.appendChild(a);
+
+  // ハンバーガーが隠れている（＝広い画面）ときだけ出す
+  const fit = () => {
+    const wide = !burger || getComputedStyle(burger).display === "none";
+    a.classList.toggle("show", wide && a.dataset.ready === "1");
+  };
+  window.addEventListener("resize", fit);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      a.className = "hd-acct login";
+      a.textContent = "ログイン";
+      a.setAttribute("aria-label", "ログイン / 新規登録");
+      a.removeAttribute("title");
+    } else {
+      let nick = user.displayName || "", photo = user.photoURL || "";
+      try {
+        const snap = await getDoc(doc(db, "users", user.uid));
+        if (snap.exists()) { const d = snap.data(); nick = d.nickname || nick; photo = d.photoURL || photo; }
+      } catch (e) {}
+      a.className = "hd-acct me";
+      a.setAttribute("aria-label", "マイページ");
+      a.title = (nick ? nick + "｜" : "") + "マイページ";
+      a.innerHTML = photo
+        ? `<img src="${esc(photo)}" alt="">`
+        : `<span>${esc((nick || "旅").slice(0, 1))}</span>`;
+    }
+    a.dataset.ready = "1";
+    fit();
+  });
+})();
+
+/* =========================================================
    iOS スタンドアロンPWA：同一オリジンのリンクはアプリ内で遷移
    - iOS はホーム画面起動の standalone でも <a> を踏むと Safari に
      飛び出し、下に「戻る／共有」バーが出てしまう。これを防ぐため、
