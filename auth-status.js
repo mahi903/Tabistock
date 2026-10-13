@@ -308,7 +308,7 @@ if (el) {
 
 /* =========================================================
    アカウントボタン（PCのヘッダー右端）
-   - ハンバーガーメニューが出ない広い画面だけ表示（スマホはドロワーから行ける）
+   - PC・スマホ共通（スマホは少し小さく）
    - ログイン中：自分のアイコン → マイページ / 未ログイン：「ログイン」ボタン
 ========================================================= */
 (function initAccountButton() {
@@ -325,7 +325,8 @@ if (el) {
 .hd-acct.login:hover{background:#175243}
 .hd-acct.me{width:38px;height:38px;border-radius:50%;overflow:hidden;background:#e9dcc6;border:2px solid #fff;box-shadow:0 0 0 1.5px #1f6f5b}
 .hd-acct.me img{width:100%;height:100%;object-fit:cover;display:block}
-.hd-acct.me span{font-size:15px;font-weight:800;color:#1f6f5b}`;
+.hd-acct.me span{font-size:15px;font-weight:800;color:#1f6f5b}
+@media (max-width:860px){.hd-acct.login{padding:7px 13px;font-size:12px}.hd-acct.me{width:32px;height:32px}.hd-acct.me span{font-size:13px}}`;
     document.head.appendChild(s);
   }
 
@@ -335,12 +336,8 @@ if (el) {
   const burger = hdr.querySelector(".burger");
   if (burger) hdr.insertBefore(a, burger); else hdr.appendChild(a);
 
-  // ハンバーガーが隠れている（＝広い画面）ときだけ出す
-  const fit = () => {
-    const wide = !burger || getComputedStyle(burger).display === "none";
-    a.classList.toggle("show", wide && a.dataset.ready === "1");
-  };
-  window.addEventListener("resize", fit);
+  // ログイン状態が分かってから出す（一瞬「ログイン」が見えるのを防ぐ）
+  const fit = () => a.classList.toggle("show", a.dataset.ready === "1");
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
