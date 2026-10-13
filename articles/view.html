@@ -671,10 +671,27 @@ function initInteractions(){
     const toggle = card.querySelector(".day-toggle");
     const icon = card.querySelector(".day-icon");
     if(!toggle || !icon) return;
+    const content = card.querySelector(".day-content");
     toggle.addEventListener("click", () => {
       if(window.innerWidth > 768) return;
-      card.classList.toggle("is-open");
-      icon.textContent = card.classList.contains("is-open") ? "-" : "+";
+      const opening = !card.classList.contains("is-open");
+      card.classList.toggle("is-open", opening);
+      icon.textContent = opening ? "-" : "+";
+      if(!content) return;
+      // 文章がどれだけ長くても最後まで開くように、高さの上限を実際の高さに合わせる
+      if(opening){
+        content.style.maxHeight = content.scrollHeight + "px";
+        const done = (e) => {
+          if(e.target !== content || e.propertyName !== "max-height") return;
+          content.removeEventListener("transitionend", done);
+          if(card.classList.contains("is-open")) content.style.maxHeight = "none"; // 開いた後に写真が読み込まれても切れない
+        };
+        content.addEventListener("transitionend", done);
+      }else{
+        content.style.maxHeight = content.scrollHeight + "px";
+        void content.offsetHeight; // いったん今の高さを確定させてから閉じる
+        content.style.maxHeight = "0px";
+      }
     });
   });
   // 旅の記録：写真ギャラリーの「現在/総数」カウンターをスクロールに合わせて更新
