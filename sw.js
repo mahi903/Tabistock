@@ -7,7 +7,7 @@
 //   - HTML（ページ遷移）はネット優先＋失敗時キャッシュ（更新を即反映）。
 //   - CSS/JS/画像は stale-while-revalidate（まず表示→裏で更新）。
 
-const VERSION = 'tabistock-v155';
+const VERSION = 'tabistock-v156';
 const CACHE = VERSION;
 
 // ---- プッシュ通知（FCM）----
@@ -81,7 +81,7 @@ const PRECACHE = [
 
 self.addEventListener('install', (event) => {
   // ここでは skipWaiting しない（新SWは「待機」状態にとどめ、
-  // ページ側の「更新」ボタンが押されたら切り替える）。
+  // ページ側（auth-status.js）から自動で SKIP_WAITING を送って切り替える）。
   event.waitUntil(
     caches.open(CACHE).then((cache) =>
       // 一部が 404 でも全体が失敗しないよう個別に追加。

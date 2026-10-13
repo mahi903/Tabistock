@@ -10,50 +10,22 @@ const base = location.pathname.includes("/articles/") ? "../" : "./";
 
 // PWA: Service Worker を登録（インストール可能化＋静的ファイル高速化）。
 // ルート(/sw.js)に置いてあるので scope はサイト全体。失敗してもページ動作には影響しない。
-// 新バージョンを検知したら「更新」トーストを出し、タップで即時反映する。
+// 新バージョンは「更新」ボタンを出さずに裏で自動的に切り替える。
+// 表示中のページは再読み込みしない（投稿の入力中などに内容が消えないように）。次にページを開いたときから新版になる。
 if ("serviceWorker" in navigator) {
-  let updateClicked = false; // 「更新」を押した時だけリロードする（初回インストール時の無駄なリロード防止）
-  const showUpdateToast = (worker) => {
-    if (document.getElementById("swUpdate")) return;
-    const bar = document.createElement("div");
-    bar.id = "swUpdate";
-    bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 12px);z-index:120;display:flex;align-items:center;gap:10px;background:#1f6f5b;color:#fff;padding:9px 10px 9px 16px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:"Noto Sans JP",-apple-system,sans-serif;font-size:13px;font-weight:700;max-width:calc(100vw - 24px)';
-    const txt = document.createElement("span");
-    txt.textContent = "新しいバージョンがあります";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = "更新";
-    btn.style.cssText = 'border:none;background:#fff;color:#1f6f5b;font-weight:800;font-size:13px;padding:7px 15px;border-radius:999px;cursor:pointer;flex-shrink:0';
-    const close = document.createElement("button");
-    close.type = "button";
-    close.setAttribute("aria-label", "閉じる");
-    close.textContent = "×";
-    close.style.cssText = 'border:none;background:transparent;color:#fff;font-size:18px;line-height:1;cursor:pointer;padding:0 4px;flex-shrink:0';
-    close.addEventListener("click", () => bar.remove());
-    btn.addEventListener("click", () => { updateClicked = true; btn.disabled = true; btn.textContent = "更新中…"; worker.postMessage("SKIP_WAITING"); });
-    bar.append(txt, btn, close);
-    document.body.appendChild(bar);
-  };
-
-  // 新SWが制御を取ったら一度だけリロードして新版を適用。
-  let refreshed = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!updateClicked || refreshed) return;
-    refreshed = true;
-    location.reload();
-  });
+  const applyUpdate = (worker) => { try { worker.postMessage("SKIP_WAITING"); } catch (e) {} };
 
   window.addEventListener("load", async () => {
     try {
       const reg = await navigator.serviceWorker.register("/sw.js");
-      // 既に待機中の新SWがある場合（初回インストール時は controller が無いので出さない）
-      if (reg.waiting && navigator.serviceWorker.controller) showUpdateToast(reg.waiting);
-      // 新SWが見つかったら、インストール完了時に通知。
+      // 既に待機中の新SWがあれば、すぐ切り替える
+      if (reg.waiting && navigator.serviceWorker.controller) applyUpdate(reg.waiting);
+      // 新SWが見つかったら、インストール完了時に切り替える
       reg.addEventListener("updatefound", () => {
         const nw = reg.installing;
         if (!nw) return;
         nw.addEventListener("statechange", () => {
-          if (nw.state === "installed" && navigator.serviceWorker.controller) showUpdateToast(nw);
+          if (nw.state === "installed" && navigator.serviceWorker.controller) applyUpdate(nw);
         });
       });
     } catch (e) { console.warn("SW登録に失敗:", e); }
