@@ -694,7 +694,11 @@ window.tabistockTransitSubmit = async function(d, st, mode){
   else if(editId){ st.textContent = (status === "published") ? "記事を更新しました（公開中）。" : "記事を更新しました。管理者の承認後に公開されます。"; }
   else { st.textContent = "投稿しました！管理者の承認後に公開されます。（記事ID: "+id+"）"; }
   window.scrollTo({ top:0, behavior:"smooth" });
-  if(mode === "draft" || editId){ setTimeout(()=>{ location.href = "account.html"; }, 1400); }
+  // 保存できたら、このページでもう一度押しても同じ記事の更新になるようにする（新しい記事が二重にできないように）
+  window.tabistockEditId = id;
+  window.tabistockEditStatus = status;
+  // 新規投稿も含めて、保存後はマイページへ移動する
+  setTimeout(()=>{ location.href = "account.html"; }, 1600);
 };
 
 onAuthStateChanged(auth, async (user) => {
