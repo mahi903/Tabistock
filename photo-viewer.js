@@ -1,6 +1,5 @@
 // 記事ページの写真まわり（articles/view.html から使う）
 // 1. 写真をタップすると全画面で表示（横スワイプで次の写真、×／背景／Escで閉じる）
-// 2. 記事トップの縦写真は、枠に全体を収めて左右をぼかした同じ写真で埋める
 
 const CSS = `
 .pv{position:fixed;inset:0;z-index:2000;background:#0b0d0f;display:flex;flex-direction:column;opacity:0;transition:opacity .2s ease}
@@ -87,24 +86,5 @@ export function initPhotoViewer(root){
     const group = img.closest(".hero-images, .photo-slider");
     const imgs = [...group.querySelectorAll("img")].filter(i => i.getAttribute("src"));
     openViewer(imgs.map(i => i.currentSrc || i.src), Math.max(0, imgs.indexOf(img)));
-  });
-}
-
-// 記事トップの縦写真
-// - 1枚目が縦写真なら、スマホでは枠を縦長（4:5）にする（CSS の .hero-tall）
-// - PCでは写真全体を中央に置き、左右は同じ写真の強いぼかしで埋める（端はふんわり溶かす）
-export function fitHeroPortraits(root){
-  const box = root.querySelector(".hero-images");
-  root.querySelectorAll(".hero-images > img").forEach((img, idx) => {
-    const check = () => {
-      if(!img.naturalWidth || img.naturalHeight <= img.naturalWidth * 1.05) return;
-      if(idx === 0 && box) box.classList.add("hero-tall");
-      const wrap = document.createElement("div");
-      wrap.className = "hero-ph";
-      wrap.style.backgroundImage = `url("${String(img.currentSrc || img.src).replace(/["\\]/g, "\\$&")}")`;
-      img.parentNode.insertBefore(wrap, img);
-      wrap.appendChild(img);
-    };
-    if(img.complete) check(); else img.addEventListener("load", check, { once: true });
   });
 }
