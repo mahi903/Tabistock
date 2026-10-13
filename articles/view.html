@@ -733,7 +733,7 @@ function wrapText(ctx, text, maxW){
 
 // インスタのストーリー用画像（1080×1920）を生成して File を返す。
 // 白背景の中央に、写真＋ロゴ＋タイトル＋小見出しを載せた「縁アリカード」を配置。
-async function makeStoryImage(){
+async function makeStoryImage(pickedUrl){
   const W = 1080, H = 1920;
   const cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
@@ -747,8 +747,9 @@ async function makeStoryImage(){
   // 写真の取得（Firebase Storage はCORS非対応のため同一オリジンのプロキシ経由）
   let photo = null;
   try{
+    // 使う写真：共有メニューで選んだ写真（なければトップの1枚目）
     const heroImg = root.querySelector(".hero-images img");
-    const imgUrl = heroImg && heroImg.getAttribute("src");
+    const imgUrl = pickedUrl || (heroImg && heroImg.getAttribute("src"));
     if(imgUrl){
       const fetchUrl = /^https:\/\/firebasestorage\.googleapis\.com\//.test(imgUrl)
         ? "/api/img?u=" + encodeURIComponent(imgUrl)
@@ -945,7 +946,7 @@ function openShareMenu(showToast){
   ovl.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(15,20,18,.45);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s";
   const sheet = document.createElement("div");
   sheet.style.cssText = "background:#fff;width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:8px 14px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.2);transform:translateY(14px);transition:transform .2s";
-  const row = "display:flex;align-items:center;gap:13px;width:100%;background:none;border:none;border-radius:12px;padding:16px 12px;font-size:16px;font-weight:700;color:#182033;font-family:inherit;cursor:pointer;text-align:left";
+  const row = "display:flex;align-items:center;gap:13px;width:100%;background:none;border:none;border-radius:12px;padding:16px 12px;font-size:16px;font-weight:700;color:#182033;font-family:inherit;cursor:pointer;text-align:left;";
   const ic = "color:#1f6f5b;width:24px;text-align:center;flex:0 0 24px";
   sheet.innerHTML =
     '<div style="width:40px;height:4px;background:#e0d8c7;border-radius:999px;margin:8px auto 10px"></div>'
@@ -973,11 +974,12 @@ function openShareMenu(showToast){
     try{ await navigator.share({ title, url }); }catch(e){}
   });
 
-  sheet.querySelector('[data-act="story"]').addEventListener("click", async (e) => {
-    const btn = e.currentTarget, span = btn.querySelector("span");
-    btn.disabled = true; sheet.style.pointerEvents = "none"; if(span) span.textContent = "作成中…";
+  // ストーリー画像を作って共有（または保存）する
+  const makeAndShare = async (pickedUrl, setBusy) => {
+    setBusy();
+    sheet.style.pointerEvents = "none";
     let file = null;
-    try{ file = await makeStoryImage(); }catch(err){ file = null; }
+    try{ file = await makeStoryImage(pickedUrl); }catch(err){ file = null; }
     close();
     if(!file){ showToast("画像を作成できませんでした"); return; }
     try{
@@ -990,6 +992,40 @@ function openShareMenu(showToast){
         showToast("ストーリー画像を保存しました");
       }
     }catch(err){ /* キャンセルは無視 */ }
+  };
+
+  sheet.querySelector('[data-act="story"]').addEventListener("click", (e) => {
+    const btn = e.currentTarget, span = btn.querySelector("span");
+    const busyBtn = () => { btn.disabled = true; if(span) span.textContent = "作成中…"; };
+    const heroImgs = [...root.querySelectorAll(".hero-images img")].filter(im => im.getAttribute("src"));
+    // トップの写真が1枚だけなら、そのまま作る
+    if(heroImgs.length <= 1){ makeAndShare(null, busyBtn); return; }
+    // 2枚以上なら、ストーリーに使う写真を選んでもらう
+    const tile = "position:relative;padding:0;border:none;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:#e9dcc6;cursor:pointer";
+    sheet.innerHTML =
+      '<div style="width:40px;height:4px;background:#e0d8c7;border-radius:999px;margin:8px auto 10px"></div>'
+      + '<p style="margin:2px 4px 12px;font-size:16px;font-weight:800;color:#1b2330">ストーリーに使う写真を選ぶ</p>'
+      + '<div class="story-pick" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:52vh;overflow-y:auto;padding:0 2px 4px"></div>'
+      + '<p class="story-busy" style="display:none;margin:12px 4px 0;text-align:center;font-size:14px;font-weight:700;color:#1f6f5b">作成中…</p>'
+      + '<button data-act="back" style="'+row+'justify-content:center;color:#6c7787;margin-top:6px">キャンセル</button>';
+    const grid = sheet.querySelector(".story-pick");
+    heroImgs.forEach(im => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.style.cssText = tile;
+      const t = document.createElement("img");
+      t.src = im.currentSrc || im.src; t.alt = "";
+      t.style.cssText = "width:100%;height:100%;object-fit:cover;display:block";
+      b.appendChild(t);
+      b.addEventListener("click", () => {
+        makeAndShare(im.getAttribute("src"), () => {
+          b.style.outline = "3px solid #1f6f5b"; b.style.outlineOffset = "2px";
+          sheet.querySelector(".story-busy").style.display = "block";
+        });
+      });
+      grid.appendChild(b);
+    });
+    sheet.querySelector('[data-act="back"]').addEventListener("click", close);
   });
 }
 
