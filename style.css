@@ -3979,6 +3979,9 @@ body.ov-lock{ overflow:hidden; }
   width: 100%;
   height: 100%;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-size: cover;
   background-position: center;
   scroll-snap-align: start;
@@ -3986,15 +3989,37 @@ body.ov-lock{ overflow:hidden; }
 .hero-ph::before {
   content: "";
   position: absolute;
-  inset: -30px;
+  inset: -60px;
   background: inherit;
-  filter: blur(26px) brightness(.8);
+  filter: blur(40px) saturate(1.15) brightness(.88);
+  transform: scale(1.1);
 }
+/* 写真本体は元の比率のまま中央に。左右の端はぼかし背景へふんわり溶かす */
 .hero-images .hero-ph img {
   position: relative;
   z-index: 1;
-  width: 100% !important;
+  flex: none;
+  width: auto !important;
   height: 100% !important;
-  object-fit: contain !important;
+  max-width: 100%;
+  object-fit: cover !important;
   border-radius: 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 14%, #000 86%, transparent 100%);
+}
+/* PC：1枚目が縦写真なら枠を少し縦に（4:3）。写真は4:5で中央に置き、左右の余白を減らす */
+@media (min-width: 769px) {
+  .hero-images.hero-tall { aspect-ratio: 4 / 3; max-height: 72vh; }
+  .hero-images .hero-ph img { aspect-ratio: 4 / 5; }
+}
+/* スマホ：1枚目が縦写真なら枠を縦長（4:5）にして、ぼかしを使わず枠いっぱいに表示 */
+@media (max-width: 768px) {
+  .hero-images.hero-tall { height: 125vw; }
+  .hero-ph::before { display: none; }
+  .hero-images .hero-ph img {
+    width: 100% !important;
+    aspect-ratio: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
 }

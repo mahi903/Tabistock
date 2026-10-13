@@ -90,11 +90,15 @@ export function initPhotoViewer(root){
   });
 }
 
-// 記事トップの縦写真：全体を収めて、左右は同じ写真のぼかしで埋める
+// 記事トップの縦写真
+// - 1枚目が縦写真なら、スマホでは枠を縦長（4:5）にする（CSS の .hero-tall）
+// - PCでは写真全体を中央に置き、左右は同じ写真の強いぼかしで埋める（端はふんわり溶かす）
 export function fitHeroPortraits(root){
-  root.querySelectorAll(".hero-images > img").forEach(img => {
+  const box = root.querySelector(".hero-images");
+  root.querySelectorAll(".hero-images > img").forEach((img, idx) => {
     const check = () => {
       if(!img.naturalWidth || img.naturalHeight <= img.naturalWidth * 1.05) return;
+      if(idx === 0 && box) box.classList.add("hero-tall");
       const wrap = document.createElement("div");
       wrap.className = "hero-ph";
       wrap.style.backgroundImage = `url("${String(img.currentSrc || img.src).replace(/["\\]/g, "\\$&")}")`;
