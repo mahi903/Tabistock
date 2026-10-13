@@ -84,7 +84,7 @@ a{color:inherit;text-decoration:none}
 /* ===== トップを写真なし（紙の背景）にする試し =====
    <body class="plain-hero"> を外せば、写真ありの元の見た目に戻る */
 .plain-hero .hero-bg,.plain-hero .hero::after{display:none}
-.plain-hero .hero{min-height:0;color:var(--ink);background:#fff}
+.plain-hero .hero{min-height:0;color:var(--ink)}
 /* 写真の代わりに、歩いた旅の足跡をごく薄く（下にいくほど消える）。文字やボタンには影響させない */
 .plain-hero .hero::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
   background:url('images/footsteps.svg') center top/cover no-repeat;
