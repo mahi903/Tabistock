@@ -321,12 +321,12 @@ if (el) {
     s.textContent = `
 .hd-acct{display:none;align-items:center;justify-content:center;flex-shrink:0;text-decoration:none;font-family:"Noto Sans JP",-apple-system,sans-serif}
 .hd-acct.show{display:inline-flex}
-.hd-acct.login{padding:9px 18px;border-radius:999px;background:#1f6f5b;color:#fff;font-size:13px;font-weight:800;white-space:nowrap}
-.hd-acct.login:hover{background:#175243}
+.hd-acct.login{padding:8px 4px;color:#1b2330;font-size:14px;font-weight:700;white-space:nowrap}
+.hd-acct.login:hover{color:#1f6f5b;text-decoration:underline;text-underline-offset:4px}
 .hd-acct.me{width:38px;height:38px;border-radius:50%;overflow:hidden;background:#e9dcc6;border:2px solid #fff;box-shadow:0 0 0 1.5px #1f6f5b}
 .hd-acct.me img{width:100%;height:100%;object-fit:cover;display:block}
 .hd-acct.me span{font-size:15px;font-weight:800;color:#1f6f5b}
-@media (max-width:860px){.hd-acct.login{padding:7px 13px;font-size:12px}.hd-acct.me{width:32px;height:32px}.hd-acct.me span{font-size:13px}}`;
+@media (max-width:860px){.hd-acct.login{padding:8px 2px;font-size:13px}.hd-acct.me{width:32px;height:32px}.hd-acct.me span{font-size:13px}}`;
     document.head.appendChild(s);
   }
 
@@ -338,6 +338,14 @@ if (el) {
 
   // ログイン状態が分かってから出す（一瞬「ログイン」が見えるのを防ぐ）
   const fit = () => a.classList.toggle("show", a.dataset.ready === "1");
+  // 「ログイン」の文字色はハンバーガーの線と同じ色に合わせる（緑のヘッダーでは白になる）
+  const matchColor = () => {
+    const line = burger && burger.querySelector("span");
+    a.style.color = (a.classList.contains("login") && line) ? getComputedStyle(line).backgroundColor : "";
+  };
+  // スクロールでヘッダーの色が変わるページ（検索など）に追従
+  const hd = hdr.closest(".hd");
+  if (hd) new MutationObserver(() => setTimeout(matchColor, 350)).observe(hd, { attributes: true, attributeFilter: ["class"] });
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -360,6 +368,7 @@ if (el) {
     }
     a.dataset.ready = "1";
     fit();
+    matchColor();
   });
 })();
 
