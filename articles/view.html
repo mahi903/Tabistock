@@ -608,6 +608,7 @@ import { doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, whe
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { renderArticleBody, esc, para, cinfo } from "../tabistock-render.js";
 import { sendNotification } from "../notify.js";
+import { initPhotoViewer, fitHeroPortraits } from "../photo-viewer.js";
 
 const root = document.getElementById("article-root");
 const id = new URLSearchParams(location.search).get("id");
@@ -683,11 +684,13 @@ function initInteractions(){
     if(!slider || !cur) return;
     const imgs = slider.querySelectorAll("img");
     const total = imgs.length;
-    // 1コマ分のスクロール距離（画像幅＋隙間）。2枚目の左端位置から算出。
-    const step = () => (imgs.length >= 2 ? imgs[1].offsetLeft - imgs[0].offsetLeft
-                       : (imgs[0] ? imgs[0].offsetWidth : slider.clientWidth));
+    // 写真ごとに横幅が違う（縦写真・横写真）ので、左端が今のスクロール位置に一番近い写真を「現在」とする。
+    // 最後までスクロールしたら最後の写真。
     const update = () => {
-      const i = Math.round(slider.scrollLeft / step());
+      const base = imgs[0] ? imgs[0].offsetLeft : 0;
+      let i = 0, best = Infinity;
+      imgs.forEach((im, k) => { const d = Math.abs(im.offsetLeft - base - slider.scrollLeft); if(d < best){ best = d; i = k; } });
+      if(slider.scrollLeft > 0 && slider.scrollLeft + slider.clientWidth >= slider.scrollWidth - 4) i = total - 1;
       cur.textContent = Math.min(total, Math.max(1, i + 1));
     };
     let raf = 0;
@@ -696,6 +699,7 @@ function initInteractions(){
       raf = requestAnimationFrame(() => { raf = 0; update(); });
     });
     update();
+    imgs.forEach(im => im.addEventListener("load", update, { once: true }));
   });
   // いいね・共有・フォロー
   const showToast = (m) => {
@@ -1560,6 +1564,8 @@ function initRouteMap(d){
     }
 
     root.innerHTML = renderArticleBody(d);
+    fitHeroPortraits(root);
+    initPhotoViewer(root);
     initInteractions();
     initComments();
     initRouteMap(d);

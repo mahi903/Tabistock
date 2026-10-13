@@ -3952,3 +3952,49 @@ body.ov-lock{ overflow:hidden; }
   }
   .pc-rel:hover span { color: var(--green); }
 }
+
+/* =========================
+   記事の写真（共通）
+   - DAYの写真は切り抜かず、高さだけそろえて元の形（縦・横）のまま並べる
+   - 記事トップの縦写真は全体を収め、左右は同じ写真のぼかしで埋める（photo-viewer.js が .hero-ph で包む）
+========================= */
+.photo-slider { align-items: flex-start; }
+.photo-slider img {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: calc(100% - 28px) !important;
+  height: 240px !important;
+  object-fit: cover;
+  background: var(--line);
+}
+.photo-slider img:only-child { max-width: 100% !important; }
+@media (max-width: 768px) {
+  .photo-slider img { height: 300px !important; border-radius: 12px; }
+}
+
+.hero-ph {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  scroll-snap-align: start;
+}
+.hero-ph::before {
+  content: "";
+  position: absolute;
+  inset: -30px;
+  background: inherit;
+  filter: blur(26px) brightness(.8);
+}
+.hero-images .hero-ph img {
+  position: relative;
+  z-index: 1;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  border-radius: 0;
+}
