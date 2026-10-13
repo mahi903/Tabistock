@@ -267,6 +267,7 @@ a{color:inherit;text-decoration:none}
   .mc-b{position:absolute;left:0;right:0;bottom:0;z-index:1;padding:10px 11px 12px}
   .mc-meta{margin:0 0 4px;font-family:"Manrope",sans-serif;font-size:10px;font-weight:800;letter-spacing:.06em;color:#7fd9bf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mc-b h3{font-size:13px;line-height:1.4;font-weight:800;margin:0;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.35);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .mc-by{margin:5px 0 0;font-size:10.5px;font-weight:700;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .skel-card.mcard::after{display:none}
   /* 新着旅程のカード：1画面に2枚弱並ぶ大きさ（1画面目を詰めたのに合わせて小さく） */
   .bento{gap:10px}
@@ -544,7 +545,9 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
             return `<a class="mcard" href="articles/view.html?id=${esc(d.id)}">`
               + `<div class="mc-img"><img src="${esc(thumb)}" alt="" loading="lazy" decoding="async"></div>`
               + `<div class="mc-b"><p class="mc-meta">${esc(ctry)}</p>`
-              + `<h3>${esc(d.title || "")}</h3></div></a>`;
+              + `<h3>${esc(d.title || "")}</h3>`
+              + (d.authorNickname ? `<p class="mc-by">${esc(d.authorNickname)}</p>` : "")
+              + `</div></a>`;
           };
           bento.classList.add("mgrid");
           bento.innerHTML = latest.map(card).join("");
