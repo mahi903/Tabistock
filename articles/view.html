@@ -715,8 +715,19 @@ function initInteractions(){
       if(raf) return;
       raf = requestAnimationFrame(() => { raf = 0; update(); });
     });
+    // 写真は開いてから順に読み込まれ、そのたびに横幅が変わる。iPhoneのSafariはその途中で
+    // スナップ位置を真ん中あたりの写真に合わせ直してしまうので、まだ触っていない間は1枚目に戻す
+    let touched = false;
+    ["pointerdown", "touchstart", "wheel"].forEach(ev => slider.addEventListener(ev, () => { touched = true; }, { passive: true }));
+    const toStart = () => {
+      if(!touched) slider.scrollLeft = 0;
+      update();
+    };
     update();
-    imgs.forEach(im => im.addEventListener("load", update, { once: true }));
+    imgs.forEach(im => im.addEventListener("load", () => { toStart(); requestAnimationFrame(toStart); }, { once: true }));
+    const card = g.closest(".day-card");
+    const tg = card && card.querySelector(".day-toggle");
+    if(tg) tg.addEventListener("click", () => { touched = false; requestAnimationFrame(toStart); setTimeout(toStart, 400); });
   });
   // いいね・共有・フォロー
   const showToast = (m) => {
