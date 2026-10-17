@@ -2095,6 +2095,11 @@ a.hero-author:hover .hero-author-name {
   background: #fff;
   color: var(--green);
 }
+/* インスタ風：角が少し丸い四角・アイコンなし。フォロー中はグレー */
+.author-follow { border-radius: 8px; border: none; padding: 7px 16px; font-size: 12.5px; }
+.author-follow i { display: none; }
+.author-follow.following { background: #efebe4; color: var(--ink); }
+.author-follow.following:hover { background: #e6e0d5; }
 
 /* =========================
    トースト通知
