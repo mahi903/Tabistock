@@ -1208,7 +1208,7 @@ function buildPcLayout(d){
 }
 
 // 記事のいちばん下（コメント欄の下）に「関連する旅」を並べる。
-// 同じ国 → 同じ地域 → 新しい順で最大5件。どれも合わなければ新着の旅を出す
+// 同じ国 → 同じ地域 → 新しい順で最大5件。関係のない記事で埋めない（0件なら出さない）
 async function initMoreTrips(d){
   const comments = document.getElementById("comments");
   if(!comments) return;
@@ -1223,11 +1223,11 @@ async function initMoreTrips(d){
       const score = shared * 10 + (d.region && a.region === d.region ? 3 : 0);
       list.push({ id: s.id, a, score, t: a.createdAt?.seconds || 0 });
     });
-    if(!list.length) return;
     list.sort((x, y) => (y.score - x.score) || (y.t - x.t));
-    const top = list.slice(0, 5);
+    const top = list.filter(x => x.score > 0).slice(0, 5);
+    if(!top.length) return;
     const c0 = cinfo((d.countries || [])[0]);
-    const title = top[0].score >= 10 && c0 && top.every(x => x.score >= 10) ? `${c0.jp}の旅` : (top[0].score > 0 ? "関連する旅" : "ほかの旅");
+    const title = c0 && top.every(x => (x.a.countries || []).includes(c0.v)) ? `${c0.jp}の旅` : "関連する旅";
     const rows = top.map(({ id: aid, a }) => {
       const img = a.thumbUrl || (a.heroUrls && a.heroUrls[0]) || "";
       const cs = (a.countries || []).map(c => cinfo(c)).filter(Boolean);
