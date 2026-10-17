@@ -606,7 +606,7 @@ import { db, auth } from "../firebase-config.js";
 import { doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, where, orderBy, limit, getCountFromServer, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { renderArticleBody, esc, para, cinfo, COUNTRY_LL } from "../tabistock-render.js";
+import { renderArticleBody, esc, para, cinfo, COUNTRY_ISO } from "../tabistock-render.js";
 import { sendNotification } from "../notify.js";
 import { initPhotoViewer } from "../photo-viewer.js";
 
@@ -1491,6 +1491,47 @@ function initComments(){
 }
 
 // 記事内ルートマップ：訪れた場所をピンで表示（線で結ばない・1日複数ピン対応）
+// ピンの国コードを調べる（保存されていない古いピンだけ。Nominatim の逆ジオコーディングを1秒に1回まで・結果はブラウザに保存）
+async function countryOfPin(p){
+  if(p.cc) return p.cc;
+  const key = "tbcc:" + p.lat.toFixed(2) + "," + p.lng.toFixed(2);
+  try{ const v = localStorage.getItem(key); if(v !== null) return v; }catch(e){}
+  await new Promise(r => setTimeout(r, countryOfPin._wait || 0));
+  countryOfPin._wait = 1100;
+  let cc = "";
+  try{
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=3&lat=${p.lat}&lon=${p.lng}`, { headers:{ "Accept":"application/json" } });
+    if(r.ok){ const j = await r.json(); cc = (j && j.address && j.address.country_code) || ""; }
+  }catch(e){ return ""; }
+  try{ localStorage.setItem(key, cc); }catch(e){}
+  return cc;
+}
+// 地図の上に「全体／国名」ボタンを出す
+async function addCountryTabs(el, map, pts, latlngs, sel){
+  for(const p of pts){ p.cc = await countryOfPin(p); }
+  const groups = {};
+  pts.forEach(p => {
+    const c = sel.find(v => COUNTRY_ISO[v] === p.cc);
+    if(c) (groups[c] = groups[c] || []).push([p.lat, p.lng]);
+  });
+  const used = sel.filter(c => groups[c]);
+  if(used.length < 2) return;
+  const bar = document.createElement("div");
+  bar.className = "route-tabs";
+  const mk = (label, key) => `<button type="button" data-k="${esc(key)}">${esc(label)}</button>`;
+  bar.innerHTML = mk("全体", "") + used.map(c => mk((cinfo(c) || {}).jp || c, c)).join("");
+  el.parentNode.insertBefore(bar, el);
+  const btns = [...bar.querySelectorAll("button")];
+  const focus = (k) => {
+    btns.forEach(b => b.classList.toggle("on", b.dataset.k === k));
+    const ll = k ? groups[k] : latlngs;
+    if(ll.length > 1) map.flyToBounds(L.latLngBounds(ll).pad(0.3), { duration: 0.6, maxZoom: 12 });
+    else map.flyTo(ll[0], 10, { duration: 0.6 });
+  };
+  btns.forEach(b => b.addEventListener("click", () => focus(b.dataset.k)));
+  btns[0].classList.add("on");
+}
+
 function initRouteMap(d){
   const el = document.getElementById('routeMap');
   if(!el || typeof L === 'undefined') return;
@@ -1510,7 +1551,7 @@ function initRouteMap(d){
       if(Array.isArray(day.places) && day.places.length){
         day.places.forEach(p=>{
           if(typeof p.lat==='number' && typeof p.lng==='number'){
-            pts.push({ n:dayNo, lat:p.lat, lng:p.lng, name:p.name||'', summary:day.summary||'', date:day.date||'' });
+            pts.push({ n:dayNo, lat:p.lat, lng:p.lng, name:p.name||'', summary:day.summary||'', date:day.date||'', cc:p.cc||'' });
           }
         });
       }else if(typeof day.lat==='number' && typeof day.lng==='number'){
@@ -1542,38 +1583,10 @@ function initRouteMap(d){
   }
 
   // 周遊（2か国以上）：国ごとに切り替えてクローズアップできるボタン
-  // ピンには国の情報がないので、投稿で選んだ国の中心に一番近い国へ振り分ける
-  const cs = (d.countries || []).filter(c => COUNTRY_LL[c]);
-  if(cs.length >= 2 && pts.length > 1){
-    const near = (p) => {
-      let best = null, bd = Infinity;
-      cs.forEach(c => {
-        const [la, ln] = COUNTRY_LL[c];
-        let dl = Math.abs(p.lng - ln); if(dl > 180) dl = 360 - dl;   // 日付変更線をまたぐ場合
-        const dd = (p.lat - la) ** 2 + dl ** 2;
-        if(dd < bd){ bd = dd; best = c; }
-      });
-      return best;
-    };
-    const groups = {};
-    pts.forEach(p => { const c = near(p); (groups[c] = groups[c] || []).push([p.lat, p.lng]); });
-    const used = cs.filter(c => groups[c]);
-    if(used.length >= 2){
-      const bar = document.createElement("div");
-      bar.className = "route-tabs";
-      const mk = (label, key) => `<button type="button" data-k="${esc2(key)}">${esc2(label)}</button>`;
-      bar.innerHTML = mk("全体", "") + used.map(c => mk((cinfo(c) || {}).jp || c, c)).join("");
-      el.parentNode.insertBefore(bar, el);
-      const btns = [...bar.querySelectorAll("button")];
-      const focus = (k) => {
-        btns.forEach(b => b.classList.toggle("on", b.dataset.k === k));
-        const ll = k ? groups[k] : latlngs;
-        if(ll.length > 1) map.flyToBounds(L.latLngBounds(ll).pad(0.3), { duration: 0.6, maxZoom: 12 });
-        else map.flyTo(ll[0], 10, { duration: 0.6 });
-      };
-      btns.forEach(b => b.addEventListener("click", () => focus(b.dataset.k)));
-      btns[0].classList.add("on");
-    }
+  // 各ピンが実際にある国（国コード）で振り分ける。投稿で選んでいない国のピン（乗り継ぎ地など）は「全体」にだけ入る。
+  const sel = (d.countries || []).filter(c => COUNTRY_ISO[c]);
+  if(sel.length >= 2 && pts.length > 1){
+    addCountryTabs(el, map, pts, latlngs, sel);
   }
   setTimeout(()=>map.invalidateSize(), 200);
   window.addEventListener('resize', ()=>map.invalidateSize());

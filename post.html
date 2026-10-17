@@ -918,7 +918,7 @@ function addDay(data){
     if(Array.isArray(data.places) && data.places.length){
       wrap._places=data.places
         .filter(p=>p && typeof p.lat==='number' && typeof p.lng==='number')
-        .map(p=>({name:p.name||'',lat:p.lat,lng:p.lng}));
+        .map(p=>({name:p.name||'',lat:p.lat,lng:p.lng,cc:p.cc||''}));
     }else if(typeof data.lat==='number' && typeof data.lng==='number'){
       wrap._places=[{name:'',lat:data.lat,lng:data.lng}];
     }
@@ -972,9 +972,21 @@ function renderDayMarkers(wrap){
 }
 function addDayPlace(wrap,name,lat,lng){
   wrap._places=wrap._places||[];
-  wrap._places.push({name:name||'',lat:+lat.toFixed(5),lng:+lng.toFixed(5)});
+  const pl={name:name||'',lat:+lat.toFixed(5),lng:+lng.toFixed(5),cc:''};
+  wrap._places.push(pl);
   renderDayMarkers(wrap);
   updateDayLoc(wrap);
+  // どの国の場所かを裏で調べておく（記事の地図の「国ごとの切り替え」に使う）
+  reverseCountry(pl.lat,pl.lng).then(cc=>{ if(cc) pl.cc=cc; });
+}
+// 座標→国コード（Nominatim の逆ジオコーディング。国レベルだけ）
+async function reverseCountry(lat,lng){
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=3&lat=${lat}&lon=${lng}`,{headers:{'Accept':'application/json'}});
+    if(!r.ok) return '';
+    const j=await r.json();
+    return (j&&j.address&&j.address.country_code)||'';
+  }catch(e){ return ''; }
 }
 function removeDayPlace(wrap,idx){
   if(!wrap._places) return;
@@ -1076,7 +1088,7 @@ async function applyAutoToDay(wrap,idToken,countryEn,countriesEn){
       const name=(p&&p.name)||'';
       const query=(p&&p.query)||name;
       const ll=await geocodePlace(query,countryEn);
-      if(ll){ wrap._places.push({name,lat:+ll[0].toFixed(5),lng:+ll[1].toFixed(5)}); added++; }
+      if(ll){ wrap._places.push({name,lat:+ll[0].toFixed(5),lng:+ll[1].toFixed(5),cc:ll[2]||''}); added++; }
     }
     renderDayMarkers(wrap);
     updateDayLoc(wrap);
@@ -1092,11 +1104,12 @@ async function geocodePlace(query,countryEn){
   const q=query||'';
   if(!q) return null;
   try{
-    const url=`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&q=${encodeURIComponent(q)}`;
+    const url=`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&addressdetails=1&q=${encodeURIComponent(q)}`;
     const r=await fetch(url,{headers:{'Accept':'application/json'}});
     if(!r.ok) return null;
     const arr=await r.json();
-    if(arr&&arr.length){ return [parseFloat(arr[0].lat),parseFloat(arr[0].lon)]; }
+    // 3つ目は国コード（例：fi）。記事の地図の「国ごとの切り替え」に使う
+    if(arr&&arr.length){ return [parseFloat(arr[0].lat),parseFloat(arr[0].lon),((arr[0].address||{}).country_code||'')]; }
   }catch(e){}
   return null;
 }
@@ -1235,7 +1248,7 @@ async function gather(){
   const cs=selectedCountries();
   const days=[];
   for(const w of document.querySelectorAll('[data-day]')){
-    const places=(w._places||[]).map(p=>({name:p.name||'',lat:p.lat,lng:p.lng}));
+    const places=(w._places||[]).map(p=>({name:p.name||'',lat:p.lat,lng:p.lng,cc:p.cc||''}));
     days.push({
       date:'',
       summary:w.querySelector('.d-sum').value.trim(),
@@ -2484,7 +2497,7 @@ window.tabistockSubmit = async function(d, st, mode){
     const dayObj = { date: day.date, summary: day.summary, text: day.text, photoUrls };
     const places = Array.isArray(day.places)
       ? day.places.filter(p=>p && typeof p.lat==='number' && typeof p.lng==='number')
-                  .map(p=>({ name: p.name||'', lat: p.lat, lng: p.lng }))
+                  .map(p=>(p.cc ? { name: p.name||'', lat: p.lat, lng: p.lng, cc: p.cc } : { name: p.name||'', lat: p.lat, lng: p.lng }))
       : [];
     if(places.length){ dayObj.places = places; }
     if(typeof day.lat==='number' && typeof day.lng==='number'){ dayObj.lat=day.lat; dayObj.lng=day.lng; }
