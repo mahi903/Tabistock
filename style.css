@@ -4052,3 +4052,26 @@ body.ov-lock{ overflow:hidden; }
   .results-main .trip-grid { grid-template-columns: repeat(3, 1fr); }
   .results-main .trip-image { height: 135px; }
 }
+
+/* ルートマップ：周遊のとき国ごとに切り替えるボタン */
+.route-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 2px 8px;
+}
+.route-tabs::-webkit-scrollbar { display: none; }
+.route-tabs button {
+  flex: none;
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.route-tabs button.on { background: var(--green); border-color: var(--green); color: #fff; }
