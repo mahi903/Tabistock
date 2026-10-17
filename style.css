@@ -4107,3 +4107,11 @@ body.ov-lock{ overflow:hidden; }
   .more-trips { padding: 22px 18px 4px; margin-top: 36px; }
   .mt-row img, .mt-noimg { width: 96px; height: 64px; }
 }
+
+/* =========================
+   ボタンは角が少し丸い四角で統一（横長の丸ボタンはやめる）
+========================= */
+.hd .btn, .drawer .btn, .nav-button, .secondary-button, .filter-search-btn,
+.action-like, .action-share, .action-save, .comment-submit, .nr-btn,
+.result-filter-bar button, .fs-apply, .route-tabs button { border-radius: 8px !important; }
+.chip { border-radius: 6px !important; }

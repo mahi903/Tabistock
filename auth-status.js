@@ -41,7 +41,7 @@ if (!document.getElementById("authStatusStyle")) {
 .auth-status .as-line{margin:0 0 10px;color:#6c7787;font-weight:500}
 .auth-status .as-line strong{color:#1f6f5b;font-weight:800}
 .auth-status .as-links{display:flex;gap:10px}
-.auth-status .as-links a{flex:1;text-align:center;padding:9px 10px;border-radius:999px;font-size:12.5px;font-weight:800;text-decoration:none;border:1.5px solid #1f6f5b;white-space:nowrap;box-sizing:border-box}
+.auth-status .as-links a{flex:1;text-align:center;padding:9px 10px;border-radius:8px;font-size:12.5px;font-weight:800;text-decoration:none;border:1.5px solid #1f6f5b;white-space:nowrap;box-sizing:border-box}
 .auth-status .as-links a:first-child{background:#1f6f5b;color:#fff}
 .auth-status .as-links #asLogout{background:#faf6ee;color:#1f6f5b}
 .auth-status .as-links a:hover{opacity:.88}`;
@@ -610,7 +610,7 @@ if (el) {
         `<div style="font-size:11px;font-weight:800;color:#e2683b;margin-bottom:2px">書きかけの旅程があります${drafts.length > 1 ? `（${drafts.length}件）` : ""}</div>` +
         `<div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw">${esc(title)}</div>` +
       `</div>` +
-      `<a href="${href}" style="flex-shrink:0;background:#1f6f5b;color:#fff;font-size:12.5px;font-weight:800;padding:9px 14px;border-radius:999px;text-decoration:none;white-space:nowrap">続きを書く</a>` +
+      `<a href="${href}" style="flex-shrink:0;background:#1f6f5b;color:#fff;font-size:12.5px;font-weight:800;padding:9px 14px;border-radius:8px;text-decoration:none;white-space:nowrap">続きを書く</a>` +
       `<button type="button" aria-label="閉じる" style="flex-shrink:0;border:none;background:none;color:#9aa2af;font-size:20px;line-height:1;cursor:pointer;padding:0 4px">×</button>`;
     const remember = () => { try { sessionStorage.setItem(KEY, "1"); } catch (e) {} };
     bar.querySelector("button").addEventListener("click", () => { remember(); bar.remove(); });
