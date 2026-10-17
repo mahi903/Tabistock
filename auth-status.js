@@ -50,8 +50,43 @@ if (!document.getElementById("authStatusStyle")) {
 
 const el = document.getElementById("authStatus");
 
+// トップページのメニュー用（data-variant="menu"）：アカウントの入り口を定番の形で出す
+function renderMenu(el, user, nick, photo){
+  const lo = document.getElementById("drawerLogout");
+  if (user) {
+    el.innerHTML =
+      `<a class="da-me" href="${base}account.html">` +
+        `<span class="da-av">${photo ? `<img src="${esc(photo)}" alt="">` : esc((nick || "旅").slice(0, 1))}</span>` +
+        `<span><span class="da-name">${esc(nick || "マイページ")}</span><span class="da-sub">マイページを見る</span></span>` +
+      `</a>` +
+      `<a class="da-link" href="${base}account.html#saved">保存した旅</a>` +
+      `<a class="da-link" href="${base}dm.html">メッセージ</a>`;
+    if (lo) {
+      lo.hidden = false;
+      lo.onclick = (e) => { e.preventDefault(); signOut(auth); };
+    }
+  } else {
+    el.innerHTML =
+      `<a class="da-login" href="${base}account.html">ログイン / 新規登録</a>` +
+      `<p class="da-note">旅の保存やコメントができます</p>`;
+    if (lo) lo.hidden = true;
+  }
+}
+
 if (el) {
   onAuthStateChanged(auth, async (user) => {
+    if (el.dataset.variant === "menu") {
+      let nick = "", photo = "";
+      if (user) {
+        nick = user.displayName || ""; photo = user.photoURL || "";
+        try {
+          const s = await getDoc(doc(db, "users", user.uid));
+          if (s.exists()) { const d = s.data(); nick = d.nickname || nick; photo = d.photoURL || photo; }
+        } catch (e) {}
+      }
+      renderMenu(el, user, nick, photo);
+      return;
+    }
     if (user) {
       let nick = user.displayName || "";
       try {
