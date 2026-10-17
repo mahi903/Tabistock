@@ -151,6 +151,63 @@ a{color:inherit;text-decoration:none}
   .fbar .selsum{order:-1;width:100%;text-align:center}
   .fbar .go{flex:1;justify-content:center}
 }
+
+/* ===== シンプル版（文字・余白を小さく、説明文を省く） ===== */
+.fhero{padding:96px 6% 22px}
+.fhero .eyebrow,.fhero p{display:none}
+.fhero h1{font-size:clamp(22px,3vw,30px);margin:0}
+.fwrap{max-width:760px;padding:16px 6% 28px}
+.fcard{border-radius:14px;margin-bottom:10px;border-color:#eee5d6}
+.fcard.active{box-shadow:0 8px 22px rgba(27,35,48,.06)}
+.fcard-head{padding:15px 18px}
+.fcard-head .fnum,.fcard-head .fhint{display:none}
+.fcard-head h3{font-size:15px;display:flex;align-items:center;gap:8px}
+.fcard-head .chev{width:18px;height:18px}
+.fpanel-in{padding:0 18px 16px}
+.chips{gap:6px}
+.chips label{padding:6px 12px;font-size:12.5px}
+.region-block{padding:10px 0}
+.region-block:first-child{padding-top:2px}
+.region-block .region-label{padding:4px 12px;font-size:12px;margin-bottom:8px;border-width:1px}
+.country-list{gap:6px}
+.style-section + .style-section{margin-top:12px;padding-top:12px}
+.style-section .sub{font-size:11.5px;margin-bottom:8px}
+.fbar{padding:10px 6%;gap:12px}
+.fbar .selsum{font-size:12px}
+.fbar .reset{font-size:12px}
+.fbar .go{padding:11px 22px;font-size:14px}
+@media(max-width:860px){
+  .fhero{padding:80px 5% 14px}
+  .fwrap{padding:12px 4% 20px}
+  .fcard-head{padding:14px 16px}
+  .fpanel-in{padding:0 16px 14px}
+  .fbar{flex-wrap:nowrap;padding:10px 4%}
+  .fbar .selsum{order:0;width:auto;text-align:left;white-space:nowrap}
+  .fbar .go{flex:1;justify-content:center}
+}
+/* アプリ（PWA）では下のタブバーに隠れないよう、検索バーをタブバーの上に浮かせる */
+@media(max-width:768px){
+  body.pwa .fbar{bottom:calc(64px + env(safe-area-inset-bottom) + 24px);margin:0 4%;border:1px solid #e7ddcb;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+}
+
+/* ===== 選択肢：丸いボタンをやめて、四角いタイルに ===== */
+.fcard .chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.fcard .chips label,.fcard .region-label.rg-all{display:flex;align-items:center;justify-content:center;text-align:center;min-height:40px;padding:8px 6px;border:1px solid transparent;border-radius:6px;background:#f5f2ec;color:var(--ink);font-size:12.5px;font-weight:500;line-height:1.3;margin:0;cursor:pointer;user-select:none}
+.fcard .chips label:hover{border-color:transparent;color:var(--ink);background:#efe9df}
+.fcard .chips label:has(input:checked),.fcard .region-label.rg-all:has(input:checked){background:#eaf4f0;border-color:var(--green);color:var(--green);font-weight:700}
+.fcard .region-label.rg-all{grid-column:1/-1;font-weight:700}
+/* 国・地域：左にエリア、右に国 */
+.rg{display:flex;margin:0 -16px -14px;border-top:1px solid #f0e8da}
+.rg-tabs{flex:0 0 96px;background:#f7f3ec;display:flex;flex-direction:column}
+.rg-tabs button{position:relative;border:none;background:none;padding:13px 6px;font:inherit;font-size:12.5px;color:var(--muted);cursor:pointer;text-align:center}
+.rg-tabs button.on{background:#fff;color:var(--green);font-weight:800}
+.rg-tabs button.on::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--green)}
+.rg-dot{display:none;position:absolute;top:9px;right:8px;width:6px;height:6px;border-radius:50%;background:var(--terra)}
+.rg-tabs button.has .rg-dot{display:block}
+.rg-body{flex:1;min-width:0;padding:10px 12px 14px}
+.rg-body .region-block{padding:0;border:none}
+.rg-body .country-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:861px){.rg{margin:0 -18px -16px}.rg-body .country-list{grid-template-columns:repeat(4,minmax(0,1fr))}.rg-tabs{flex-basis:130px}}
 </style>
 </head>
 <body>
@@ -400,7 +457,7 @@ a{color:inherit;text-decoration:none}
 <!-- MINI HERO -->
 <section class="fhero">
   <p class="eyebrow">Search Routes</p>
-  <h1>条件を絞って、旅を探す</h1>
+  <h1>条件で旅を探す</h1>
   <p>国・予算・日数・旅スタイルから選ぶだけ。条件に合う旅程の一覧がすぐ表示されます。</p>
 </section>
 
@@ -412,7 +469,7 @@ a{color:inherit;text-decoration:none}
     <div class="fcard-head">
       <div class="ft">
         <span class="fnum">01</span>
-        <div><h3>国・地域から探す <span class="fcount"></span></h3><p class="fhint">地域でまとめても、国ごとに分けても。</p></div>
+        <div><h3>国・地域 <span class="fcount"></span></h3><p class="fhint">地域でまとめても、国ごとに分けても。</p></div>
       </div>
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
@@ -645,7 +702,7 @@ a{color:inherit;text-decoration:none}
     <div class="fcard-head">
       <div class="ft">
         <span class="fnum">02</span>
-        <div><h3>予算で探す <span class="fcount"></span></h3><p class="fhint">総額の上限から選ぶ。</p></div>
+        <div><h3>予算 <span class="fcount"></span></h3><p class="fhint">総額の上限から選ぶ。</p></div>
       </div>
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
@@ -666,7 +723,7 @@ a{color:inherit;text-decoration:none}
     <div class="fcard-head">
       <div class="ft">
         <span class="fnum">03</span>
-        <div><h3>日数で探す <span class="fcount"></span></h3><p class="fhint">週末旅から3週間以上まで。</p></div>
+        <div><h3>日数 <span class="fcount"></span></h3><p class="fhint">週末旅から3週間以上まで。</p></div>
       </div>
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
@@ -727,9 +784,9 @@ a{color:inherit;text-decoration:none}
 
 <!-- STICKY SUBMIT -->
 <div class="fbar">
-  <span class="selsum"><b id="selN">0</b> 件の条件を選択中</span>
+  <span class="selsum"><b id="selN">0</b> 件選択中</span>
   <button class="reset" id="reset">リセット</button>
-  <button class="btn go" id="go">この条件で検索 →</button>
+  <button class="btn go" id="go">この条件で検索</button>
 </div>
 
 <script>
@@ -757,6 +814,40 @@ cards.forEach(card=>{
 // keep open panel sized correctly when inner checkboxes change layout
 function refreshHeights(){cards.forEach(c=>{if(c.classList.contains('active')){const p=c.querySelector('.fpanel');p.style.maxHeight=p.scrollHeight+'px'}})}
 addEventListener('resize',refreshHeights);
+
+// 国・地域：左に大まかなエリア、右にそのエリアの国（Trip.com 風）。元の選択肢をそのまま並べ替えるだけ
+(function(){
+  const inner=document.querySelector('#fc-country .fpanel-in');
+  if(!inner) return;
+  const blocks=[...inner.querySelectorAll('.region-block')];
+  if(!blocks.length) return;
+  const wrap=document.createElement('div'); wrap.className='rg';
+  const tabs=document.createElement('div'); tabs.className='rg-tabs'; tabs.setAttribute('role','tablist');
+  const body=document.createElement('div'); body.className='rg-body';
+  blocks.forEach((bl,i)=>{
+    const lab=bl.querySelector('.region-label'), list=bl.querySelector('.country-list');
+    const name=lab.textContent.trim();
+    // エリア全体を選ぶボタンを、国の一覧の先頭に置く
+    lab.lastChild.textContent=name+'全体';
+    lab.classList.add('rg-all');
+    list.prepend(lab);
+    const b=document.createElement('button');
+    b.type='button'; b.setAttribute('role','tab'); b.innerHTML=`<span>${name}</span><i class="rg-dot"></i>`;
+    b.addEventListener('click',()=>show(i));
+    tabs.appendChild(b);
+    body.appendChild(bl);
+  });
+  wrap.append(tabs,body); inner.appendChild(wrap);
+  function show(i){
+    blocks.forEach((bl,k)=>bl.hidden=k!==i);
+    [...tabs.children].forEach((b,k)=>b.classList.toggle('on',k===i));
+    refreshHeights();
+  }
+  function dots(){ blocks.forEach((bl,k)=>tabs.children[k].classList.toggle('has',!!bl.querySelector('input:checked'))); }
+  inner.addEventListener('change',dots);
+  document.getElementById('reset').addEventListener('click',()=>setTimeout(dots));
+  show(0); dots();
+})();
 
 // open card matching URL hash (from index.html entry points); default: all closed
 const hash=location.hash.replace('#','');
