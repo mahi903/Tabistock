@@ -1506,30 +1506,73 @@ async function countryOfPin(p){
   try{ localStorage.setItem(key, cc); }catch(e){}
   return cc;
 }
+// 国境データ（/country-shapes.json：国コード → 外周の座標列 [lng,lat,lng,lat,…] の配列）で、ピンがどの国にあるかを判定する
+let shapesPromise = null;
+const loadShapes = () => shapesPromise || (shapesPromise = fetch("/country-shapes.json").then(r => r.ok ? r.json() : {}).catch(() => ({})));
+function inRing(x, y, r){
+  let inside = false;
+  for(let i = 0, j = r.length - 2; i < r.length; j = i, i += 2){
+    const xi = r[i], yi = r[i+1], xj = r[j], yj = r[j+1];
+    if(((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+function distToRing(x, y, r){   // 境界線までのおおよその距離（度）
+  let best = Infinity;
+  for(let i = 0, j = r.length - 2; i < r.length; j = i, i += 2){
+    const ax = r[j], ay = r[j+1], bx = r[i], by = r[i+1];
+    const dx = bx - ax, dy = by - ay, L = dx*dx + dy*dy;
+    let t = L ? ((x - ax) * dx + (y - ay) * dy) / L : 0; t = Math.max(0, Math.min(1, t));
+    const ex = ax + t*dx - x, ey = ay + t*dy - y;
+    best = Math.min(best, Math.sqrt(ex*ex + ey*ey));
+  }
+  return best;
+}
+// 選んだ国の中から、ピンがある国を探す（中 → 海岸近く0.35度以内 の順）
+function countryByShape(p, shapes, sel){
+  for(const c of sel){ if((shapes[COUNTRY_ISO[c]] || []).some(r => inRing(p.lng, p.lat, r))) return COUNTRY_ISO[c]; }
+  let best = "", bd = 0.35;
+  for(const c of sel){
+    (shapes[COUNTRY_ISO[c]] || []).forEach(r => { const dd = distToRing(p.lng, p.lat, r); if(dd < bd){ bd = dd; best = COUNTRY_ISO[c]; } });
+  }
+  return best;
+}
 // 地図の上に「全体／国名」ボタンを出す
 async function addCountryTabs(el, map, pts, latlngs, sel){
-  for(const p of pts){ p.cc = await countryOfPin(p); }
+  const shapes = await loadShapes();
+  for(const p of pts){
+    if(p.cc) continue;                                  // 投稿時に保存された国コードを優先
+    p.cc = countryByShape(p, shapes, sel);              // 国境データで判定
+  }
   const groups = {};
-  pts.forEach(p => {
+  const add = (p) => {
     const c = sel.find(v => COUNTRY_ISO[v] === p.cc);
     if(c) (groups[c] = groups[c] || []).push([p.lat, p.lng]);
-  });
-  const used = sel.filter(c => groups[c]);
-  if(used.length < 2) return;
-  const bar = document.createElement("div");
-  bar.className = "route-tabs";
-  const mk = (label, key) => `<button type="button" data-k="${esc(key)}">${esc(label)}</button>`;
-  bar.innerHTML = mk("全体", "") + used.map(c => mk((cinfo(c) || {}).jp || c, c)).join("");
-  el.parentNode.insertBefore(bar, el);
-  const btns = [...bar.querySelectorAll("button")];
+  };
+  pts.forEach(add);
+  let bar = null, cur = "";
+  const render = () => {
+    const used = sel.filter(c => groups[c]);
+    if(used.length < 2){ if(bar){ bar.remove(); bar = null; } return; }
+    if(!bar){ bar = document.createElement("div"); bar.className = "route-tabs"; el.parentNode.insertBefore(bar, el); }
+    const mk = (label, key) => `<button type="button" data-k="${esc(key)}"${key === cur ? ' class="on"' : ""}>${esc(label)}</button>`;
+    bar.innerHTML = mk("全体", "") + used.map(c => mk((cinfo(c) || {}).jp || c, c)).join("");
+    bar.querySelectorAll("button").forEach(b => b.addEventListener("click", () => focus(b.dataset.k)));
+  };
   const focus = (k) => {
-    btns.forEach(b => b.classList.toggle("on", b.dataset.k === k));
+    cur = k;
+    bar.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.k === k));
     const ll = k ? groups[k] : latlngs;
     if(ll.length > 1) map.flyToBounds(L.latLngBounds(ll).pad(0.3), { duration: 0.6, maxZoom: 12 });
     else map.flyTo(ll[0], 10, { duration: 0.6 });
   };
-  btns.forEach(b => b.addEventListener("click", () => focus(b.dataset.k)));
-  btns[0].classList.add("on");
+  render();
+  // 国境データで決まらなかったピン（小さな島など）だけ、裏で外部の地名検索で調べてボタンに反映する
+  const rest = pts.filter(p => !p.cc);
+  for(const p of rest){
+    p.cc = await countryOfPin(p);
+    if(p.cc){ add(p); render(); }
+  }
 }
 
 function initRouteMap(d){
