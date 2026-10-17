@@ -1614,9 +1614,11 @@ function initRouteMap(d){
     const icon = L.divIcon({ className:'', html:`<div class="mappin"></div>`, iconSize:[26,26], iconAnchor:[13,25] });
     const dayLabel = p.n ? `DAY ${p.n}` : '';
     const head = p.name ? esc2(p.name) : (dayLabel || '立ち寄り地点');
-    const sub = [p.name?dayLabel:'', p.date?esc2(p.date):'', esc2(p.summary)].filter(Boolean).join('・');
+    // ピンの吹き出しは「場所名」＋「DAY・日付」だけのコンパクト表示（その日の要約は出さない）
+    const sub = [p.name?dayLabel:'', p.date?esc2(p.date):''].filter(Boolean).join(' · ');
     L.marker([p.lat,p.lng], { icon }).addTo(map)
-      .bindPopup(`<strong>${head}</strong>${sub?'<br>'+sub:''}`);
+      .bindPopup(`<b class="pp-h">${head}</b>${sub?`<span class="pp-s">${sub}</span>`:''}`,
+        { className:'pin-pop', closeButton:false, maxWidth:200, minWidth:0, offset:[0,-16] });
   });
 
   if(latlngs.length > 1){
