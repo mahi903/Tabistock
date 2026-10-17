@@ -1208,7 +1208,7 @@ function buildPcLayout(d){
 }
 
 // 記事のいちばん下（コメント欄の下）に「関連する旅」を並べる。
-// 同じ国 → 同じ地域 → 新しい順で最大5件。関係のない記事で埋めない（0件なら出さない）
+// 同じ国 → 同じ地域 → 新しい順で最大3件。関係のない記事で埋めない（0件なら出さない）
 async function initMoreTrips(d){
   const comments = document.getElementById("comments");
   if(!comments) return;
@@ -1224,7 +1224,7 @@ async function initMoreTrips(d){
       list.push({ id: s.id, a, score, t: a.createdAt?.seconds || 0 });
     });
     list.sort((x, y) => (y.score - x.score) || (y.t - x.t));
-    const top = list.filter(x => x.score > 0).slice(0, 5);
+    const top = list.filter(x => x.score > 0).slice(0, 3);
     if(!top.length) return;
     const c0 = cinfo((d.countries || [])[0]);
     const title = c0 && top.every(x => (x.a.countries || []).includes(c0.v)) ? `${c0.jp}の旅` : "関連する旅";
