@@ -606,7 +606,7 @@ import { db, auth } from "../firebase-config.js";
 import { doc, getDoc, setDoc, deleteDoc, addDoc, collection, getDocs, query, where, orderBy, limit, getCountFromServer, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { renderArticleBody, esc, para, cinfo, COUNTRY_ISO } from "../tabistock-render.js";
+import { renderArticleBody, esc, para, cinfo, COUNTRY_ISO, DAYS_OPT } from "../tabistock-render.js";
 import { sendNotification } from "../notify.js";
 import { initPhotoViewer } from "../photo-viewer.js";
 
@@ -1207,6 +1207,51 @@ function buildPcLayout(d){
   }
 }
 
+// 記事のいちばん下（コメント欄の下）に「関連する旅」を並べる。
+// 同じ国 → 同じ地域 → 新しい順で最大5件。どれも合わなければ新着の旅を出す
+async function initMoreTrips(d){
+  const comments = document.getElementById("comments");
+  if(!comments) return;
+  try{
+    const snap = await getDocs(query(collection(db, "articles"), where("status", "==", "published")));
+    const mine = new Set(d.countries || []);
+    const list = [];
+    snap.forEach(s => {
+      if(s.id === id) return;
+      const a = s.data();
+      const shared = (a.countries || []).filter(c => mine.has(c)).length;
+      const score = shared * 10 + (d.region && a.region === d.region ? 3 : 0);
+      list.push({ id: s.id, a, score, t: a.createdAt?.seconds || 0 });
+    });
+    if(!list.length) return;
+    list.sort((x, y) => (y.score - x.score) || (y.t - x.t));
+    const top = list.slice(0, 5);
+    const c0 = cinfo((d.countries || [])[0]);
+    const title = top[0].score >= 10 && c0 && top.every(x => x.score >= 10) ? `${c0.jp}の旅` : (top[0].score > 0 ? "関連する旅" : "ほかの旅");
+    const rows = top.map(({ id: aid, a }) => {
+      const img = a.thumbUrl || (a.heroUrls && a.heroUrls[0]) || "";
+      const cs = (a.countries || []).map(c => cinfo(c)).filter(Boolean);
+      const place = cs.length > 2 ? `${cs[0].jp}・${cs[1].jp} ほか` : cs.map(c => c.jp).join("・");
+      const days = (DAYS_OPT.find(x => x.v === a.days_v) || {}).l || "";
+      const meta = [place, days].filter(Boolean).join(" ・ ");
+      const by = a.authorNickname || "";
+      return `<a class="mt-row" href="./view.html?id=${esc(aid)}">
+        <div class="mt-txt">
+          <h3>${esc(a.title || "旅程")}</h3>
+          ${meta ? `<p class="mt-meta">${esc(meta)}</p>` : ""}
+          ${by ? `<p class="mt-by">${esc(by)}</p>` : ""}
+        </div>
+        ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : `<span class="mt-noimg"><i class="fa-solid fa-route"></i></span>`}
+      </a>`;
+    }).join("");
+    const sec = document.createElement("section");
+    sec.className = "more-trips";
+    sec.setAttribute("aria-label", title);
+    sec.innerHTML = `<h2 class="more-trips-title">${esc(title)}</h2><div class="mt-list">${rows}</div>`;
+    comments.after(sec);
+  }catch(e){ console.warn("関連する旅の取得に失敗:", e); }
+}
+
 // いいね（Firestore: articles/{id}/likes/{uid}・要ログイン）
 function wireLike(){
   const likeBtn = root.querySelector("#likeBtn"), likeCount = root.querySelector("#likeCount");
@@ -1726,6 +1771,7 @@ function initRouteMap(d){
     initComments();
     initRouteMap(d);
     buildPcLayout(d);
+    initMoreTrips(d);
   }catch(err){
     console.error(err);
     showError("読み込み中にエラーが発生しました。");
