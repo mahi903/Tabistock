@@ -731,6 +731,14 @@ ${authorCardsHTML(authorsOf(d))}`;
 }
 
 // 検索カード（search / index 用）。リンクは articles/view.html?id=
+// 記事の地域：投稿時に選んだ地域＋行った国それぞれの地域（複数の地域にまたがる旅も、どの地域でも見つかるように）
+function regionsOf(d){
+  const set=new Set();
+  if(d.region) set.add(d.region);
+  (d.countries||[]).forEach(c=>{ const x=cinfo(c); if(x&&x.r) set.add(x.r); });
+  return [...set].join(' ');
+}
+
 export function renderCard(d){
   if(d.type==='transit') return renderTransitCard(d);
   const c=cinfo((d.countries||[])[0]) || {en:'', jp:''};
@@ -756,7 +764,7 @@ export function renderCard(d){
      data-days="${esc(d.days_v||'')}"
      data-budget="${esc(budgetAttr||'')}"
      data-style="${esc((d.styles||[]).join(' '))}"
-     data-region="${esc(d.region||'')}"
+     data-region="${esc(regionsOf(d))}"
      data-search="${esc(searchText)}"
      data-created="${esc(String(d.createdAt?.seconds||0))}"
      data-likes="0">
@@ -799,7 +807,7 @@ function renderTransitCard(d){
      data-days=""
      data-budget=""
      data-style="transit"
-     data-region="${esc(d.region||'')}"
+     data-region="${esc(regionsOf(d))}"
      data-search="${esc(searchText)}"
      data-created="${esc(String(d.createdAt?.seconds||0))}"
      data-likes="0">

@@ -860,7 +860,17 @@ function runSearchFilter(){
       isMatch = false;
     }
 
+    // 国と地域は「場所」としてまとめて判定する（どれか1つに当てはまればOK）。
+    // 別々に判定すると「モンゴル」と「東南アジア」を選んだときにモンゴルの旅が「東南アジアではない」で消えてしまう
+    if (filters.country || filters.region) {
+      // 単語単位で比べる（部分一致だと east-asia が southeast-asia にも当たってしまう）
+      const cc = (card.dataset.country || "").split(" "), rg = (card.dataset.region || "").split(" ");
+      const placeOk = (filters.country || []).some(v => cc.includes(v)) || (filters.region || []).some(v => rg.includes(v));
+      if (!placeOk) isMatch = false;
+    }
+
     for (const filter in filters) {
+      if (filter === "country" || filter === "region") continue;
       const cardValue = card.dataset[filter] || "";
       const selectedValues = filters[filter];
 
