@@ -1157,7 +1157,6 @@ function buildPcLayout(d){
   });
   if(comments) items.push({ id: "comments", label: "コメント", sub: false });
 
-  const c0 = cinfo((d.countries || [])[0]);
   const right = layout.querySelector(".pc-right");
   right.innerHTML = `<div class="pc-sticky">
     ${items.length ? `<nav class="pc-toc"><p class="pc-side-title">目次</p><ol>${items.map(it =>
@@ -1166,7 +1165,6 @@ function buildPcLayout(d){
       <input type="search" name="q" placeholder="旅先・キーワードで検索" aria-label="記事を検索">
       <button type="submit" aria-label="検索"><i class="fa-solid fa-magnifying-glass"></i></button>
     </form>
-    <div class="pc-related" hidden><p class="pc-side-title">${c0 ? esc(c0.jp) + "の旅" : "ほかの旅"}</p><div class="pc-related-list"></div></div>
   </div>`;
 
   // 目次：今読んでいる場所に色をつける
@@ -1179,32 +1177,18 @@ function buildPcLayout(d){
       let cur = null;
       for(const t of targets){ if(!t.hidden && t.getBoundingClientRect().top < 160) cur = t.id; }
       links.forEach(a => a.classList.toggle("on", a.dataset.id === cur));
+      // 右カラムがスクロールする長さのとき、今読んでいる項目が見える位置まで右カラムだけ動かす
+      const on = links.find(a => a.dataset.id === cur), box = right.querySelector(".pc-sticky");
+      if(on && box && box.scrollHeight > box.clientHeight){
+        const top = on.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop, h = on.offsetHeight;
+        if(top < box.scrollTop) box.scrollTop = top - 8;
+        else if(top + h > box.scrollTop + box.clientHeight) box.scrollTop = top + h - box.clientHeight + 8;
+      }
     };
     window.addEventListener("scroll", () => { if(!ticking){ ticking = true; requestAnimationFrame(update); } }, { passive: true });
     update();
   }
 
-  // 同じ国の記事（自分以外・最大4件）
-  if(c0){
-    getDocs(query(collection(db, "articles"),
-      where("countries", "array-contains", c0.v), where("status", "==", "published"), limit(6)))
-      .then(snap => {
-        const rows = [];
-        snap.forEach(s => {
-          if(s.id === id || rows.length >= 4) return;
-          const a = s.data();
-          const img = a.thumbUrl || (a.heroUrls && a.heroUrls[0]) || "";
-          rows.push(`<a class="pc-rel" href="./view.html?id=${esc(s.id)}">
-            ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : `<span class="pc-rel-noimg"></span>`}
-            <span>${esc(a.title || "旅程")}</span></a>`);
-        });
-        if(rows.length){
-          right.querySelector(".pc-related-list").innerHTML = rows.join("");
-          right.querySelector(".pc-related").hidden = false;
-        }
-      })
-      .catch(e => console.warn("同じ国の記事の取得に失敗:", e));
-  }
 }
 
 // 記事のいちばん下（コメント欄の下）に「関連する旅」を並べる。
@@ -1249,6 +1233,19 @@ async function initMoreTrips(d){
     sec.setAttribute("aria-label", title);
     sec.innerHTML = `<h2 class="more-trips-title">${esc(title)}</h2><div class="mt-list">${rows}</div>`;
     comments.after(sec);
+    // PC（3カラム）では左カラムの投稿者の下に出す（記事の下のものはCSSで隠す）
+    const leftBox = document.querySelector(".pc-left .pc-sticky");
+    if(leftBox){
+      const side = document.createElement("div");
+      side.className = "pc-related";
+      side.innerHTML = `<p class="pc-side-title">${esc(title)}</p><div class="pc-related-list">` + top.map(({ id: aid, a }) => {
+        const img = a.thumbUrl || (a.heroUrls && a.heroUrls[0]) || "";
+        return `<a class="pc-rel" href="./view.html?id=${esc(aid)}">
+          ${img ? `<img src="${esc(img)}" alt="" loading="lazy">` : `<span class="pc-rel-noimg"></span>`}
+          <span>${esc(a.title || "旅程")}</span></a>`;
+      }).join("") + `</div>`;
+      leftBox.appendChild(side);
+    }
   }catch(e){ console.warn("関連する旅の取得に失敗:", e); }
 }
 

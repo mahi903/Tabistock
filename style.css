@@ -3899,7 +3899,13 @@ body.ov-lock{ overflow:hidden; }
   .pc-side { display: block; align-self: stretch; padding-top: 32px; }
   .pc-left { justify-self: end; width: 220px; padding-right: 8px; }
   .pc-right { justify-self: start; width: 240px; padding-left: 8px; }
-  .pc-sticky { position: sticky; top: 100px; }
+  /* 左右カラム：画面より長いとき（DAYが多い目次など）はカラムの中だけスクロール */
+  .pc-sticky { position: sticky; top: 100px; max-height: calc(100vh - 120px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line) transparent; padding-bottom: 12px; }
+  .pc-sticky::-webkit-scrollbar { width: 5px; }
+  .pc-sticky::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+  /* 関連する旅は左カラムに出すので、記事の下のものは出さない */
+  .more-trips { display: none; }
+  .pc-left .pc-related { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }
 
   /* 左：投稿者 */
   .pc-author + .pc-author { margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--line); }

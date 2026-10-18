@@ -542,7 +542,10 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       let minBudget = null;
       docs.forEach(d => {
         (d.countries || []).forEach(c => { if (c) countries.add(c); });
-        const b = d.budget === "50plus" ? 50 : parseInt(d.budget, 10);
+        // 費用カードの合計（実際にかかった金額）を優先。なければ予算の区分（〜10万円なら10）を使う
+        const total = Object.values(d.costs || {}).reduce((sum, v) => sum + (Number(v) || 0), 0);
+        const b = total > 0 ? Math.max(1, Math.floor(total / 10000))
+          : (d.budget === "50plus" ? 50 : parseInt(d.budget, 10));
         if (!isNaN(b)) minBudget = (minBudget === null) ? b : Math.min(minBudget, b);
       });
       const set = (id, val) => window.updateStat && window.updateStat(document.getElementById(id), val);
