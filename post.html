@@ -2379,6 +2379,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/f
 import { collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { COUNTRY_LL, esc } from "./tabistock-render.js";
+import { showPostThanks } from "./post-thanks.js";
 import { initCollabBox, loadCollabFrom, isMember, collabFields, notifyNewInvites, sameMembers, currentMembers } from "./collab.js";
 // 各日ミニ地図が国を中心に表示できるよう、座標表をグローバルへ
 window.COUNTRY_LL = COUNTRY_LL;
@@ -2469,6 +2470,8 @@ window.tabistockSubmit = async function(d, st, mode){
     const prev = window.tabistockEditStatus || "pending";
     status = (prev === "published" || prev === "pending") ? prev : "pending";
   }
+  // 新しく投稿（申請）したときだけ「ありがとう」演出を出す（新規、または下書きからの投稿。公開中・申請中の更新では出さない）
+  const firstSubmit = mode !== "draft" && (!editId || !["published", "pending"].includes(window.tabistockEditStatus));
 
   st.className = "status"; st.textContent = editId ? "記事を更新中…" : "記事を作成中…";
 
@@ -2583,6 +2586,10 @@ window.tabistockSubmit = async function(d, st, mode){
     return;
   }
   // 投稿（申請）・公開中の更新は、保存後にマイページへ移動する
+  if(firstSubmit){
+    showPostThanks({ onDone: () => { location.href = "account.html"; } });
+    return;
+  }
   window.scrollTo({ top:0, behavior:"smooth" });
   setTimeout(()=>{ location.href = "account.html"; }, 1600);
 };

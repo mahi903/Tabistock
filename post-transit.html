@@ -583,6 +583,7 @@ import { auth, db, storage } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { collection, doc, setDoc, getDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { showPostThanks } from "./post-thanks.js";
 import { COUNTRY_LL } from "./tabistock-render.js";
 import { collab, initCollabBox, loadCollabFrom, renderCollab, isMember, membersOf, sameMembers, collabFields, notifyNewInvites } from "./collab.js";
 window.COUNTRY_LL = COUNTRY_LL;
@@ -649,6 +650,8 @@ window.tabistockTransitSubmit = async function(d, st, mode){
   if(mode === "draft"){ status = "draft"; }
   else if(!editId){ status = "pending"; }
   else { const prev = window.tabistockEditStatus || "pending"; status = (prev === "published" || prev === "pending") ? prev : "pending"; }
+  // 新しく投稿（申請）したときだけ「ありがとう」演出を出す（新規、または下書きからの投稿。公開中・申請中の更新では出さない）
+  const firstSubmit = mode !== "draft" && (!editId || !["published", "pending"].includes(window.tabistockEditStatus));
 
   st.className = "status"; st.textContent = editId ? "記事を更新中…" : "記事を作成中…";
 
@@ -713,6 +716,10 @@ window.tabistockTransitSubmit = async function(d, st, mode){
     return;
   }
   // 投稿（申請）・公開中の更新は、保存後にマイページへ移動する
+  if(firstSubmit){
+    showPostThanks({ onDone: () => { location.href = "account.html"; } });
+    return;
+  }
   window.scrollTo({ top:0, behavior:"smooth" });
   setTimeout(()=>{ location.href = "account.html"; }, 1600);
 };
