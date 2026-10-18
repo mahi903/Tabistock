@@ -813,7 +813,7 @@ function renderTransitCard(d){
      data-likes="0">
     <div class="trip-image">
       ${imgHTML}
-      <span class="trip-badge-transit"><i class="fa-solid fa-plane-departure"></i> Transit</span>
+      <span class="trip-badge-transit">Transit</span>
     </div>
     <div class="trip-content">
       <p class="country">${esc(c.en)}</p>

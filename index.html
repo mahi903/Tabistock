@@ -206,7 +206,9 @@ a{color:inherit;text-decoration:none}
 .routes-head h2{font-size:clamp(28px,3.6vw,42px);font-weight:900;margin-top:12px}
 .more{font-weight:800;color:var(--green);display:inline-flex;gap:8px;align-items:center}
 /* 新着旅程：旅程⇄トランジットの小さな切り替え */
-.kind-tabs{display:inline-flex;gap:2px;padding:2px;margin-top:12px;border:1px solid var(--sand);border-radius:8px;background:#fff}
+.routes-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.routes-head .routes-title h2{margin-top:0}
+.kind-tabs{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--sand);border-radius:8px;background:#fff}
 .kind-tabs button{font:inherit;font-size:12px;font-weight:800;line-height:1;padding:7px 12px;border:0;border-radius:6px;background:transparent;color:var(--muted,#6b6b6b);cursor:pointer}
 .kind-tabs button.on{background:var(--green);color:#fff}
 .bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:200px;gap:16px;max-width:1180px;margin:0 auto}
@@ -311,6 +313,7 @@ a{color:inherit;text-decoration:none}
   #about{padding-top:32px}
   .routes-head{margin-bottom:14px;gap:8px}
   .routes-head h2{font-size:23px;margin-top:4px}
+  .routes-title{margin-top:4px;gap:8px}
   .routes-head .eyebrow{font-size:10.5px}
   .routes-head .more{font-size:13px}
   .hero-bg{height:110%;top:-5%}
@@ -424,11 +427,12 @@ a{color:inherit;text-decoration:none}
 <!-- ROUTES (BENTO) -->
 <section class="section" id="routes" style="padding-top:48px">
   <div class="routes-head">
-    <div class="rv"><p class="eyebrow">New Routes</p><h2>新着旅程</h2>
+    <div class="rv"><p class="eyebrow">New Routes</p>
+      <div class="routes-title"><h2>新着旅程</h2>
       <div class="kind-tabs" id="kindTabs" role="tablist" aria-label="記事の種類">
         <button type="button" class="on" data-kind="trip" role="tab" aria-selected="true">旅程</button>
         <button type="button" data-kind="transit" role="tab" aria-selected="false">トランジット</button>
-      </div>
+      </div></div>
     </div>
     <a class="more rv" id="routesMore" href="search.html">すべて見る →</a>
   </div>
