@@ -206,11 +206,12 @@ a{color:inherit;text-decoration:none}
 .routes-head h2{font-size:clamp(28px,3.6vw,42px);font-weight:900;margin-top:12px}
 .more{font-weight:800;color:var(--green);display:inline-flex;gap:8px;align-items:center}
 /* 新着旅程：旅程⇄トランジットの小さな切り替え */
-.routes-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.routes-title{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:12px}
 .routes-head .routes-title h2{margin-top:0}
-.kind-tabs{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--sand);border-radius:8px;background:#fff}
-.kind-tabs button{font:inherit;font-size:12px;font-weight:800;line-height:1;padding:7px 12px;border:0;border-radius:6px;background:transparent;color:var(--muted,#6b6b6b);cursor:pointer}
-.kind-tabs button.on{background:var(--green);color:#fff}
+.kind-tabs{display:inline-flex;align-items:center;gap:0}
+.kind-tabs button{font:inherit;font-size:11.5px;font-weight:700;line-height:1;padding:8px 0;border:0;background:none;color:#9aa2af;cursor:pointer}
+.kind-tabs button+button::before{content:"/";margin:0 7px;color:#c9c2b4;font-weight:400}
+.kind-tabs button.on{color:var(--green)}
 .bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:200px;gap:16px;max-width:1180px;margin:0 auto}
 .tile{position:relative;border-radius:22px;overflow:hidden;display:block;color:#fff}
 .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
@@ -313,7 +314,7 @@ a{color:inherit;text-decoration:none}
   #about{padding-top:32px}
   .routes-head{margin-bottom:14px;gap:8px}
   .routes-head h2{font-size:23px;margin-top:4px}
-  .routes-title{margin-top:4px;gap:8px}
+  .routes-title{margin-top:4px;gap:16px}
   .routes-head .eyebrow{font-size:10.5px}
   .routes-head .more{font-size:13px}
   .hero-bg{height:110%;top:-5%}
