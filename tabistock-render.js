@@ -706,11 +706,11 @@ ${heroCarousel}
 </section>
 </main>
 
-${parentSection}
+${routeSection}
 
 ${bodySection}
 
-${routeSection}
+${parentSection}
 
 <section class="article-actions">
   <button class="action-like" id="likeBtn" type="button" aria-pressed="false" aria-label="いいね">
