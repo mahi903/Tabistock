@@ -2380,6 +2380,10 @@ import { collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, serv
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { COUNTRY_LL, esc } from "./tabistock-render.js";
 import { showPostThanks } from "./post-thanks.js";
+
+// 確認用：post.html?thanks=preview で、投稿せずに「ありがとう」演出だけを流す（記事は作られない）
+const thanksPreview = new URLSearchParams(location.search).get("thanks") === "preview";
+if(thanksPreview) showPostThanks({ onDone: () => { location.href = "index.html"; } });
 import { initCollabBox, loadCollabFrom, isMember, collabFields, notifyNewInvites, sameMembers, currentMembers } from "./collab.js";
 // 各日ミニ地図が国を中心に表示できるよう、座標表をグローバルへ
 window.COUNTRY_LL = COUNTRY_LL;
@@ -2598,6 +2602,7 @@ onAuthStateChanged(auth, async (user) => {
   window.tabistockReady = true;
   if(!user){
     window.tabistockUser = null;
+    if(thanksPreview) return; // 演出の確認だけなのでログインは不要
     alert("旅程の投稿にはログインが必要です。ログインページへ移動します。");
     location.href = "account.html";
     return;

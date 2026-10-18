@@ -28,7 +28,8 @@ const CSS = `
 .pt-phone{position:relative;width:216px;height:432px;border-radius:34px;background:#1b2330;padding:9px;box-shadow:0 18px 40px rgba(27,35,48,.22)}
 .pt-screen{position:relative;width:100%;height:100%;border-radius:26px;overflow:hidden;background:#fbf9f4}
 .pt-notch{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:62px;height:16px;border-radius:10px;background:#1b2330;z-index:9}
-.pt-cap{margin:14px 0 0;min-height:42px;font-size:13.5px;font-weight:700;text-align:center;line-height:1.55;transition:opacity .25s}
+.pt-cap{margin:14px 0 0;height:44px;font-size:13.5px;font-weight:700;text-align:center;line-height:1.55;transition:opacity .16s ease,transform .16s ease}
+.pt-cap.out{opacity:0;transform:translateY(4px)}
 .pt-cap b{display:inline-block;min-width:20px;height:20px;line-height:20px;border-radius:6px;background:#1f6f5b;color:#fff;font-size:11.5px;margin-right:6px;vertical-align:1px}
 
 /* 画面の中身（記事ページ） */
@@ -203,8 +204,9 @@ export function showPostThanks({ onDone } = {}){
     t.classList.add("hl");
   };
   const say = (n, text) => {
-    cap.style.opacity = "0";
-    setTimeout(() => { cap.innerHTML = `<b>${n}</b>${text}`; cap.style.opacity = "1"; }, 200);
+    // 前の文が消えきってから次の文を出す（重なって読みにくくならないように）
+    cap.classList.add("out");
+    setTimeout(() => { cap.innerHTML = `<b>${n}</b>${text}`; cap.classList.remove("out"); }, 220);
   };
   const reset = () => {
     ["pt-dim", "pt-sheet", "pt-os", "pt-done"].forEach(c => $("." + c).classList.remove("on"));
