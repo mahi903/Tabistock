@@ -753,6 +753,10 @@
       <div class="results-head">
         <div class="results-head-top">
           <p class="results-count" id="resultsCount"></p>
+          <div class="kind-tabs" id="kindTabs" hidden>
+            <a href="search.html" data-kind="trip">旅程</a>
+            <a href="search.html?style=transit" data-kind="transit">トランジット</a>
+          </div>
           <label class="sort-box">並び替え
             <select id="sortBy">
               <option value="new">新着順</option>
@@ -935,7 +939,17 @@ if (filter === "budget") {
     // results count
     const countEl = document.getElementById("resultsCount");
     const hasAny = [...params.keys()].some(k => known.includes(k));
-    if (countEl) countEl.textContent = hasAny
+    // 絞り込みなし（またはトランジットだけ）のときは「旅程｜トランジット」の切り替えを出す
+    const keys = [...params.keys()].filter(k => known.includes(k));
+    const onlyTransit = keys.length === 1 && params.getAll("style").join() === "transit";
+    const kindTabs = document.getElementById("kindTabs");
+    if (kindTabs && (!hasAny || onlyTransit)) {
+      kindTabs.hidden = false;
+      kindTabs.querySelectorAll("a").forEach(a => a.classList.toggle("on", (a.dataset.kind === "transit") === onlyTransit));
+    }
+    if (countEl) countEl.textContent = onlyTransit
+      ? `すべてのトランジット：${visibleCount}件`
+      : hasAny
       ? `条件に合う旅程：${visibleCount}件`
       : `すべての旅程：${visibleCount}件`;
 

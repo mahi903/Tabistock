@@ -205,6 +205,10 @@ a{color:inherit;text-decoration:none}
 .routes-head{display:flex;justify-content:space-between;align-items:flex-end;max-width:1180px;margin:0 auto 36px;flex-wrap:wrap;gap:16px}
 .routes-head h2{font-size:clamp(28px,3.6vw,42px);font-weight:900;margin-top:12px}
 .more{font-weight:800;color:var(--green);display:inline-flex;gap:8px;align-items:center}
+/* 新着旅程：旅程⇄トランジットの小さな切り替え */
+.kind-tabs{display:inline-flex;gap:2px;padding:2px;margin-top:12px;border:1px solid var(--sand);border-radius:8px;background:#fff}
+.kind-tabs button{font:inherit;font-size:12px;font-weight:800;line-height:1;padding:7px 12px;border:0;border-radius:6px;background:transparent;color:var(--muted,#6b6b6b);cursor:pointer}
+.kind-tabs button.on{background:var(--green);color:#fff}
 .bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:200px;gap:16px;max-width:1180px;margin:0 auto}
 .tile{position:relative;border-radius:22px;overflow:hidden;display:block;color:#fff}
 .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .7s cubic-bezier(.2,.7,.2,1)}
@@ -420,8 +424,13 @@ a{color:inherit;text-decoration:none}
 <!-- ROUTES (BENTO) -->
 <section class="section" id="routes" style="padding-top:48px">
   <div class="routes-head">
-    <div class="rv"><p class="eyebrow">New Routes</p><h2>新着旅程</h2></div>
-    <a class="more rv" href="search.html">すべて見る →</a>
+    <div class="rv"><p class="eyebrow">New Routes</p><h2>新着旅程</h2>
+      <div class="kind-tabs" id="kindTabs" role="tablist" aria-label="記事の種類">
+        <button type="button" class="on" data-kind="trip" role="tab" aria-selected="true">旅程</button>
+        <button type="button" data-kind="transit" role="tab" aria-selected="false">トランジット</button>
+      </div>
+    </div>
+    <a class="more rv" id="routesMore" href="search.html">すべて見る →</a>
   </div>
   <!-- 中身は下部のスクリプトが「公開記事を新着順に最大4件」で差し替える。
        読み込み中は灰色の仮カード（スケルトン）を出しておく（古い記事を一瞬見せないため）。 -->
@@ -545,7 +554,8 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       if (bento && docs.length) {
         bento.removeAttribute("aria-busy");
         const sec = d => (d.createdAt && d.createdAt.seconds) || 0;
-        const latest = [...docs].sort((a, b) => sec(b) - sec(a)).slice(0, 4);
+        const sorted = [...docs].sort((a, b) => sec(b) - sec(a));
+        const titleOf = d => d.title || (d.type === "transit" ? `${(cinfo((d.countries || [])[0]) || {}).jp || ""}でのトランジット` : "");
         // モザイクの形を維持：1件目=大タイル / 4件目=横長 / それ以外=通常
         const sizeClass = i => i === 0 ? " big-tile" : (i === 3 ? " wide-tile" : "");
         const tile = (d, i) => {
@@ -558,28 +568,45 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
           return `<a class="tile${sizeClass(i)} rv in" href="articles/view.html?id=${esc(d.id)}">`
             + `<img src="${esc(thumb)}" alt="${esc(c.jp || d.title || "")}" loading="lazy" decoding="async">`
             + `<div class="tile-c"><span class="ctry">${esc((c.en || "").toUpperCase())}</span>`
-            + `<h3>${esc(d.title || "")}</h3>`
+            + `<h3>${esc(titleOf(d))}</h3>`
             + `<div class="tg">${tags.map(t => `<span>${esc(t)}</span>`).join("")}</div></div></a>`;
         };
         // スマホ：Trip.com のような2列の白カード（写真＋タイトル＋国）。PC：従来のモザイク。
-        if (window.matchMedia("(max-width:860px)").matches) {
-          // ストーリー画像のように、写真の上に国名とタイトルを直接のせる
-          const card = d => {
-            const cs = (d.countries || []).map(v => (cinfo(v) || {}).en).filter(Boolean);
-            const ctry = cs.slice(0, 2).join(" · ") + (cs.length > 2 ? " …" : "");   // 周遊は2か国まで並べる
-            const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
-            return `<a class="mcard" href="articles/view.html?id=${esc(d.id)}">`
-              + `<div class="mc-img"><img src="${esc(thumb)}" alt="" loading="lazy" decoding="async"></div>`
-              + `<div class="mc-b"><p class="mc-meta">${esc(ctry)}</p>`
-              + `<h3>${esc(d.title || "")}</h3>`
-              + (d.authorNickname ? `<p class="mc-by">${esc(d.authorNickname)}</p>` : "")
-              + `</div></a>`;
-          };
-          bento.classList.add("mgrid");
-          bento.innerHTML = latest.map(card).join("");
-        } else {
-          bento.innerHTML = latest.map(tile).join("");
-        }
+        // ストーリー画像のように、写真の上に国名とタイトルを直接のせる
+        const card = d => {
+          const cs = (d.countries || []).map(v => (cinfo(v) || {}).en).filter(Boolean);
+          const ctry = cs.slice(0, 2).join(" · ") + (cs.length > 2 ? " …" : "");   // 周遊は2か国まで並べる
+          const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
+          return `<a class="mcard" href="articles/view.html?id=${esc(d.id)}">`
+            + `<div class="mc-img"><img src="${esc(thumb)}" alt="" loading="lazy" decoding="async"></div>`
+            + `<div class="mc-b"><p class="mc-meta">${esc(ctry)}</p>`
+            + `<h3>${esc(titleOf(d))}</h3>`
+            + (d.authorNickname ? `<p class="mc-by">${esc(d.authorNickname)}</p>` : "")
+            + `</div></a>`;
+        };
+        // 旅程（本記事）とトランジットを切り替えて、それぞれ新着4件を出す
+        const isMobile = window.matchMedia("(max-width:860px)").matches;
+        const more = document.getElementById("routesMore");
+        const show = kind => {
+          const latest = sorted.filter(d => (d.type === "transit") === (kind === "transit")).slice(0, 4);
+          if (more) more.href = kind === "transit" ? "search.html?style=transit" : "search.html";
+          if (!latest.length) {
+            bento.innerHTML = `<p class="routes-msg">まだ公開された${kind === "transit" ? "トランジット記事" : "旅程"}はありません。</p>`;
+          } else if (isMobile) {
+            bento.classList.add("mgrid");
+            bento.innerHTML = latest.map(card).join("");
+          } else {
+            bento.innerHTML = latest.map(tile).join("");
+          }
+        };
+        document.querySelectorAll("#kindTabs button").forEach(b => b.addEventListener("click", () => {
+          document.querySelectorAll("#kindTabs button").forEach(x => {
+            x.classList.toggle("on", x === b);
+            x.setAttribute("aria-selected", x === b ? "true" : "false");
+          });
+          show(b.dataset.kind);
+        }));
+        show("trip");
       }
     } catch (e) {
       console.error("トップの集計／新着表示に失敗:", e);
