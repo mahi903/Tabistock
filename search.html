@@ -1045,7 +1045,7 @@ runSearchFilter();
   <script type="module">
     import { db } from "./firebase-config.js";
     import { collection, query, where, getDocs, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { renderCard } from "./tabistock-render.js";
+    import { renderCard, pubSec } from "./tabistock-render.js";
 
     const grid = document.querySelector(".trip-grid");
     if (grid) {
@@ -1054,7 +1054,7 @@ runSearchFilter();
         const qy = query(collection(db, "articles"), where("status", "==", "published"));
         const snap = await getDocs(qy);
         snap.forEach(s => docs.push({ id: s.id, ...s.data() }));
-        docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        docs.sort((a, b) => pubSec(b) - pubSec(a));
         if (docs.length) {
           grid.insertAdjacentHTML("afterbegin", docs.map(renderCard).join("\n"));
         }

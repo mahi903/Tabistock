@@ -145,7 +145,7 @@ function bindButtons(){
       const id = btn.dataset.id, act = btn.dataset.act;
       try{
         if(act==="publish"){
-          await updateDoc(doc(db,"articles",id), { status:"published", updatedAt: serverTimestamp() });
+          await updateDoc(doc(db,"articles",id), { status:"published", publishedAt: serverTimestamp(), updatedAt: serverTimestamp() });
           msg("公開しました。", "ok");
         }else if(act==="reject"){
           await updateDoc(doc(db,"articles",id), { status:"rejected", updatedAt: serverTimestamp() });

@@ -2512,6 +2512,8 @@ window.tabistockSubmit = async function(d, st, mode){
     ...collabFields(!editId, nickname, window.tabistockEditAuthorNickname),
     status,
     createdAt: (editId && window.tabistockEditCreatedAt) ? window.tabistockEditCreatedAt : serverTimestamp(),
+    // 公開日は承認時に admin.html が入れる。編集で消えないよう引き継ぐ
+    ...((editId && window.tabistockEditPublishedAt) ? { publishedAt: window.tabistockEditPublishedAt } : {}),
     updatedAt: serverTimestamp(),
     countries: d.countries, region: d.region,
     budget: d.budget, days_v: d.days_v, styles: d.styles,
@@ -2640,6 +2642,7 @@ onAuthStateChanged(auth, async (user) => {
       window.tabistockEditId = editId;
       window.tabistockEditStatus = data.status || "pending";
       window.tabistockEditCreatedAt = data.createdAt || null;
+      window.tabistockEditPublishedAt = data.publishedAt || null;
       window.populateForm({
         author: data.authorNickname || nick,
         countries: data.countries || [], region: data.region || "",

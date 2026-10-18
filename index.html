@@ -531,7 +531,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
   <script type="module">
     import { db } from "./firebase-config.js";
     import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { cinfo, BUDGETS, STYLES, esc } from "./tabistock-render.js";
+    import { cinfo, BUDGETS, STYLES, esc, pubSec } from "./tabistock-render.js";
     try {
       const snap = await getDocs(query(collection(db, "articles"), where("status", "==", "published")));
       const docs = [];
@@ -550,7 +550,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       set("statTrips", docs.length);
       if (minBudget != null) set("statBudget", minBudget);
 
-      // --- 新着旅程：投稿日(createdAt)が新しい順に最大4件をモザイクで表示 ---
+      // --- 新着旅程：公開日(publishedAt。無ければ createdAt)が新しい順に最大4件をモザイクで表示 ---
       const bento = document.getElementById("newRoutes");
       if (bento && !docs.length) {
         bento.removeAttribute("aria-busy");
@@ -558,8 +558,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       }
       if (bento && docs.length) {
         bento.removeAttribute("aria-busy");
-        const sec = d => (d.createdAt && d.createdAt.seconds) || 0;
-        const sorted = [...docs].sort((a, b) => sec(b) - sec(a));
+        const sorted = [...docs].sort((a, b) => pubSec(b) - pubSec(a));
         const titleOf = d => d.title || (d.type === "transit" ? `${(cinfo((d.countries || [])[0]) || {}).jp || ""}でのトランジット` : "");
         // モザイクの形を維持：1件目=大タイル / 4件目=横長 / それ以外=通常
         const sizeClass = i => i === 0 ? " big-tile" : (i === 3 ? " wide-tile" : "");

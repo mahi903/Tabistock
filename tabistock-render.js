@@ -253,6 +253,8 @@ export const COST_ITEMS=[
   {k:'tour',l:'ツアー'},{k:'sightseeing',l:'観光費'},{k:'esim',l:'eSIM'},{k:'souvenir',l:'お土産'}
 ];
 
+// 公開日（管理者が承認した日時）。それより前に公開された記事は publishedAt が無いので最初の保存日で代用する。
+export const pubSec=d=>(d&&(d.publishedAt?.seconds||d.createdAt?.seconds))||0;
 export const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 export const para=s=>esc(s).trim().split(/\n{2,}/).map(p=>p.replace(/\n/g,'<br>')).join('<br><br>');
 export const yen=n=>'¥'+Number(n||0).toLocaleString('ja-JP');
@@ -766,7 +768,7 @@ export function renderCard(d){
      data-style="${esc((d.styles||[]).join(' '))}"
      data-region="${esc(regionsOf(d))}"
      data-search="${esc(searchText)}"
-     data-created="${esc(String(d.createdAt?.seconds||0))}"
+     data-created="${esc(String(pubSec(d)))}"
      data-likes="0">
     <div class="trip-image">
       <img src="${esc(thumb)}" alt="" loading="lazy" decoding="async">
@@ -809,7 +811,7 @@ function renderTransitCard(d){
      data-style="transit"
      data-region="${esc(regionsOf(d))}"
      data-search="${esc(searchText)}"
-     data-created="${esc(String(d.createdAt?.seconds||0))}"
+     data-created="${esc(String(pubSec(d)))}"
      data-likes="0">
     <div class="trip-image">
       ${imgHTML}
