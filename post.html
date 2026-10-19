@@ -92,6 +92,12 @@
   .psheet-body input[type=text]{ margin-top:12px !important; }
   .sub{ border:1px dashed #d9d2c4; border-radius:10px; padding:10px; margin:8px 0; position:relative; background:#fcfaf5; }
   .sub .del{ position:absolute; top:8px; right:8px; border:none; background:#f1e7d6; color:#7a6a4f; border-radius:8px; padding:3px 9px; font-size:12px; cursor:pointer; }
+  .sub .dtools{ position:absolute; top:8px; right:8px; display:flex; gap:4px; }
+  .sub .dtools .del{ position:static; }
+  .sub .dtools .mv{ border:none; background:#f1e7d6; color:#7a6a4f; border-radius:8px; width:28px; padding:3px 0; font-size:12px; font-weight:700; cursor:pointer; }
+  .sub .dtools .mv:disabled{ opacity:.35; cursor:default; }
+  .day-ins{ display:block; width:100%; margin-top:12px; padding:9px; border:1px dashed #b9cfc6; border-radius:8px; background:#fff; color:var(--green); font-size:12.5px; font-weight:700; cursor:pointer; }
+  .day-ins[hidden]{ display:none; }
   .sub h4{ margin:0 0 8px; font-size:13px; color:var(--green-d); }
   .addbtn{ border:1px dashed var(--green); color:var(--green-d); background:#fff; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; cursor:pointer; margin-top:6px; }
   .costgrid{ display:grid; grid-template-columns:1fr 140px; gap:8px 12px; align-items:center; }
@@ -883,10 +889,15 @@ SERVICE_CATS.forEach((cat,ci)=>{
 });
 // 日程
 let dayN=0;
-function addDay(data){
+// after を渡すと、そのDAYのすぐ後ろに差し込む（抜けていた日を途中に足せる）
+function addDay(data, after){
   dayN++;
   const wrap=document.createElement('div'); wrap.className='sub'; wrap.dataset.day='1';
-  wrap.innerHTML=`<button class="del" type="button">削除</button>
+  wrap.innerHTML=`<div class="dtools">
+      <button class="mv" data-mv="-1" type="button" aria-label="1つ上へ">↑</button>
+      <button class="mv" data-mv="1" type="button" aria-label="1つ下へ">↓</button>
+      <button class="del" type="button">削除</button>
+    </div>
     <h4>DAY <span class="dnum">${dayN}</span></h4>
     <label class="f">一文サマリー<span class="req">必須</span></label><input type="text" class="d-sum" placeholder="例：上海経由でウランバートルへ">
     <label class="f">その日の文章（観光地を挙げるだけでも可）<span class="req">必須</span></label>
@@ -903,8 +914,23 @@ function addDay(data){
         </div>
         <div class="dayloc-list"></div>
       </div>
-    </div>`;
+    </div>
+    <button type="button" class="day-ins">＋ この後に1日追加</button>`;
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); renumberDays(); });
+  // 並べ替え：1つ上／下のDAYと入れ替える
+  wrap.querySelectorAll('.mv').forEach(b=>b.addEventListener('click',()=>{
+    if(b.dataset.mv==='-1'){ const prev=wrap.previousElementSibling; if(prev && prev.dataset.day) prev.before(wrap); }
+    else{ const next=wrap.nextElementSibling; if(next && next.dataset.day) next.after(wrap); }
+    renumberDays();
+    if(wrap._map) setTimeout(()=>wrap._map.invalidateSize(),60);
+    wrap.scrollIntoView({block:'nearest',behavior:'smooth'});
+  }));
+  // 途中に1日足す
+  wrap.querySelector('.day-ins').addEventListener('click',()=>{
+    const added=addDay(null, wrap);
+    added.scrollIntoView({block:'center',behavior:'smooth'});
+    setTimeout(()=>added.querySelector('.d-sum').focus({preventScroll:true}),350);
+  });
   const fileIn=wrap.querySelector('.d-photos'), th=wrap.querySelector('.thumbs');
   wirePhotoInput(fileIn,th);
   // 場所ピン：開いたら遅延で地図を生成
@@ -931,7 +957,9 @@ function addDay(data){
       renderThumbs(fileIn, th);
     }
   }
-  $('dayList').appendChild(wrap); renumberDays();
+  if(after) after.after(wrap); else $('dayList').appendChild(wrap);
+  renumberDays();
+  return wrap;
 }
 // 各日の場所ピン（Leaflet・複数ピン対応）
 function initDayMap(wrap){
@@ -1117,11 +1145,15 @@ async function geocodePlace(query,countryEn){
   return null;
 }
 function renumberDays(){
-  let n=0;
-  document.querySelectorAll('[data-day]').forEach(w=>{
-    n++; w.querySelector('.dnum').textContent=n;
+  const all=[...document.querySelectorAll('[data-day]')];
+  all.forEach((w,i)=>{
+    w.querySelector('.dnum').textContent=i+1;
+    // 先頭は上へ、最後は下へ動かせない。最後のDAYの「この後に追加」は下の「＋ 日を追加」と同じなので出さない
+    w.querySelector('[data-mv="-1"]').disabled = i===0;
+    w.querySelector('[data-mv="1"]').disabled = i===all.length-1;
+    w.querySelector('.day-ins').hidden = i===all.length-1;
   });
-  dayN=n;
+  dayN=all.length;
 }
 $('addDay').addEventListener('click',()=>addDay());
 $('autoAll').addEventListener('click',autoDetectAll);
