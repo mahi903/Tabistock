@@ -253,6 +253,24 @@ export const COST_ITEMS=[
   {k:'tour',l:'ツアー'},{k:'sightseeing',l:'観光費'},{k:'esim',l:'eSIM'},{k:'souvenir',l:'お土産'}
 ];
 
+// 国内旅行（日本だけを選んだ旅）。都道府県と「移動」（飛行機・新幹線・夜行バスなど）で書ける
+export const PREF_GROUPS=[
+  {r:'北海道・東北',list:['北海道','青森','岩手','宮城','秋田','山形','福島']},
+  {r:'関東',list:['茨城','栃木','群馬','埼玉','千葉','東京','神奈川']},
+  {r:'中部',list:['新潟','富山','石川','福井','山梨','長野','岐阜','静岡','愛知']},
+  {r:'近畿',list:['三重','滋賀','京都','大阪','兵庫','奈良','和歌山']},
+  {r:'中国・四国',list:['鳥取','島根','岡山','広島','山口','徳島','香川','愛媛','高知']},
+  {r:'九州・沖縄',list:['福岡','佐賀','長崎','熊本','大分','宮崎','鹿児島','沖縄']}
+];
+export const MOVE_MODES=[
+  {v:'plane',l:'飛行機'},{v:'shinkansen',l:'新幹線'},{v:'train',l:'電車'},{v:'nightbus',l:'夜行バス'},
+  {v:'bus',l:'高速バス'},{v:'ferry',l:'フェリー'},{v:'car',l:'車・レンタカー'},{v:'other',l:'その他'}
+];
+export const moveLabel=v=>(MOVE_MODES.find(m=>m.v===v)||{}).l||'';
+export const isDomestic=d=>{ const c=(d&&d.countries)||[]; return c.length>0 && c.every(v=>v==='japan'); };
+// カードや見出しに出す都道府県（3つ以上は「ほか」でまとめる）
+export const prefLabel=d=>{ const p=(d&&d.prefectures)||[]; return p.length>3 ? p.slice(0,2).join('・')+` ほか${p.length-2}` : p.join('・'); };
+
 // 公開日（管理者が承認した日時）。それより前に公開された記事は publishedAt が無いので最初の保存日で代用する。
 export const pubSec=d=>(d&&(d.publishedAt?.seconds||d.createdAt?.seconds))||0;
 export const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -272,7 +290,8 @@ export function fmtPeriod(s,e){
 
 export function buildTags(d){
   const tags=[];
-  const c=cinfo((d.countries||[])[0]); if(c) tags.push(c.jp);
+  if(isDomestic(d) && (d.prefectures||[]).length) (d.prefectures||[]).slice(0,3).forEach(p=>tags.push(p));
+  else { const c=cinfo((d.countries||[])[0]); if(c) tags.push(c.jp); }
   const dd=DAYS_OPT.find(x=>x.v===d.days_v); if(dd) tags.push(dd.l);
   const bb=BUDGETS.find(x=>x.v===d.budget); if(bb) tags.push(bb.l);
   (d.styles||[]).forEach(s=>{ const ss=STYLES.find(x=>x.v===s); if(ss) tags.push(ss.tag); });
@@ -342,7 +361,10 @@ export function renderArticleBody(d){
   const tags=buildTags(d);
   const pc=cinfo((d.countries||[])[0]);
   const allCountries=(d.countries||[]).map(v=>cinfo(v)).filter(Boolean);
-  const eyebrow=allCountries.length>1
+  const dom=isDomestic(d);
+  const eyebrow=dom
+    ?['Japan',prefLabel(d)].filter(Boolean).join(' · ')
+    :allCountries.length>1
     ?allCountries.map(c=>c.en).join(' · ')
     :pc?`${pc.en} · ${REGION_EN[pc.r]}`:'';
 
@@ -350,7 +372,7 @@ export function renderArticleBody(d){
   const heroImgs=heroUrls.map(u=>`    <img src="${esc(u)}" alt="${esc(d.title)}">`).join('\n');
   const heroDots=heroUrls.map(()=>'    <span></span>').join('\n');
 
-  const costMap={flight:'航空券',stay:'宿泊',food:'食費',transit:'交通',tour:'ツアー',sightseeing:'観光費',esim:'eSIM',souvenir:'お土産'};
+  const costMap={flight:dom?'移動':'航空券',stay:'宿泊',food:'食費',transit:dom?'現地の交通':'交通',tour:'ツアー',sightseeing:'観光費',esim:'eSIM',souvenir:'お土産'};
   const costs=d.costs||{};
   let costTotal=0; Object.values(costs).forEach(v=>costTotal+=Number(v||0));
   const costRows=COST_ITEMS.map(it=>`  <div class="cost-row">
@@ -382,23 +404,28 @@ export function renderArticleBody(d){
 
   const flights=d.flights||[];
   let flightTotal=0; flights.forEach(f=>flightTotal+=Number(f.price||0));
-  const flightRoutes=flights.map((f,i)=>`  <div class="flight-route">
-    <span class="flight-label">航路${i+1}</span>
+  // 国内旅行は「移動」として、区間ごとに手段（新幹線・夜行バスなど）も出す
+  const flightRoutes=flights.map((f,i)=>{
+    const mode=dom?moveLabel(f.mode||'plane'):'';
+    const sub=[mode,f.airline].filter(Boolean).join('・');
+    return `  <div class="flight-route">
+    <span class="flight-label">${dom?'区間':'航路'}${i+1}</span>
     <h3>${esc(f.route)}</h3>
-    <p>${esc(f.airline)}${f.price?`　${yen(f.price)}`:''}</p>
-  </div>`).join('\n\n');
+    <p>${esc(sub)}${f.price?`　${yen(f.price)}`:''}</p>
+  </div>`;
+  }).join('\n\n');
   const flightMeta=(d.flightWhen||d.flightSite)?`  <div class="flight-meta">
     ${d.flightWhen?`<div><span>予約時期</span><strong>${esc(d.flightWhen)}</strong></div>`:''}
     ${d.flightSite?`<div><span>予約サイト</span><strong>${esc(d.flightSite)}</strong></div>`:''}
   </div>`:'';
   const flightCard=flights.length?`<div class="info-card flight-card">
-  <h2>航空券</h2>
+  <h2>${dom?'移動':'航空券'}</h2>
 
 ${flightRoutes}
 
 ${flightMeta}
   <div class="cost-total">
-    <span>航空券合計</span>
+    <span>${dom?'移動合計':'航空券合計'}</span>
     <strong>${yen(flightTotal)}</strong>
   </div>
 </div>`:'';
@@ -434,7 +461,7 @@ ${timeline}
   const overviewItems=[
     {k:'cost',label:'費用内訳',card:costCard},
     ...(itineraryCard?[{k:'itinerary',label:'旅程',card:itineraryCard}]:[]),
-    ...(flightCard?[{k:'flight',label:'航空券',card:flightCard}]:[]),
+    ...(flightCard?[{k:'flight',label:dom?'移動':'航空券',card:flightCard}]:[]),
     ...(servicesCard?[{k:'services',label:'利用サービス',card:servicesCard}]:[]),
   ];
   const overviewTabs=overviewItems.map(it=>`    <button type="button" class="ov-tab" data-ov="${it.k}"><span>${it.label}</span></button>`).join('\n');
@@ -755,13 +782,15 @@ export function renderCard(d){
   const searchParts=[];
   ci.forEach(x=>{ searchParts.push(x.jp, x.en, REGION_JP[x.r]||'', REGION_EN[x.r]||''); });
   if(d.region) searchParts.push(REGION_JP[d.region]||d.region, REGION_EN[d.region]||'');
+  (d.prefectures||[]).forEach(p=>searchParts.push(p));
+  if(isDomestic(d)) searchParts.push('国内','国内旅行');
   searchParts.push(d.title||'', d.lead||'');
   (d.days||[]).forEach(day=>{ if(day&&day.summary) searchParts.push(day.summary); });
   const searchText=searchParts.filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
   return `  <a href="./articles/view.html?id=${esc(d.id)}"
      class="trip-card"
      data-id="${esc(d.id)}"
-     data-type="itinerary"
+     data-type="${isDomestic(d)?'domestic':'itinerary'}"
      data-country="${esc((d.countries||[]).join(' '))}"
      data-days="${esc(d.days_v||'')}"
      data-budget="${esc(budgetAttr||'')}"
@@ -774,7 +803,7 @@ export function renderCard(d){
       <img src="${esc(thumb)}" alt="" loading="lazy" decoding="async">
     </div>
     <div class="trip-content">
-      <p class="country">${esc(ci.length>3?ci.slice(0,2).map(x=>x.en).join(' · ')+` ほか${ci.length-2}か国`:(ci.length>1?ci.map(x=>x.en).join(' · '):c.en))}</p>
+      <p class="country">${esc(isDomestic(d)&&(d.prefectures||[]).length?'Japan · '+prefLabel(d):ci.length>3?ci.slice(0,2).map(x=>x.en).join(' · ')+` ほか${ci.length-2}か国`:(ci.length>1?ci.map(x=>x.en).join(' · '):c.en))}</p>
       <h3>${esc(d.title)}</h3>
       <p>${esc(String(d.lead||'').replace(/\n+/g,' '))}</p>
 

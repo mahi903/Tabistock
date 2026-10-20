@@ -431,7 +431,8 @@ a{color:inherit;text-decoration:none}
     <div class="rv"><p class="eyebrow">New Routes</p>
       <div class="routes-title"><h2>新着旅程</h2>
       <div class="kind-tabs" id="kindTabs" role="tablist" aria-label="記事の種類">
-        <button type="button" class="on" data-kind="trip" role="tab" aria-selected="true">旅程</button>
+        <button type="button" class="on" data-kind="trip" role="tab" aria-selected="true">海外</button>
+        <button type="button" data-kind="japan" role="tab" aria-selected="false">日本</button>
         <button type="button" data-kind="transit" role="tab" aria-selected="false">トランジット</button>
       </div></div>
     </div>
@@ -531,7 +532,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
   <script type="module">
     import { db } from "./firebase-config.js";
     import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { cinfo, BUDGETS, STYLES, esc, pubSec } from "./tabistock-render.js";
+    import { cinfo, BUDGETS, STYLES, esc, pubSec, isDomestic, prefLabel } from "./tabistock-render.js";
     try {
       const snap = await getDocs(query(collection(db, "articles"), where("status", "==", "published")));
       const docs = [];
@@ -574,7 +575,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
           // 後から差し込むタイルはスクロール演出の監視対象外なので、最初から表示状態(rv in)で入れる
           return `<a class="tile${sizeClass(i)} rv in" href="articles/view.html?id=${esc(d.id)}">`
             + `<img src="${esc(thumb)}" alt="${esc(c.jp || d.title || "")}" loading="lazy" decoding="async">`
-            + `<div class="tile-c"><span class="ctry">${esc((c.en || "").toUpperCase())}</span>`
+            + `<div class="tile-c"><span class="ctry">${esc(isDomestic(d) && (d.prefectures || []).length ? "JAPAN · " + prefLabel(d) : (c.en || "").toUpperCase())}</span>`
             + `<h3>${esc(titleOf(d))}</h3>`
             + `<div class="tg">${tags.map(t => `<span>${esc(t)}</span>`).join("")}</div></div></a>`;
         };
@@ -582,7 +583,8 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
         // ストーリー画像のように、写真の上に国名とタイトルを直接のせる
         const card = d => {
           const cs = (d.countries || []).map(v => (cinfo(v) || {}).en).filter(Boolean);
-          const ctry = cs.slice(0, 2).join(" · ") + (cs.length > 2 ? " …" : "");   // 周遊は2か国まで並べる
+          const ctry = isDomestic(d) && (d.prefectures || []).length ? "Japan · " + prefLabel(d)   // 国内は都道府県
+            : cs.slice(0, 2).join(" · ") + (cs.length > 2 ? " …" : "");   // 周遊は2か国まで並べる
           const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
           return `<a class="mcard" href="articles/view.html?id=${esc(d.id)}">`
             + `<div class="mc-img"><img src="${esc(thumb)}" alt="" loading="lazy" decoding="async"></div>`
@@ -591,14 +593,16 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
             + (d.authorNickname ? `<p class="mc-by">${esc(d.authorNickname)}</p>` : "")
             + `</div></a>`;
         };
-        // 旅程（本記事）とトランジットを切り替えて、それぞれ新着4件を出す
+        // 海外／日本（国内旅行）／トランジットを切り替えて、それぞれ新着4件を出す
         const isMobile = window.matchMedia("(max-width:860px)").matches;
         const more = document.getElementById("routesMore");
         const show = kind => {
-          const latest = sorted.filter(d => (d.type === "transit") === (kind === "transit")).slice(0, 4);
-          if (more) more.href = kind === "transit" ? "search.html?style=transit" : "search.html";
+          const kindOf = d => d.type === "transit" ? "transit" : (isDomestic(d) ? "japan" : "trip");
+          const latest = sorted.filter(d => kindOf(d) === kind).slice(0, 4);
+          if (more) more.href = kind === "transit" ? "search.html?style=transit" : kind === "japan" ? "search.html?country=japan" : "search.html";
           if (!latest.length) {
-            bento.innerHTML = `<p class="routes-msg">まだ公開された${kind === "transit" ? "トランジット記事" : "旅程"}はありません。</p>`;
+            bento.classList.remove("mgrid");
+            bento.innerHTML = `<p class="routes-msg">まだ公開された${kind === "transit" ? "トランジット記事" : kind === "japan" ? "国内の旅程" : "旅程"}はありません。</p>`;
           } else if (isMobile) {
             bento.classList.add("mgrid");
             bento.innerHTML = latest.map(card).join("");

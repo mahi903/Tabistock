@@ -754,7 +754,8 @@
         <div class="results-head-top">
           <p class="results-count" id="resultsCount"></p>
           <div class="kind-tabs" id="kindTabs" hidden>
-            <a href="search.html" data-kind="trip">旅程</a>
+            <a href="search.html" data-kind="trip">海外</a>
+            <a href="search.html?country=japan" data-kind="japan">日本</a>
             <a href="search.html?style=transit" data-kind="transit">トランジット</a>
           </div>
           <label class="sort-box">並び替え
@@ -863,6 +864,10 @@ function runSearchFilter(){
     if (card.dataset.type === "transit" && !wantTransit && !keyword) {
       isMatch = false;
     }
+    // 国内旅行（日本だけの旅）は「日本」でまとめる。日本を選んだとき・キーワード検索時だけ出す
+    if (card.dataset.type === "domestic" && !(filters.country || []).includes("japan") && !keyword) {
+      isMatch = false;
+    }
 
     // 国と地域は「場所」としてまとめて判定する（どれか1つに当てはまればOK）。
     // 別々に判定すると「モンゴル」と「東南アジア」を選んだときにモンゴルの旅が「東南アジアではない」で消えてしまう
@@ -942,16 +947,20 @@ if (filter === "budget") {
     // 絞り込みなし（またはトランジットだけ）のときは「旅程｜トランジット」の切り替えを出す
     const keys = [...params.keys()].filter(k => known.includes(k));
     const onlyTransit = keys.length === 1 && params.getAll("style").join() === "transit";
+    const onlyJapan = keys.length === 1 && params.getAll("country").join() === "japan";
     const kindTabs = document.getElementById("kindTabs");
-    if (kindTabs && (!hasAny || onlyTransit)) {
+    if (kindTabs && (!hasAny || onlyTransit || onlyJapan)) {
       kindTabs.hidden = false;
-      kindTabs.querySelectorAll("a").forEach(a => a.classList.toggle("on", (a.dataset.kind === "transit") === onlyTransit));
+      const cur = onlyTransit ? "transit" : onlyJapan ? "japan" : "trip";
+      kindTabs.querySelectorAll("a").forEach(a => a.classList.toggle("on", a.dataset.kind === cur));
     }
     if (countEl) countEl.textContent = onlyTransit
       ? `すべてのトランジット：${visibleCount}件`
+      : onlyJapan
+      ? `日本の旅程：${visibleCount}件`
       : hasAny
       ? `条件に合う旅程：${visibleCount}件`
-      : `すべての旅程：${visibleCount}件`;
+      : `海外の旅程：${visibleCount}件`;
 
     // active-filter chips (each links to a state with that one condition removed)
     const wrap = document.getElementById("activeFilters");
