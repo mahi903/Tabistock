@@ -90,6 +90,8 @@
   .psheet-body .chip input{ width:20px; height:20px; accent-color:var(--green); }
   .psheet-body .chip.on{ background:none; color:var(--green-d); }
   .psheet-body input[type=text]{ margin-top:12px !important; }
+  .pk-sub{ margin:16px 0 2px; font-size:12px; font-weight:800; color:var(--green-d); letter-spacing:.04em; }
+  .psheet-body .pk-sub:first-child{ margin-top:8px; }
   .sub{ border:1px dashed #d9d2c4; border-radius:10px; padding:10px; margin:8px 0; position:relative; background:#fcfaf5; }
   .sub .del{ position:absolute; top:8px; right:8px; border:none; background:#f1e7d6; color:#7a6a4f; border-radius:8px; padding:3px 9px; font-size:12px; cursor:pointer; }
   .sub .dtools{ position:absolute; top:8px; right:8px; display:flex; gap:4px; }
@@ -102,6 +104,12 @@
   .dom-only{ display:none !important; }
   body.is-dom .dom-only{ display:revert !important; }
   body.is-dom .intl-only{ display:none !important; }
+  .mv-only{ display:none !important; }
+  body.is-move .mv-only{ display:revert !important; }
+  body.is-move .fl-only{ display:none !important; }
+  .nfj{ display:flex; align-items:center; gap:8px; margin:14px 0 0; font-size:13.5px; font-weight:700; cursor:pointer; }
+  .nfj input{ margin-top:2px; }
+  .nfj small{ display:block; font-weight:500; color:#8a8f98; margin-top:2px; }
   #prefBox details{ margin:0 0 6px; }
   #prefBox summary{ font-size:13px; font-weight:700; color:var(--green-d); cursor:pointer; padding:4px 0; }
   .fl-mode{ width:100%; }
@@ -210,6 +218,7 @@
 
     <label class="f">旅スタイル（複数選択可）<span class="req">必須</span></label>
     <div class="chips" id="styleBox"></div>
+    <label class="nfj intl-only"><input type="checkbox" id="notFromJapan"><span>出発地が日本以外（留学先や世界一周中など）</span></label>
   </section>
 
   <!-- ===== 1. ヒーロー ===== -->
@@ -269,16 +278,16 @@
 
   <!-- ===== 3. 航空券 ===== -->
   <section class="card">
-    <h2><span class="num">3</span><span class="intl-only">航空券</span><span class="dom-only">移動</span></h2>
-    <p class="hint intl-only">周遊で複数回取った場合は「航路を追加」で増やせます。合計は自動計算。</p>
-    <p class="hint dom-only">行きと帰り、途中の移動など、区間ごとに手段（新幹線・夜行バスなど）と値段を書けます。合計は自動計算。</p>
+    <h2><span class="num">3</span><span class="fl-only">航空券</span><span class="mv-only">移動</span></h2>
+    <p class="hint fl-only">周遊で複数回取った場合は「航路を追加」で増やせます。合計は自動計算。</p>
+    <p class="hint mv-only">行きと帰り、途中の移動など、区間ごとに手段（新幹線・夜行バスなど）と値段を書けます。合計は自動計算。</p>
     <div id="flightList"></div>
-    <button class="addbtn" id="addFlight" type="button">＋ <span class="intl-only">航路</span><span class="dom-only">区間</span>を追加</button>
+    <button class="addbtn" id="addFlight" type="button">＋ <span class="fl-only">航路</span><span class="mv-only">区間</span>を追加</button>
     <div class="row2" style="margin-top:14px">
-      <div><label class="f">予約時期<span class="req intl-only">必須</span><span class="opt dom-only">任意</span></label><input type="text" id="flightWhen" placeholder="例：出発の2ヶ月前"></div>
-      <div><label class="f">予約サイト<span class="req intl-only">必須</span><span class="opt dom-only">任意</span></label><input type="text" id="flightSite" placeholder="例：Trip.com"></div>
+      <div><label class="f">予約時期<span class="req fl-only">必須</span><span class="opt mv-only">任意</span></label><input type="text" id="flightWhen" placeholder="例：出発の2ヶ月前"></div>
+      <div><label class="f">予約サイト<span class="req fl-only">必須</span><span class="opt mv-only">任意</span></label><input type="text" id="flightSite" placeholder="例：Trip.com"></div>
     </div>
-    <div class="total"><span><span class="intl-only">航空券合計</span><span class="dom-only">移動合計</span></span><b id="flightTotal">¥0</b></div>
+    <div class="total"><span><span class="fl-only">航空券合計</span><span class="mv-only">移動合計</span></span><b id="flightTotal">¥0</b></div>
   </section>
 
   <!-- ===== 4. 利用サービス ===== -->
@@ -572,7 +581,8 @@ const STYLES=[
   {v:'solo',l:'1人旅',tag:'ひとり旅'},{v:'friends',l:'友達と',tag:'友達旅'},{v:'family',l:'家族と',tag:'家族旅'},
   {v:'backpacker',l:'バックパッカー',tag:'バックパッカー'},{v:'girls',l:'女子旅',tag:'女子旅'},{v:'couple',l:'カップル',tag:'カップル'},
   {v:'nature',l:'自然・絶景',tag:'自然旅'},{v:'city',l:'都市・街歩き',tag:'街歩き'},{v:'local',l:'現地体験',tag:'現地体験'},{v:'round-trip',l:'周遊',tag:'周遊'},
-  {v:'bicycle',l:'自転車旅',tag:'自転車旅'},{v:'train',l:'電車旅',tag:'電車旅'}
+  {v:'bicycle',l:'自転車旅',tag:'自転車旅'},{v:'train',l:'電車旅',tag:'電車旅'},
+  {v:'study-abroad',l:'留学中',tag:'留学中の旅'},{v:'world-trip',l:'世界一周中',tag:'世界一周'}
 ];
 const COST_ITEMS=[
   {k:'flight',l:'航空券'},{k:'stay',l:'宿泊'},{k:'food',l:'食費'},{k:'transit',l:'交通'},
@@ -671,7 +681,10 @@ $('budget').selectedIndex=0; $('days').selectedIndex=0;
 $('budget').addEventListener('change',updateMeta);
 $('days').addEventListener('change',updateMeta);
 // スタイル
+// 検索のスタイル欄と同じく「誰と行くか」「旅のスタイル」に分けて並べる
+const STYLE_HEADS={solo:'誰と行くか',nature:'旅のスタイル'};
 STYLES.forEach(s=>{
+  if(STYLE_HEADS[s.v]){ const h=document.createElement('p'); h.className='pk-sub'; h.textContent=STYLE_HEADS[s.v]; $('styleBox').appendChild(h); }
   const lab=document.createElement('label'); lab.className='chip';
   lab.innerHTML=`<input type="checkbox" name="style" value="${s.v}"> ${s.l}`;
   const cb=lab.querySelector('input');
@@ -692,6 +705,10 @@ const MOVE_MODES=[
   {v:'bus',l:'高速バス'},{v:'ferry',l:'フェリー'},{v:'car',l:'車・レンタカー'},{v:'hitchhike',l:'ヒッチハイク'},{v:'bicycle',l:'自転車'},{v:'other',l:'その他'}
 ];
 function isDomForm(){ const cs=selectedCountries(); return cs.length>0 && cs.every(v=>v==='japan'); }
+// 日本からの往復ではない旅（留学先・旅の途中から）。国内旅行のときは使わない
+function isNotFromJapan(){ const cb=$('notFromJapan'); return !isDomForm() && !!(cb && cb.checked); }
+// ③を「移動」（手段つき・予約は任意）で書くか
+function isMoveForm(){ return isDomForm() || isNotFromJapan(); }
 function selectedPrefs(){ return [...document.querySelectorAll('input[name=pref]:checked')].map(c=>c.value); }
 (function(){
   const box=$('prefBox');
@@ -734,24 +751,43 @@ const EX_DOM=[
   ['input[data-svc-other="4"]','その他（自由入力・例：Suica／楽天ペイ）'],
   ['input[data-svc-other="5"]','その他（自由入力・例：観光案内所）'],
 ];
+// 「日本からの往復ではない」（留学先・旅の途中から）ときの例
+const EX_LOCAL={
+  '#title':'例：ベルギー留学中にヘルシンキ3泊｜学生ひとり旅',
+  '#lead':'例：ブリュッセルから格安便で。冬のフィンランドをサウナ巡り',
+  '#flightWhen':'例：出発の3週間前',
+  '#flightSite':'例：Skyscanner／Omio',
+  '#comment':'例：ヨーロッパ内はLCCとバスで安く動ける。預け荷物の追加料金には要注意…',
+  '.fl-from':'出発地（例：ブリュッセル）',
+  '.fl-to':'到着地（例：ヘルシンキ）',
+  '.fl-transit':'例：コペンハーゲン（複数は「、」で区切り）',
+  '.fl-air':'例：Ryanair／FlixBus',
+  '.d-sum':'例：ブリュッセルから飛行機でヘルシンキへ',
+  '.d-text':'例：朝の便でヘルシンキへ。空港から市内は電車で30分…',
+};
 function applyExamples(root){
-  const dom=isDomForm();
+  const dom=isDomForm(), local=isNotFromJapan();
   EX_DOM.forEach(([sel,txt])=>{
     (root||document).querySelectorAll(sel).forEach(el=>{
       if(el.dataset.phIntl===undefined) el.dataset.phIntl=el.placeholder||'';
-      el.placeholder = dom ? txt : el.dataset.phIntl;
+      el.placeholder = dom ? txt : (local && EX_LOCAL[sel]) ? EX_LOCAL[sel] : el.dataset.phIntl;
     });
   });
 }
 // 国が変わるたびに、国内用の表示（都道府県・移動・入力例）に切り替える
 function updateDomestic(){
-  const dom=isDomForm();
+  const dom=isDomForm(), move=isMoveForm();
   document.body.classList.toggle('is-dom',dom);
+  document.body.classList.toggle('is-move',move);
   applyExamples();
-  const fl=document.querySelector('[data-cost-label="flight"]'); if(fl) fl.textContent=dom?'移動':'航空券';
-  const tr=document.querySelector('[data-cost-label="transit"]'); if(tr) tr.textContent=dom?'現地の交通':'交通';
+  const fl=document.querySelector('[data-cost-label="flight"]'); if(fl) fl.textContent=move?'移動':'航空券';
+  const tr=document.querySelector('[data-cost-label="transit"]'); if(tr) tr.textContent=move?'現地の交通':'交通';
   if(typeof renumberFlights==='function') renumberFlights();
+  // まだ選び直していない区間の手段は、国内なら新幹線、それ以外は飛行機にそろえる
+  document.querySelectorAll('.fl-mode').forEach(sel=>{ if(!sel.dataset.touched) sel.value=dom?'shinkansen':'plane'; });
 }
+
+$('notFromJapan').addEventListener('change',updateDomestic);
 
 // 費用
 COST_ITEMS.forEach(it=>{
@@ -773,7 +809,7 @@ function addFlight(data){
   const wrap=document.createElement('div'); wrap.className='sub'; wrap.dataset.flight='1';
   wrap.innerHTML=`<button class="del" type="button">削除</button>
     <h4>航路 ${flightN}</h4>
-    <div class="dom-only" style="margin:0 0 8px">
+    <div class="mv-only" style="margin:0 0 8px">
       <label class="f">手段</label>
       <select class="fl-mode">${MOVE_MODES.map(m=>`<option value="${m.v}">${m.l}</option>`).join('')}</select>
     </div>
@@ -790,7 +826,7 @@ function addFlight(data){
     <label class="f" style="margin-top:8px">乗換<span class="opt">任意</span></label>
     <input type="text" class="fl-transit" placeholder="例：ソウル（複数は「、」で区切り）">
     <div class="row2" style="margin-top:8px">
-      <div class="ac-wrap"><label class="f"><span class="intl-only">航空会社</span><span class="dom-only">会社・便名</span><span class="opt">任意</span></label><input type="text" class="fl-air" autocomplete="off" placeholder="例：ANA／エミレーツ（入力で候補）"></div>
+      <div class="ac-wrap"><label class="f"><span class="fl-only">航空会社</span><span class="mv-only">会社・便名</span><span class="opt">任意</span></label><input type="text" class="fl-air" autocomplete="off" placeholder="例：ANA／エミレーツ（入力で候補）"></div>
       <div><label class="f">値段（円）</label><input type="number" class="fl-price" min="0" step="1000" placeholder="0"></div>
     </div>`;
   const arrow=wrap.querySelector('.route-arrow');
@@ -802,10 +838,12 @@ function addFlight(data){
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); calcFlight(); renumberFlights(); });
   wrap.querySelector('.fl-price').addEventListener('input',calcFlight);
   attachAirlineAC(wrap.querySelector('.fl-air'));
-  // 国内の移動は新幹線を最初の選択にする（海外は手段を使わず、常に飛行機として保存）
-  wrap.querySelector('.fl-mode').value='shinkansen';
+  // 最初の選択：国内は新幹線、留学先・旅の途中からは飛行機（日本からの往復は手段を使わず、常に飛行機として保存）
+  const modeSel=wrap.querySelector('.fl-mode');
+  modeSel.value=isDomForm()?'shinkansen':'plane';
+  modeSel.addEventListener('change',()=>{ modeSel.dataset.touched='1'; });
   if(data){
-    if(data.mode) wrap.querySelector('.fl-mode').value=data.mode;
+    if(data.mode){ modeSel.value=data.mode; modeSel.dataset.touched='1'; }
     wrap.querySelector('.fl-air').value=data.airline||'';
     wrap.querySelector('.fl-price').value=data.price||'';
     let from=data.from||'', to=data.to||'', trip=data.trip||'', transit=data.transit||'';
@@ -822,7 +860,7 @@ function addFlight(data){
   $('flightList').appendChild(wrap); renumberFlights(); calcFlight();
   if(typeof applyExamples==='function' && typeof EX_DOM!=='undefined') applyExamples(wrap);
 }
-function renumberFlights(){ const w=isDomForm()?'区間 ':'航路 '; let n=0; document.querySelectorAll('[data-flight] h4').forEach(h=>{n++;h.textContent=w+n;}); flightN=n; }
+function renumberFlights(){ const w=isMoveForm()?'区間 ':'航路 '; let n=0; document.querySelectorAll('[data-flight] h4').forEach(h=>{n++;h.textContent=w+n;}); flightN=n; }
 function calcFlight(){ let t=0; document.querySelectorAll('.fl-price').forEach(i=>t+=Number(i.value||0)); $('flightTotal').textContent=yen(t); return t; }
 $('addFlight').addEventListener('click',()=>addFlight());
 addFlight();
@@ -1408,7 +1446,7 @@ async function gather(){
     const route=seq.length?seq.join(` ${arrow} `):'';
     const airline=w.querySelector('.fl-air').value.trim();
     const price=Number(w.querySelector('.fl-price').value||0);
-    const mode=isDomForm()?w.querySelector('.fl-mode').value:'plane';   // 海外は飛行機（航空券）
+    const mode=isMoveForm()?w.querySelector('.fl-mode').value:'plane';   // 日本からの往復は飛行機（航空券）
     if(from||to||transit||airline||price) flights.push({route,from,to,transit,trip,airline,price,mode});
   });
   const services=[];
@@ -1422,7 +1460,7 @@ async function gather(){
   const author=$('author').value.trim()||'mahiro';
   return {
     author,
-    countries:cs, region:primaryRegion(), prefectures:isDomForm()?selectedPrefs():[],
+    countries:cs, region:primaryRegion(), prefectures:isDomForm()?selectedPrefs():[], notFromJapan:isNotFromJapan(),
     budget:$('budget').value, days_v:$('days').value, styles:selectedStyles(),
     title:$('title').value.trim(), lead:$('lead').value.trim(),
     dateStart:$('dateStart').value, dateEnd:$('dateEnd').value,
@@ -1446,6 +1484,9 @@ function validate(d){
   if(isDomForm()){
     // 国内旅行：都道府県は必須。移動は1区間あればOK、予約時期・サイトは任意
     if(!d.prefectures.length) e.push('都道府県');
+    if(!d.flights.length) e.push('移動（最低1区間）');
+  }else if(isNotFromJapan()){
+    // 留学先・旅の途中から：移動は1区間あればOK、予約時期・サイトは任意
     if(!d.flights.length) e.push('移動（最低1区間）');
   }else{
     if(!d.flights.length) e.push('航空券（最低1航路）');
@@ -1820,7 +1861,7 @@ window.populateForm = function(d){
   if(d.budget){$('budget').value=d.budget;} if(d.days_v){$('days').value=d.days_v;}
   document.querySelectorAll('input[name=country]').forEach(c=>{ c.checked=(d.countries||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
   countryOrder=(d.countries||[]).filter(v=>countryCb(v)); renderCountrySel();
-  setPrefs(d.prefectures||[]); updateDomestic();
+  setPrefs(d.prefectures||[]); $('notFromJapan').checked=!!d.notFromJapan; updateDomestic();
   document.querySelectorAll('input[name=style]').forEach(c=>{ c.checked=(d.styles||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
   if(d.costs) document.querySelectorAll('[data-cost]').forEach(i=>i.value=d.costs[i.dataset.cost]||'');
   calcCost();
@@ -2082,6 +2123,8 @@ const HEADER_HTML = `  <header class="hd" id="hd">
         <option value="round-trip">周遊</option>
         <option value="bicycle">自転車旅</option>
         <option value="train">電車旅</option>
+        <option value="study-abroad">留学中</option>
+        <option value="world-trip">世界一周中</option>
       </select>
     </label>
   </div>
@@ -2313,6 +2356,8 @@ const HEADER_HTML = `  <header class="hd" id="hd">
         <option value="round-trip">周遊</option>
         <option value="bicycle">自転車旅</option>
         <option value="train">電車旅</option>
+        <option value="study-abroad">留学中</option>
+        <option value="world-trip">世界一周中</option>
       </optgroup>
     </select>
 
@@ -2661,7 +2706,7 @@ window.tabistockSubmit = async function(d, st, mode){
     // 公開日は承認時に admin.html が入れる。編集で消えないよう引き継ぐ
     ...((editId && window.tabistockEditPublishedAt) ? { publishedAt: window.tabistockEditPublishedAt } : {}),
     updatedAt: serverTimestamp(),
-    countries: d.countries, region: d.region, prefectures: d.prefectures || [],
+    countries: d.countries, region: d.region, prefectures: d.prefectures || [], notFromJapan: !!d.notFromJapan,
     budget: d.budget, days_v: d.days_v, styles: d.styles,
     title: d.title, lead: d.lead,
     dateStart: d.dateStart, dateEnd: d.dateEnd,
@@ -2796,7 +2841,7 @@ onAuthStateChanged(auth, async (user) => {
       window.tabistockEditPublishedAt = data.publishedAt || null;
       window.populateForm({
         author: data.authorNickname || nick,
-        countries: data.countries || [], region: data.region || "", prefectures: derivePrefs(data),
+        countries: data.countries || [], region: data.region || "", prefectures: derivePrefs(data), notFromJapan: !!data.notFromJapan,
         budget: data.budget || "", days_v: data.days_v || "", styles: data.styles || [],
         title: data.title || "", lead: data.lead || "",
         dateStart: data.dateStart || "", dateEnd: data.dateEnd || "",

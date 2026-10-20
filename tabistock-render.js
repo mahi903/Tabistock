@@ -245,6 +245,7 @@ export const STYLES=[
   {v:'backpacker',l:'バックパッカー',tag:'バックパッカー'},{v:'girls',l:'女子旅',tag:'女子旅'},{v:'couple',l:'カップル',tag:'カップル'},
   {v:'nature',l:'自然・絶景',tag:'自然旅'},{v:'city',l:'都市・街歩き',tag:'街歩き'},{v:'local',l:'現地体験',tag:'現地体験'},{v:'round-trip',l:'周遊',tag:'周遊'},
   {v:'bicycle',l:'自転車旅',tag:'自転車旅'},{v:'train',l:'電車旅',tag:'電車旅'},
+  {v:'study-abroad',l:'留学中',tag:'留学中の旅'},{v:'world-trip',l:'世界一周中',tag:'世界一周'},
   // トランジットは特別スタイル（投稿フォームの選択肢には出さず、トランジット記事に自動付与）
   {v:'transit',l:'トランジット',tag:'トランジット'}
 ];
@@ -364,6 +365,8 @@ export function renderArticleBody(d){
   const pc=cinfo((d.countries||[])[0]);
   const allCountries=(d.countries||[]).map(v=>cinfo(v)).filter(Boolean);
   const dom=isDomestic(d);
+  // 「移動」として見せる旅：国内旅行、または日本からの往復ではない旅（留学先・旅の途中から）
+  const mv=dom||!!d.notFromJapan;
   const eyebrow=dom
     ?['Japan',prefLabel(d)].filter(Boolean).join(' · ')
     :allCountries.length>1
@@ -374,7 +377,7 @@ export function renderArticleBody(d){
   const heroImgs=heroUrls.map(u=>`    <img src="${esc(u)}" alt="${esc(d.title)}">`).join('\n');
   const heroDots=heroUrls.map(()=>'    <span></span>').join('\n');
 
-  const costMap={flight:dom?'移動':'航空券',stay:'宿泊',food:'食費',transit:dom?'現地の交通':'交通',tour:'ツアー',sightseeing:'観光費',esim:'eSIM',souvenir:'お土産'};
+  const costMap={flight:mv?'移動':'航空券',stay:'宿泊',food:'食費',transit:mv?'現地の交通':'交通',tour:'ツアー',sightseeing:'観光費',esim:'eSIM',souvenir:'お土産'};
   const costs=d.costs||{};
   let costTotal=0; Object.values(costs).forEach(v=>costTotal+=Number(v||0));
   const costRows=COST_ITEMS.map(it=>`  <div class="cost-row">
@@ -408,10 +411,10 @@ export function renderArticleBody(d){
   let flightTotal=0; flights.forEach(f=>flightTotal+=Number(f.price||0));
   // 国内旅行は「移動」として、区間ごとに手段（新幹線・夜行バスなど）も出す
   const flightRoutes=flights.map((f,i)=>{
-    const mode=dom?moveLabel(f.mode||'plane'):'';
+    const mode=mv?moveLabel(f.mode||'plane'):'';
     const sub=[mode,f.airline].filter(Boolean).join('・');
     return `  <div class="flight-route">
-    <span class="flight-label">${dom?'区間':'航路'}${i+1}</span>
+    <span class="flight-label">${mv?'区間':'航路'}${i+1}</span>
     <h3>${esc(f.route)}</h3>
     <p>${esc(sub)}${f.price?`　${yen(f.price)}`:''}</p>
   </div>`;
@@ -421,13 +424,13 @@ export function renderArticleBody(d){
     ${d.flightSite?`<div><span>予約サイト</span><strong>${esc(d.flightSite)}</strong></div>`:''}
   </div>`:'';
   const flightCard=flights.length?`<div class="info-card flight-card">
-  <h2>${dom?'移動':'航空券'}</h2>
+  <h2>${mv?'移動':'航空券'}</h2>
 
 ${flightRoutes}
 
 ${flightMeta}
   <div class="cost-total">
-    <span>${dom?'移動合計':'航空券合計'}</span>
+    <span>${mv?'移動合計':'航空券合計'}</span>
     <strong>${yen(flightTotal)}</strong>
   </div>
 </div>`:'';
@@ -463,7 +466,7 @@ ${timeline}
   const overviewItems=[
     {k:'cost',label:'費用内訳',card:costCard},
     ...(itineraryCard?[{k:'itinerary',label:'旅程',card:itineraryCard}]:[]),
-    ...(flightCard?[{k:'flight',label:dom?'移動':'航空券',card:flightCard}]:[]),
+    ...(flightCard?[{k:'flight',label:mv?'移動':'航空券',card:flightCard}]:[]),
     ...(servicesCard?[{k:'services',label:'利用サービス',card:servicesCard}]:[]),
   ];
   const overviewTabs=overviewItems.map(it=>`    <button type="button" class="ov-tab" data-ov="${it.k}"><span>${it.label}</span></button>`).join('\n');
