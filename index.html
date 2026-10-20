@@ -317,6 +317,14 @@ a{color:inherit;text-decoration:none}
   .routes-title{margin-top:4px;gap:16px}
   .routes-head .eyebrow{font-size:10.5px}
   .routes-head .more{font-size:13px}
+  /* 「すべて見る」は「新着旅程」と同じ行の右端に。切り替え（海外／日本／トランジット）と重ならないよう少し小さく */
+  .routes-head{flex-wrap:nowrap;align-items:flex-end}
+  .routes-head > .rv:first-child{min-width:0}
+  .routes-title{gap:12px;flex-wrap:nowrap}
+  .routes-head .more{font-size:11.5px;white-space:nowrap;flex:none;gap:4px;padding-bottom:7px}
+  .routes-head h2,.kind-tabs button{white-space:nowrap}
+  @media(max-width:374px){.routes-head h2{font-size:20px}.routes-title{gap:8px}.kind-tabs button{font-size:10.5px}.kind-tabs button+button::before{margin:0 5px}.routes-head .more{font-size:10.5px;padding-bottom:6px}}
+  @media(max-width:340px){.routes-head h2{font-size:18px}.routes-title{gap:6px}.kind-tabs button{font-size:10px}.kind-tabs button+button::before{margin:0 4px}.routes-head .more{font-size:10px}}
   .hero-bg{height:110%;top:-5%}
   .scroll-cue{display:none}
 }

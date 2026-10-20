@@ -233,6 +233,7 @@
       </div>
     </div>
 
+    <div class="intl-only">
     <label class="f">治安<span class="req">必須</span></label>
     <select id="safety">
       <option value="">選択してください</option>
@@ -242,6 +243,7 @@
       <option value="やや注意が必要">やや注意が必要</option>
       <option value="注意が必要">注意が必要</option>
     </select>
+    </div>
 
     <label class="f">旅の難易度<span class="req">必須</span></label>
     <div class="stars" id="stars">
@@ -686,7 +688,7 @@ const PREF_GROUPS=[
   {r:'九州・沖縄',list:['福岡','佐賀','長崎','熊本','大分','宮崎','鹿児島','沖縄']}
 ];
 const MOVE_MODES=[
-  {v:'plane',l:'飛行機'},{v:'shinkansen',l:'新幹線'},{v:'train',l:'電車'},{v:'nightbus',l:'夜行バス'},
+  {v:'shinkansen',l:'新幹線'},{v:'train',l:'電車'},{v:'plane',l:'飛行機'},{v:'nightbus',l:'夜行バス'},
   {v:'bus',l:'高速バス'},{v:'ferry',l:'フェリー'},{v:'car',l:'車・レンタカー'},{v:'hitchhike',l:'ヒッチハイク'},{v:'bicycle',l:'自転車'},{v:'other',l:'その他'}
 ];
 function isDomForm(){ const cs=selectedCountries(); return cs.length>0 && cs.every(v=>v==='japan'); }
@@ -1424,7 +1426,7 @@ async function gather(){
     budget:$('budget').value, days_v:$('days').value, styles:selectedStyles(),
     title:$('title').value.trim(), lead:$('lead').value.trim(),
     dateStart:$('dateStart').value, dateEnd:$('dateEnd').value,
-    currency:autoCurrency(), language:autoLanguage(), safety:$('safety').value.trim(),
+    currency:isDomForm()?'':autoCurrency(), language:isDomForm()?'':autoLanguage(), safety:isDomForm()?'':$('safety').value.trim(),
     difficulty,
     costs, flights, flightWhen:$('flightWhen').value.trim(), flightSite:$('flightSite').value.trim(),
     services, days, comment:$('comment').value.trim(),
@@ -1440,7 +1442,7 @@ function validate(d){
   if(!d.budget) e.push('予算'); if(!d.days_v) e.push('日数'); if(!d.styles.length) e.push('旅スタイル');
   if(!d.title) e.push('タイトル'); if(!d.lead) e.push('リード文');
   if(!d.dateStart||!d.dateEnd) e.push('旅行時期');
-  if(!d.safety) e.push('治安');
+  if(!d.safety && !isDomForm()) e.push('治安');   // 国内旅行は通貨・言語・治安を出さない
   if(isDomForm()){
     // 国内旅行：都道府県は必須。移動は1区間あればOK、予約時期・サイトは任意
     if(!d.prefectures.length) e.push('都道府県');

@@ -263,7 +263,7 @@ export const PREF_GROUPS=[
   {r:'九州・沖縄',list:['福岡','佐賀','長崎','熊本','大分','宮崎','鹿児島','沖縄']}
 ];
 export const MOVE_MODES=[
-  {v:'plane',l:'飛行機'},{v:'shinkansen',l:'新幹線'},{v:'train',l:'電車'},{v:'nightbus',l:'夜行バス'},
+  {v:'shinkansen',l:'新幹線'},{v:'train',l:'電車'},{v:'plane',l:'飛行機'},{v:'nightbus',l:'夜行バス'},
   {v:'bus',l:'高速バス'},{v:'ferry',l:'フェリー'},{v:'car',l:'車・レンタカー'},{v:'hitchhike',l:'ヒッチハイク'},{v:'bicycle',l:'自転車'},{v:'other',l:'その他'}
 ];
 export const moveLabel=v=>(MOVE_MODES.find(m=>m.v===v)||{}).l||'';
@@ -534,11 +534,11 @@ ${heroDots}
     <p class="hero-lead">
       ${para(d.lead)}
     </p>
-     <div class="hero-basic-info">
+     ${dom?'':`<div class="hero-basic-info">
   <div><span>通貨</span><strong>${esc(d.currency)}</strong></div>
   <div><span>言語</span><strong>${esc(d.language)}</strong></div>
   <div><span>治安</span><strong>${esc(d.safety)}</strong></div>
-</div>
+</div>`}
 <div class="hero-info">
       <div><span>旅行時期</span><strong>${esc(period)}</strong></div>
       <div><span>旅の難易度</span><strong>${stars}</strong></div>
