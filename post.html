@@ -2517,7 +2517,7 @@ import { auth, db, storage } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { COUNTRY_LL, esc } from "./tabistock-render.js";
+import { COUNTRY_LL, esc, derivePrefs } from "./tabistock-render.js";
 import { showPostThanks } from "./post-thanks.js";
 
 // 確認用：post.html?thanks=preview で、投稿せずに「ありがとう」演出だけを流す（記事は作られない）
@@ -2796,7 +2796,8 @@ onAuthStateChanged(auth, async (user) => {
       window.tabistockEditPublishedAt = data.publishedAt || null;
       window.populateForm({
         author: data.authorNickname || nick,
-        countries: data.countries || [], region: data.region || "", prefectures: data.prefectures || [],
+        // 都道府県の欄ができる前の国内の記事は、記事の文章から読み取った都道府県を入れておく（保存すると記事に残る）
+        countries: data.countries || [], region: data.region || "", prefectures: derivePrefs(data),
         budget: data.budget || "", days_v: data.days_v || "", styles: data.styles || [],
         title: data.title || "", lead: data.lead || "",
         dateStart: data.dateStart || "", dateEnd: data.dateEnd || "",

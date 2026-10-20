@@ -268,8 +268,31 @@ export const MOVE_MODES=[
 ];
 export const moveLabel=v=>(MOVE_MODES.find(m=>m.v===v)||{}).l||'';
 export const isDomestic=d=>{ const c=(d&&d.countries)||[]; return c.length>0 && c.every(v=>v==='japan'); };
+// 都道府県が入っていない国内の記事（都道府県の欄ができる前の記事）は、記事の文章から読み取る。
+// 都道府県名に加えて、よく出てくる地名も都道府県に置き換える。「東京から」「大阪発」のような出発地は数えない
+const CITY_PREF={'札幌':'北海道','函館':'北海道','小樽':'北海道','旭川':'北海道','富良野':'北海道','仙台':'宮城','松島':'宮城','横浜':'神奈川','鎌倉':'神奈川','箱根':'神奈川',
+  '名古屋':'愛知','金沢':'石川','神戸':'兵庫','姫路':'兵庫','博多':'福岡','那覇':'沖縄','石垣':'沖縄','宮古島':'沖縄','伊勢':'三重','軽井沢':'長野','日光':'栃木','草津':'群馬',
+  '熱海':'静岡','白川郷':'岐阜','飛騨':'岐阜','倉敷':'岡山','宮島':'広島','尾道':'広島','道後':'愛媛','松山':'愛媛','別府':'大分','湯布院':'大分','由布院':'大分','屋久島':'鹿児島','嵐山':'京都','祇園':'京都','奈良公園':'奈良','白浜':'和歌山','高野山':'和歌山'};
+export function derivePrefs(d){
+  if(!d) return [];
+  if((d.prefectures||[]).length) return d.prefectures;
+  if(!isDomestic(d)) return [];
+  const parts=[d.title,d.lead,...(d.days||[]).flatMap(x=>[x&&x.summary,x&&x.text,...((x&&x.places)||[]).map(p=>p&&p.name)])];
+  const text=parts.filter(Boolean).join(' ').replace(/東京都/g,'東京');
+  const found=[];
+  const add=pref=>{ if(!found.includes(pref)) found.push(pref); };
+  const scan=(word,pref)=>{
+    const re=new RegExp(word+'(?!から|発|出発)','g');
+    if(re.test(text)) add(pref);
+  };
+  PREF_GROUPS.forEach(g=>g.list.forEach(p=>scan(p,p)));
+  Object.entries(CITY_PREF).forEach(([w,p])=>scan(w,p));
+  // 47都道府県の並び順にそろえる
+  const order=PREF_GROUPS.flatMap(g=>g.list);
+  return found.sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+}
 // カードや見出しに出す都道府県（3つ以上は「ほか」でまとめる）
-export const prefLabel=d=>{ const p=(d&&d.prefectures)||[]; return p.length>3 ? p.slice(0,2).join('・')+` ほか${p.length-2}` : p.join('・'); };
+export const prefLabel=d=>{ const p=derivePrefs(d); return p.length>3 ? p.slice(0,2).join('・')+` ほか${p.length-2}` : p.join('・'); };
 
 // 公開日（管理者が承認した日時）。それより前に公開された記事は publishedAt が無いので最初の保存日で代用する。
 export const pubSec=d=>(d&&(d.publishedAt?.seconds||d.createdAt?.seconds))||0;
@@ -290,7 +313,7 @@ export function fmtPeriod(s,e){
 
 export function buildTags(d){
   const tags=[];
-  if(isDomestic(d) && (d.prefectures||[]).length) (d.prefectures||[]).slice(0,3).forEach(p=>tags.push(p));
+  if(isDomestic(d) && derivePrefs(d).length) derivePrefs(d).slice(0,3).forEach(p=>tags.push(p));
   else { const c=cinfo((d.countries||[])[0]); if(c) tags.push(c.jp); }
   const dd=DAYS_OPT.find(x=>x.v===d.days_v); if(dd) tags.push(dd.l);
   const bb=BUDGETS.find(x=>x.v===d.budget); if(bb) tags.push(bb.l);
@@ -782,7 +805,7 @@ export function renderCard(d){
   const searchParts=[];
   ci.forEach(x=>{ searchParts.push(x.jp, x.en, REGION_JP[x.r]||'', REGION_EN[x.r]||''); });
   if(d.region) searchParts.push(REGION_JP[d.region]||d.region, REGION_EN[d.region]||'');
-  (d.prefectures||[]).forEach(p=>searchParts.push(p));
+  derivePrefs(d).forEach(p=>searchParts.push(p));
   if(isDomestic(d)) searchParts.push('国内','国内旅行');
   searchParts.push(d.title||'', d.lead||'');
   (d.days||[]).forEach(day=>{ if(day&&day.summary) searchParts.push(day.summary); });
@@ -796,6 +819,7 @@ export function renderCard(d){
      data-budget="${esc(budgetAttr||'')}"
      data-style="${esc((d.styles||[]).join(' '))}"
      data-region="${esc(regionsOf(d))}"
+     data-pref="${esc(derivePrefs(d).join(' '))}"
      data-search="${esc(searchText)}"
      data-created="${esc(String(pubSec(d)))}"
      data-likes="0">
@@ -803,7 +827,7 @@ export function renderCard(d){
       <img src="${esc(thumb)}" alt="" loading="lazy" decoding="async">
     </div>
     <div class="trip-content">
-      <p class="country">${esc(isDomestic(d)&&(d.prefectures||[]).length?'Japan · '+prefLabel(d):ci.length>3?ci.slice(0,2).map(x=>x.en).join(' · ')+` ほか${ci.length-2}か国`:(ci.length>1?ci.map(x=>x.en).join(' · '):c.en))}</p>
+      <p class="country">${esc(isDomestic(d)&&derivePrefs(d).length?'Japan · '+prefLabel(d):ci.length>3?ci.slice(0,2).map(x=>x.en).join(' · ')+` ほか${ci.length-2}か国`:(ci.length>1?ci.map(x=>x.en).join(' · '):c.en))}</p>
       <h3>${esc(d.title)}</h3>
       <p>${esc(String(d.lead||'').replace(/\n+/g,' '))}</p>
 

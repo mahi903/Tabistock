@@ -540,7 +540,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
   <script type="module">
     import { db } from "./firebase-config.js";
     import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { cinfo, BUDGETS, STYLES, esc, pubSec, isDomestic, prefLabel } from "./tabistock-render.js";
+    import { cinfo, BUDGETS, STYLES, esc, pubSec, isDomestic, prefLabel, derivePrefs } from "./tabistock-render.js";
     try {
       const snap = await getDocs(query(collection(db, "articles"), where("status", "==", "published")));
       const docs = [];
@@ -583,7 +583,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
           // 後から差し込むタイルはスクロール演出の監視対象外なので、最初から表示状態(rv in)で入れる
           return `<a class="tile${sizeClass(i)} rv in" href="articles/view.html?id=${esc(d.id)}">`
             + `<img src="${esc(thumb)}" alt="${esc(c.jp || d.title || "")}" loading="lazy" decoding="async">`
-            + `<div class="tile-c"><span class="ctry">${esc(isDomestic(d) && (d.prefectures || []).length ? "JAPAN · " + prefLabel(d) : (c.en || "").toUpperCase())}</span>`
+            + `<div class="tile-c"><span class="ctry">${esc(isDomestic(d) && derivePrefs(d).length ? "JAPAN · " + prefLabel(d) : (c.en || "").toUpperCase())}</span>`
             + `<h3>${esc(titleOf(d))}</h3>`
             + `<div class="tg">${tags.map(t => `<span>${esc(t)}</span>`).join("")}</div></div></a>`;
         };
@@ -591,7 +591,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
         // ストーリー画像のように、写真の上に国名とタイトルを直接のせる
         const card = d => {
           const cs = (d.countries || []).map(v => (cinfo(v) || {}).en).filter(Boolean);
-          const ctry = isDomestic(d) && (d.prefectures || []).length ? "Japan · " + prefLabel(d)   // 国内は都道府県
+          const ctry = isDomestic(d) && derivePrefs(d).length ? "Japan · " + prefLabel(d)   // 国内は都道府県
             : cs.slice(0, 2).join(" · ") + (cs.length > 2 ? " …" : "");   // 周遊は2か国まで並べる
           const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
           return `<a class="mcard" href="articles/view.html?id=${esc(d.id)}">`

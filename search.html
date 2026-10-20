@@ -837,6 +837,8 @@ drawerFilterBtns.forEach(btn => {
 });
 </script>
 <script>
+// 日本のエリア → 都道府県（filter.html の「日本」タブのエリア選択で使う）
+const JP_AREAS = {"北海道・東北": ["北海道", "青森", "岩手", "宮城", "秋田", "山形", "福島"], "関東": ["茨城", "栃木", "群馬", "埼玉", "千葉", "東京", "神奈川"], "中部": ["新潟", "富山", "石川", "福井", "山梨", "長野", "岐阜", "静岡", "愛知"], "近畿": ["三重", "滋賀", "京都", "大阪", "兵庫", "奈良", "和歌山"], "中国・四国": ["鳥取", "島根", "岡山", "広島", "山口", "徳島", "香川", "愛媛", "高知"], "九州・沖縄": ["福岡", "佐賀", "長崎", "熊本", "大分", "宮崎", "鹿児島", "沖縄"]};
 function runSearchFilter(){
     const params = new URLSearchParams(window.location.search);
   const tripCards = document.querySelectorAll(".trip-card");
@@ -865,21 +867,25 @@ function runSearchFilter(){
       isMatch = false;
     }
     // 国内旅行（日本だけの旅）は「日本」でまとめる。日本を選んだとき・キーワード検索時だけ出す
-    if (card.dataset.type === "domestic" && !(filters.country || []).includes("japan") && !keyword) {
+    if (card.dataset.type === "domestic" && !(filters.country || []).includes("japan") && !filters.pref && !filters.area && !keyword) {
       isMatch = false;
     }
 
     // 国と地域は「場所」としてまとめて判定する（どれか1つに当てはまればOK）。
     // 別々に判定すると「モンゴル」と「東南アジア」を選んだときにモンゴルの旅が「東南アジアではない」で消えてしまう
-    if (filters.country || filters.region) {
+    // 日本の都道府県（pref）・エリア（area）も「場所」の一つとして同じように扱う
+    if (filters.country || filters.region || filters.pref || filters.area) {
       // 単語単位で比べる（部分一致だと east-asia が southeast-asia にも当たってしまう）
       const cc = (card.dataset.country || "").split(" "), rg = (card.dataset.region || "").split(" ");
-      const placeOk = (filters.country || []).some(v => cc.includes(v)) || (filters.region || []).some(v => rg.includes(v));
+      const pf = (card.dataset.pref || "").split(" ").filter(Boolean);
+      const placeOk = (filters.country || []).some(v => cc.includes(v)) || (filters.region || []).some(v => rg.includes(v))
+        || (filters.pref || []).some(v => pf.includes(v))
+        || (filters.area || []).some(a => (JP_AREAS[a] || []).some(v => pf.includes(v)));
       if (!placeOk) isMatch = false;
     }
 
     for (const filter in filters) {
-      if (filter === "country" || filter === "region") continue;
+      if (filter === "country" || filter === "region" || filter === "pref" || filter === "area") continue;
       const cardValue = card.dataset[filter] || "";
       const selectedValues = filters[filter];
 
@@ -917,7 +923,7 @@ if (filter === "budget") {
   // ===== PC sidebar filter + active conditions =====
   (function(){
     const sideIds = { country:"fs-country", budget:"fs-budget", days:"fs-days", style:"fs-style" };
-    const known = ["country","region","budget","days","style","q"];
+    const known = ["country","region","pref","area","budget","days","style","q"];
 
     // reflect current params into sidebar selects
     Object.keys(sideIds).forEach(key => {
@@ -947,7 +953,8 @@ if (filter === "budget") {
     // 絞り込みなし（またはトランジットだけ）のときは「旅程｜トランジット」の切り替えを出す
     const keys = [...params.keys()].filter(k => known.includes(k));
     const onlyTransit = keys.length === 1 && params.getAll("style").join() === "transit";
-    const onlyJapan = keys.length === 1 && params.getAll("country").join() === "japan";
+    // 日本だけ（日本全体・エリア・都道府県）で絞り込んでいるときは「日本」タブ扱い
+    const onlyJapan = keys.length > 0 && keys.every(k => k === "pref" || k === "area" || (k === "country" && params.getAll("country").every(v => v === "japan")));
     const kindTabs = document.getElementById("kindTabs");
     if (kindTabs && (!hasAny || onlyTransit || onlyJapan)) {
       kindTabs.hidden = false;
