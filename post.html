@@ -2796,7 +2796,6 @@ onAuthStateChanged(auth, async (user) => {
       window.tabistockEditPublishedAt = data.publishedAt || null;
       window.populateForm({
         author: data.authorNickname || nick,
-        // 都道府県の欄ができる前の国内の記事は、記事の文章から読み取った都道府県を入れておく（保存すると記事に残る）
         countries: data.countries || [], region: data.region || "", prefectures: derivePrefs(data),
         budget: data.budget || "", days_v: data.days_v || "", styles: data.styles || [],
         title: data.title || "", lead: data.lead || "",
