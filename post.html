@@ -274,7 +274,7 @@
     <button class="addbtn" id="addFlight" type="button">＋ <span class="intl-only">航路</span><span class="dom-only">区間</span>を追加</button>
     <div class="row2" style="margin-top:14px">
       <div><label class="f">予約時期<span class="req intl-only">必須</span><span class="opt dom-only">任意</span></label><input type="text" id="flightWhen" placeholder="例：出発の2ヶ月前"></div>
-      <div><label class="f">予約サイト<span class="req intl-only">必須</span><span class="opt dom-only">任意</span></label><input type="text" id="flightSite" placeholder="例：Trip.com／えきねっと"></div>
+      <div><label class="f">予約サイト<span class="req intl-only">必須</span><span class="opt dom-only">任意</span></label><input type="text" id="flightSite" placeholder="例：Trip.com"></div>
     </div>
     <div class="total"><span><span class="intl-only">航空券合計</span><span class="dom-only">移動合計</span></span><b id="flightTotal">¥0</b></div>
   </section>
@@ -687,7 +687,7 @@ const PREF_GROUPS=[
 ];
 const MOVE_MODES=[
   {v:'plane',l:'飛行機'},{v:'shinkansen',l:'新幹線'},{v:'train',l:'電車'},{v:'nightbus',l:'夜行バス'},
-  {v:'bus',l:'高速バス'},{v:'ferry',l:'フェリー'},{v:'car',l:'車・レンタカー'},{v:'other',l:'その他'}
+  {v:'bus',l:'高速バス'},{v:'ferry',l:'フェリー'},{v:'car',l:'車・レンタカー'},{v:'hitchhike',l:'ヒッチハイク'},{v:'bicycle',l:'自転車'},{v:'other',l:'その他'}
 ];
 function isDomForm(){ const cs=selectedCountries(); return cs.length>0 && cs.every(v=>v==='japan'); }
 function selectedPrefs(){ return [...document.querySelectorAll('input[name=pref]:checked')].map(c=>c.value); }
@@ -712,10 +712,40 @@ function setPrefs(list){
     if(c.checked) c.closest('details').open=true;
   });
 }
-// 国が変わるたびに、国内用の表示（都道府県・移動）に切り替える
+// 入力欄の「例：〜」を国内旅行向けに差し替える（海外の例は data-ph-intl に取っておく）
+const EX_DOM=[
+  ['#title','例：京都・大阪2泊3日｜青春18きっぷで巡る学生旅'],
+  ['#lead','例：鈍行列車で古都と食い倒れの街を巡る節約旅'],
+  ['#flightWhen','例：出発の1週間前'],
+  ['#flightSite','例：えきねっと／EX予約／楽天トラベル'],
+  ['#comment','例：紅葉シーズンの京都は朝早く動くのが正解。バスは混むので電車と徒歩がおすすめ…'],
+  ['.fl-from','出発地（例：東京）'],
+  ['.fl-to','到着地（例：京都）'],
+  ['.fl-transit','例：名古屋（複数は「、」で区切り）'],
+  ['.fl-air','例：JR東海／WILLER／Peach'],
+  ['.d-sum','例：新幹線で京都へ。伏見稲荷と清水寺'],
+  ['.d-text','例：朝6時の新幹線で出発。伏見稲荷は早朝だと人が少なくて…'],
+  ['input[data-svc-other="0"]','その他（自由入力・例：ゲストハウスに直接予約）'],
+  ['input[data-svc-other="1"]','その他（自由入力・例：アソビュー／地元の体験教室）'],
+  ['input[data-svc-other="2"]','その他（自由入力・例：ポケットWi-Fi）'],
+  ['input[data-svc-other="3"]','その他（自由入力・例：Suica／乗換案内アプリ）'],
+  ['input[data-svc-other="4"]','その他（自由入力・例：Suica／楽天ペイ）'],
+  ['input[data-svc-other="5"]','その他（自由入力・例：観光案内所）'],
+];
+function applyExamples(root){
+  const dom=isDomForm();
+  EX_DOM.forEach(([sel,txt])=>{
+    (root||document).querySelectorAll(sel).forEach(el=>{
+      if(el.dataset.phIntl===undefined) el.dataset.phIntl=el.placeholder||'';
+      el.placeholder = dom ? txt : el.dataset.phIntl;
+    });
+  });
+}
+// 国が変わるたびに、国内用の表示（都道府県・移動・入力例）に切り替える
 function updateDomestic(){
   const dom=isDomForm();
   document.body.classList.toggle('is-dom',dom);
+  applyExamples();
   const fl=document.querySelector('[data-cost-label="flight"]'); if(fl) fl.textContent=dom?'移動':'航空券';
   const tr=document.querySelector('[data-cost-label="transit"]'); if(tr) tr.textContent=dom?'現地の交通':'交通';
   if(typeof renumberFlights==='function') renumberFlights();
@@ -756,9 +786,9 @@ function addFlight(data){
       <input type="text" class="fl-to" placeholder="到着地（例：上海）">
     </div>
     <label class="f" style="margin-top:8px">乗換<span class="opt">任意</span></label>
-    <input type="text" class="fl-transit" placeholder="例：ソウル／名古屋（複数は「、」で区切り）">
+    <input type="text" class="fl-transit" placeholder="例：ソウル（複数は「、」で区切り）">
     <div class="row2" style="margin-top:8px">
-      <div class="ac-wrap"><label class="f"><span class="intl-only">航空会社</span><span class="dom-only">会社・便名</span><span class="opt">任意</span></label><input type="text" class="fl-air" autocomplete="off" placeholder="例：ANA／JR東海／WILLER"></div>
+      <div class="ac-wrap"><label class="f"><span class="intl-only">航空会社</span><span class="dom-only">会社・便名</span><span class="opt">任意</span></label><input type="text" class="fl-air" autocomplete="off" placeholder="例：ANA／エミレーツ（入力で候補）"></div>
       <div><label class="f">値段（円）</label><input type="number" class="fl-price" min="0" step="1000" placeholder="0"></div>
     </div>`;
   const arrow=wrap.querySelector('.route-arrow');
@@ -770,6 +800,8 @@ function addFlight(data){
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); calcFlight(); renumberFlights(); });
   wrap.querySelector('.fl-price').addEventListener('input',calcFlight);
   attachAirlineAC(wrap.querySelector('.fl-air'));
+  // 国内の移動は新幹線を最初の選択にする（海外は手段を使わず、常に飛行機として保存）
+  wrap.querySelector('.fl-mode').value='shinkansen';
   if(data){
     if(data.mode) wrap.querySelector('.fl-mode').value=data.mode;
     wrap.querySelector('.fl-air').value=data.airline||'';
@@ -786,6 +818,7 @@ function addFlight(data){
     setTrip(trip==='round'?'round':'oneway');
   }
   $('flightList').appendChild(wrap); renumberFlights(); calcFlight();
+  if(typeof applyExamples==='function' && typeof EX_DOM!=='undefined') applyExamples(wrap);
 }
 function renumberFlights(){ const w=isDomForm()?'区間 ':'航路 '; let n=0; document.querySelectorAll('[data-flight] h4').forEach(h=>{n++;h.textContent=w+n;}); flightN=n; }
 function calcFlight(){ let t=0; document.querySelectorAll('.fl-price').forEach(i=>t+=Number(i.value||0)); $('flightTotal').textContent=yen(t); return t; }
@@ -1022,6 +1055,7 @@ function addDay(data, after){
   }
   if(after) after.after(wrap); else $('dayList').appendChild(wrap);
   renumberDays();
+  if(typeof applyExamples==='function' && typeof EX_DOM!=='undefined') applyExamples(wrap);
   return wrap;
 }
 // 各日の場所ピン（Leaflet・複数ピン対応）

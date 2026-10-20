@@ -264,7 +264,7 @@ export const PREF_GROUPS=[
 ];
 export const MOVE_MODES=[
   {v:'plane',l:'飛行機'},{v:'shinkansen',l:'新幹線'},{v:'train',l:'電車'},{v:'nightbus',l:'夜行バス'},
-  {v:'bus',l:'高速バス'},{v:'ferry',l:'フェリー'},{v:'car',l:'車・レンタカー'},{v:'other',l:'その他'}
+  {v:'bus',l:'高速バス'},{v:'ferry',l:'フェリー'},{v:'car',l:'車・レンタカー'},{v:'hitchhike',l:'ヒッチハイク'},{v:'bicycle',l:'自転車'},{v:'other',l:'その他'}
 ];
 export const moveLabel=v=>(MOVE_MODES.find(m=>m.v===v)||{}).l||'';
 export const isDomestic=d=>{ const c=(d&&d.countries)||[]; return c.length>0 && c.every(v=>v==='japan'); };
