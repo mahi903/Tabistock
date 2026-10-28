@@ -34,12 +34,17 @@
     .leaflet-control-attribution{background:rgba(255,255,255,.6)!important;font-size:9px}
     .leaflet-interactive{outline:none}
     /* 国ラベル */
-    .leaflet-div-icon.cl-wrap{background:none;border:none;width:0!important;height:0!important;margin:0!important}
-    .clabel{position:absolute;left:0;top:0;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:5px;background:#fff;border-radius:6px;padding:4px 7px 4px 9px;font-size:11.5px;font-weight:800;color:#1b2330;box-shadow:0 2px 8px rgba(27,35,48,.18);white-space:nowrap;cursor:pointer;font-family:"Noto Sans JP",sans-serif;line-height:1.2}
-    .clabel b{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;border-radius:4px;background:#1f6f5b;color:#fff;font-size:10.5px}
+    .cl-wrap{background:none;border:none;width:0!important;height:0!important;margin:0!important}
+    .region-bar .region-chip{padding:6px 9px;font-size:12px;gap:5px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+    .region-bar .region-chip .rc-num{min-width:17px;height:17px;font-size:10px;padding:0 4px}
+    .region-chip.empty{color:#9aa3ad}.region-chip.empty .rc-num{background:#f1ece3;color:#9aa3ad}
+    .cldot{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:#1b2330;border:1.5px solid #fff}
+    .clline{position:absolute;left:0;top:0;height:1.5px;background:rgba(27,35,48,.45);transform-origin:0 50%;pointer-events:none}
+    .clabel{position:absolute;left:0;top:0;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:4px;background:#fff;border-radius:5px;padding:3px 5px 3px 7px;font-size:10.5px;font-weight:800;color:#1b2330;box-shadow:0 2px 8px rgba(27,35,48,.18);white-space:nowrap;cursor:pointer;font-family:"Noto Sans JP",sans-serif;line-height:1.2}
+    .clabel b{display:inline-flex;align-items:center;justify-content:center;min-width:15px;height:15px;padding:0 3px;border-radius:3px;background:#1f6f5b;color:#fff;font-size:9.5px}
     .clabel:hover{background:#1f6f5b;color:#fff}.clabel:hover b{background:#fff;color:#1f6f5b}
     /* 大陸チップ（引きで選ぶ） */
-    .region-bar{position:absolute;top:14px;left:0;right:0;z-index:15;display:flex;gap:8px;overflow-x:auto;padding:0 14px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .region-bar{position:absolute;top:10px;left:0;right:0;z-index:15;display:flex;flex-wrap:wrap;gap:6px;padding:0 10px}
     .region-bar::-webkit-scrollbar{display:none}
     .region-chip{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid #e9dcc6;border-radius:999px;padding:9px 15px;font-size:13px;font-weight:800;color:#1f6f5b;box-shadow:0 4px 14px rgba(0,0,0,.12);cursor:pointer;font-family:inherit;white-space:nowrap}
     .region-chip.active{background:#1f6f5b;color:#fff;border-color:#1f6f5b}
@@ -51,11 +56,11 @@
     .area-btn{position:absolute;left:0;top:0;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:7px;background:#fff;border:2px solid #1f6f5b;border-radius:999px;padding:9px 15px;font-size:14px;font-weight:800;color:#1f6f5b;box-shadow:0 5px 16px rgba(0,0,0,.22);white-space:nowrap;cursor:pointer;font-family:"Noto Sans JP",sans-serif}
     .area-btn:hover{background:#1f6f5b;color:#fff}
     @media(max-width:640px){.area-wrap{display:none!important}}
-    .leaflet-top.leaflet-left{top:52px}
+    
     .area-btn .ab-num{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#eaf3ef;color:#1f6f5b;font-size:11px;font-weight:800}
     .area-btn:hover .ab-num{background:rgba(255,255,255,.25);color:#fff}
     /* マップ上のヒント */
-    .map-hint{position:absolute;top:62px;left:50%;transform:translateX(-50%);z-index:5;background:#fff;border:1px solid #e9dcc6;border-radius:999px;padding:8px 16px;font-size:12.5px;font-weight:700;color:#1f6f5b;box-shadow:0 4px 14px rgba(0,0,0,.1);white-space:nowrap}
+    .map-hint{position:absolute;top:var(--hint-top,62px);left:50%;transform:translateX(-50%);z-index:5;background:#fff;border:1px solid #e9dcc6;border-radius:999px;padding:8px 16px;font-size:12.5px;font-weight:700;color:#1f6f5b;box-shadow:0 4px 14px rgba(0,0,0,.1);white-space:nowrap}
     .map-loading{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(247,241,232,.7);font-size:14px;color:#6c7787;font-weight:700}
     /* 国ピン（数字つき） */
     .ctpin{background:#1f6f5b;color:#fff;border:2.5px solid #fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 3px 10px rgba(0,0,0,.3);font-family:"Noto Sans JP",sans-serif}
@@ -107,7 +112,7 @@
   <div class="mapwrap">
     <div id="map"></div>
     <div class="region-bar" id="regionBar"></div>
-    <div class="map-hint" id="mapHint">エリアを選ぶと国別の投稿が見られます</div>
+    <div class="map-hint" id="mapHint" hidden></div>
     <div class="map-loading" id="mapLoading">地図を読み込み中…</div>
 
     <!-- 国別の旅程パネル -->
@@ -153,16 +158,17 @@
 
     // 大陸（細かい地域をまとめる）
     const CONTINENTS = [
-      { k:'east-asia',      jp:'東アジア',     regions:['east-asia'],      at:[40,116] },
-      { k:'southeast-asia', jp:'東南アジア',   regions:['southeast-asia'], at:[9,110] },
-      { k:'south-asia',     jp:'南アジア',     regions:['south-asia'],     at:[19,78] },
-      { k:'central-asia',   jp:'中央アジア',   regions:['central-asia'],   at:[45,66] },
-      { k:'west-asia',      jp:'西アジア',     regions:['west-asia'],      at:[27,46] },
-      { k:'europe',        jp:'ヨーロッパ', regions:['europe'] },
-      { k:'north-america', jp:'北アメリカ', regions:['north-america'] },
-      { k:'south-america', jp:'南アメリカ', regions:['south-america'] },
-      { k:'africa',        jp:'アフリカ',   regions:['africa'] },
-      { k:'oceania',       jp:'オセアニア', regions:['oceania'] },
+      // view：エリアを開いたときに見せる範囲（[[南,西],[北,東]]）。主要な国がきちんと収まるように手で決めている
+      { k:'east-asia',      jp:'東アジア',   regions:['east-asia'],      at:[40,116], view:[[15,72],[55,148]] },
+      { k:'southeast-asia', jp:'東南アジア', regions:['southeast-asia'], at:[9,110],  view:[[-12,90],[26,142]] },
+      { k:'south-asia',     jp:'南アジア',   regions:['south-asia'],     at:[19,78],  view:[[2,58],[38,100]] },
+      { k:'central-asia',   jp:'中央アジア', regions:['central-asia'],   at:[45,66],  view:[[34,44],[56,90]] },
+      { k:'west-asia',      jp:'西アジア',   regions:['west-asia'],      at:[27,46],  view:[[11,24],[44,64]] },
+      { k:'europe',         jp:'ヨーロッパ', regions:['europe'],                      view:[[34,-25],[71,45]] },
+      { k:'north-america',  jp:'北アメリカ', regions:['north-america'],               view:[[5,-170],[72,-50]] },
+      { k:'south-america',  jp:'南アメリカ', regions:['south-america'],               view:[[-56,-84],[14,-32]] },
+      { k:'africa',         jp:'アフリカ',   regions:['africa'],                      view:[[-36,-20],[38,55]] },
+      { k:'oceania',        jp:'オセアニア', regions:['oceania'],                     view:[[-48,110],[2,182]] },
     ];
     const regionToCont = {};
     CONTINENTS.forEach(ct => ct.regions.forEach(r => { regionToCont[r] = ct.k; }));
@@ -183,9 +189,9 @@
       if(lls.length) contBounds[ct.k] = L.latLngBounds(lls);
     });
 
-    const map = L.map('map', { worldCopyJump:true, minZoom:1, zoomSnap:0.25 }).setView([28, 30], 2);
+    const map = L.map('map', { worldCopyJump:true, minZoom:1, zoomSnap:0.25, zoomControl: window.innerWidth > 640 }).setView([28, 30], 2);
     // 最初の画面：ヨーロッパ〜日本まで（ボタンのある範囲）が入るように合わせる
-    const OVERVIEW = L.latLngBounds([[-5,-12],[58,145]]);
+    const OVERVIEW = L.latLngBounds([[-40,-110],[66,150]]);
     map.setMaxZoom(7);
     map.attributionControl.setPrefix('').addAttribution('Natural Earth');
     // 白地図（世界の陸地）：タイル画像を使わず、ベクターで描く
@@ -195,7 +201,7 @@
     });
     // flexレイアウト内でのサイズ確定ずれ対策
     setTimeout(()=>map.invalidateSize(), 200);
-    window.addEventListener('resize', ()=>map.invalidateSize());
+    window.addEventListener('resize', ()=>{ map.invalidateSize(); if(typeof placeHint==='function') placeHint(); });
 
     const panel = document.getElementById('panel');
     const panelTitle = document.getElementById('panelTitle');
@@ -234,15 +240,20 @@
     const contLabelGroup = L.layerGroup();   // 各地域の中心に置く大陸ボタン
     let activeCont = null;
 
+    // 上のチップの高さぶん、地図の表示範囲を下にずらす
+    const topPad = () => { const b = regionBar.getBoundingClientRect(), m = document.getElementById('map').getBoundingClientRect(); return Math.max(0, b.bottom - m.top) + 12; };
+    const fitView = (bounds) => map.fitBounds(bounds, { paddingTopLeft:[12, topPad()], paddingBottomRight:[12, 16] });
+    const placeHint = () => { const b = regionBar.getBoundingClientRect(), m = document.getElementById('map').getBoundingClientRect(); hint.style.setProperty('--hint-top', (b.bottom - m.top + 8) + 'px'); };
+
     const showOverview = () => {
       activeCont = null;
       CONTINENTS.forEach(ct => { if(contGroups[ct.k]) map.removeLayer(contGroups[ct.k]); });
       if(window.__contFill) window.__contFill.addTo(map);
       contLabelGroup.addTo(map);             // 大陸ボタンを表示
       panel.classList.remove('open');
-      map.fitBounds(OVERVIEW, { padding:[10,10] });
       hint.textContent = '上のエリアか、緑の国をタップ';
-      renderChips();
+      renderChips(); placeHint();
+      fitView(OVERVIEW);
     };
 
     const showContinent = (k) => {
@@ -251,36 +262,47 @@
       if(window.__contFill) map.removeLayer(window.__contFill);
       CONTINENTS.forEach(ct => { if(contGroups[ct.k]) map.removeLayer(contGroups[ct.k]); });
       if(contGroups[k]) contGroups[k].addTo(map);
-      if(contBounds[k]) map.fitBounds(contBounds[k].pad(0.12));
-      setTimeout(layoutLabels, 350);
       panel.classList.remove('open');
-      const cj = (CONTINENTS.find(c=>c.k===k)||{}).jp || '';
-      hint.textContent = cj + 'の国をタップで旅程一覧';
-      renderChips();
+      const ctd = CONTINENTS.find(c=>c.k===k) || {};
+      hint.textContent = (ctd.jp||'') + 'の国をタップで旅程一覧';
+      renderChips(); placeHint();
+      const vb = ctd.view ? L.latLngBounds(ctd.view) : contBounds[k];
+      if(vb) fitView(vb);
+      setTimeout(layoutLabels, 350);
     };
 
-    // 国ラベルの重なりを避ける：投稿数の多い国から順に置き、重なるものは隠す（色の塗りはタップできる）
+    // 国ラベルの重なりを避ける：投稿数の多い国から順に、国の点のまわりで空いている場所を探して置く。
+    // 近くに置ける場所がないラベルは隠し（点は残す）、拡大して余裕ができたら表示される
     const layoutLabels = () => {
-      const els=[...document.querySelectorAll('.clabel')];
-      els.forEach(e=>e.style.visibility='visible');
-      els.sort((a,b)=>(+b.dataset.n)-(+a.dataset.n));
+      const items=[...document.querySelectorAll('.clabel')].filter(e=>e.offsetParent);
+      if(!items.length) return;
+      const P=items.map(e=>{ e.style.transform='translate(-50%,-50%)'; e.style.visibility='visible'; const r=e.getBoundingClientRect();
+        return { e, x0:r.left+r.width/2, y0:r.top+r.height/2, w:r.width+4, h:r.height+4, n:+e.dataset.n }; })
+        .sort((a,b)=>b.n-a.n);
       const placed=[];
-      els.forEach(e=>{ const r=e.getBoundingClientRect(); const hit=placed.some(p=>!(r.right+3<p.left||r.left-3>p.right||r.bottom+3<p.top||r.top-3>p.bottom));
-        if(hit) e.style.visibility='hidden'; else placed.push(r); });
+      const hit=(x,y,w,h)=>placed.some(q=>Math.abs(q.x-x)<(q.w+w)/2 && Math.abs(q.y-y)<(q.h+h)/2);
+      P.forEach(p=>{
+        const H=p.h, W=p.w;
+        const cand=[[0,0],[0,-H],[0,H],[W*0.6,0],[-W*0.6,0],[W*0.5,-H],[-W*0.5,-H],[W*0.5,H],[-W*0.5,H],[0,-2*H],[0,2*H]];
+        let spot=null;
+        for(const [dx,dy] of cand){ if(!hit(p.x0+dx,p.y0+dy,W,H)){ spot=[dx,dy]; break; } }
+        const wrap=p.e.parentElement; let ln=wrap.querySelector('.clline');
+        if(!spot){ p.e.style.visibility='hidden'; if(ln) ln.style.display='none'; return; }
+        const [dx,dy]=spot; placed.push({x:p.x0+dx,y:p.y0+dy,w:W,h:H});
+        p.e.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        const dist=Math.hypot(dx,dy);
+        if(dist>6){
+          if(!ln){ ln=document.createElement('div'); ln.className='clline'; wrap.insertBefore(ln, p.e); }
+          ln.style.width=dist+'px'; ln.style.transform=`rotate(${Math.atan2(dy,dx)}rad)`; ln.style.display='';
+        } else if(ln){ ln.style.display='none'; }
+      });
     };
     map.on('zoomend moveend', ()=> requestAnimationFrame(layoutLabels));
 
     // 上部バーは「戻る」だけ（大陸選択は地図上のボタンで行う）
     const renderChips = () => {
-      if(activeCont){
-        const others = CONTINENTS.filter(ct=>ct.k!==activeCont && contCount[ct.k]>0)
-          .map(ct=>`<button class="region-chip" data-k="${ct.k}">${ct.jp}<span class="rc-num">${contCount[ct.k]}</span></button>`).join('');
-        regionBar.innerHTML = `<button class="region-chip back" data-back="1">← エリア一覧</button>` + others;
-      } else {
-        regionBar.innerHTML = CONTINENTS.filter(ct=>contCount[ct.k]>0)
-          .sort((a,b)=>contCount[b.k]-contCount[a.k])
-          .map(ct=>`<button class="region-chip" data-k="${ct.k}">${ct.jp}<span class="rc-num">${contCount[ct.k]}</span></button>`).join('');
-      }
+      const chip = ct => `<button class="region-chip${ct.k===activeCont?' active':''}${contCount[ct.k]?'':' empty'}" data-k="${ct.k}">${ct.jp}<span class="rc-num">${contCount[ct.k]||0}</span></button>`;
+      regionBar.innerHTML = (activeCont ? `<button class="region-chip back" data-back="1">← 全体</button>` : '') + CONTINENTS.map(chip).join('');
       regionBar.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', showOverview));
       regionBar.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', ()=> showContinent(b.dataset.k)));
     };
@@ -336,7 +358,7 @@
           }
           const name = (cinfo(c)||{}).jp || c;
           const icon = L.divIcon({ className:'cl-wrap', iconSize:[0,0], iconAnchor:[0,0],
-            html:`<div class="clabel" data-n="${arr.length}">${esc(name)}<b>${arr.length}</b></div>` });
+            html:`<div class="cldot"></div><div class="clabel" data-n="${arr.length}">${esc(name)}<b>${arr.length}</b></div>` });
           L.marker(ll, { icon }).on('click', ()=> openCountry(c, arr)).addTo(contGroups[ct]);
           if(rings.length) contFill.addLayer(L.polygon(rings,{ stroke:false, fillColor:'#1f6f5b', fillOpacity:op }).on('click', ()=> showContinent(ct)));
           placed++;
@@ -345,7 +367,7 @@
 
         loading.remove();
         if(!placed){
-          hint.textContent = 'まだ地図に表示できる旅程がありません';
+          hint.hidden = false; hint.textContent = 'まだ地図に表示できる旅程がありません';
         } else {
           window.__contFill = contFill;
           buildContLabels();   // 大陸ボタンを各地域の中心に配置
