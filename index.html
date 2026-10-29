@@ -96,8 +96,17 @@ a{color:inherit;text-decoration:none}
 .plain-hero .hquick a svg{background:rgba(31,111,91,.09);color:var(--green)}
 .plain-hero .hquick a:hover svg{background:rgba(31,111,91,.16)}
 .plain-hero .hd .logo{color:var(--green)}
-/* PCのトップ右側の白地図（地図が十分な大きさで置ける幅のときだけ） */
+/* トップの白地図。スマホ・タブレットは見出しの後ろに薄く敷くだけ（押せない）、PCは右側に大きく（押せる） */
 .hero-map{display:none}
+.hero-map svg{display:block;width:100%;height:auto;overflow:hidden}
+.hero-map .land{fill:#ebe3d4;stroke:#f6f2ea;stroke-width:.5}
+.hero-map .c{fill:var(--green);stroke:#fff;stroke-width:.6}
+.hero-map .dot{fill:var(--green);stroke:#fff;stroke-width:1.2}
+@media(max-width:1359px){
+  .plain-hero .hero-map:not([hidden]){display:block;position:absolute;z-index:1;right:0;width:70%;top:124px;margin:0;pointer-events:none;opacity:.75;
+    -webkit-mask-image:linear-gradient(#000 92%,transparent);mask-image:linear-gradient(#000 92%,transparent)}
+  .plain-hero .hero::before{opacity:.35}
+}
 @media(min-width:1360px){
   /* 地図は大きく、見出しの後ろまで広げる。左端は背景に溶かして文字を読みやすく */
   .plain-hero .hero-map:not([hidden]){display:block;position:absolute;z-index:1;right:1%;top:96px;width:70%;max-width:1300px;margin:0;
@@ -106,11 +115,9 @@ a{color:inherit;text-decoration:none}
   .plain-hero .hero-inner{pointer-events:none}
   .plain-hero .hero-inner .hsearch,.plain-hero .hero-inner .hquick{pointer-events:auto}
   .plain-hero .hero::before{opacity:.45}
-  .hero-map svg{display:block;width:100%;height:auto;overflow:hidden}
-  .hero-map .land{fill:#ebe3d4;stroke:#f6f2ea;stroke-width:.5}
-  .hero-map .c{fill:var(--green);stroke:#fff;stroke-width:.6;cursor:pointer;transition:fill-opacity .15s}
+  .hero-map .c{cursor:pointer;transition:fill-opacity .15s}
   .hero-map a:hover .c{fill-opacity:1!important}
-  .hero-map .dot{fill:var(--green);stroke:#fff;stroke-width:1.2;cursor:pointer}
+  .hero-map .dot{cursor:pointer}
 }
 .plain-hero .hd-search{background:#fff;border-color:var(--sand)}
 .plain-hero .hd-search input{color:var(--ink)}
@@ -633,8 +640,9 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       set("statTrips", docs.length);
       if (minBudget != null) set("statBudget", minBudget);
 
-      // --- PCのトップ右側：白地図（スマホでは読み込まない）---
-      if (window.matchMedia("(min-width:1360px)").matches) drawHeroMap(docs).catch(e => console.warn("トップの地図の表示に失敗:", e));
+      // --- トップの白地図（PCは右側に大きく、スマホは見出しの後ろに薄く）。スマホは表示を優先して少し後から読み込む ---
+      const pc = window.matchMedia("(min-width:1360px)").matches;
+      setTimeout(() => drawHeroMap(docs).catch(e => console.warn("トップの地図の表示に失敗:", e)), pc ? 0 : 400);
 
       // --- 新着旅程：公開日(publishedAt。無ければ createdAt)が新しい順に最大4件をモザイクで表示 ---
       const bento = document.getElementById("newRoutes");
