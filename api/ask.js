@@ -145,7 +145,7 @@ const STYLE_JP = {
 };
 
 const BUDGET_JP = {
-  "10": "〜10万円", "20": "〜20万円", "30": "〜30万円", "40": "〜40万円", "50": "〜50万円", "50plus": "50万円以上"
+  "5": "〜5万円", "10": "〜10万円", "15": "〜15万円", "20": "〜20万円", "25": "〜25万円", "30": "〜30万円", "35": "〜35万円", "40": "〜40万円", "45": "〜45万円", "50": "〜50万円", "50plus": "50万円以上"
 };
 
 // 1記事をAIに渡す用のテキストに整形（長すぎないよう各日の本文は要約寄りに抑える）。
@@ -159,6 +159,9 @@ function articleToText(a) {
   lines.push(`タイトル：${a.title || ""}`);
   if (countries) lines.push(`国：${countries}`);
   if (budget) lines.push(`予算：${budget}`);
+  // 実際にかかった費用の合計（費用内訳の合計）。区分より正確なので一緒に渡す
+  const costSum = Object.values(a.costs || {}).reduce((s, v) => s + (Number(v) || 0), 0);
+  if (costSum > 0) lines.push(`費用の合計：約${(costSum / 10000).toFixed(1)}万円`);
   if (styles) lines.push(`スタイル：${styles}`);
   // トランジット記事は空港・乗り継ぎ時間・本文を渡す（days/budget は無い）
   if (a.airport) lines.push(`空港：${a.airport}`);

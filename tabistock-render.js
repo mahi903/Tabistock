@@ -238,7 +238,14 @@ export const COUNTRY_LL = {
 };
 export const REGION_JP={ "east-asia":"東アジア","southeast-asia":"東南アジア","south-asia":"南アジア","central-asia":"中央アジア","west-asia":"西アジア","europe":"ヨーロッパ","north-america":"北アメリカ","south-america":"南アメリカ","africa":"アフリカ","oceania":"オセアニア","other":"その他" };
 export const REGION_EN={ "east-asia":"East Asia","southeast-asia":"Southeast Asia","south-asia":"South Asia","central-asia":"Central Asia","west-asia":"West Asia","europe":"Europe","north-america":"North America","south-america":"South America","africa":"Africa","oceania":"Oceania","other":"Other" };
-export const BUDGETS=[{v:'10',l:'〜10万円'},{v:'20',l:'〜20万円'},{v:'30',l:'〜30万円'},{v:'40',l:'〜40万円'},{v:'50',l:'〜50万円'},{v:'50plus',l:'50万円以上'}];
+// 予算は5万円刻み。投稿では費用内訳の合計から自動で決まる（以前の10万円刻みの値もそのまま使える）
+export const BUDGETS=[5,10,15,20,25,30,35,40,45,50].map(v=>({v:String(v),l:`〜${v}万円`})).concat([{v:'50plus',l:'50万円以上'}]);
+// 費用内訳の合計（円）
+export const costTotalOf=d=>Object.values((d&&d.costs)||{}).reduce((t,v)=>t+(Number(v)||0),0);
+// 金額（円）→ 予算の区分。1万円未満の端数は切り捨ててから決める（例：10.8万円 → 10万円 → '10'、13万円 → '15'、52万円 → '50plus'）
+export const budgetFromYen=y=>{ const m=Math.floor(Number(y||0)/10000); if(m>50) return '50plus'; return String(Math.max(5,Math.ceil(m/5)*5)); };
+// 記事の予算の区分。費用が入っていれば合計から計算し、なければ投稿時に選んだ区分を使う
+export const budgetOf=d=>{ const t=costTotalOf(d); return t>0?budgetFromYen(t):((d&&d.budget)||''); };
 export const DAYS_OPT=[{v:'daytrip',l:'日帰り'},{v:'1night',l:'1泊'},{v:'3-5',l:'3〜5日'},{v:'1w',l:'1週間'},{v:'2w',l:'2週間'},{v:'3w-plus',l:'3週間以上'}];
 export const STYLES=[
   {v:'solo',l:'1人旅',tag:'ひとり旅'},{v:'friends',l:'友達と',tag:'友達旅'},{v:'family',l:'家族と',tag:'家族旅'},
@@ -296,7 +303,7 @@ export function buildTags(d){
   if(isDomestic(d) && derivePrefs(d).length) derivePrefs(d).slice(0,3).forEach(p=>tags.push(p));
   else { const c=cinfo((d.countries||[])[0]); if(c) tags.push(c.jp); }
   const dd=DAYS_OPT.find(x=>x.v===d.days_v); if(dd) tags.push(dd.l);
-  const bb=BUDGETS.find(x=>x.v===d.budget); if(bb) tags.push(bb.l);
+  const bb=BUDGETS.find(x=>x.v===budgetOf(d)); if(bb) tags.push(bb.l);
   (d.styles||[]).forEach(s=>{ const ss=STYLES.find(x=>x.v===s); if(ss) tags.push(ss.tag); });
   return tags;
 }
@@ -777,9 +784,11 @@ export function renderCard(d){
   if(d.type==='transit') return renderTransitCard(d);
   const c=cinfo((d.countries||[])[0]) || {en:'', jp:''};
   const cardTags=[];
-  const bb=BUDGETS.find(x=>x.v===d.budget); if(bb) cardTags.push(bb.l);
+  const bb=BUDGETS.find(x=>x.v===budgetOf(d)); if(bb) cardTags.push(bb.l);
   (d.styles||[]).slice(0,2).forEach(s=>{ const ss=STYLES.find(x=>x.v===s); if(ss) cardTags.push(ss.tag); });
-  const budgetAttr = d.budget==='50plus' ? '50' : d.budget;
+  // 検索用：費用の合計（万円・1万円未満は切り捨て）があればそれで比べる（「〜10万円」で10.8万円の旅も出る）。なければ区分の数字
+  const tot=costTotalOf(d);
+  const budgetAttr = tot>0 ? String(Math.floor(tot/10000)) : (d.budget==='50plus' ? '50' : d.budget);   // 1万円未満は切り捨て
   const thumb=d.thumbUrl||(d.heroUrls&&d.heroUrls[0])||'';
   // 検索用の隠しテキスト（画面には表示しない）。キーワード検索はカードの表示文字＋この属性を対象にする。
   // 内容：日本語/英語の国名・地域（日英）・タイトル・リード・各DAYの要約。

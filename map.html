@@ -149,7 +149,7 @@
   <script type="module">
     import { db } from "./firebase-config.js";
     import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { COUNTRIES, COUNTRY_LL, COUNTRY_ISO, cinfo, REGION_JP, BUDGETS, DAYS_OPT, esc } from "./tabistock-render.js";
+    import { COUNTRIES, COUNTRY_LL, COUNTRY_ISO, cinfo, REGION_JP, BUDGETS, DAYS_OPT, esc, budgetOf } from "./tabistock-render.js";
 
     if(typeof L === 'undefined'){
       document.getElementById('mapLoading').textContent = '地図ライブラリ(Leaflet)を読み込めませんでした。通信環境をご確認ください。';
@@ -217,7 +217,7 @@
     function renderRow(d){
       const thumb = d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
       const cs = (d.countries||[]).map(c=>(cinfo(c)||{}).jp).filter(Boolean).join('・');
-      const meta = [cs, budgetL(d.budget), daysL(d.days_v)].filter(Boolean).join(' · ');
+      const meta = [cs, budgetL(budgetOf(d)), daysL(d.days_v)].filter(Boolean).join(' · ');
       return `<a class="prow" href="./articles/view.html?id=${esc(d.id)}">
         <div class="pth" style="background-image:url('${esc(thumb)}')"></div>
         <div><div class="pt">${esc(d.title||'(無題)')}</div><div class="pm">${esc(meta)}</div></div>

@@ -113,6 +113,9 @@
   #prefBox details{ margin:0 0 6px; }
   #prefBox summary{ font-size:13px; font-weight:700; color:var(--green-d); cursor:pointer; padding:4px 0; }
   .fl-mode{ width:100%; }
+  .auto-val{ padding:10px 12px; border:1px solid #e3dccd; border-radius:8px; background:#f7f3ec; font-size:14px; font-weight:700; color:var(--green-d); min-height:42px; display:flex; align-items:center; }
+  .auto-val small{ font-weight:500; color:#8a8f98; margin-left:6px; font-size:12px; }
+  .auto-val.empty{ font-weight:500; color:#8a8f98; font-size:12.5px; }
   .sub h4{ margin:0 0 8px; font-size:13px; color:var(--green-d); }
   .addbtn{ border:1px dashed var(--green); color:var(--green-d); background:#fff; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; cursor:pointer; margin-top:6px; }
   .costgrid{ display:grid; grid-template-columns:1fr 140px; gap:8px 12px; align-items:center; }
@@ -207,8 +210,9 @@
 
     <div class="row2">
       <div>
-        <label class="f">予算<span class="req">必須</span></label>
-        <select id="budget"></select>
+        <label class="f">予算<span class="opt">自動</span></label>
+        <select id="budget" hidden></select>
+        <div class="auto-val" id="budgetAuto"></div>
       </div>
       <div>
         <label class="f">日数<span class="req">必須</span></label>
@@ -575,7 +579,10 @@ const COUNTRY_CL={
 const REGION_JP={ "east-asia":"東アジア","southeast-asia":"東南アジア","south-asia":"南アジア","central-asia":"中央アジア","west-asia":"西アジア","europe":"ヨーロッパ","north-america":"北アメリカ","south-america":"南アメリカ","africa":"アフリカ","oceania":"オセアニア","other":"その他" };
 const REGION_EN={ "east-asia":"East Asia","southeast-asia":"Southeast Asia","south-asia":"South Asia","central-asia":"Central Asia","west-asia":"West Asia","europe":"Europe","north-america":"North America","south-america":"South America","africa":"Africa","oceania":"Oceania","other":"Other" };
 const REGION_ORDER=["east-asia","southeast-asia","south-asia","central-asia","west-asia","europe","north-america","south-america","africa","oceania","other"];
-const BUDGETS=[{v:'10',l:'〜10万円'},{v:'20',l:'〜20万円'},{v:'30',l:'〜30万円'},{v:'40',l:'〜40万円'},{v:'50',l:'〜50万円'},{v:'50plus',l:'50万円以上'}];
+// 予算は5万円刻み。費用内訳の合計から自動で決まる（選ぶ欄は出さない）
+const BUDGETS=[5,10,15,20,25,30,35,40,45,50].map(v=>({v:String(v),l:`〜${v}万円`})).concat([{v:'50plus',l:'50万円以上'}]);
+// 1万円未満の端数は切り捨ててから区分を決める（10.8万円 → 〜10万円）
+function budgetFromYen(y){ const m=Math.floor(Number(y||0)/10000); if(m>50) return '50plus'; return String(Math.max(5,Math.ceil(m/5)*5)); }
 const DAYS_OPT=[{v:'daytrip',l:'日帰り'},{v:'1night',l:'1泊'},{v:'3-5',l:'3〜5日'},{v:'1w',l:'1週間'},{v:'2w',l:'2週間'},{v:'3w-plus',l:'3週間以上'}];
 const STYLES=[
   {v:'solo',l:'1人旅',tag:'ひとり旅'},{v:'friends',l:'友達と',tag:'友達旅'},{v:'family',l:'家族と',tag:'家族旅'},
@@ -677,7 +684,7 @@ function renderCountrySel(){
 // 予算・日数
 BUDGETS.forEach(b=>$('budget').appendChild(new Option(b.l,b.v)));
 DAYS_OPT.forEach(d=>$('days').appendChild(new Option(d.l,d.v)));
-$('budget').selectedIndex=0; $('days').selectedIndex=0;
+$('budget').selectedIndex=-1; $('days').selectedIndex=0;
 $('budget').addEventListener('change',updateMeta);
 $('days').addEventListener('change',updateMeta);
 // スタイル
@@ -800,8 +807,20 @@ COST_ITEMS.forEach(it=>{
 $('costGrid').addEventListener('input',calcCost);
 function calcCost(){
   let t=0; document.querySelectorAll('[data-cost]').forEach(i=>t+=Number(i.value||0));
-  $('costTotal').textContent=yen(t); return t;
+  $('costTotal').textContent=yen(t);
+  // 予算は費用の合計から自動で決める（例：13万円 → 〜15万円）
+  const box=$('budgetAuto');
+  if(t>0){
+    const v=budgetFromYen(t); $('budget').value=v;
+    if(box){ box.classList.remove('empty'); box.innerHTML=`${BUDGETS.find(b=>b.v===v).l}<small>（費用の合計 ${yen(t)} から）</small>`; }
+  }else{
+    $('budget').selectedIndex=-1;
+    if(box){ box.classList.add('empty'); box.textContent='②の費用を入れると自動で決まります'; }
+  }
+  if(typeof updateMeta==='function') updateMeta();
+  return t;
 }
+calcCost();
 // 航空券
 let flightN=0;
 function addFlight(data){
@@ -1477,7 +1496,7 @@ function validate(d){
   const e=[];
   if(!d.author) e.push('投稿者ニックネーム');
   if(!d.countries.length) e.push('国');
-  if(!d.budget) e.push('予算'); if(!d.days_v) e.push('日数'); if(!d.styles.length) e.push('旅スタイル');
+  if(!d.budget) e.push('費用内訳（予算は費用の合計から自動で決まります）'); if(!d.days_v) e.push('日数'); if(!d.styles.length) e.push('旅スタイル');
   if(!d.title) e.push('タイトル'); if(!d.lead) e.push('リード文');
   if(!d.dateStart||!d.dateEnd) e.push('旅行時期');
   if(!d.safety && !isDomForm()) e.push('治安');   // 国内旅行は通貨・言語・治安を出さない
@@ -1858,7 +1877,7 @@ window.populateForm = function(d){
   $('flightWhen').value=d.flightWhen||''; $('flightSite').value=d.flightSite||'';
   $('comment').value=d.comment||'';
   $('agodaUrl').value=d.agodaUrl||'';
-  if(d.budget){$('budget').value=d.budget;} if(d.days_v){$('days').value=d.days_v;}
+  if(d.days_v){$('days').value=d.days_v;}   // 予算は費用から自動（calcCost）
   document.querySelectorAll('input[name=country]').forEach(c=>{ c.checked=(d.countries||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
   countryOrder=(d.countries||[]).filter(v=>countryCb(v)); renderCountrySel();
   setPrefs(d.prefectures||[]); $('notFromJapan').checked=!!d.notFromJapan; updateDomestic();
