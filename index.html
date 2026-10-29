@@ -108,27 +108,27 @@ a{color:inherit;text-decoration:none}
 @keyframes hmLand{from{opacity:0}to{opacity:1}}
 @keyframes hmPop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:none}}
 /* 地図が出そろったあと、日本から各国へ光の線が伸びる */
-.hero-map .arc{fill:none;stroke:var(--terra);stroke-width:1.4;stroke-linecap:round;stroke-dasharray:var(--len);stroke-dashoffset:var(--len);
+.hero-map .arc{fill:none;stroke:#ff7438;stroke-width:1.9;stroke-linecap:round;stroke-dasharray:var(--len);stroke-dashoffset:var(--len);
   animation:arcDraw 1.1s ease-out var(--d) forwards,arcRest 1.2s ease calc(var(--d) + 1.4s) forwards}
-.hero-map .arc-head{fill:none;stroke:#fff6e8;stroke-width:2.6;stroke-linecap:round;filter:url(#hmGlow);stroke-dasharray:14 var(--len);stroke-dashoffset:14;opacity:0;
+.hero-map .arc-head{fill:none;stroke:#ffffff;stroke-width:3.2;stroke-linecap:round;filter:url(#hmGlow);stroke-dasharray:14 var(--len);stroke-dashoffset:14;opacity:0;
   animation:arcHead 1.1s ease-out var(--d) forwards}
-.hero-map .ping{fill:none;stroke:var(--terra);stroke-width:1.5;opacity:0;transform-box:fill-box;transform-origin:center;animation:arcPing .9s ease-out calc(var(--d) + .95s) forwards}
+.hero-map .ping{fill:none;stroke:#ff7438;stroke-width:2;opacity:0;transform-box:fill-box;transform-origin:center;animation:arcPing .9s ease-out calc(var(--d) + .95s) forwards}
 .hero-map .jp{fill:var(--terra);stroke:#fff;stroke-width:1.5}
 @keyframes arcDraw{to{stroke-dashoffset:0}}
-@keyframes arcRest{to{opacity:.25}}
+@keyframes arcRest{to{opacity:.5}}
 @keyframes arcHead{0%{opacity:1;stroke-dashoffset:14}90%{opacity:1}100%{opacity:0;stroke-dashoffset:calc(-1 * var(--len))}}
 @keyframes arcPing{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(3)}}
-@media(prefers-reduced-motion:reduce){.hero-map .land,.hero-map a{animation:none}.hero-map .arc{animation:none;stroke-dashoffset:0;opacity:.25}.hero-map .arc-head,.hero-map .ping{display:none}}
+@media(prefers-reduced-motion:reduce){.hero-map .land,.hero-map a{animation:none}.hero-map .arc{animation:none;stroke-dashoffset:0;opacity:.5}.hero-map .arc-head,.hero-map .ping{display:none}}
 @media(max-width:1359px){
-  .plain-hero .hero-map:not([hidden]){display:block;position:absolute;z-index:1;right:0;width:78%;top:104px;margin:0;pointer-events:none;opacity:.75;
+  .plain-hero .hero-map:not([hidden]){display:block;position:absolute;z-index:1;right:0;width:88%;top:88px;margin:0;pointer-events:none;opacity:.75;
     /* 左（見出しの文字と重なるところ）と下の端を、だんだん薄くする */
-    -webkit-mask-image:linear-gradient(to right,transparent 0,#000 50%),linear-gradient(#000 92%,transparent);-webkit-mask-composite:source-in;
-    mask-image:linear-gradient(to right,transparent 0,#000 50%),linear-gradient(#000 92%,transparent);mask-composite:intersect}
+    -webkit-mask-image:linear-gradient(to right,transparent 0,#000 42%),linear-gradient(#000 92%,transparent);-webkit-mask-composite:source-in;
+    mask-image:linear-gradient(to right,transparent 0,#000 42%),linear-gradient(#000 92%,transparent);mask-composite:intersect}
   .plain-hero .hero::before{opacity:.35}
 }
 @media(min-width:1360px){
   /* 地図は大きく、見出しの後ろまで広げる。左端は背景に溶かして文字を読みやすく */
-  .plain-hero .hero-map:not([hidden]){display:block;position:absolute;z-index:1;right:1%;top:96px;width:70%;max-width:1300px;margin:0;
+  .plain-hero .hero-map:not([hidden]){display:block;position:absolute;z-index:1;right:0;top:72px;width:76%;max-width:1400px;margin:0;
     -webkit-mask-image:linear-gradient(to right,transparent 0,#000 30%);mask-image:linear-gradient(to right,transparent 0,#000 30%)}
   /* 見出しの箱が地図のクリックをふさがないように（検索欄とボタンだけ押せる） */
   .plain-hero .hero-inner{pointer-events:none}
@@ -622,9 +622,9 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       const byCountry = {};
       docs.forEach(d => (d.countries || []).forEach(c => { if (c) byCountry[c] = (byCountry[c] || 0) + 1; }));
       let fills = "", dots = "";
-      // 西から東へ順に色づける（陸地が出たあと、0.08秒ずつずらす）
+      // 東から西へ順に色づける（日本のある東側から、陸地が出たあと0.08秒ずつずらす）
       const lngOf = c => (COUNTRY_LL[c] || [0, 0])[1];
-      Object.entries(byCountry).sort((a, b) => lngOf(a[0]) - lngOf(b[0])).forEach(([c, n], i) => {
+      Object.entries(byCountry).sort((a, b) => lngOf(b[0]) - lngOf(a[0])).forEach(([c, n], i) => {
         const delay = `style="--d:${(0.6 + i * 0.08).toFixed(2)}s"`;
         const name = (cinfo(c) || {}).jp || c;
         const op = n >= 4 ? 0.95 : n >= 2 ? 0.75 : 0.55;
@@ -638,7 +638,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
         const ll = COUNTRY_LL[c];
         if (ll && (!rings.length || maxX - minX < 7)) dots += `<a href="${href}" ${delay}><circle class="dot" cx="${X(ll[1]).toFixed(1)}" cy="${Y(ll[0]).toFixed(1)}" r="4">${tip}</circle></a>`;
       });
-      svg.innerHTML = `<defs><filter id="hmGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`
+      svg.innerHTML = `<defs><filter id="hmGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`
         + `<path class="land" d="${land}"/>${fills}${dots}<g class="arcs"></g>`;
 
       // 国がすべて色づいたあと、日本から記事のある国へ光の線を伸ばす（弧を描くように少し上へふくらませる）
@@ -650,7 +650,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       const picked = [], seenRegion = new Set();
       ranked.forEach(c => { const r = (cinfo(c) || {}).r || "other"; if (!seenRegion.has(r)) { seenRegion.add(r); picked.push(c); } });
       ranked.forEach(c => { if (picked.length < 8 && !picked.includes(c)) picked.push(c); });
-      const dests = picked.sort((a, b) => lngOf(a) - lngOf(b));
+      const dests = picked.sort((a, b) => lngOf(b) - lngOf(a));   // 近い（東の）国から順に伸ばす
       const start = 0.6 + Object.keys(byCountry).length * 0.08 + 0.4;
       const g = svg.querySelector(".arcs");
       let arcs = "";
