@@ -113,9 +113,6 @@
   #prefBox details{ margin:0 0 6px; }
   #prefBox summary{ font-size:13px; font-weight:700; color:var(--green-d); cursor:pointer; padding:4px 0; }
   .fl-mode{ width:100%; }
-  .auto-val{ padding:10px 12px; border:1px solid #e3dccd; border-radius:8px; background:#f7f3ec; font-size:14px; font-weight:700; color:var(--green-d); min-height:42px; display:flex; align-items:center; }
-  .auto-val small{ font-weight:500; color:#8a8f98; margin-left:6px; font-size:12px; }
-  .auto-val.empty{ font-weight:500; color:#8a8f98; font-size:12.5px; }
   .sub h4{ margin:0 0 8px; font-size:13px; color:var(--green-d); }
   .addbtn{ border:1px dashed var(--green); color:var(--green-d); background:#fff; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; cursor:pointer; margin-top:6px; }
   .costgrid{ display:grid; grid-template-columns:1fr 140px; gap:8px 12px; align-items:center; }
@@ -190,8 +187,8 @@
   <section class="card">
     <h2><span class="num">0</span>基本設定</h2>
 
-    <label class="f">投稿者ニックネーム<span class="req">必須・登録名で自動入力</span></label>
-    <input type="text" id="author" placeholder="例：mahiro" value="mahiro" autocomplete="off">
+    <!-- 投稿者はログインしている人の登録名で自動（欄は出さない） -->
+    <div hidden><input type="text" id="author" value="mahiro" autocomplete="off"></div>
 
     <div id="collabBox"></div>
 
@@ -208,16 +205,10 @@
       <div id="prefBox"></div>
     </div>
 
-    <div class="row2">
-      <div>
-        <label class="f">予算<span class="opt">自動</span></label>
-        <select id="budget" hidden></select>
-        <div class="auto-val" id="budgetAuto"></div>
-      </div>
-      <div>
-        <label class="f">日数<span class="req">必須</span></label>
-        <select id="days"></select>
-      </div>
+    <!-- 予算は費用の合計から、日数は旅行時期から自動で決まる（欄は出さない） -->
+    <div hidden>
+      <select id="budget"></select><div id="budgetAuto"></div>
+      <select id="days"></select>
     </div>
 
     <label class="f">旅スタイル（複数選択可）<span class="req">必須</span></label>
@@ -684,7 +675,17 @@ function renderCountrySel(){
 // 予算・日数
 BUDGETS.forEach(b=>$('budget').appendChild(new Option(b.l,b.v)));
 DAYS_OPT.forEach(d=>$('days').appendChild(new Option(d.l,d.v)));
-$('budget').selectedIndex=-1; $('days').selectedIndex=0;
+$('budget').selectedIndex=-1; $('days').selectedIndex=-1;
+// 日数は旅行時期（開始日〜終了日）から自動で決める（例：3月1日〜3日＝3日間 → 3〜5日）
+function autoDays(){
+  const a=$('dateStart').value, b=$('dateEnd').value;
+  const n = (a && b) ? Math.round((new Date(b) - new Date(a)) / 86400000) + 1 : 0;
+  const v = n<1 ? '' : n===1 ? 'daytrip' : n===2 ? '1night' : n<=5 ? '3-5' : n<=9 ? '1w' : n<=16 ? '2w' : '3w-plus';
+  if(v) $('days').value=v; else $('days').selectedIndex=-1;
+  updateMeta();
+}
+$('dateStart').addEventListener('change',autoDays);
+$('dateEnd').addEventListener('change',autoDays);
 $('budget').addEventListener('change',updateMeta);
 $('days').addEventListener('change',updateMeta);
 // スタイル
@@ -1496,7 +1497,8 @@ function validate(d){
   const e=[];
   if(!d.author) e.push('投稿者ニックネーム');
   if(!d.countries.length) e.push('国');
-  if(!d.budget) e.push('費用内訳（予算は費用の合計から自動で決まります）'); if(!d.days_v) e.push('日数'); if(!d.styles.length) e.push('旅スタイル');
+  if(!d.budget) e.push('費用内訳（予算は費用の合計から自動で決まります）');
+  if(d.dateStart && d.dateEnd && !d.days_v) e.push('旅行時期（終了日が開始日より前になっています）'); if(!d.styles.length) e.push('旅スタイル');
   if(!d.title) e.push('タイトル'); if(!d.lead) e.push('リード文');
   if(!d.dateStart||!d.dateEnd) e.push('旅行時期');
   if(!d.safety && !isDomForm()) e.push('治安');   // 国内旅行は通貨・言語・治安を出さない
@@ -1872,12 +1874,14 @@ window.populateForm = function(d){
   $('author').value=d.author||'mahiro';
   $('title').value=d.title||'';
   $('lead').value=d.lead||''; $('dateStart').value=d.dateStart||''; $('dateEnd').value=d.dateEnd||'';
+  if(d.dateStart&&d.dateEnd) setTimeout(autoDays);
   $('safety').value=d.safety||'';
   difficulty=d.difficulty||3; paintStars();
   $('flightWhen').value=d.flightWhen||''; $('flightSite').value=d.flightSite||'';
   $('comment').value=d.comment||'';
   $('agodaUrl').value=d.agodaUrl||'';
-  if(d.days_v){$('days').value=d.days_v;}   // 予算は費用から自動（calcCost）
+  // 日数は旅行時期から自動（日付がない古い下書きだけ、保存されていた日数を使う）。予算は費用から自動（calcCost）
+  if(d.days_v){$('days').value=d.days_v;}
   document.querySelectorAll('input[name=country]').forEach(c=>{ c.checked=(d.countries||[]).includes(c.value); c.closest('.chip').classList.toggle('on',c.checked); });
   countryOrder=(d.countries||[]).filter(v=>countryCb(v)); renderCountrySel();
   setPrefs(d.prefectures||[]); $('notFromJapan').checked=!!d.notFromJapan; updateDomestic();
