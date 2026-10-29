@@ -115,10 +115,10 @@ a{color:inherit;text-decoration:none}
 .hero-map .ping{fill:none;stroke:var(--terra);stroke-width:1.5;opacity:0;transform-box:fill-box;transform-origin:center;animation:arcPing .9s ease-out calc(var(--d) + .95s) forwards}
 .hero-map .jp{fill:var(--terra);stroke:#fff;stroke-width:1.5}
 @keyframes arcDraw{to{stroke-dashoffset:0}}
-@keyframes arcRest{to{opacity:.35}}
+@keyframes arcRest{to{opacity:.25}}
 @keyframes arcHead{0%{opacity:1;stroke-dashoffset:14}90%{opacity:1}100%{opacity:0;stroke-dashoffset:calc(-1 * var(--len))}}
 @keyframes arcPing{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(3)}}
-@media(prefers-reduced-motion:reduce){.hero-map .land,.hero-map a{animation:none}.hero-map .arc{animation:none;stroke-dashoffset:0;opacity:.35}.hero-map .arc-head,.hero-map .ping{display:none}}
+@media(prefers-reduced-motion:reduce){.hero-map .land,.hero-map a{animation:none}.hero-map .arc{animation:none;stroke-dashoffset:0;opacity:.25}.hero-map .arc-head,.hero-map .ping{display:none}}
 @media(max-width:1359px){
   .plain-hero .hero-map:not([hidden]){display:block;position:absolute;z-index:1;right:0;width:78%;top:104px;margin:0;pointer-events:none;opacity:.75;
     /* 左（見出しの文字と重なるところ）と下の端を、だんだん薄くする */
@@ -643,7 +643,14 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
 
       // 国がすべて色づいたあと、日本から記事のある国へ光の線を伸ばす（弧を描くように少し上へふくらませる）
       const jp = COUNTRY_LL.japan, jx = X(jp[1]), jy = Y(jp[0]);
-      const dests = Object.keys(byCountry).filter(c => c !== "japan" && COUNTRY_LL[c]);
+      // 線を出す国：まず各地方（ヨーロッパ・南米・アフリカなど）から記事の一番多い国を1つずつ。
+      // そのあと、残りを記事の多い順に足して合計8か国まで（多すぎると地図がごちゃっとするため）
+      const ranked = Object.keys(byCountry).filter(c => c !== "japan" && COUNTRY_LL[c])
+        .sort((a, b) => (byCountry[b] - byCountry[a]) || (lngOf(a) - lngOf(b)));
+      const picked = [], seenRegion = new Set();
+      ranked.forEach(c => { const r = (cinfo(c) || {}).r || "other"; if (!seenRegion.has(r)) { seenRegion.add(r); picked.push(c); } });
+      ranked.forEach(c => { if (picked.length < 8 && !picked.includes(c)) picked.push(c); });
+      const dests = picked.sort((a, b) => lngOf(a) - lngOf(b));
       const start = 0.6 + Object.keys(byCountry).length * 0.08 + 0.4;
       const g = svg.querySelector(".arcs");
       let arcs = "";
@@ -652,7 +659,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
         const dist = Math.hypot(x - jx, y - jy);
         const cx = (jx + x) / 2, cy = (jy + y) / 2 - Math.min(140, dist * 0.32);
         const d = `M${jx.toFixed(1)} ${jy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;
-        const st = `--d:${(start + i * 0.14).toFixed(2)}s`;
+        const st = `--d:${(start + i * 0.2).toFixed(2)}s`;
         arcs += `<path class="arc" d="${d}" style="${st}"/><path class="arc-head" d="${d}" style="${st}"/><circle class="ping" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" style="${st}"/>`;
       });
       g.innerHTML = arcs + `<circle class="jp" cx="${jx.toFixed(1)}" cy="${jy.toFixed(1)}" r="4"/>`;
