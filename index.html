@@ -102,6 +102,12 @@ a{color:inherit;text-decoration:none}
 .hero-map .land{fill:#ebe3d4;stroke:#f6f2ea;stroke-width:.5}
 .hero-map .c{fill:var(--green);stroke:#fff;stroke-width:.6}
 .hero-map .dot{fill:var(--green);stroke:#fff;stroke-width:1.2}
+/* 出てくるとき：陸地がふわっと出て、記事のある国が順番にポンと色づく */
+.hero-map .land{animation:hmLand .9s ease both}
+.hero-map a{animation:hmPop .55s cubic-bezier(.2,.9,.3,1.3) both;animation-delay:var(--d,0s);transform-box:fill-box;transform-origin:center}
+@keyframes hmLand{from{opacity:0}to{opacity:1}}
+@keyframes hmPop{0%{opacity:0;transform:scale(.4)}100%{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.hero-map .land,.hero-map a{animation:none}}
 @media(max-width:1359px){
   .plain-hero .hero-map:not([hidden]){display:block;position:absolute;z-index:1;right:0;width:78%;top:104px;margin:0;pointer-events:none;opacity:.75;
     /* 左（見出しの文字と重なるところ）と下の端を、だんだん薄くする */
@@ -605,7 +611,10 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       const byCountry = {};
       docs.forEach(d => (d.countries || []).forEach(c => { if (c) byCountry[c] = (byCountry[c] || 0) + 1; }));
       let fills = "", dots = "";
-      Object.entries(byCountry).forEach(([c, n]) => {
+      // 西から東へ順に色づける（陸地が出たあと、0.08秒ずつずらす）
+      const lngOf = c => (COUNTRY_LL[c] || [0, 0])[1];
+      Object.entries(byCountry).sort((a, b) => lngOf(a[0]) - lngOf(b[0])).forEach(([c, n], i) => {
+        const delay = `style="--d:${(0.6 + i * 0.08).toFixed(2)}s"`;
         const name = (cinfo(c) || {}).jp || c;
         const op = n >= 4 ? 0.95 : n >= 2 ? 0.75 : 0.55;
         const tip = `<title>${esc(name)}・${n}件</title>`;
@@ -613,10 +622,10 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
         const rings = (shapes[COUNTRY_ISO[c]] || []).map(r => { const pts = []; for (let i = 0; i < r.length; i += 2) pts.push([r[i], r[i + 1]]); return pts; });
         let minX = 1e9, maxX = -1e9;
         rings.forEach(pts => pts.forEach(([lng]) => { const x = X(lng); if (x < minX) minX = x; if (x > maxX) maxX = x; }));
-        if (rings.length) fills += `<a href="${href}"><path class="c" fill-opacity="${op}" d="${rings.map(ring).join("")}">${tip}</path></a>`;
+        if (rings.length) fills += `<a href="${href}" ${delay}><path class="c" fill-opacity="${op}" d="${rings.map(ring).join("")}">${tip}</path></a>`;
         // 小さすぎて見えない国（シンガポール・香港など）は点で目印をつける
         const ll = COUNTRY_LL[c];
-        if (ll && (!rings.length || maxX - minX < 7)) dots += `<a href="${href}"><circle class="dot" cx="${X(ll[1]).toFixed(1)}" cy="${Y(ll[0]).toFixed(1)}" r="4">${tip}</circle></a>`;
+        if (ll && (!rings.length || maxX - minX < 7)) dots += `<a href="${href}" ${delay}><circle class="dot" cx="${X(ll[1]).toFixed(1)}" cy="${Y(ll[0]).toFixed(1)}" r="4">${tip}</circle></a>`;
       });
       svg.innerHTML = `<path class="land" d="${land}"/>${fills}${dots}`;
       box.hidden = false;
