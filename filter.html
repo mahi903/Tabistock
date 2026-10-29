@@ -221,6 +221,16 @@ a{color:inherit;text-decoration:none}
 .rg-sub{grid-column:1/-1;margin:12px 0 0;font-size:11.5px;font-weight:800;color:var(--muted);letter-spacing:.04em}
 .rg-sub2{grid-column:1/-1;margin:8px 0 0;font-size:11px;font-weight:700;color:var(--green)}
 @media(min-width:861px){.rg-body .jp-block .country-list{grid-template-columns:repeat(12,minmax(0,1fr))}.rg-body .jp-block .country-list label{grid-column:span 3}.rg-body .jp-block .country-list label.area{grid-column:span 4}}
+/* 予算スライダー */
+.bslider{padding:6px 4px 4px}
+.bs-val{margin:0 0 12px;text-align:center}
+.bs-val b{font-family:"Manrope","Noto Sans JP",sans-serif;font-size:17px;font-weight:800;color:var(--muted)}
+.bs-val b.on{color:var(--green)}
+#budgetRange{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;outline:none;margin:0;
+  background:linear-gradient(to right,var(--green) 0,var(--green) var(--p,100%),#e6dfd2 var(--p,100%),#e6dfd2 100%)}
+#budgetRange::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:30px;height:30px;border-radius:50%;background:#fff;border:3px solid var(--green);box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer}
+#budgetRange::-moz-range-thumb{width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--green);box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer}
+.bs-scale{display:flex;justify-content:space-between;margin-top:10px;font-size:11px;font-weight:700;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -793,18 +803,11 @@ a{color:inherit;text-decoration:none}
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
     <div class="fpanel"><div class="fpanel-in">
-      <div class="chips">
-        <label><input type="checkbox" data-filter="budget" value="5">〜5万円</label>
-        <label><input type="checkbox" data-filter="budget" value="10">〜10万円</label>
-        <label><input type="checkbox" data-filter="budget" value="15">〜15万円</label>
-        <label><input type="checkbox" data-filter="budget" value="20">〜20万円</label>
-        <label><input type="checkbox" data-filter="budget" value="25">〜25万円</label>
-        <label><input type="checkbox" data-filter="budget" value="30">〜30万円</label>
-        <label><input type="checkbox" data-filter="budget" value="35">〜35万円</label>
-        <label><input type="checkbox" data-filter="budget" value="40">〜40万円</label>
-        <label><input type="checkbox" data-filter="budget" value="45">〜45万円</label>
-        <label><input type="checkbox" data-filter="budget" value="50">〜50万円</label>
-        <label><input type="checkbox" data-filter="budget" value="50plus">50万円以上</label>
+      <!-- 予算は上限をスライダーで選ぶ（1万円刻み）。右端は「上限なし」 -->
+      <div class="bslider">
+        <p class="bs-val"><b id="bsVal">上限なし</b></p>
+        <input type="range" id="budgetRange" min="3" max="51" step="1" value="51" aria-label="予算の上限（万円）">
+        <div class="bs-scale"><span>3万円</span><span>上限なし</span></div>
       </div>
     </div></div>
   </section>
@@ -952,7 +955,9 @@ const selN=document.getElementById('selN');
 function updateCount(){
   let total=0;
   cards.forEach(card=>{
-    const n=card.querySelectorAll('input:checked').length;
+    // 予算スライダーは右端（上限なし）以外なら1件と数える
+    const rg=card.querySelector('#budgetRange');
+    const n=card.querySelectorAll('input:checked').length+(rg&&+rg.value<+rg.max?1:0);
     total+=n;
     const badge=card.querySelector('.fcount');
     if(badge){badge.textContent=n;badge.classList.toggle('show',n>0)}
@@ -961,11 +966,22 @@ function updateCount(){
   refreshHeights();
 }
 document.querySelectorAll('.fcard input').forEach(i=>i.addEventListener('change',updateCount));
+// 予算スライダー：動かしている間も「〜13万円以内」と表示し、つまみまでの線を緑にする
+const bRange=document.getElementById('budgetRange'), bVal=document.getElementById('bsVal');
+function paintBudget(){
+  const v=+bRange.value, max=+bRange.max, min=+bRange.min;
+  bVal.textContent = v>=max ? '上限なし' : `〜${v}万円`;
+  bVal.classList.toggle('on', v<max);
+  bRange.style.setProperty('--p', ((v-min)/(max-min)*100)+'%');
+}
+bRange.addEventListener('input',()=>{ paintBudget(); updateCount(); });
+paintBudget();
 updateCount();
 
 // reset
 document.getElementById('reset').addEventListener('click',()=>{
   document.querySelectorAll('.fcard input:checked').forEach(i=>i.checked=false);
+  bRange.value=bRange.max; paintBudget();
   updateCount();
 });
 
@@ -974,6 +990,7 @@ document.getElementById('go').addEventListener('click',()=>{
   const checked=document.querySelectorAll('.fcard input:checked');
   const params=new URLSearchParams();
   checked.forEach(i=>params.append(i.dataset.filter,i.value));
+  if(+bRange.value<+bRange.max) params.append('budget',bRange.value);   // 予算の上限（万円）
   window.location.href='search.html'+(params.toString()?('?'+params.toString()):'');
 });
 </script>
