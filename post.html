@@ -145,10 +145,6 @@
   .btn{ border:none; border-radius:999px; padding:10px 22px; font-size:14px; font-weight:800; cursor:pointer; }
   .btn-main{ background:var(--green); color:#fff; }
   .btn-main:disabled{ opacity:.5; cursor:not-allowed; }
-  /* 完成度（下のバー） */
-  .prog{ display:flex; align-items:center; gap:6px; border:none; background:none; font:inherit; font-size:12.5px; font-weight:800; color:var(--green-d); cursor:default; padding:4px 2px; }
-  .prog-ring{ width:26px; height:26px; border-radius:50%; background:conic-gradient(var(--green) var(--p,0%), #e6dfd2 0); position:relative; flex:none; }
-  .prog-ring::after{ content:""; position:absolute; inset:4px; border-radius:50%; background:#fff; }
   /* チェックリスト */
   .cklist{ position:fixed; left:0; right:0; bottom:0; z-index:420; background:#fff; border-radius:16px 16px 0 0; max-width:560px; margin:0 auto; max-height:70vh; overflow-y:auto; padding:14px 18px calc(18px + env(safe-area-inset-bottom)); box-shadow:0 -10px 30px rgba(0,0,0,.15); transform:translateY(105%); transition:transform .25s ease; }
   .cklist.open{ transform:none; }
@@ -385,7 +381,6 @@
 <button type="button" class="ck-fab" id="ckFab" aria-label="チェックリストを開く"><span class="hb" aria-hidden="true"></span><span id="ckFabTxt">0%</span></button>
 
 <div class="bar">
-  <div class="prog" id="progBtn" aria-label="完成度"><span class="prog-ring" id="progRing"></span><span id="progTxt">0%</span></div>
   <button class="btn btn-ghost" id="saveDraft" type="button" title="未完成でもマイページに下書きとして保存します">下書き保存</button>
   <button class="btn btn-main" id="generate" type="button">投稿する</button>
   <span class="status" id="status"></span>
@@ -1425,9 +1420,7 @@ let _ckRaf=0;
 function updateProgress(){
   _ckRaf=0;
   const items=checkItems(), done=items.filter(x=>x.ok).length, pct=Math.round(done/items.length*100), left=items.length-done;
-  $('progTxt').textContent=pct+'%';
   $('ckFabTxt').textContent=pct+'%';
-  $('progRing').style.setProperty('--p',pct+'%');
   $('ckFill').style.width=pct+'%';
   $('ckTitle').textContent = left ? `投稿まであと${left}項目（${pct}%）` : '投稿の準備ができました！';
   // 自分でチェックを付ける欄に見えないよう、丸い枠は使わず、終わった項目に✓（灰色の文字）＋押すとその欄へ移動（›）の形にする
