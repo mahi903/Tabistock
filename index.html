@@ -6,8 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>Tabistock｜学生・若者のための旅程データベース</title>
-<meta name="description" content="学生・若者が実際に行った旅のルート・費用・日数・失敗談を、同じフォーマットで共有する旅程データベース。国・予算・日数・スタイルから、自分にも真似できる旅を探せます。">
+<title>Tabistock｜学生・若者のための旅のプラットフォーム</title>
+<meta name="description" content="学生・若者が実際に行った旅のルート・費用・日数・失敗談を、同じフォーマットで共有する旅のプラットフォーム。国・予算・日数・スタイルから、自分にも真似できる旅を探せます。">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -16,15 +16,15 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Tabistock">
 <meta property="og:locale" content="ja_JP">
-<meta property="og:title" content="Tabistock｜学生・若者のための旅程データベース">
-<meta property="og:description" content="学生・若者が実際に行った旅のルート・費用・日数・失敗談を、同じフォーマットで共有する旅程データベース。国・予算・日数・スタイルから、自分にも真似できる旅を探せます。">
+<meta property="og:title" content="Tabistock｜学生・若者のための旅のプラットフォーム">
+<meta property="og:description" content="学生・若者が実際に行った旅のルート・費用・日数・失敗談を、同じフォーマットで共有する旅のプラットフォーム。国・予算・日数・スタイルから、自分にも真似できる旅を探せます。">
 <meta property="og:url" content="https://tabistock.jp/">
 <meta property="og:image" content="https://tabistock.jp/images/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="800">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Tabistock｜学生・若者のための旅程データベース">
-<meta name="twitter:description" content="学生・若者が実際に行った旅のルート・費用・日数・失敗談を、同じフォーマットで共有する旅程データベース。国・予算・日数・スタイルから、自分にも真似できる旅を探せます。">
+<meta name="twitter:title" content="Tabistock｜学生・若者のための旅のプラットフォーム">
+<meta name="twitter:description" content="学生・若者が実際に行った旅のルート・費用・日数・失敗談を、同じフォーマットで共有する旅のプラットフォーム。国・予算・日数・スタイルから、自分にも真似できる旅を探せます。">
 <meta name="twitter:image" content="https://tabistock.jp/images/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -103,8 +103,10 @@ a{color:inherit;text-decoration:none}
 .hero-map .c{fill:var(--green);stroke:#fff;stroke-width:.6}
 .hero-map .dot{fill:var(--green);stroke:#fff;stroke-width:1.2}
 @media(max-width:1359px){
-  .plain-hero .hero-map:not([hidden]){display:block;position:absolute;z-index:1;right:0;width:70%;top:124px;margin:0;pointer-events:none;opacity:.75;
-    -webkit-mask-image:linear-gradient(#000 92%,transparent);mask-image:linear-gradient(#000 92%,transparent)}
+  .plain-hero .hero-map:not([hidden]){display:block;position:absolute;z-index:1;right:0;width:78%;top:104px;margin:0;pointer-events:none;opacity:.75;
+    /* 左（見出しの文字と重なるところ）と下の端を、だんだん薄くする */
+    -webkit-mask-image:linear-gradient(to right,transparent 0,#000 50%),linear-gradient(#000 92%,transparent);-webkit-mask-composite:source-in;
+    mask-image:linear-gradient(to right,transparent 0,#000 50%),linear-gradient(#000 92%,transparent);mask-composite:intersect}
   .plain-hero .hero::before{opacity:.35}
 }
 @media(min-width:1360px){
@@ -429,7 +431,7 @@ a{color:inherit;text-decoration:none}
 <section class="hero">
   <div class="hero-bg" style="background-image:url('images/hero.jpg')"></div>
   <div class="hero-inner">
-    <span class="tag up d1">学生・若者のための旅程データベース</span>
+    <span class="tag up d1">学生・若者のための旅のプラットフォーム</span>
     <h1 class="up d2">若者のリアルな旅を、<br><em>一つの場所に。</em></h1>
     <!-- 開いてすぐ探せるよう、1画面目に検索窓と探し方のボタンを置く -->
     <form class="hsearch up d3" action="search.html" method="get" role="search">

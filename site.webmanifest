@@ -1,7 +1,7 @@
 {
   "name": "Tabistock",
   "short_name": "Tabistock",
-  "description": "学生・若者のための旅程データベース",
+  "description": "学生・若者のための旅のプラットフォーム",
   "start_url": "/",
   "scope": "/",
   "id": "/",
