@@ -622,10 +622,12 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       const byCountry = {};
       docs.forEach(d => (d.countries || []).forEach(c => { if (c) byCountry[c] = (byCountry[c] || 0) + 1; }));
       let fills = "", dots = "";
+      const delayOf = {};   // 国ごとの色づく時刻（その瞬間に日本から線を出す）
       // 東から西へ順に色づける（日本のある東側から、陸地が出たあと0.08秒ずつずらす）
       const lngOf = c => (COUNTRY_LL[c] || [0, 0])[1];
       Object.entries(byCountry).sort((a, b) => lngOf(b[0]) - lngOf(a[0])).forEach(([c, n], i) => {
-        const delay = `style="--d:${(0.6 + i * 0.08).toFixed(2)}s"`;
+        const t = 0.6 + i * 0.08; delayOf[c] = t;
+        const delay = `style="--d:${t.toFixed(2)}s"`;
         const name = (cinfo(c) || {}).jp || c;
         const op = n >= 4 ? 0.95 : n >= 2 ? 0.75 : 0.55;
         const tip = `<title>${esc(name)}・${n}件</title>`;
@@ -651,7 +653,6 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
       ranked.forEach(c => { const r = (cinfo(c) || {}).r || "other"; if (!seenRegion.has(r)) { seenRegion.add(r); picked.push(c); } });
       ranked.forEach(c => { if (picked.length < 8 && !picked.includes(c)) picked.push(c); });
       const dests = picked.sort((a, b) => lngOf(b) - lngOf(a));   // 近い（東の）国から順に伸ばす
-      const start = 0.6 + Object.keys(byCountry).length * 0.08 + 0.4;
       const g = svg.querySelector(".arcs");
       let arcs = "";
       dests.forEach((c, i) => {
@@ -659,7 +660,7 @@ window.updateStat=(el,val)=>{if(!el)return;el.dataset.count=val;if(el.dataset.se
         const dist = Math.hypot(x - jx, y - jy);
         const cx = (jx + x) / 2, cy = (jy + y) / 2 - Math.min(140, dist * 0.32);
         const d = `M${jx.toFixed(1)} ${jy.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;
-        const st = `--d:${(start + i * 0.2).toFixed(2)}s`;
+        const st = `--d:${(delayOf[c] || 0.6).toFixed(2)}s`;   // その国が色づくのと同時に伸ばし始める
         arcs += `<path class="arc" d="${d}" style="${st}"/><path class="arc-head" d="${d}" style="${st}"/><circle class="ping" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" style="${st}"/>`;
       });
       g.innerHTML = arcs + `<circle class="jp" cx="${jx.toFixed(1)}" cy="${jy.toFixed(1)}" r="4"/>`;
