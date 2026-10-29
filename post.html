@@ -95,10 +95,12 @@
   .sub{ border:1px dashed #d9d2c4; border-radius:10px; padding:10px; margin:8px 0; position:relative; background:#fcfaf5; }
   .sub .del{ position:absolute; top:8px; right:8px; border:none; background:#f1e7d6; color:#7a6a4f; border-radius:8px; padding:3px 9px; font-size:12px; cursor:pointer; }
   .sub .dtools{ position:absolute; top:8px; right:8px; display:flex; gap:4px; }
+  .d-more-btn{ display:block; border:none; background:none; padding:8px 0 2px; color:var(--green); font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; }
+  .d-more[hidden]{ display:none; }
   .sub .dtools .del{ position:static; }
   .sub .dtools .mv{ border:none; background:#f1e7d6; color:#7a6a4f; border-radius:8px; width:28px; padding:3px 0; font-size:12px; font-weight:700; cursor:pointer; }
   .sub .dtools .mv:disabled{ opacity:.35; cursor:default; }
-  .day-ins{ display:block; width:100%; margin-top:12px; padding:9px; border:1px dashed #b9cfc6; border-radius:8px; background:#fff; color:var(--green); font-size:12.5px; font-weight:700; cursor:pointer; }
+  .day-ins{ display:block; margin:8px 0 0 auto; padding:4px 2px; border:none; background:none; color:#8a8f98; font:inherit; font-size:11.5px; font-weight:700; cursor:pointer; }
   .day-ins[hidden]{ display:none; }
   /* 国内旅行（日本だけを選んだとき）だけ出す／隠す */
   .dom-only{ display:none !important; }
@@ -299,7 +301,7 @@
   <!-- ===== 5. 日程 ===== -->
   <section class="card">
     <h2><span class="num">5</span>日程（旅程＆旅の記録）</h2>
-    <p class="hint">「＋日を追加」で1日ずつ作成。ここで入れた内容が<b>旅程タイムライン</b>と<b>Day by Dayカード</b>の両方に反映されます。</p>
+    <p class="hint">旅行時期を入れると、日数ぶんのDAYが用意されます。まずは各日の<b>一文サマリー</b>だけでOK（<b>旅程タイムライン</b>に出ます）。文章・写真・地図は「詳しく書く」から。</p>
     <div id="dayList"></div>
     <button class="addbtn" id="addDay" type="button">＋ 日を追加</button>
     <div class="autoall">
@@ -677,12 +679,28 @@ BUDGETS.forEach(b=>$('budget').appendChild(new Option(b.l,b.v)));
 DAYS_OPT.forEach(d=>$('days').appendChild(new Option(d.l,d.v)));
 $('budget').selectedIndex=-1; $('days').selectedIndex=-1;
 // 日数は旅行時期（開始日〜終了日）から自動で決める（例：3月1日〜3日＝3日間 → 3〜5日）
-function autoDays(){
+// sync=false のとき（下書きや記事を開いたとき）は、DAYの数は変えない（日付の表示だけ付け直す）
+function autoDays(sync){
   const a=$('dateStart').value, b=$('dateEnd').value;
   const n = (a && b) ? Math.round((new Date(b) - new Date(a)) / 86400000) + 1 : 0;
   const v = n<1 ? '' : n===1 ? 'daytrip' : n===2 ? '1night' : n<=5 ? '3-5' : n<=9 ? '1w' : n<=16 ? '2w' : '3w-plus';
   if(v) $('days').value=v; else $('days').selectedIndex=-1;
   updateMeta();
+  if(sync===false){ if(typeof renumberDays==='function') renumberDays(); }
+  else syncDayCount(n);
+}
+// 旅行時期の日数ぶん、一文サマリーの欄（DAY）を用意しておく。
+// 足りなければ足し、多すぎるときは後ろの「何も書いていないDAY」だけ消す（書いた日は消さない）
+function syncDayCount(n){
+  if(typeof addDay!=='function') return;
+  if(n>=1 && n<=60){
+    let all=[...document.querySelectorAll('[data-day]')];
+    while(all.length<n){ addDay(); all=[...document.querySelectorAll('[data-day]')]; }
+    const isEmpty=w=>!w.querySelector('.d-sum').value.trim() && !w.querySelector('.d-text').value.trim()
+      && !((w.querySelector('.d-photos')._items||[]).length) && !((w._places||[]).length);
+    while(all.length>n && all.length>1 && isEmpty(all[all.length-1])){ all[all.length-1].remove(); all=[...document.querySelectorAll('[data-day]')]; }
+  }
+  if(typeof renumberDays==='function') renumberDays();
 }
 $('dateStart').addEventListener('change',autoDays);
 $('dateEnd').addEventListener('change',autoDays);
@@ -1056,7 +1074,9 @@ function addDay(data, after){
     </div>
     <h4>DAY <span class="dnum">${dayN}</span></h4>
     <label class="f">一文サマリー<span class="req">必須</span></label><input type="text" class="d-sum" placeholder="例：上海経由でウランバートルへ">
-    <label class="f">その日の文章（観光地を挙げるだけでも可）<span class="req">必須</span></label>
+    <button type="button" class="d-more-btn" aria-expanded="false">＋ 詳しく書く（文章・写真・地図）</button>
+    <div class="d-more" hidden>
+    <label class="f">その日の文章（観光地を挙げるだけでも可）<span class="opt">任意</span></label>
     <textarea class="d-text" placeholder="例：早朝出発。お昼に空港着。市内は予想以上に都会で…"></textarea>
     <label class="f">写真<span class="opt">任意</span></label>
     <div class="filebox"><input type="file" class="d-photos" accept="image/jpeg,image/png" multiple><div class="thumbs"></div></div>
@@ -1071,7 +1091,12 @@ function addDay(data, after){
         <div class="dayloc-list"></div>
       </div>
     </div>
+    </div>
     <button type="button" class="day-ins">＋ この後に1日追加</button>`;
+  // 「詳しく書く」：文章・写真・地図は開いた人だけ書く（一文サマリーだけでも投稿できる）
+  const moreBtn=wrap.querySelector('.d-more-btn'), more=wrap.querySelector('.d-more');
+  const setMore=open=>{ more.hidden=!open; moreBtn.setAttribute('aria-expanded',open?'true':'false'); moreBtn.textContent=open?'− 詳しく書くを閉じる':'＋ 詳しく書く（文章・写真・地図）'; };
+  moreBtn.addEventListener('click',()=>setMore(more.hidden));
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); renumberDays(); });
   // 並べ替え：1つ上／下のDAYと入れ替える
   wrap.querySelectorAll('.mv').forEach(b=>b.addEventListener('click',()=>{
@@ -1112,6 +1137,8 @@ function addDay(data, after){
       fileIn._items = data.photoUrls.map(url => ({ url }));
       renderThumbs(fileIn, th);
     }
+    // 文章・写真・地図のどれかが書いてある日は、最初から開いておく
+    if(data.text || (data.photoUrls||[]).length || wrap._places.length) setMore(true);
   }
   if(after) after.after(wrap); else $('dayList').appendChild(wrap);
   renumberDays();
@@ -1515,7 +1542,7 @@ function validate(d){
   }
   if(!d.heroPhotos.length) e.push('カルーセル写真（最低1枚／サムネにも使用）');
   if(!d.days.length) e.push('日程（最低1日）');
-  d.days.forEach((day,i)=>{ if(!day.summary||!day.text) e.push(`DAY${i+1}の入力`); });
+  d.days.forEach((day,i)=>{ if(!day.summary) e.push(`DAY${i+1}の一文サマリー`); });   // 文章・写真・地図は任意
   if(!d.comment) e.push('投稿者コメント');
   return e;
 }
@@ -1874,7 +1901,7 @@ window.populateForm = function(d){
   $('author').value=d.author||'mahiro';
   $('title').value=d.title||'';
   $('lead').value=d.lead||''; $('dateStart').value=d.dateStart||''; $('dateEnd').value=d.dateEnd||'';
-  if(d.dateStart&&d.dateEnd) setTimeout(autoDays);
+  if(d.dateStart&&d.dateEnd) setTimeout(()=>autoDays(false));
   $('safety').value=d.safety||'';
   difficulty=d.difficulty||3; paintStars();
   $('flightWhen').value=d.flightWhen||''; $('flightSite').value=d.flightSite||'';
