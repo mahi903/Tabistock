@@ -4127,3 +4127,7 @@ body.ov-lock{ overflow:hidden; }
 .action-like, .action-share, .action-save, .comment-submit, .nr-btn,
 .result-filter-bar button, .fs-apply, .route-tabs button { border-radius: 8px !important; }
 .chip { border-radius: 6px !important; }
+
+/* 本文も写真も無いDAY：開閉なし（サマリー1行だけ） */
+.day-card.day-empty { grid-template-columns: 1fr; }
+.day-card.day-empty .day-toggle { cursor: default; }

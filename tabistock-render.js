@@ -479,6 +479,8 @@ ${timeline}
   const overviewTabs=overviewItems.map(it=>`    <button type="button" class="ov-tab" data-ov="${it.k}"><span>${it.label}</span></button>`).join('\n');
   const overviewPanels=overviewItems.map(it=>`      <div class="ov-panel" data-ov="${it.k}">${it.card}</div>`).join('\n');
 
+  // DAYに本文も写真も1つも無い（一文サマリーだけ）なら「旅の記録」ごと出さない（旅程カードだけで足りる）
+  const hasDayDetail=days.some(day=>String(day.text||'').trim()||(day.photoUrls||[]).length);
   const dayCards=days.map((day,i)=>{
     const urls=day.photoUrls||[];
     const imgs=urls.map(u=>`        <img src="${esc(u)}" alt="" loading="lazy">`).join('\n');
@@ -496,6 +498,13 @@ ${imgs}
 ${imgs}
       </div>`;
     }
+    // 本文も写真も無い日は＋を出さず、開けない（サマリーの1行だけ）
+    if(!String(day.text||'').trim() && !urls.length) return `  <article class="day-card day-empty">
+    <div class="day-toggle">
+      <span class="day-label">DAY ${i+1}.${day.date?' '+esc(day.date):''}</span>
+      <span class="day-title">${esc(day.summary)}</span>
+    </div>
+  </article>`;
     return `  <article class="day-card">
     <button class="day-toggle">
       <span class="day-label">DAY ${i+1}.${day.date?' '+esc(day.date):''}</span>
@@ -581,14 +590,14 @@ ${overviewPanels}
   </div>
 </div>
 ${routeSection}
-<div class="section-intro">
+${hasDayDetail?`<div class="section-intro">
   <p class="eyebrow">Day by Day</p>
   <h2>旅の記録</h2>
 </div>
 <section class="day-grid">
 
 ${dayCards}
-</section>
+</section>`:''}
 <section class="tips-section">
   <div class="tips-card">
     <p class="tips-eyebrow">From the Traveler</p>
