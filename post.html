@@ -346,15 +346,14 @@
   <!-- ===== 3. 航空券 ===== -->
   <section class="card">
     <h2><span class="num">3</span><span class="fl-only">航空券</span><span class="mv-only">移動</span></h2>
-    <p class="hint fl-only">周遊で複数回取った場合は「航路を追加」で増やせます。合計は自動計算。</p>
-    <p class="hint mv-only">行きと帰り、途中の移動など、区間ごとに手段（新幹線・夜行バスなど）と値段を書けます。合計は自動計算。</p>
+    <p class="hint fl-only">周遊で複数回取った場合は「航路を追加」で増やせます。</p>
+    <p class="hint mv-only">行きと帰り、途中の移動など、区間ごとに手段（新幹線・夜行バスなど）と値段を書けます。</p>
     <div id="flightList"></div>
     <button class="addbtn" id="addFlight" type="button">＋ <span class="fl-only">航路</span><span class="mv-only">区間</span>を追加</button>
     <div class="row2" style="margin-top:14px">
       <div><label class="f">予約時期<span class="req fl-only">必須</span><span class="opt mv-only">任意</span></label><input type="text" id="flightWhen" placeholder="例：出発の2ヶ月前"></div>
       <div><label class="f">予約サイト<span class="req fl-only">必須</span><span class="opt mv-only">任意</span></label><input type="text" id="flightSite" placeholder="例：Trip.com"></div>
     </div>
-    <div class="total"><span><span class="fl-only">航空券合計</span><span class="mv-only">移動合計</span></span><b id="flightTotal">¥0</b></div>
   </section>
 
   <!-- ===== 4. 利用サービス ===== -->
@@ -986,7 +985,8 @@ function addFlight(data){
   if(typeof applyExamples==='function' && typeof EX_DOM!=='undefined') applyExamples(wrap);
 }
 function renumberFlights(){ const w=isMoveForm()?'区間 ':'航路 '; let n=0; document.querySelectorAll('[data-flight] h4').forEach(h=>{n++;h.textContent=w+n;}); flightN=n; }
-function calcFlight(){ let t=0; document.querySelectorAll('.fl-price').forEach(i=>t+=Number(i.value||0)); $('flightTotal').textContent=yen(t); return t; }
+// 航空券の合計は費用内訳の「航空券」で入力するので、この欄では表示しない（合計の計算だけ残す）
+function calcFlight(){ let t=0; document.querySelectorAll('.fl-price').forEach(i=>t+=Number(i.value||0)); const el=$('flightTotal'); if(el) el.textContent=yen(t); return t; }
 $('addFlight').addEventListener('click',()=>addFlight());
 addFlight();
 // 航空会社オートコンプリート（英語・カタカナ・かな・漢字で絞り込み／欄の直下に候補を表示）
