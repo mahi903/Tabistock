@@ -192,7 +192,7 @@
   #ckList li small{ color:#8a8f98; font-size:12px; font-weight:700; }
   #ckList li .go{ color:#c4bcae; font-size:16px; line-height:1; }
   #ckList li.ok .lb{ color:#8a8f98; }
-  /* 区切り（基本設定・記事トップ…）の見出し行と、その下の項目 */
+  /* 区切り（記事トップ・費用内訳…）の見出し行と、その下の項目 */
   #ckList li.grp{ font-weight:800; border-top:1px solid #f0ebe1; padding-top:11px; }
   #ckList li.grp:first-child{ border-top:none; }
   #ckList li.head{ cursor:default; }
@@ -248,14 +248,12 @@
     <p>管理者の承認後に公開されます。</p>
   </section>
 
-  <!-- ===== 0. 基本設定 ===== -->
+  <!-- ===== 1. ヒーロー ===== -->
   <section class="card">
-    <h2><span class="num">0</span>基本設定</h2>
+    <h2><span class="num">1</span>記事トップ</h2>
 
     <!-- 投稿者はログインしている人の登録名で自動（欄は出さない） -->
     <div hidden><input type="text" id="author" value="mahiro" autocomplete="off"></div>
-
-    <div id="collabBox"></div>
 
     <label class="f">国（複数選択可）<span class="req">必須</span></label>
     <p class="hint" style="margin:0 0 6px">周遊なら複数選べます。1つ目に選んだ国で地域が決まります。</p>
@@ -279,11 +277,6 @@
     <label class="f">旅スタイル（複数選択可）<span class="req">必須</span></label>
     <div class="chips" id="styleBox"></div>
     <label class="nfj intl-only"><input type="checkbox" id="notFromJapan"><span>出発地が日本以外（留学先や世界一周中など）</span></label>
-  </section>
-
-  <!-- ===== 1. ヒーロー ===== -->
-  <section class="card">
-    <h2><span class="num">1</span>記事トップ</h2>
 
     <label class="f">タイトル<span class="req">必須</span></label>
     <input type="text" id="title" placeholder="例：モンゴル5泊6日｜大学生ひとり旅">
@@ -389,6 +382,11 @@
       <p class="hint" id="transitPickEmpty">あなたのトランジット記事を読み込み中…</p>
     </div>
     <p class="hint" style="margin-top:10px"><a id="newTransitLink" href="post-transit.html">＋ トランジット記事を新しく投稿する</a></p>
+  </section>
+
+  <!-- ===== 共同投稿者（任意・最後に小さく） ===== -->
+  <section class="card">
+    <div id="collabBox"></div>
   </section>
 
 </div>
@@ -1463,11 +1461,11 @@ function checkItems(){
   const dom=isDomForm(), move=isMoveForm();
   const legs=[...document.querySelectorAll('[data-flight]')].filter(w=>['.fl-from','.fl-to','.fl-air','.fl-price','.fl-transit'].some(sel=>((w.querySelector(sel)||{}).value||'').trim()));
   const days=[...document.querySelectorAll('[data-day]')], filled=days.filter(w=>w.querySelector('.d-sum').value.trim()).length;
-  // g＝フォームの区切り（基本設定・記事トップ…）。区切りに項目が1つだけのものは、区切りの行そのものを項目として出す
+  // g＝フォームの区切り（記事トップ・費用内訳…）。区切りに項目が1つだけのものは、区切りの行そのものを項目として出す
   return [
-    {g:'基本設定', l:'国', ok:selectedCountries().length>0, t:$('countrySearch')},
-    ...(dom?[{g:'基本設定', l:'都道府県', ok:selectedPrefs().length>0, t:$('prefWrap')}]:[]),
-    {g:'基本設定', l:'旅スタイル', ok:selectedStyles().length>0, t:document.querySelector('.pick-field')},
+    {g:'記事トップ', l:'国', ok:selectedCountries().length>0, t:$('countrySearch')},
+    ...(dom?[{g:'記事トップ', l:'都道府県', ok:selectedPrefs().length>0, t:$('prefWrap')}]:[]),
+    {g:'記事トップ', l:'旅スタイル', ok:selectedStyles().length>0, t:document.querySelector('.pick-field')},
     {g:'記事トップ', l:'タイトル', ok:!!v('title'), t:$('title')},
     {g:'記事トップ', l:'リード文', ok:!!v('lead'), t:$('lead')},
     {g:'記事トップ', l:'旅行時期', ok:!!(v('dateStart')&&v('dateEnd')&&$('days').value), t:$('dateStart')},
@@ -1501,7 +1499,7 @@ function updateProgress(){
 const scheduleProgress=()=>{ if(!_ckRaf) _ckRaf=requestAnimationFrame(updateProgress); };
 ['input','change','click'].forEach(ev=>document.addEventListener(ev,scheduleProgress,true));
 const ckOpen=open=>{ $('cklist').classList.toggle('open',open); $('ckBg').hidden=!open; };
-// PC：最初は「基本設定」カードと同じ高さ、スクロールしたら画面上端（16px）に付いてくる
+// PC：最初は「記事トップ」カードと同じ高さ、スクロールしたら画面上端（16px）に付いてくる
 const ckPin=()=>{ const ck=$('cklist'); if(!matchMedia('(min-width:1400px)').matches){ ck.style.top=''; return; }
   const top=document.querySelector('.wrap section.card').getBoundingClientRect().top; ck.style.top=Math.max(16,top)+'px'; };
 addEventListener('scroll',ckPin,{passive:true}); addEventListener('resize',ckPin); ckPin();
