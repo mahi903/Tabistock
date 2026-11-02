@@ -118,6 +118,29 @@
   #prefBox summary{ font-size:13px; font-weight:700; color:var(--green-d); cursor:pointer; padding:4px 0; }
   .fl-mode{ width:100%; }
   .sub h4{ margin:0 0 8px; font-size:13px; color:var(--green-d); }
+  /* 日程：記事の旅程と同じタイムラインの見た目。「＋」で詳しく書く、「⋯」に並べ替え・追加・削除 */
+  #dayList{ position:relative; padding-left:24px; margin-top:4px; }
+  #dayList::before{ content:""; position:absolute; left:7px; top:12px; bottom:22px; width:2px; background:var(--green-line,#cfe3d9); border-radius:2px; }
+  .sub.day{ border:none; background:none; padding:0; margin:0 0 12px; border-radius:0; }
+  .sub.day::before{ content:""; position:absolute; left:-23px; top:3px; width:10px; height:10px; border-radius:50%; border:2.5px solid var(--green); background:#fff; }
+  .d-lbl{ font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--green); margin:0 0 5px; }
+  .d-line{ display:flex; align-items:stretch; gap:6px; }
+  .d-line .d-sum{ flex:1; min-width:0; }
+  .d-more-btn,.d-menu-btn{ flex:none; width:38px; min-height:0; height:auto; border:none; border-radius:9px; font:inherit; cursor:pointer; display:grid; place-items:center; padding:0; }
+  .d-more-btn{ background:var(--green-t,#eef5f1); color:var(--green); font-size:18px; font-weight:800; }
+  .d-more-btn.open{ background:var(--green); color:#fff; }
+  .d-menu-wrap{ position:relative; flex:none; display:flex; }
+  .d-menu-btn{ background:none; color:#8a8f98; font-size:18px; font-weight:800; letter-spacing:1px; }
+  .d-menu-btn.open{ background:#f1e7d6; color:#7a6a4f; }
+  .d-menu{ position:absolute; right:0; top:44px; z-index:30; background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.18); width:190px; padding:6px; display:flex; flex-direction:column; }
+  .d-menu[hidden]{ display:none; }
+  .d-menu button{ border:none; background:none; text-align:left; font:inherit; font-size:13px; font-weight:600; color:var(--ink,#1b2330); padding:10px 10px; border-radius:8px; cursor:pointer; }
+  .d-menu button:hover{ background:#f6f2ea; }
+  .d-menu button:disabled{ opacity:.35; cursor:default; background:none; }
+  .d-menu button[hidden]{ display:none; }
+  .d-menu .del{ position:static; background:none; color:#c0392b; font-size:13px; font-weight:600; text-align:left; border-top:1px solid #eee; border-radius:0 0 8px 8px; margin-top:4px; padding:12px 10px 10px; }
+  .sub.day .d-more{ margin-top:10px; padding:10px; border:1px dashed #d9d2c4; border-radius:10px; background:#fcfaf5; }
+  #addDay{ margin-left:24px; border:none; background:none; padding:4px 0; color:var(--green); font-size:13px; font-weight:800; }
   .addbtn{ border:1px dashed var(--green); color:var(--green-d); background:#fff; border-radius:10px; padding:9px 14px; font-size:13px; font-weight:700; cursor:pointer; margin-top:6px; }
   .costgrid{ display:grid; grid-template-columns:1fr 140px; gap:8px 12px; align-items:center; }
   .costgrid .yen{ position:relative; }
@@ -341,7 +364,7 @@
   <!-- ===== 5. 日程 ===== -->
   <section class="card">
     <h2><span class="num">5</span>日程（旅程＆旅の記録）</h2>
-    <p class="hint">旅行時期を入れると、日数ぶんのDAYが用意されます。まずは各日の<b>一文サマリー</b>だけでOK（<b>旅程タイムライン</b>に出ます）。文章・写真・地図は「詳しく書く」から。</p>
+    <p class="hint">旅行時期を入れると、日数ぶんのDAYが用意されます。各日を<b>一言</b>でOK <span class="req">必須</span>（<b>旅程タイムライン</b>に出ます）。文章・写真・地図は「＋」から。</p>
     <div id="dayList"></div>
     <button class="addbtn" id="addDay" type="button">＋ 日を追加</button>
     <div class="autoall">
@@ -846,8 +869,10 @@ function applyExamples(root){
     (root||document).querySelectorAll(sel).forEach(el=>{
       if(el.dataset.phIntl===undefined) el.dataset.phIntl=el.placeholder||'';
       el.placeholder = dom ? txt : (local && EX_LOCAL[sel]) ? EX_LOCAL[sel] : el.dataset.phIntl;
+      el.dataset.phBase = el.placeholder;
     });
   });
+  if(typeof updateDayExamples==='function') updateDayExamples();
 }
 // 国が変わるたびに、国内用の表示（都道府県・移動・入力例）に切り替える
 function updateDomestic(){
@@ -1111,21 +1136,26 @@ SERVICE_CATS.forEach((cat,ci)=>{
   makePicker(wrap.querySelector('.svc-body'), { title: cat.k, placeholder: '選択してください' });
 });
 // 日程
+const D_PLUS='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>', D_MINUS='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8h11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
 let dayN=0;
 // after を渡すと、そのDAYのすぐ後ろに差し込む（抜けていた日を途中に足せる）
 function addDay(data, after){
   dayN++;
   const wrap=document.createElement('div'); wrap.className='sub'; wrap.dataset.day='1';
-  wrap.innerHTML=`<div class="dtools">
-      <button class="mv" data-mv="-1" type="button" aria-label="1つ上へ">↑</button>
-      <button class="mv" data-mv="1" type="button" aria-label="1つ下へ">↓</button>
-      <button class="del" type="button">削除</button>
-    </div>
-    <h4>DAY <span class="dnum">${dayN}</span></h4>
-    <label class="f">一文サマリー<span class="req">必須</span></label><input type="text" class="d-sum" placeholder="例：上海経由でウランバートルへ">
-    <div class="d-row">
-      <button type="button" class="d-more-btn" aria-expanded="false" title="その日の文章・写真・地図">＋ 詳しく書く</button>
-      <button type="button" class="day-ins">＋ この後に1日追加</button>
+  wrap.className='sub day';
+  wrap.innerHTML=`<div class="d-lbl">DAY <span class="dnum">${dayN}</span></div>
+    <div class="d-line">
+      <input type="text" class="d-sum" placeholder="例：上海経由でウランバートルへ" aria-label="この日の一言（必須）">
+      <button type="button" class="d-more-btn" aria-expanded="false" aria-label="詳しく書く（文章・写真・地図）" title="詳しく書く（文章・写真・地図）"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v11M2.5 8h11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+      <div class="d-menu-wrap">
+        <button type="button" class="d-menu-btn" aria-expanded="false" aria-label="並べ替え・追加・削除"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="3.5" cy="9" r="1.7" fill="currentColor"/><circle cx="9" cy="9" r="1.7" fill="currentColor"/><circle cx="14.5" cy="9" r="1.7" fill="currentColor"/></svg></button>
+        <div class="d-menu" hidden>
+          <button class="mv" data-mv="-1" type="button">↑ 上へ移動</button>
+          <button class="mv" data-mv="1" type="button">↓ 下へ移動</button>
+          <button type="button" class="day-ins">＋ この後に1日追加</button>
+          <button class="del" type="button">この日を削除</button>
+        </div>
+      </div>
     </div>
     <div class="d-more" hidden>
     <label class="f">その日の文章（観光地を挙げるだけでも可）<span class="opt">任意</span></label>
@@ -1146,8 +1176,13 @@ function addDay(data, after){
     </div>`;
   // 「詳しく書く」：文章・写真・地図は開いた人だけ書く（一文サマリーだけでも投稿できる）
   const moreBtn=wrap.querySelector('.d-more-btn'), more=wrap.querySelector('.d-more');
-  const setMore=open=>{ more.hidden=!open; moreBtn.setAttribute('aria-expanded',open?'true':'false'); moreBtn.textContent=open?'− 閉じる':'＋ 詳しく書く'; };
+  const setMore=open=>{ more.hidden=!open; moreBtn.setAttribute('aria-expanded',open?'true':'false'); moreBtn.innerHTML=open?D_MINUS:D_PLUS; moreBtn.classList.toggle('open',open); };
   moreBtn.addEventListener('click',()=>setMore(more.hidden));
+  // 「⋯」メニュー：並べ替え・途中に追加・削除。押したら閉じる
+  const menuBtn=wrap.querySelector('.d-menu-btn'), menu=wrap.querySelector('.d-menu');
+  const setMenu=open=>{ menu.hidden=!open; menuBtn.setAttribute('aria-expanded',open?'true':'false'); menuBtn.classList.toggle('open',open); };
+  menuBtn.addEventListener('click',e=>{ e.stopPropagation(); const willOpen=menu.hidden; closeDayMenus(); setMenu(willOpen); });
+  menu.addEventListener('click',()=>setMenu(false));
   wrap.querySelector('.del').addEventListener('click',()=>{ wrap.remove(); renumberDays(); });
   // 並べ替え：1つ上／下のDAYと入れ替える
   wrap.querySelectorAll('.mv').forEach(b=>b.addEventListener('click',()=>{
@@ -1389,8 +1424,37 @@ function renumberDays(){
     w.querySelector('.day-ins').hidden = i===all.length-1;
   });
   dayN=all.length;
+  updateDayExamples();
 }
 $('addDay').addEventListener('click',()=>addDay());
+// 開いている「⋯」メニューを閉じる（外を押したときも閉じる）
+function closeDayMenus(){
+  document.querySelectorAll('.d-menu').forEach(m=>{ m.hidden=true; });
+  document.querySelectorAll('.d-menu-btn').forEach(b=>{ b.classList.remove('open'); b.setAttribute('aria-expanded','false'); });
+}
+document.addEventListener('click',e=>{ if(!e.target.closest('.d-menu-wrap')) closeDayMenus(); });
+// 1日目と最終日の「例：」を、航空券（区間）に入れた出発地・到着地から作る（入力欄には入れない。例の文字だけ）
+function updateDayExamples(){
+  const days=[...document.querySelectorAll('[data-day] .d-sum')];
+  days.forEach(el=>{ if(el.dataset.phBase!==undefined) el.placeholder=el.dataset.phBase; });
+  if(!days.length) return;
+  const fls=[...document.querySelectorAll('[data-flight]')].map(w=>({
+    from:(w.querySelector('.fl-from')||{}).value?.trim()||'',
+    to:(w.querySelector('.fl-to')||{}).value?.trim()||'',
+    round:!!w.querySelector('.trip-btn.on[data-trip="round"]')
+  })).filter(f=>f.from&&f.to);
+  if(!fls.length) return;
+  const first=fls[0];
+  days[0].placeholder=`例：${first.from}から${first.to}へ`;
+  if(days.length>1){
+    const last=fls[fls.length-1];
+    days[days.length-1].placeholder = (fls.length===1 && first.round)
+      ? `例：${first.to}から${first.from}へ帰国`
+      : (fls.length>1 ? `例：${last.from}から${last.to}へ` : days[days.length-1].placeholder);
+  }
+}
+document.addEventListener('input',e=>{ if(e.target.matches('.fl-from,.fl-to')) updateDayExamples(); });
+document.addEventListener('click',e=>{ if(e.target.closest('.trip-btn')) setTimeout(updateDayExamples,0); });
 
 /* ===== 必須項目のチェックリスト（完成度） =====
    投稿するときのチェック（validate）と同じ項目を、入力のたびに軽く見直して表示する */
