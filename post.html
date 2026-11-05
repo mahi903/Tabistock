@@ -2908,10 +2908,10 @@ window.tabistockSubmit = async function(d, st, mode){
     status = "pending";
   }else{
     const prev = window.tabistockEditStatus || "pending";
-    status = (prev === "published" || prev === "pending") ? prev : "pending";
+    status = ["published", "pending", "hidden"].includes(prev) ? prev : "pending";
   }
   // 新しく投稿（申請）したときだけ「ありがとう」演出を出す（新規、または下書きからの投稿。公開中・申請中の更新では出さない）
-  const firstSubmit = mode !== "draft" && (!editId || !["published", "pending"].includes(window.tabistockEditStatus));
+  const firstSubmit = mode !== "draft" && (!editId || !["published", "pending", "hidden"].includes(window.tabistockEditStatus));
 
   st.className = "status"; st.textContent = editId ? "記事を更新中…" : "記事を作成中…";
 
@@ -2999,6 +2999,7 @@ window.tabistockSubmit = async function(d, st, mode){
   }else if(editId){
     st.textContent = (status === "published")
       ? "記事を更新しました（公開中）。"
+      : (status === "hidden") ? "記事を更新しました（非表示のまま）。"
       : "記事を更新しました。管理者の承認後に公開されます。";
   }else{
     st.textContent = "投稿しました！管理者の承認後に公開されます。（記事ID: "+id+"）";
@@ -3108,8 +3109,10 @@ onAuthStateChanged(auth, async (user) => {
       // 見出し・ボタンのラベルを編集向けに変更
       const h1 = document.getElementById("pageH1"); if(h1) h1.textContent = (data.status === "draft") ? "下書きを編集する" : "投稿を編集する";
       const gen = document.getElementById("generate");
-      if(gen) gen.textContent = (data.status === "published") ? "この内容で更新する" : "更新して申請する";
-      const sd = document.getElementById("saveDraft"); if(sd) sd.textContent = "下書きとして保存";
+      if(gen) gen.textContent = ["published", "hidden"].includes(data.status) ? "この内容で更新する" : "更新して申請する";
+      const sd = document.getElementById("saveDraft");
+      // 一度承認された記事（公開中・非表示）は、下書きにすると公開が外れて再承認が必要になるので、下書き保存ボタンを出さない
+      if(sd){ if(["published", "hidden"].includes(data.status)) sd.hidden = true; else sd.textContent = "下書きとして保存"; }
       const stEl = document.getElementById("status");
       if(stEl){ stEl.className = "status"; stEl.textContent = ""; }
     }catch(e){
