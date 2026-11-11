@@ -415,7 +415,6 @@ export function renderArticleBody(d){
 </section>` : '';
 
   const flights=d.flights||[];
-  let flightTotal=0; flights.forEach(f=>flightTotal+=Number(f.price||0));
   // 国内旅行は「移動」として、区間ごとに手段（新幹線・夜行バスなど）も出す
   const flightRoutes=flights.map((f,i)=>{
     const mode=mv?moveLabel(f.mode||'plane'):'';
@@ -436,10 +435,6 @@ export function renderArticleBody(d){
 ${flightRoutes}
 
 ${flightMeta}
-  <div class="cost-total">
-    <span>${mv?'移動合計':'航空券合計'}</span>
-    <strong>${yen(flightTotal)}</strong>
-  </div>
 </div>`:'';
 
   const services=d.services||[];

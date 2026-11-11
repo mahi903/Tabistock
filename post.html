@@ -1790,7 +1790,6 @@ function renderArticle(d){
     </div>`).join('\n\n');
 
   // flights
-  let flightTotal=0; d.flights.forEach(f=>flightTotal+=f.price);
   const flightRoutes=d.flights.map((f,i)=>`  <div class="flight-route">
     <span class="flight-label">航路${i+1}</span>
     <h3>${esc(f.route)}</h3>
@@ -1806,10 +1805,6 @@ function renderArticle(d){
 ${flightRoutes}
 
 ${flightMeta}
-  <div class="cost-total">
-    <span>航空券合計</span>
-    <strong>${yen(flightTotal)}</strong>
-  </div>
 </div>`:'';
 
   // services
