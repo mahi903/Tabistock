@@ -1459,8 +1459,13 @@ document.addEventListener('click',e=>{ if(!e.target.closest('.d-menu-wrap')) clo
 // 1日目と最終日の「例：」を、航空券（区間）に入れた出発地・到着地から作る（入力欄には入れない。例の文字だけ）
 function updateDayExamples(){
   const days=[...document.querySelectorAll('[data-day] .d-sum')];
-  days.forEach(el=>{ if(el.dataset.phBase!==undefined) el.placeholder=el.dataset.phBase; });
   if(!days.length) return;
+  // 例は1日目（出発）と最終日（帰り）だけ。中の日は例を出さない（全部に同じ例が並ぶとうるさいため）
+  const dom=typeof isDomForm==='function'&&isDomForm(), away=typeof isNotFromJapan==='function'&&isNotFromJapan();
+  days.forEach((el,i)=>{ el.placeholder = i>0 ? '' : dom ? '例：新幹線で京都へ' : away ? '例：ブリュッセルから飛行機でヘルシンキへ' : '例：上海経由でウランバートルへ'; });
+  if(days.length>1){
+    days[days.length-1].placeholder = dom ? '例：新幹線で家に帰る' : away ? '例：留学先に戻る' : '例：日本へ帰国';
+  }
   const fls=[...document.querySelectorAll('[data-flight]')].map(w=>({
     from:(w.querySelector('.fl-from')||{}).value?.trim()||'',
     to:(w.querySelector('.fl-to')||{}).value?.trim()||'',
