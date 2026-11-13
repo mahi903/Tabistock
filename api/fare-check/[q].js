@@ -34,19 +34,38 @@ function nextMonths(n){
   return out;
 }
 async function roundTrip(origin, dest, month, token){
-  const p = new URLSearchParams({ origin, destination: dest, currency: "jpy", departure_at: month, one_way: "false", sorting: "price", limit: "1" });
+  const p = new URLSearchParams({ origin, destination: dest, currency: "jpy", departure_at: month, one_way: "false", sorting: "price", limit: "30" });
   const r = await fetch("https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + p, {
     headers: { "X-Access-Token": token, "Accept-Encoding": "gzip, deflate" }
   });
   if (!r.ok) return { error: r.status };
-  const j = await r.json(); const x = (j.data || [])[0];
+  const j = await r.json();
+  // 旅行日数が3〜21日の往復だけ（日帰りや数か月滞在のような極端な日程を除く）
+  const days = x => (new Date(x.return_at) - new Date(x.departure_at)) / 86400000;
+  const x = (j.data || []).filter(x => x.return_at && days(x) >= 3 && days(x) <= 21)[0];
   return x ? { price: x.price, dep: x.departure_at, ret: x.return_at, transfers: x.transfers, returnTransfers: x.return_transfers } : null;
 }
 
 export default async function handler(req, res) {
   const token = process.env.TRAVELPAYOUTS_TOKEN;
   if (!token) { res.status(500).json({ error: "TRAVELPAYOUTS_TOKEN が未設定" }); return; }
-  const [o, market] = String(req.query.q || "").split("-");
+  const [o, market, regionKey] = String(req.query.q || "").split("-");
+  // 往復を地域ごとに全都市：/api/fare-check/TYO-rt-asia
+  if (market === "rt" && regionKey) {
+    const origin = (o || "").toUpperCase(); const list = DEST[regionKey];
+    if (!["TYO", "OSA"].includes(origin) || !list) { res.status(400).json({ error: "bad params" }); return; }
+    const months = nextMonths(12); const jobs = [];
+    for (const d of list) for (const m of months) jobs.push([d, m]);
+    const out = {};
+    for (let i = 0; i < jobs.length; i += 24) {
+      const chunk = jobs.slice(i, i + 24);
+      const rs = await Promise.all(chunk.map(([d, m]) => roundTrip(origin, d, m, token).catch(() => null)));
+      chunk.forEach(([d, m], k) => { if (rs[k] && rs[k].price) (out[d] ||= {})[m] = rs[k]; });
+    }
+    res.setHeader("Cache-Control", "s-maxage=3600");
+    res.status(200).json({ origin, mode: "roundtrip", region: regionKey, routes: out });
+    return;
+  }
   // 帰り（現地→日本）の片道：/api/fare-check/TYO-ret
   if (market === "ret") {
     const home = (o || "").toUpperCase();
