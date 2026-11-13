@@ -26,10 +26,40 @@ async function monthly(origin, dest, market, token){
   return { n: prices.length, min: prices.length ? Math.min(...prices) : null, max: prices.length ? Math.max(...prices) : null, months };
 }
 
+// 往復：月ごとに「その月に出発する往復の最安値」を1件ずつ取る（主要12都市だけ）
+const RT_DEST = ["SEL","TPE","HKG","SHA","BKK","SIN","DPS","LON","PAR","HNL","LAX","SYD"];
+function nextMonths(n){
+  const out = []; const d = new Date(); d.setUTCDate(1);
+  for (let i = 0; i < n; i++){ out.push(d.toISOString().slice(0, 7)); d.setUTCMonth(d.getUTCMonth() + 1); }
+  return out;
+}
+async function roundTrip(origin, dest, month, token){
+  const p = new URLSearchParams({ origin, destination: dest, currency: "jpy", departure_at: month, one_way: "false", sorting: "price", limit: "1" });
+  const r = await fetch("https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + p, {
+    headers: { "X-Access-Token": token, "Accept-Encoding": "gzip, deflate" }
+  });
+  if (!r.ok) return { error: r.status };
+  const j = await r.json(); const x = (j.data || [])[0];
+  return x ? { price: x.price, dep: x.departure_at, ret: x.return_at, transfers: x.transfers, returnTransfers: x.return_transfers } : null;
+}
+
 export default async function handler(req, res) {
   const token = process.env.TRAVELPAYOUTS_TOKEN;
   if (!token) { res.status(500).json({ error: "TRAVELPAYOUTS_TOKEN が未設定" }); return; }
   const [o, market] = String(req.query.q || "").split("-");
+  if (market === "rt") {
+    const origin = (o || "").toUpperCase();
+    if (!["TYO", "OSA"].includes(origin)) { res.status(400).json({ error: "origin は TYO か OSA" }); return; }
+    const months = nextMonths(12); const out = {};
+    for (const d of RT_DEST) {
+      const rs = await Promise.all(months.map(m => roundTrip(origin, d, m, token).catch(e => ({ error: String(e) }))));
+      out[d] = {}; months.forEach((m, k) => { out[d][m] = rs[k]; });
+    }
+    const summary = Object.fromEntries(Object.entries(out).map(([d, v]) => [d, Object.values(v).filter(x => x && x.price).length]));
+    res.setHeader("Cache-Control", "s-maxage=3600");
+    res.status(200).json({ origin, mode: "roundtrip", summary, routes: out });
+    return;
+  }
   const origin = (o || "").toUpperCase();
   if (!["TYO", "OSA"].includes(origin)) { res.status(400).json({ error: "origin は TYO か OSA" }); return; }
 
