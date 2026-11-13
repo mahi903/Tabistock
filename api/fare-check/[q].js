@@ -47,6 +47,17 @@ export default async function handler(req, res) {
   const token = process.env.TRAVELPAYOUTS_TOKEN;
   if (!token) { res.status(500).json({ error: "TRAVELPAYOUTS_TOKEN が未設定" }); return; }
   const [o, market] = String(req.query.q || "").split("-");
+  // 帰り（現地→日本）の片道：/api/fare-check/TYO-ret
+  if (market === "ret") {
+    const home = (o || "").toUpperCase();
+    if (!["TYO", "OSA"].includes(home)) { res.status(400).json({ error: "origin は TYO か OSA" }); return; }
+    const out = {};
+    const rs = await Promise.all(RT_DEST.map(d => monthly(d, home, null, token).catch(e => ({ error: String(e) }))));
+    RT_DEST.forEach((d, k) => { out[d] = rs[k]; });
+    res.setHeader("Cache-Control", "s-maxage=3600");
+    res.status(200).json({ to: home, mode: "return-oneway", routes: out });
+    return;
+  }
   if (market === "rt") {
     const origin = (o || "").toUpperCase();
     if (!["TYO", "OSA"].includes(origin)) { res.status(400).json({ error: "origin は TYO か OSA" }); return; }
