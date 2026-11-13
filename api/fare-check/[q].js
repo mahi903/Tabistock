@@ -33,11 +33,17 @@ function nextMonths(n){
   for (let i = 0; i < n; i++){ out.push(d.toISOString().slice(0, 7)); d.setUTCMonth(d.getUTCMonth() + 1); }
   return out;
 }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function roundTrip(origin, dest, month, token){
   const p = new URLSearchParams({ origin, destination: dest, currency: "jpy", departure_at: month, one_way: "false", sorting: "price", limit: "30" });
-  const r = await fetch("https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + p, {
-    headers: { "X-Access-Token": token, "Accept-Encoding": "gzip, deflate" }
-  });
+  let r;
+  for (let a = 0; a < 4; a++) {   // 回数制限（429）のときは少し待ってやり直す
+    r = await fetch("https://api.travelpayouts.com/aviasales/v3/prices_for_dates?" + p, {
+      headers: { "X-Access-Token": token, "Accept-Encoding": "gzip, deflate" }
+    });
+    if (r.status !== 429) break;
+    await sleep(2000 * (a + 1));
+  }
   if (!r.ok) return { error: r.status };
   const j = await r.json();
   // 旅行日数が3〜21日の往復だけ（日帰りや数か月滞在のような極端な日程を除く）
@@ -45,6 +51,8 @@ async function roundTrip(origin, dest, month, token){
   const x = (j.data || []).filter(x => x.return_at && days(x) >= 3 && days(x) <= 21)[0];
   return x ? { price: x.price, dep: x.departure_at, ret: x.return_at, transfers: x.transfers, returnTransfers: x.return_transfers } : null;
 }
+
+export const config = { maxDuration: 300 };
 
 export default async function handler(req, res) {
   const token = process.env.TRAVELPAYOUTS_TOKEN;
@@ -57,12 +65,15 @@ export default async function handler(req, res) {
     const months = nextMonths(12); const jobs = [];
     for (const d of list) for (const m of months) jobs.push([d, m]);
     const out = {};
-    for (let i = 0; i < jobs.length; i += 24) {
-      const chunk = jobs.slice(i, i + 24);
+    let errors = 0;
+    for (let i = 0; i < jobs.length; i += 4) {   // 4件ずつ、少し間をあけて問い合わせる
+      const chunk = jobs.slice(i, i + 4);
       const rs = await Promise.all(chunk.map(([d, m]) => roundTrip(origin, d, m, token).catch(() => null)));
-      chunk.forEach(([d, m], k) => { if (rs[k] && rs[k].price) (out[d] ||= {})[m] = rs[k]; });
+      chunk.forEach(([d, m], k) => { if (rs[k] && rs[k].price) (out[d] ||= {})[m] = rs[k]; else if (rs[k] && rs[k].error) errors++; });
+      await sleep(300);
     }
-    res.setHeader("Cache-Control", "s-maxage=3600");
+    res.setHeader("Cache-Control", errors ? "no-store" : "s-maxage=86400");
+    if (errors) { res.status(200).json({ origin, mode: "roundtrip", region: regionKey, errors, routes: out }); return; }
     res.status(200).json({ origin, mode: "roundtrip", region: regionKey, routes: out });
     return;
   }
