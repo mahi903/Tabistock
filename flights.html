@@ -9,9 +9,10 @@
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP",system-ui,sans-serif;line-height:1.55}
 .wrap{max-width:720px;margin:0 auto;padding:20px 16px 56px}
 .hero{padding:6px 0 16px}
-.hero .eb{font-size:12px;letter-spacing:.06em;color:var(--green);font-weight:800}
-.hero h1{margin:2px 0 6px;font-size:28px;line-height:1.25;letter-spacing:-.01em}
-.hero p{margin:0;font-size:13.5px;color:var(--mut)}
+.hero .logo{display:inline-block;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;font-size:24px;font-weight:900;letter-spacing:-0.04em;color:var(--green);text-decoration:none;margin-bottom:14px}
+.hero h1{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Yu Gothic",sans-serif;font-size:32px;font-weight:900;letter-spacing:-0.035em;line-height:1.1}
+.hero .jp{margin:6px 0 2px;font-size:15px;font-weight:700;color:var(--ink)}
+.hero p{margin:0;font-size:13px;color:var(--mut)}
 .seg{display:flex;gap:18px;border-bottom:1px solid var(--line);margin:0 0 4px}
 .seg button{border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--mut);padding:10px 0 9px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
 .seg button.on{color:var(--ink);border-bottom-color:var(--ink)}
@@ -19,7 +20,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku G
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:none;border:0;background:none;padding:2px 0;font:inherit;font-size:13.5px;font-weight:700;color:var(--mut);cursor:pointer}
 .chip.on{color:var(--green-d);text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:2px}
-.mapbox{margin:4px -4px 6px;position:relative}
+.mapbox{margin:8px 0 10px;position:relative;border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;aspect-ratio:3/2}
+.mapbox svg{position:absolute;inset:0;height:100%!important}
 .mapbox svg{display:block;width:100%;height:auto;touch-action:manipulation}
 .mapbox .dot{fill:#d9d2c3}
 .mapbox .jp{fill:var(--green)}
@@ -79,7 +81,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku G
 .note{font-size:11.5px;color:var(--mut);margin-top:6px}
 </style></head>
 <body><div class="wrap">
-  <section class="hero"><div class="eb">Tabistock</div><h1>航空券、何月が安い？</h1><p>日本発・往復の最安値を、行き先ごとに12か月分。</p></section>
+  <section class="hero"><a class="logo" href="index.html">Tabistock</a><h1>Flight Cost Calendar</h1><p class="jp">航空券、何月が安い？</p><p>日本発・往復の最安値を、行き先ごとに12か月分。</p></section>
   <div class="seg" id="seg"><button data-o="JP" class="on">日本発</button><button data-o="TYO">東京発</button><button data-o="OSA">大阪発</button></div>
   <div class="chips" id="regions"></div>
   <div class="mapbox"><svg id="map" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"></svg></div>
@@ -136,7 +138,7 @@ const VB={"asia": [22, -58, 138, 72], "europe": [-14, -63, 48, 32], "na": [-162,
 const svgNS='http://www.w3.org/2000/svg';
 function drawMap(R){
   const svg=document.getElementById('map'); const vb=VB[R[0]];
-  svg.setAttribute('viewBox',vb.join(' '));
+  { const A=1.5; let [x,y,w,h]=vb; if(w/h<A){ const nw=h*A; x-=(nw-w)/2; w=nw; } else { const nh=w/A; y-=(nh-h)/2; h=nh; } svg.setAttribute('viewBox',[x,y,w,h].join(' ')); }
   const k=vb[2]/100; // 1単位＝画面上の大きさの目安
   let g=document.getElementById('dots'); if(g) g.remove();
   g=document.createElementNS(svgNS,'g'); g.id='dots';
