@@ -222,6 +222,16 @@
   }
   .btn-ghost{ background:#fff; border:1px solid #d9d2c4; color:var(--ink); }
   .status{ font-size:13px; color:var(--mut); }
+  /* 自動保存の「続きから書く」お知らせ */
+  .autosave-banner{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#eef6f2; border:1px solid #cfe3d9; border-radius:12px; padding:12px 14px; margin:0 0 12px; }
+  .autosave-banner .ab-txt{ flex:1 1 200px; display:flex; flex-direction:column; gap:2px; font-size:13.5px; }
+  .autosave-banner .ab-txt b{ color:var(--green-d); }
+  .autosave-banner .ab-txt span{ color:var(--mut); font-size:12px; }
+  .autosave-banner .ab-btns{ display:flex; gap:8px; }
+  .autosave-banner button{ font:inherit; font-size:13px; font-weight:700; border-radius:999px; padding:8px 14px; cursor:pointer; border:1px solid var(--green); }
+  .autosave-banner .ab-yes{ background:var(--green); color:#fff; }
+  .autosave-banner .ab-no{ background:#fff; color:var(--green); }
+  .autosave-banner .ab-x{ border:none; background:none; color:var(--mut); font-size:18px; padding:4px 8px; }
   .err{ color:#d4493f; font-weight:700; }
   .ok{ color:var(--green-d); font-weight:700; }
   .stars{ display:flex; gap:4px; font-size:22px; color:#d9d2c4; cursor:pointer; width:max-content; }
@@ -2129,6 +2139,97 @@ window.populateForm = function(d){
 };
 // 読み込んだ内容で、チェックリストの完成度を計算し直す
 { const _pf=window.populateForm; window.populateForm=function(d){ _pf(d); setTimeout(()=>{ if(typeof updateProgress==='function') updateProgress(); },80); }; }
+
+/* ===== 自動保存（この端末のブラウザ内に保存。閉じても次に開いたとき続きから書ける） =====
+   ・入力が止まって1.5秒後に1回だけ保存（打っている最中は動かない）。写真ファイルは保存しない
+   ・新規投稿は「new」、編集中の記事は記事IDごとに別々に保存
+   ・投稿・下書き保存が成功したら消す */
+(function(){
+  const PREFIX='tabistock-autosave-v1:';
+  let key=null, baseline=null, ready=false, paused=false, timer=null, saving=false;
+  const keyFor=id=>PREFIX+(id||'new');
+  const uid=()=>window.tabistockUser?window.tabistockUser.uid:'';
+  function lsGet(k){ try{ const s=localStorage.getItem(k); return s?JSON.parse(s):null; }catch(e){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+  // フォームの中身を「保存できる形」にする（写真は保存済みURLだけ残す）
+  async function snapshot(){
+    const d=await gather();
+    let newPhotos=(d.heroFiles||[]).length;
+    const heroUrls=(d.heroPhotos||[]).filter(it=>it&&it.url).map(it=>it.url);
+    const days=(d.days||[]).map(day=>{
+      newPhotos+=(day.files||[]).length;
+      return { summary:day.summary, text:day.text, places:day.places, lat:day.lat, lng:day.lng,
+               photoUrls:(day.photos||[]).filter(it=>it&&it.url).map(it=>it.url) };
+    });
+    delete d.heroPhotos; delete d.heroFiles;
+    return { data:{...d, days, heroUrls}, newPhotos };
+  }
+  const sig=s=>JSON.stringify(s.data);
+
+  async function save(){
+    if(!ready||paused||saving) return;
+    saving=true;
+    try{
+      const s=await snapshot();
+      if(sig(s)===baseline){ lsDel(key); return; }          // 開いたときから何も変わっていない
+      lsSet(key,{ v:1, savedAt:Date.now(), uid:uid(), data:s.data, newPhotos:s.newPhotos });
+    }catch(e){ console.warn('自動保存に失敗:',e); }
+    finally{ saving=false; }
+  }
+  function schedule(){
+    if(!ready||paused) return;
+    clearTimeout(timer);
+    timer=setTimeout(()=>{
+      if('requestIdleCallback' in window) requestIdleCallback(()=>save(),{timeout:1000});
+      else save();
+    },1500);
+  }
+
+  function fmtTime(t){ const d=new Date(t); const p=n=>String(n).padStart(2,'0'); return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${p(d.getMinutes())}`; }
+  function showBanner(saved, isEdit){
+    const old=document.getElementById('autosaveBanner'); if(old) old.remove();
+    const b=document.createElement('div'); b.id='autosaveBanner'; b.className='autosave-banner';
+    b.innerHTML=`<div class="ab-txt"><b>${isEdit?'前回保存したあとに書いた内容が残っています':'前回の入力が残っています'}</b><span>${fmtTime(saved.savedAt)} に自動保存</span></div>
+      <div class="ab-btns"><button type="button" class="ab-yes">続きから書く</button><button type="button" class="ab-no">消す</button></div>`;
+    const hero=document.querySelector('.phero'); if(hero) hero.after(b); else document.body.prepend(b);
+    b.querySelector('.ab-yes').onclick=async()=>{
+      window.populateForm(saved.data);
+      b.className='autosave-banner done';
+      b.innerHTML=`<div class="ab-txt"><b>続きから再開しました</b>${saved.newPhotos?'<span>まだアップロードしていなかった写真は保存されないので、選び直してください。</span>':''}</div><button type="button" class="ab-x" aria-label="閉じる">×</button>`;
+      b.querySelector('.ab-x').onclick=()=>b.remove();
+      setTimeout(async()=>{ paused=false; await save(); },200);
+    };
+    b.querySelector('.ab-no').onclick=()=>{ lsDel(key); b.remove(); paused=false; };
+  }
+
+  // ページの読み込みが終わったら呼ぶ（新規＝null、編集＝記事ID）
+  window.tabistockAutosaveInit=async function(editId){
+    key=keyFor(editId);
+    await new Promise(r=>setTimeout(r,300));                 // 編集読み込みの反映（setTimeout）を待つ
+    try{ baseline=sig(await snapshot()); }catch(e){ baseline=null; }
+    const saved=lsGet(key);
+    ready=true; paused=false;
+    if(saved&&saved.data&&(!saved.uid||!uid()||saved.uid===uid())&&JSON.stringify(saved.data)!==baseline){
+      paused=true; showBanner(saved, !!editId);            // 選ぶまでは上書きしない
+    }else if(saved){ lsDel(key); }
+  };
+  // 投稿・下書き保存が成功したとき（新規→記事IDに切り替わる場合も）
+  window.tabistockAutosaveDone=async function(prevId,newId){
+    lsDel(keyFor(null)); if(prevId) lsDel(keyFor(prevId)); if(newId) lsDel(keyFor(newId));
+    const b=document.getElementById('autosaveBanner'); if(b&&!b.classList.contains('done')) b.remove();
+    key=keyFor(newId||prevId); paused=false;
+    try{ baseline=sig(await snapshot()); }catch(e){}
+  };
+
+  ['input','change','click'].forEach(ev=>document.addEventListener(ev,e=>{
+    if(e.target.closest && e.target.closest('#autosaveBanner')) return;
+    schedule();
+  },true));
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ clearTimeout(timer); save(); } });
+  window.addEventListener('pagehide',()=>{ clearTimeout(timer); save(); });
+})();
 </script>
 
 <script>
@@ -3002,6 +3103,8 @@ window.tabistockSubmit = async function(d, st, mode){
   // 保存できたら、このページでもう一度押しても同じ記事の更新になるようにする（新しい記事が二重にできないように）
   window.tabistockEditId = id;
   window.tabistockEditStatus = status;
+  // 保存できたので、この端末の自動保存は消す
+  try{ if(window.tabistockAutosaveDone) await window.tabistockAutosaveDone(editId, id); }catch(e){}
   if(mode === "draft"){
     // 下書き保存はこのページに残って、そのまま続きを書けるようにする。
     // 保存済みの写真は「アップロード済み」に置き換え、次の保存で同じ写真を二重にアップロードしない。
@@ -3118,6 +3221,9 @@ onAuthStateChanged(auth, async (user) => {
 
   // トランジット記事ピッカーを読み込む（新規=親なし／編集=この記事IDを親として既存リンクをチェック）
   window.tabistockLoadTransitPicker(user.uid, window.tabistockEditId || null);
+
+  // 自動保存：前回の入力が残っていれば「続きから書く」を出す
+  if(window.tabistockAutosaveInit) window.tabistockAutosaveInit(window.tabistockEditId || null);
 });
 </script>
   <script type="module" src="./auth-status.js"></script>
