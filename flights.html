@@ -55,6 +55,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku G
 .rank li span{float:right;font-weight:800;color:var(--green-d)}
 .links a{display:block;padding:11px 12px;border:1px solid var(--line);border-radius:12px;color:var(--green-d);font-weight:700;text-decoration:none;font-size:13.5px;margin-top:8px}
 .cmp h3{margin:0 0 4px;font-size:15px}.cmp .s{font-size:12px;color:var(--mut);margin:0 0 8px}.cmp table{width:100%;border-collapse:collapse;font-size:12.5px}.cmp th{font-size:11px;color:var(--mut);font-weight:600;text-align:right;padding:4px}.cmp th:first-child{text-align:left}.cmp td{padding:7px 4px;border-top:1px solid #f1eadc;text-align:right;white-space:nowrap}.cmp td:first-child{text-align:left}.cmp .w{color:var(--or);font-weight:800}.cmp .d{font-size:11px}
+.real h3{margin:0 0 4px;font-size:15px}.real .s{font-size:12px;color:var(--mut);margin:0 0 6px}.real a{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #f1eadc;text-decoration:none;color:var(--ink)}.real a:first-of-type{border-top:0}.real .t{font-size:13px;font-weight:700;line-height:1.4}.real .m2{font-size:11.5px;color:var(--mut);margin-top:2px}.real .y{font-weight:900;color:var(--green-d);white-space:nowrap;font-size:15px}.real .y small{display:block;font-size:10.5px;font-weight:600;color:var(--mut);text-align:right}.real .empty{font-size:12.5px;color:var(--mut)}
 .note{font-size:11.5px;color:var(--mut);margin-top:6px}
 </style></head>
 <body><div class="wrap">
@@ -64,7 +65,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku G
   <div class="chips" id="regions"></div>
   <div class="cities" id="cities"></div>
   <section class="card" id="detail"></section>
-  <section class="card cmp" id="cmp"></section>
+  <section class="card real" id="real"></section>
+  <section class="card cmp" id="cmp" hidden></section>
   <section class="card rank" id="rank"></section>
   <p class="note">※ 試作版です。航空券比較サイト Aviasales と Skyscanner で直近に見つかった往復の最安値（安い方）をもとにした目安です（2026年11月14日時点）。日程が出ているものは Aviasales（3〜21日間の旅程）、「Skyscanner調べ」は Skyscanner の月別最安値です。最新の価格・空席は予約サイトで確認してください。「集計中」の月は、まだデータがありません。</p>
 </div>
@@ -81,6 +83,9 @@ const REG = [
 ];
 const MONTHS=['2026-11','2026-12','2027-01','2027-02','2027-03','2027-04','2027-05','2027-06','2027-07','2027-08','2027-09','2027-10'];
 let origin='JP', region='asia', city='SEL';
+const CK={"SEL": "korea", "PUS": "korea", "TPE": "taiwan", "HKG": "hongkong", "SHA": "china", "BJS": "china", "BKK": "thai", "SGN": "vietnam", "HAN": "vietnam", "DAD": "vietnam", "SIN": "singapore", "KUL": "malaysia", "MNL": "philippines", "CEB": "philippines", "DPS": "indonesia", "DEL": "india", "KTM": "nepal", "ALA": "kazakhstan", "TAS": "uzbekistan", "DXB": "UAE", "IST": "turkey", "LON": "uk", "PAR": "france", "ROM": "italy", "MIL": "italy", "BCN": "spain", "MAD": "spain", "LIS": "portugal", "AMS": "netherlands", "FRA": "germany", "MUC": "germany", "ZRH": "switzerland", "VIE": "austria", "PRG": "czech", "BUD": "hungary", "HEL": "finland", "CPH": "denmark", "STO": "sweden", "ATH": "greece", "CAI": "egypt", "RAK": "morocco", "JNB": "south-africa", "CPT": "south-africa", "HNL": "hawaii", "LAX": "usa", "SFO": "usa", "SEA": "usa", "NYC": "usa", "YVR": "canada", "YTO": "canada", "MEX": "mexico", "CUN": "mexico", "LIM": "peru", "SAO": "brazil", "BUE": "argentina", "SYD": "australia", "MEL": "australia", "BNE": "australia", "CNS": "australia", "PER": "australia", "AKL": "new-zealand"};
+let ARTS=null; // Tabistockの公開記事（読み込み後に入る）
+window.addEventListener('arts-loaded',()=>{ ARTS=window.ARTS_LOADED||[]; render(); });
 const yen=n=>'¥'+n.toLocaleString('ja-JP');
 const man=n=>(n/10000).toFixed(1).replace(/\.0$/,'')+'万';
 function series(code){
@@ -128,6 +133,7 @@ function render(){
     <div class="legend"><span><i style="background:var(--or)"></i>最安の月</span><span><i style="background:#9cc9b9"></i>その月の最安値</span><span><i style="background:#eee7da"></i>集計中</span></div>
     <table class="tbl">${have.sort((a,b)=>a.p-b.p).slice(0,3).map((x,i)=>`<tr><td>${i+1}. ${lbl(x.m)}（${x.m.slice(0,4)}年） <span class="src">${when2(x)}${x.from}発・${legs(x)}</span></td><td>${yen(x.p)}</td></tr>`).join('')}</table>
     <div class="links"><a href="search.html?q=${encodeURIComponent(meta[2])}">${meta[2]}の旅行記をTabistockで見る →</a></div>`;
+  renderReal(meta);
   const c=null;
   const cmpEl=document.getElementById('cmp');
   if(c&&c.length&&origin!=='OSA'){
@@ -137,6 +143,28 @@ function render(){
   const rk=R[2].map(([c,n,k])=>{const h=series(c).filter(x=>x.p);return h.length?{n,k,p:Math.min(...h.map(x=>x.p))}:null}).filter(Boolean).sort((a,b)=>a.p-b.p).slice(0,5);
   document.getElementById('rank').innerHTML=`<h3>${R[1]}で安く行ける都市 TOP5</h3><ol>${rk.map(x=>`<li><b>${x.n}</b>${x.k}<span>${yen(x.p)}〜</span></li>`).join('')}</ol>`;
 }
+
+function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function renderReal(meta){
+  const el=document.getElementById('real'); if(!el) return;
+  if(ARTS===null){ el.innerHTML='<h3>Tabistockの実例</h3><p class="empty">記事を読み込み中…</p>'; return; }
+  const key=CK[meta[0]], cityJp=meta[1];
+  const rows=[];
+  ARTS.forEach(a=>{
+    if(a.notFromJapan || !(a.countries||[]).includes(key)) return;
+    const fl=(a.flights||[]).filter(f=>f && Number(f.price)>0 && (!f.mode||f.mode==='plane'));
+    if(!fl.length) return;
+    const total=fl.reduce((t,f)=>t+Number(f.price),0);
+    const routes=fl.map(f=>f.route||[f.from,f.to].filter(Boolean).join(' → '));
+    const hit=routes.join(' ').includes(cityJp)?1:0;
+    rows.push({a,fl,total,routes,hit,round:fl.length===1&&fl[0].trip==='round'});
+  });
+  rows.sort((x,y)=>y.hit-x.hit||x.total-y.total);
+  const top=rows.slice(0,4);
+  el.innerHTML=`<h3>Tabistockでは、実際にいくらで行った？</h3><p class="s">${esc(meta[2])}の旅行記で、日本から行った人の航空券（旅全体の合計）</p>`+
+    (top.length?top.map(({a,fl,total,routes,round})=>`<a href="articles/view.html?id=${encodeURIComponent(a.id)}"><div><div class="t">${esc(a.title||'')}</div><div class="m2">${esc(routes.length>2?routes[0]+' ほか'+(routes.length-1)+'区間':routes.join(' ／ '))}${a.flightWhen?'・予約：'+esc(a.flightWhen):''}${a.flightSite?'（'+esc(a.flightSite)+'）':''}</div></div><div class="y">${yen(total)}<small>${round?'往復':'航空券の合計'}</small></div></a>`).join('')
+      :'<p class="empty">まだこの国の航空券の記録はありません。行ったことがあれば、ぜひ投稿してください。</p>');
+}
 document.addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
   if(b.dataset.o){origin=b.dataset.o;}
@@ -145,4 +173,13 @@ document.addEventListener('click',e=>{
   render();
 });
 render();
+</script>
+<script type="module">
+import { db } from "./firebase-config.js";
+import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+try{
+  const snap=await getDocs(query(collection(db,"articles"),where("status","==","published")));
+  window.ARTS_LOADED=[]; snap.forEach(d=>window.ARTS_LOADED.push({id:d.id,...d.data()}));
+}catch(e){ console.warn('記事の読み込みに失敗',e); window.ARTS_LOADED=[]; }
+window.dispatchEvent(new Event('arts-loaded'));
 </script></body></html>
