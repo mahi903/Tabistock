@@ -7,48 +7,51 @@
 :root{ --green:#1f6f5b; --green-d:#185645; --or:#e2683b; --line:#e9dcc6; --ink:#1b2330; --mut:#6c7787; --bg:#fbf9f4; }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP",system-ui,sans-serif;line-height:1.55}
-.wrap{max-width:720px;margin:0 auto;padding:16px 16px 48px}
-.hero{background:linear-gradient(135deg,#1f6f5b,#2c9177);color:#fff;border-radius:18px;padding:18px 18px 16px;margin-bottom:14px}
-.hero .eb{font-size:11px;letter-spacing:.14em;color:#ffe6a8;font-weight:700}
-.hero h1{margin:4px 0 4px;font-size:22px}
-.hero p{margin:0;font-size:13px;opacity:.92}
-.seg{display:flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px;margin:0 0 12px}
-.seg button{flex:1;border:0;background:none;font:inherit;font-size:13px;font-weight:700;color:var(--mut);padding:8px 6px;border-radius:999px;cursor:pointer}
-.seg button.on{background:var(--green);color:#fff}
-.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 56px}
+.hero{padding:6px 0 16px}
+.hero .eb{font-size:12px;letter-spacing:.06em;color:var(--green);font-weight:800}
+.hero h1{margin:2px 0 6px;font-size:28px;line-height:1.25;letter-spacing:-.01em}
+.hero p{margin:0;font-size:13.5px;color:var(--mut)}
+.seg{display:flex;gap:18px;border-bottom:1px solid var(--line);margin:0 0 4px}
+.seg button{border:0;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--mut);padding:10px 0 9px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.seg button.on{color:var(--ink);border-bottom-color:var(--ink)}
+.chips{display:flex;gap:16px;overflow-x:auto;padding:10px 0 2px;margin-bottom:4px;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer}
-.chip.on{border-color:var(--green);background:#eef6f2;color:var(--green-d)}
-.mapbox{background:#fff;border:1px solid var(--line);border-radius:16px;padding:6px;margin-bottom:12px;position:relative}
+.chip{flex:none;border:0;background:none;padding:2px 0;font:inherit;font-size:13.5px;font-weight:700;color:var(--mut);cursor:pointer}
+.chip.on{color:var(--green-d);text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:2px}
+.mapbox{margin:4px -4px 6px;position:relative}
 .mapbox svg{display:block;width:100%;height:auto;touch-action:manipulation}
 .mapbox .dot{fill:#d9d2c3}
 .mapbox .jp{fill:var(--green)}
 .mapbox .pin{cursor:pointer}
 .mapbox .pin circle.hit{fill:transparent}
+.mapbox svg{cursor:pointer}
 .mapbox .pin circle.c{fill:var(--green);stroke:#fff}
 .mapbox .pin.cheap circle.c{fill:var(--or)}
 .mapbox .pin.on circle.c{fill:#1b2330}
 .mapbox .pin text{font-family:inherit;font-weight:800;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-linejoin:round}
 .mapbox .pin text.p{fill:var(--green-d);font-weight:700}
 .mapbox .pin.cheap text.p{fill:var(--or)}
-.picker{display:flex;gap:6px;overflow-x:auto;margin:-4px 0 14px;padding-bottom:4px;scrollbar-width:none}
-.picker::-webkit-scrollbar{display:none}
-.picker button{flex:none;border:0;background:none;font:inherit;font-size:12.5px;color:var(--mut);padding:4px 8px;border-radius:999px;cursor:pointer;white-space:nowrap}
-.picker button b{color:var(--ink);font-weight:700;margin-right:4px}
-.picker button.on{background:#1b2330;color:#fff}.picker button.on b{color:#fff}
+.clist{display:grid;grid-template-columns:1fr 1fr;column-gap:20px;margin:0 0 8px}
+.clist button{display:flex;justify-content:space-between;align-items:baseline;border:0;border-bottom:1px solid #efe7d8;background:none;font:inherit;padding:9px 2px;cursor:pointer;text-align:left;color:var(--ink)}
+.clist button b{font-size:13.5px;font-weight:600}
+.clist button span{font-size:12.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+.clist button.cheap span{color:var(--or);font-weight:700}
+.clist button.on b{font-weight:900}
+.clist button.on b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ink);margin-right:6px;vertical-align:2px}
 .cities{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
 .city{border:1px solid var(--line);background:#fff;border-radius:12px;padding:8px 8px 7px;text-align:left;cursor:pointer;font:inherit}
 .city b{display:block;font-size:13.5px}
 .city span{font-size:11.5px;color:var(--mut)}
 .city.on{border-color:var(--green);box-shadow:0 0 0 2px #cfe3d9 inset}
 .city.few span{color:#b6aa95}
-.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
-.card h2{margin:0;font-size:20px}
+.card{border-top:1px solid var(--line);padding:22px 0 8px;margin:14px 0 0}
+.card h2{margin:0;font-size:24px;letter-spacing:-.01em}
 .sub{font-size:12.5px;color:var(--mut);margin:2px 0 12px}
-.best{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;background:#fff4ee;border-radius:12px;padding:10px 12px;margin-bottom:14px}
+.best{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:4px 0 16px}
 .best .l{font-size:12px;color:var(--or);font-weight:800}
-.best .p{font-size:24px;font-weight:900;color:var(--or)}
-.best .m{font-size:12.5px;color:var(--ink)}
+.best .p{font-size:32px;letter-spacing:-.01em;font-weight:900;color:var(--or)}
+.best .m{font-size:12.5px;color:var(--mut);flex-basis:100%}
 .chart{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end;height:170px;padding-top:18px;border-bottom:1px solid var(--line)}
 .col{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;position:relative}
 .bar{width:100%;max-width:26px;border-radius:6px 6px 2px 2px;background:#9cc9b9}
@@ -65,27 +68,25 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku G
 .tbl td{padding:7px 4px;border-bottom:1px solid #f1eadc}
 .tbl td:last-child{text-align:right;font-weight:700}
 .tbl .src{font-size:11px;color:var(--mut);font-weight:500}
-.rank h3,.links h3{margin:0 0 8px;font-size:15px}
+.rank h3,.links h3{margin:0 0 8px;font-size:18px}
 .rank ol{margin:0;padding-left:20px}
 .rank li{padding:5px 0;font-size:13.5px}
 .rank li b{margin-right:6px}
 .rank li span{float:right;font-weight:800;color:var(--green-d)}
 .links a{display:block;padding:11px 12px;border:1px solid var(--line);border-radius:12px;color:var(--green-d);font-weight:700;text-decoration:none;font-size:13.5px;margin-top:8px}
 .cmp h3{margin:0 0 4px;font-size:15px}.cmp .s{font-size:12px;color:var(--mut);margin:0 0 8px}.cmp table{width:100%;border-collapse:collapse;font-size:12.5px}.cmp th{font-size:11px;color:var(--mut);font-weight:600;text-align:right;padding:4px}.cmp th:first-child{text-align:left}.cmp td{padding:7px 4px;border-top:1px solid #f1eadc;text-align:right;white-space:nowrap}.cmp td:first-child{text-align:left}.cmp .w{color:var(--or);font-weight:800}.cmp .d{font-size:11px}
-.real h3{margin:0 0 4px;font-size:15px}.real .s{font-size:12px;color:var(--mut);margin:0 0 6px}.real a{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #f1eadc;text-decoration:none;color:var(--ink)}.real a:first-of-type{border-top:0}.real .t{font-size:13px;font-weight:700;line-height:1.4}.real .m2{font-size:11.5px;color:var(--mut);margin-top:2px}.real .y{font-weight:900;color:var(--green-d);white-space:nowrap;font-size:15px}.real .y small{display:block;font-size:10.5px;font-weight:600;color:var(--mut);text-align:right}.real .links a{display:block;padding:11px 12px;border:1px solid var(--line);border-radius:12px;margin-top:10px;color:var(--green-d);font-weight:700;font-size:13.5px}.real .empty{font-size:12.5px;color:var(--mut)}
+.real h3{margin:0 0 4px;font-size:18px}.real .s{font-size:12px;color:var(--mut);margin:0 0 6px}.real a{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #f1eadc;text-decoration:none;color:var(--ink)}.real a:first-of-type{border-top:0}.real .t{font-size:13px;font-weight:700;line-height:1.4}.real .m2{font-size:11.5px;color:var(--mut);margin-top:2px}.real .y{font-weight:900;color:var(--green-d);white-space:nowrap;font-size:15px}.real .y small{display:block;font-size:10.5px;font-weight:600;color:var(--mut);text-align:right}.real .links a{display:inline-block;padding:12px 0 0;border:0;margin-top:2px;text-decoration:underline;text-underline-offset:4px;color:var(--green-d);font-weight:700;font-size:13.5px}.real .empty{font-size:12.5px;color:var(--mut)}
 .note{font-size:11.5px;color:var(--mut);margin-top:6px}
 </style></head>
 <body><div class="wrap">
-  <a href="index.html" style="display:inline-block;margin:0 0 10px;color:var(--green-d);font-weight:700;text-decoration:none;font-size:13px">← トップ</a>
-  <section class="hero"><div class="eb">FLIGHT PRICE CALENDAR</div><h1>航空券の相場カレンダー</h1><p>何月に行くと安い？ 日本発・往復の最安値を月ごとに。</p></section>
+  <section class="hero"><div class="eb">Tabistock</div><h1>航空券、何月が安い？</h1><p>日本発・往復の最安値を、行き先ごとに12か月分。</p></section>
   <div class="seg" id="seg"><button data-o="JP" class="on">日本発</button><button data-o="TYO">東京発</button><button data-o="OSA">大阪発</button></div>
   <div class="chips" id="regions"></div>
   <div class="mapbox"><svg id="map" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet"></svg></div>
-  <div class="picker" id="cities"></div>
+  <div class="clist" id="cities"></div>
   <section class="card" id="detail"></section>
   <section class="card real" id="real"></section>
   <section class="card cmp" id="cmp" hidden></section>
-  <section class="card rank" id="rank"></section>
   <p class="note">※ 試作版です。航空券比較サイト Aviasales と Skyscanner で直近に見つかった往復の最安値（安い方）をもとにした目安です（2026年11月14日時点）。日程が出ているものは Aviasales（3〜21日間の旅程）、「Skyscanner調べ」は Skyscanner の月別最安値です。最新の価格・空席は予約サイトで確認してください。「集計中」の月は、まだデータがありません。</p>
 </div>
 <script>
@@ -155,7 +156,7 @@ function drawMap(R){
           :`<text class="p" x="${x+k*1.6}" y="${-y+fs*.35}" font-size="${fs*.85}" stroke-width="${k*.55}">${mn?man(mn):''}</text>`)+`</g>`;}).join('');
   svg.appendChild(pins);
   // 下の都市名リスト（安い順）
-  document.getElementById('cities').innerHTML=items.slice().sort((a,b)=>(a.mn||1e9)-(b.mn||1e9)).map(({c,n,mn})=>`<button class="${c===city?'on':''}" data-c="${c}"><b>${n}</b>${mn?man(mn):'-'}</button>`).join('');
+  document.getElementById('cities').innerHTML=items.slice().sort((a,b)=>(a.mn||1e9)-(b.mn||1e9)).map(({c,n,mn})=>`<button class="${c===city?'on':''} ${mn&&mn<=cheapLine?'cheap':''}" data-c="${c}"><b>${n}</b><span>${mn?yen(mn)+'〜':'集計中'}</span></button>`).join('');
 }
 function render(){
   document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.o===origin));
@@ -182,8 +183,6 @@ function render(){
     cmpEl.hidden=false;
     cmpEl.innerHTML=`<h3>片道2枚 vs 往復（東京発）</h3><p class="s">同じ月に出発する場合。片道は「行き＋帰り」を別々に買ったときの合計。</p><table><tr><th>出発月</th><th>片道2枚</th><th>往復</th><th>差</th></tr>${c.map(([m,g,b,r])=>{const d=g+b-r;return `<tr><td>${lbl(m)}</td><td class="${d<0?'w':''}">${yen(g+b)}</td><td class="${d>0?'w':''}">${yen(r)}</td><td class="d">${d<0?'片道が'+yen(-d)+'安い':d>0?'往復が'+yen(d)+'安い':'同じ'}</td></tr>`}).join('')}</table>`;
   }else{ cmpEl.hidden=true; cmpEl.innerHTML=''; }
-  const rk=R[2].map(([c,n,k])=>{const h=series(c).filter(x=>x.p);return h.length?{n,k,p:Math.min(...h.map(x=>x.p))}:null}).filter(Boolean).sort((a,b)=>a.p-b.p).slice(0,5);
-  document.getElementById('rank').innerHTML=`<h3>${R[1]}で安く行ける都市 TOP5</h3><ol>${rk.map(x=>`<li><b>${x.n}</b>${x.k}<span>${yen(x.p)}〜</span></li>`).join('')}</ol>`;
 }
 
 function esc(t){return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -209,7 +208,15 @@ function renderReal(meta){
       :'<p class="empty">まだこの国の航空券の記録はありません。行ったことがあれば、ぜひ投稿してください。</p>');
 }
 document.addEventListener('click',e=>{
-  const pin=e.target.closest&&e.target.closest('.pin'); if(pin){ city=pin.dataset.c; render(); return; }
+  const svg=e.target.closest&&e.target.closest('#map');
+  if(svg){
+    const pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY;
+    const q=pt.matrixTransform(svg.getScreenCTM().inverse());
+    const R=REG.find(r=>r[0]===region); let bestC=null,bd=1e9;
+    R[2].forEach(([c])=>{const [x,y]=LL[c]; const d=(x-q.x)**2+(-y-q.y)**2; if(d<bd){bd=d;bestC=c;}});
+    if(bestC){ city=bestC; render(); }
+    return;
+  }
   const b=e.target.closest('button'); if(!b) return;
   if(b.dataset.o){origin=b.dataset.o;}
   if(b.dataset.r){region=b.dataset.r;city=REG.find(r=>r[0]===region)[2][0][0];}
