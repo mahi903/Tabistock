@@ -256,7 +256,7 @@ window.setFareLock=function(state){
   const w=document.getElementById('lockwrap'), card=document.getElementById('lockcard');
   if(state==='open'){ w.classList.remove('on'); return; }
   w.classList.add('on');
-  if(state==='login') card.innerHTML=`<p class="lt">${LOCK_TITLE}</p><p class="ls">開発中の新機能を、旅の記事を書いてくれた人に<br>ひと足先に公開しています。</p><a class="lb" href="account.html">ログインして見る</a>`;
+  if(state==='login') card.innerHTML=`<p class="lt">${LOCK_TITLE}</p><p class="ls">開発中の新機能を、旅の記事を書いてくれた人に<br>ひと足先に公開しています。</p><a class="lb" href="account.html?next=flights.html">ログインして見る</a>`;
   else if(state==='noarticle') card.innerHTML=`<p class="lt">${LOCK_TITLE}</p><p class="ls">開発中の新機能を、旅の記事を書いてくれた人に<br>ひと足先に公開しています。</p><a class="lb" href="post.html">記事を書く</a><a class="lsub" href="account.html">下書きの続きを書く →</a>`;
   else if(state==='error') card.innerHTML=`<p class="lt">読み込みに失敗しました</p><p class="ls">通信状況を確認して、もう一度開いてください。</p><a class="lb" href="flights.html">再読み込み</a>`;
   else card.innerHTML='<p class="ls">読み込み中…</p>';

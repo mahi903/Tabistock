@@ -429,6 +429,12 @@ $("submitBtn").onclick = async () => {
         showMsg("メールアドレスが未確認です。確認メールのリンクを開いて認証を完了してください。（確認メールを再送しました）", "err");
         return;
       }
+      // ログイン前に見ていたページ（?next=flights.html など）があれば、そこへ戻す
+      const next = new URLSearchParams(location.search).get("next") || "";
+      if(/^[A-Za-z0-9_\-\/]+\.html(\?[^#]*)?$/.test(next) && !next.startsWith("/")){
+        location.replace(next);
+        return;
+      }
     }
   }catch(err){
     showMsg(jpError(err.code), "err");
