@@ -98,6 +98,9 @@ body.chatting .ask-form,body.chatting .ask-chips{display:none}
 body.chatting .ask-hero{padding-bottom:22px}
 body.chatting .ask-note{margin-bottom:0}
 body.chatting .ask-body{padding-bottom:130px}
+/* アプリ（ホーム画面から起動）では下タブが入力欄を隠すので、チャット中はタブを隠す（DM画面と同じ） */
+body.chatting .tabbar{display:none!important}
+body.pwa.chatting{padding-bottom:0}
 </style>
 </head>
 <body>
