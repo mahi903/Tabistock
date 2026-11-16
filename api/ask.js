@@ -7,6 +7,8 @@
 //   - 呼び出し元の Firebase IDトークンを検証（ログイン中の本人だけが使える）。
 //   - 回答は必ず「渡した記事の範囲」で行うよう指示（記事に無いことは創作しない）。
 //   - 紹介する記事は、実在する記事ID（articleIds）の中からのみ選ばせる。
+//   - 航空券の相場カレンダー（月別の往復最安値）は、flights.html と同じく
+//     「記事を1本以上公開した人」にだけ資料として渡す（先行公開のため）。
 //
 // 必要な環境変数（Vercel の Settings → Environment Variables に登録）：
 //   ANTHROPIC_API_KEY      … Anthropic コンソールで発行した API キー（extractPlaces と共通）
@@ -15,6 +17,7 @@
 //   FIREBASE_PRIVATE_KEY   … 同 private_key
 
 import admin from "firebase-admin";
+import { UPDATED as FARE_UPDATED, FARES, SKY, CITIES } from "./_fares-data.js";
 
 function ensureApp() {
   if (admin.apps.length) return;
@@ -148,6 +151,43 @@ const BUDGET_JP = {
   "5": "〜5万円", "10": "〜10万円", "15": "〜15万円", "20": "〜20万円", "25": "〜25万円", "30": "〜30万円", "35": "〜35万円", "40": "〜40万円", "45": "〜45万円", "50": "〜50万円", "50plus": "50万円以上"
 };
 
+// 記事を1本以上公開しているか（相場カレンダーの先行公開の判定。api/fares.js と同じ条件）
+async function hasPublishedArticle(uid) {
+  const col = admin.firestore().collection("articles");
+  const own = await col.where("authorId", "==", uid).get();
+  if (own.docs.some((d) => d.get("status") === "published")) return true;
+  const co = await col.where("coAuthorIds", "array-contains", uid).get();
+  return co.docs.some((d) => d.get("status") === "published");
+}
+
+// 相場カレンダーのデータをAIに渡すテキストにする。
+// 都市ごとに「東京発／大阪発」の月別往復最安値（万円）を1行にまとめる。
+// 価格は Aviasales と Skyscanner の安いほう（flights.html と同じ考え方）。
+const FARE_MONTHS = ["2026-11","2026-12","2027-01","2027-02","2027-03","2027-04","2027-05","2027-06","2027-07","2027-08","2027-09","2027-10"];
+function fareAt(o, code, m) {
+  const a = ((FARES[o] || {})[code] || {})[m];
+  const s = ((SKY[o] || {})[code] || {})[m];
+  const av = Array.isArray(a) ? a[0] : null;
+  const vals = [av, s].filter((v) => typeof v === "number" && v > 0);
+  return vals.length ? Math.min(...vals) : null;
+}
+function faresToText() {
+  const lines = CITIES.map(([code, name, country, region]) => {
+    const part = (o, label) => {
+      const cells = FARE_MONTHS.map((m) => {
+        const v = fareAt(o, code, m);
+        const [y, mm] = m.split("-");
+        return `${y.slice(2)}年${Number(mm)}月:${v ? (v / 10000).toFixed(1) : "-"}`;
+      });
+      return `${label} ${cells.join(" ")}`;
+    };
+    return `${name}（${country}／${region}）｜${part("TYO", "東京発")}｜${part("OSA", "大阪発")}`;
+  });
+  return "--- 航空券の相場カレンダー（ここからが資料）---\n" +
+    `日本発・往復の、出発月ごとの最安値の目安（単位：万円。${FARE_UPDATED}時点。Aviasales・Skyscanner調べ）。` +
+    "「-」はデータなし。表示は出発月で、旅の日数や乗り継ぎ回数は含まない。\n" + lines.join("\n");
+}
+
 // 1記事をAIに渡す用のテキストに整形（長すぎないよう各日の本文は要約寄りに抑える）。
 function articleToText(a) {
   const countries = (a.countries || []).map((c) => COUNTRY_JP[c] || c).join("・");
@@ -181,8 +221,8 @@ function articleToText(a) {
 
 // Claude の返答（JSON）から answer と articleIds を安全に取り出す。
 function parseAnswer(raw, validIds) {
-  const fallback = { answer: String(raw || "").trim(), articleIds: [] };
-  if (!raw) return { answer: "", articleIds: [] };
+  const fallback = { answer: String(raw || "").trim(), articleIds: [], usedFares: false };
+  if (!raw) return { answer: "", articleIds: [], usedFares: false };
   let s = String(raw).trim();
   s = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
   const a = s.indexOf("{");
@@ -195,7 +235,7 @@ function parseAnswer(raw, validIds) {
     // 実在するIDだけに絞る（AIが存在しないIDを返しても無視）
     ids = ids.filter((id) => validIds.includes(id)).slice(0, 5);
     if (!answer) return fallback;
-    return { answer, articleIds: ids };
+    return { answer, articleIds: ids, usedFares: obj.usedFares === true };
   } catch (e) {
     return fallback;
   }
@@ -213,7 +253,7 @@ export default async function handler(req, res) {
     const authz = req.headers.authorization || "";
     const m = authz.match(/^Bearer (.+)$/);
     if (!m) { res.status(401).json({ error: "no auth token" }); return; }
-    await admin.auth().verifyIdToken(m[1]);
+    const { uid } = await admin.auth().verifyIdToken(m[1]);
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) { res.status(500).json({ error: "missing ANTHROPIC_API_KEY" }); return; }
@@ -236,6 +276,10 @@ export default async function handler(req, res) {
       return;
     }
 
+    // 相場カレンダーは記事を公開した人にだけ渡す（先行公開）
+    let fareOK = false;
+    try { fareOK = await hasPublishedArticle(uid); } catch (e) { console.error("fare check error:", e); }
+
     const validIds = articles.map((a) => a.id);
     const corpus = articles.map(articleToText).join("\n\n----------------\n\n");
 
@@ -250,9 +294,15 @@ export default async function handler(req, res) {
       "(3) 参考になる記事があれば、その『記事ID』を articleIds に入れる" +
       "（関連が薄い記事は入れない。最大3件まで。本当に関連する記事だけ）。" +
       "(4) 出力は必ず次のJSON形式のみ。説明文やコードフェンスは付けない：" +
-      '{"answer":"回答本文","articleIds":["記事ID1","記事ID2"]}。' +
+      '{"answer":"回答本文","articleIds":["記事ID1","記事ID2"],"usedFares":false}。' +
       "answer 本文の中では『記事ID』という文字列やIDそのものは書かないでください" +
-      "（記事へのリンクは画面側が articleIds をもとに自動で表示します）。";
+      "（記事へのリンクは画面側が articleIds をもとに自動で表示します）。" +
+      "(5) 航空券の値段や『何月が安いか』を聞かれたときは、記事に書かれた実際の運賃に加えて、" +
+      "資料に『航空券の相場カレンダー』があればその数字を使って答える。" +
+      "相場カレンダーの数字は『〇〇時点の目安』であり、実際の価格は予約サイトで変わることを一言添える。" +
+      "使ったときは JSON に \"usedFares\":true を入れる（使っていなければ false）。" +
+      "資料に相場カレンダーが無い場合は、数字を推測せず、記事の運賃の範囲で答え、" +
+      "『月ごとの相場は、記事を1本公開すると使える相場カレンダー（先行公開中）で見られます』と案内してよい。";
 
     // 記事本文（資料）。毎回まったく同じ前置きなので、ここをプロンプトキャッシュ対象にする。
     const corpusBlock = "--- 旅程記事（ここからが資料）---\n" + corpus;
@@ -273,7 +323,9 @@ export default async function handler(req, res) {
         // （プロンプトキャッシュはGA機能。ベータヘッダ不要。最低約1024トークンで有効化）
         system: [
           { type: "text", text: sys, cache_control: { type: "ephemeral" } },
-          { type: "text", text: corpusBlock, cache_control: { type: "ephemeral" } }
+          { type: "text", text: corpusBlock, cache_control: { type: "ephemeral" } },
+          // 相場カレンダー（記事を公開した人だけ）。データ更新まで同一なのでこれもキャッシュ
+          ...(fareOK ? [{ type: "text", text: faresToText(), cache_control: { type: "ephemeral" } }] : [])
         ],
         messages: [{ role: "user", content: question }]
       })
@@ -301,7 +353,7 @@ export default async function handler(req, res) {
       return { id, title: a.title || "", country: COUNTRY_JP[c] || "" };
     });
 
-    res.status(200).json({ answer: parsed.answer, articles: refs });
+    res.status(200).json({ answer: parsed.answer, articles: refs, fares: fareOK && parsed.usedFares });
   } catch (e) {
     console.error("ask error:", e);
     res.status(500).json({ error: String((e && e.message) || e) });

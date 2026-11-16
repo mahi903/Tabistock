@@ -423,8 +423,13 @@
         if (!res.ok) throw new Error(data.error || "failed");
         answerEl.innerHTML = esc(data.answer).replace(/\n/g, "<br>");
         const refs = data.articles || [];
+        // 相場カレンダーの数字を使った回答なら、カレンダーへのリンクも出す
+        const fareLink = data.fares
+          ? `<a class="ask-ref" href="./flights.html"><span class="ask-ref-ct">航空券</span><span class="ask-ref-tt">相場カレンダーで月ごとの値段を見る</span><span class="ask-ref-ar">→</span></a>`
+          : "";
+        refsEl.innerHTML = fareLink;
         if (refs.length) {
-          refsEl.innerHTML = `<p class="ask-refs-title">詳しくはこちらの記事を参考に</p>` +
+          refsEl.innerHTML = fareLink + `<p class="ask-refs-title">詳しくはこちらの記事を参考に</p>` +
             refs.map(a =>
               `<a class="ask-ref" href="./articles/view.html?id=${esc(a.id)}">` +
               (a.country ? `<span class="ask-ref-ct">${esc(a.country)}</span>` : "") +
