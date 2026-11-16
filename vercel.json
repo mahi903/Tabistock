@@ -2,9 +2,19 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "tabistock.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "tabistock.vercel.app"
+        }
+      ],
       "destination": "https://tabistock.jp/:path*",
       "permanent": true
     }
-  ]
+  ],
+  "functions": {
+    "api/ask.js": {
+      "maxDuration": 60
+    }
+  }
 }

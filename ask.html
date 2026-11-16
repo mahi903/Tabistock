@@ -505,14 +505,15 @@ body.pwa.chatting{padding-bottom:0}
           body: JSON.stringify({ messages: history })
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || "failed");
+        if (!res.ok) throw new Error(String(res.status));
         conv.push({ role: "assistant", content: data.answer || "", articles: data.articles || [], fares: !!data.fares });
         save();
       } catch (e) {
+        const code = /^\d+$/.test(e && e.message) ? e.message : "通信";
         conv.pop(); // 失敗した質問は履歴に残さない（入力欄に戻す）
         chatInput.value = q;
         render();
-        log.appendChild(bubble({ role: "assistant", html: "うまく相談できませんでした。少し時間をおいて、もう一度お試しください。" }));
+        log.appendChild(bubble({ role: "assistant", html: `うまく相談できませんでした。少し時間をおいて、もう一度お試しください。<br><span style="font-size:12px;color:#8a8170">（エラー：${esc(code)}）</span>` }));
         busy = false; btn.disabled = false; chatSend.disabled = false;
         scrollEnd();
         return;
