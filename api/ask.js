@@ -287,13 +287,7 @@ export default async function handler(req, res) {
         if (!m || (m.role !== "user" && m.role !== "assistant")) continue;
         const text = String(m.content || "").trim();
         if (!text) continue;
-        const content = m.role === "user"
-          ? text.slice(0, 1000)
-          : JSON.stringify({
-              answer: text.slice(0, 2000),
-              articleIds: Array.isArray(m.articleIds) ? m.articleIds.map(String).slice(0, 5) : [],
-              usedFares: m.usedFares === true
-            });
+        const content = m.role === "user" ? text.slice(0, 1000) : text.slice(0, 2000);
         if (convo.length && convo[convo.length - 1].role === m.role) convo[convo.length - 1] = { role: m.role, content };
         else convo.push({ role: m.role, content });
       }
@@ -337,8 +331,7 @@ export default async function handler(req, res) {
       "(2) 回答は親しみやすく簡潔に。要点を2〜4文程度＋必要なら箇条書きでまとめ、answer は長くても400字以内にする。" +
       "(3) 参考になる記事があれば、その『記事ID』を articleIds に入れる" +
       "（関連が薄い記事は入れない。最大3件まで。本当に関連する記事だけ）。" +
-      "(4) 出力は必ず次のJSON形式のみ。説明文やコードフェンスは付けない：" +
-      '{"answer":"回答本文","articleIds":["記事ID1","記事ID2"],"usedFares":false}。' +
+      "(4) 回答は必ず reply ツールで返す（answer＝回答本文、articleIds＝紹介する記事ID、usedFares＝相場カレンダーを使ったか）。" +
       "answer 本文の中では『記事ID』という文字列やIDそのものは書かないでください" +
       "（記事へのリンクは画面側が articleIds をもとに自動で表示します）。" +
       "(0) 会話は続けて行われることがある。前のやり取りをふまえて、『そこ』『それ』『じゃあ9月は？』のような質問にも文脈で答える。" +
@@ -351,7 +344,7 @@ export default async function handler(req, res) {
       "(6) 航空券の値段や『何月が安いか』を聞かれたときは、記事に書かれた実際の運賃に加えて、" +
       "資料に『航空券の相場カレンダー』があればその数字を使って答える。" +
       "相場カレンダーの数字は『〇〇時点の目安』であり、実際の価格は予約サイトで変わることを一言添える。" +
-      "使ったときは JSON に \"usedFares\":true を入れる（使っていなければ false）。" +
+      "使ったときは usedFares を true にする（使っていなければ false）。" +
       "資料に相場カレンダーが無い場合は、数字を推測せず、記事の運賃の範囲で答え、" +
       "『月ごとの相場は、記事を1本公開すると使える相場カレンダー（先行公開中）で見られます』と案内してよい。";
 
@@ -368,6 +361,21 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 2000,
+        // 答えの形をツールで固定する（自由に書かせたJSONは、本文中の " などで崩れて途中で切れたように見えることがあるため）
+        tools: [{
+          name: "reply",
+          description: "ユーザーへの回答を返す",
+          input_schema: {
+            type: "object",
+            properties: {
+              answer: { type: "string", description: "回答本文（日本語、400字以内）" },
+              articleIds: { type: "array", items: { type: "string" }, description: "紹介する記事ID（最大3件）" },
+              usedFares: { type: "boolean", description: "相場カレンダーの数字を使ったら true" }
+            },
+            required: ["answer", "articleIds", "usedFares"]
+          }
+        }],
+        tool_choice: { type: "tool", name: "reply" },
         // system を2ブロックに分割し、それぞれに cache_control を付ける。
         //  - 指示文：ほぼ不変 → 記事を追加してもキャッシュが効き続ける
         //  - 記事本文：記事が変わるまで同一 → 2回目以降は入力料金が最大90%オフ
@@ -390,10 +398,22 @@ export default async function handler(req, res) {
     }
 
     const data = await r.json();
-    const out = (data && Array.isArray(data.content))
-      ? data.content.filter((c) => c.type === "text").map((c) => c.text).join("\n")
-      : "";
-    const parsed = parseAnswer(out, validIds);
+    if (data && data.stop_reason === "max_tokens") console.error("ask: hit max_tokens");
+    const blocks = (data && Array.isArray(data.content)) ? data.content : [];
+    const tool = blocks.find((c) => c.type === "tool_use" && c.input);
+    let parsed;
+    if (tool && typeof tool.input.answer === "string" && tool.input.answer.trim()) {
+      const ids = Array.isArray(tool.input.articleIds) ? tool.input.articleIds.map(String) : [];
+      parsed = {
+        answer: tool.input.answer.trim(),
+        articleIds: ids.filter((id) => validIds.includes(id)).slice(0, 5),
+        usedFares: tool.input.usedFares === true
+      };
+    } else {
+      // 念のため：ツールを使わず文章で返ってきた場合は従来の読み方で
+      const out = blocks.filter((c) => c.type === "text").map((c) => c.text).join("\n");
+      parsed = parseAnswer(out, validIds);
+    }
 
     // 画面リンク用に、紹介する記事の最小情報も返す。
     const byId = {};
