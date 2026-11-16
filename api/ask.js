@@ -246,6 +246,15 @@ function parseAnswer(raw, validIds) {
     if (!answer) return fallback;
     return { answer, articleIds: ids, usedFares: obj.usedFares === true };
   } catch (e) {
+    // 途中で切れたJSON（長すぎて出力上限に達したとき等）でも、answer の中身だけは救い出す。
+    // そのままだと `{"answer":"…` という生の文字が画面に出てしまうため。
+    const m = String(raw).match(/"answer"\s*:\s*"((?:[^"\\]|\\.)*)/);
+    if (m) {
+      let body = m[1].replace(/\\$/, "");
+      try { body = JSON.parse('"' + body + '"'); } catch (e2) { body = body.replace(/\\n/g, "\n"); }
+      body = body.trim();
+      if (body) return { answer: body, articleIds: [], usedFares: false };
+    }
     return fallback;
   }
 }
@@ -325,7 +334,7 @@ export default async function handler(req, res) {
       "重要なルール：" +
       "(1) 記事に書かれていないことは推測で創作せず、わかる範囲で正直に答える。" +
       "記事に関連情報が無い場合は、その旨を正直に伝え、無理に記事を紹介しない。" +
-      "(2) 回答は親しみやすく簡潔に。要点を2〜4文程度＋必要なら箇条書きでまとめる。" +
+      "(2) 回答は親しみやすく簡潔に。要点を2〜4文程度＋必要なら箇条書きでまとめ、answer は長くても400字以内にする。" +
       "(3) 参考になる記事があれば、その『記事ID』を articleIds に入れる" +
       "（関連が薄い記事は入れない。最大3件まで。本当に関連する記事だけ）。" +
       "(4) 出力は必ず次のJSON形式のみ。説明文やコードフェンスは付けない：" +
@@ -358,7 +367,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 1024,
+        max_tokens: 2000,
         // system を2ブロックに分割し、それぞれに cache_control を付ける。
         //  - 指示文：ほぼ不変 → 記事を追加してもキャッシュが効き続ける
         //  - 記事本文：記事が変わるまで同一 → 2回目以降は入力料金が最大90%オフ
