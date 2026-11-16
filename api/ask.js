@@ -393,7 +393,10 @@ export default async function handler(req, res) {
     if (!r.ok) {
       const errText = await r.text().catch(() => "");
       console.error("anthropic error:", r.status, errText);
-      res.status(502).json({ error: "ask failed" });
+      // 原因を画面で確認できるよう、Anthropic 側のエラーの種類と短い説明だけ返す（キー等の秘密は含まれない）
+      let detail = String(r.status);
+      try { const j = JSON.parse(errText); if (j && j.error) detail += " " + (j.error.type || "") + "：" + String(j.error.message || "").slice(0, 200); } catch (e) {}
+      res.status(502).json({ error: "ask failed", detail });
       return;
     }
 

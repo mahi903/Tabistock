@@ -505,11 +505,11 @@ body.pwa.chatting{padding-bottom:0}
           body: JSON.stringify({ messages: history })
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(String(res.status));
+        if (!res.ok) throw new Error(String(res.status) + (data.detail ? "／" + data.detail : ""));
         conv.push({ role: "assistant", content: data.answer || "", articles: data.articles || [], fares: !!data.fares });
         save();
       } catch (e) {
-        const code = /^\d+$/.test(e && e.message) ? e.message : "通信";
+        const code = /^\d+/.test(e && e.message) ? e.message : "通信";
         conv.pop(); // 失敗した質問は履歴に残さない（入力欄に戻す）
         render();
         // 最初の質問で失敗したときも、エラーが見えるようにチャット欄は出したままにする
