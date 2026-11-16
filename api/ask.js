@@ -1,5 +1,5 @@
 // 旅の相談AI（Vercel サーバーレス関数）
-// 役割：search.html の「AIに相談」から呼ばれ、ユーザーの自然文の質問に対して
+// 役割：ask.html の「AIに相談」から呼ばれ、ユーザーの自然文の質問（チャット形式で続けて質問できる）に対して
 //       公開中の旅程記事だけを読み、その内容にもとづいてアドバイスを返す。
 //       あわせて「参考になる記事」のIDを返し、画面側でリンクを出す。
 //
@@ -198,6 +198,15 @@ function articleToText(a) {
   if (a.type === "transit") lines.push("種別：トランジット（乗り継ぎ）記事");
   lines.push(`タイトル：${a.title || ""}`);
   if (countries) lines.push(`国：${countries}`);
+  // 旅の出発地（AIが「日本からの往復旅行」を優先して紹介できるように明示する）
+  if (a.type !== "transit") {
+    const st = a.styles || [];
+    const domestic = (a.countries || []).length > 0 && (a.countries || []).every((c) => c === "japan");
+    if (domestic) lines.push("旅の形：国内旅行");
+    else if (a.notFromJapan || st.includes("study-abroad") || st.includes("world-trip")) {
+      lines.push("旅の形：日本からの往復ではない（留学先・世界一周・旅の途中から出発）");
+    } else lines.push("旅の形：日本から往復した海外旅行");
+  }
   if (budget) lines.push(`予算：${budget}`);
   // 実際にかかった費用の合計（費用内訳の合計）。区分より正確なので一緒に渡す
   const costSum = Object.values(a.costs || {}).reduce((s, v) => s + (Number(v) || 0), 0);
@@ -258,9 +267,35 @@ export default async function handler(req, res) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) { res.status(500).json({ error: "missing ANTHROPIC_API_KEY" }); return; }
 
+    // 会話（チャット形式）。messages があればそれを、なければ従来どおり question 1つを使う。
+    //   - user と assistant が交互になるよう整え、最後は必ず user にする
+    //   - 直近20発言まで・1発言の長さにも上限をつけて、料金が増えすぎないようにする
+    //   - assistant の発言は、AIが出す形式（JSON）に戻して渡す（答え方の形をそろえるため）
     const body = req.body || {};
-    const question = String(body.question || "").slice(0, 1000).trim();
-    if (!question) { res.status(400).json({ error: "question required" }); return; }
+    let convo = [];
+    if (Array.isArray(body.messages)) {
+      for (const m of body.messages.slice(-20)) {
+        if (!m || (m.role !== "user" && m.role !== "assistant")) continue;
+        const text = String(m.content || "").trim();
+        if (!text) continue;
+        const content = m.role === "user"
+          ? text.slice(0, 1000)
+          : JSON.stringify({
+              answer: text.slice(0, 2000),
+              articleIds: Array.isArray(m.articleIds) ? m.articleIds.map(String).slice(0, 5) : [],
+              usedFares: m.usedFares === true
+            });
+        if (convo.length && convo[convo.length - 1].role === m.role) convo[convo.length - 1] = { role: m.role, content };
+        else convo.push({ role: m.role, content });
+      }
+      while (convo.length && convo[0].role !== "user") convo.shift();
+    } else if (body.question) {
+      convo = [{ role: "user", content: String(body.question).slice(0, 1000).trim() }];
+    }
+    if (!convo.length || convo[convo.length - 1].role !== "user") {
+      res.status(400).json({ error: "question required" });
+      return;
+    }
 
     // 公開中の記事をすべて取得（今は件数が少ないので全件渡す）。
     const db = admin.firestore();
@@ -297,7 +332,14 @@ export default async function handler(req, res) {
       '{"answer":"回答本文","articleIds":["記事ID1","記事ID2"],"usedFares":false}。' +
       "answer 本文の中では『記事ID』という文字列やIDそのものは書かないでください" +
       "（記事へのリンクは画面側が articleIds をもとに自動で表示します）。" +
-      "(5) 航空券の値段や『何月が安いか』を聞かれたときは、記事に書かれた実際の運賃に加えて、" +
+      "(0) 会話は続けて行われることがある。前のやり取りをふまえて、『そこ』『それ』『じゃあ9月は？』のような質問にも文脈で答える。" +
+      "記事の紹介（articleIds）は、その回の質問に本当に関係するものだけにし、前の回と同じ記事をくり返し入れなくてよい。" +
+      "(5) 記事を紹介する優先順位：海外旅行の相談では『旅の形：日本から往復した海外旅行』の記事を最優先する。" +
+      "『日本からの往復ではない（留学先・世界一周・旅の途中から）』記事は、費用や日程の組み方が日本発の旅行と大きく違うので、" +
+      "日本から往復する記事が無いとき、または質問が留学・世界一周・現地からの旅についてのときだけ紹介する。" +
+      "その場合は『留学中の旅の記事ですが』のように、日本発ではないことを回答の中で一言断る。" +
+      "費用や日数の目安を答えるときも、日本から往復した記事の数字を優先する。" +
+      "(6) 航空券の値段や『何月が安いか』を聞かれたときは、記事に書かれた実際の運賃に加えて、" +
       "資料に『航空券の相場カレンダー』があればその数字を使って答える。" +
       "相場カレンダーの数字は『〇〇時点の目安』であり、実際の価格は予約サイトで変わることを一言添える。" +
       "使ったときは JSON に \"usedFares\":true を入れる（使っていなければ false）。" +
@@ -327,7 +369,7 @@ export default async function handler(req, res) {
           // 相場カレンダー（記事を公開した人だけ）。データ更新まで同一なのでこれもキャッシュ
           ...(fareOK ? [{ type: "text", text: faresToText(), cache_control: { type: "ephemeral" } }] : [])
         ],
-        messages: [{ role: "user", content: question }]
+        messages: convo
       })
     });
 

@@ -74,6 +74,30 @@
     }
   /* ボタンは角が少し丸い四角で統一（横長の丸ボタンはやめる） */
 .ask-chip{border-radius:8px}
+/* ── チャット形式（続けて質問できる） ── */
+.chat{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.chat[hidden]{display:none}
+.chat-head{display:flex;justify-content:space-between;align-items:center}
+.chat-head p{margin:0;font-size:12px;font-weight:800;letter-spacing:.1em;color:#1f6f5b}
+.chat-new{border:1px solid #d9cdb5;background:#fff;color:#4a4232;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.msg-u{align-self:flex-end;max-width:82%;background:#1f6f5b;color:#fff;border-radius:18px 18px 4px 18px;padding:11px 15px;font-size:15px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.msg-a{align-self:flex-start;width:100%;background:#fff;border:1px solid #e7ddcb;border-radius:4px 18px 18px 18px;padding:16px 18px;box-shadow:0 6px 18px rgba(20,30,25,.05)}
+.msg-a .ask-answer{white-space:normal}
+.msg-a .ask-refs{margin-top:14px}
+.msg-a.typing .ask-answer{color:#8a8170}
+.dots::after{content:"";animation:dots 1.2s steps(4,end) infinite}
+@keyframes dots{0%{content:""}25%{content:"・"}50%{content:"・・"}75%{content:"・・・"}}
+.composer{position:fixed;left:0;right:0;bottom:0;z-index:40;background:rgba(251,249,244,.96);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-top:1px solid #e7ddcb;padding:10px 4% calc(10px + env(safe-area-inset-bottom))}
+.composer[hidden]{display:none}
+.composer-in{max-width:860px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
+.composer textarea{flex:1;border:1px solid #d9cdb5;border-radius:14px;padding:11px 14px;font-size:16px;font-family:inherit;line-height:1.5;resize:none;max-height:140px;color:#1b2330;background:#fff}
+.composer textarea:focus{outline:2px solid rgba(31,111,91,.35)}
+.composer button{flex-shrink:0;border:none;border-radius:12px;padding:12px 18px;background:#1f6f5b;color:#fff;font-weight:800;font-size:14.5px;cursor:pointer;font-family:inherit}
+.composer button:disabled{opacity:.55;cursor:default}
+body.chatting .ask-form,body.chatting .ask-chips{display:none}
+body.chatting .ask-hero{padding-bottom:22px}
+body.chatting .ask-note{margin-bottom:0}
+body.chatting .ask-body{padding-bottom:130px}
 </style>
 </head>
 <body>
@@ -341,13 +365,19 @@
   </section>
 
   <section class="ask-body">
-    <div class="ask-result" id="askResult" hidden>
-      <p class="ask-result-head">AIからの回答</p>
-      <div class="ask-answer" id="askAnswer"></div>
-      <div class="ask-refs" id="askRefs"></div>
+    <div class="chat" id="chat" hidden>
+      <div class="chat-head"><p>AIとの相談</p><button type="button" class="chat-new" id="chatNew">新しい相談</button></div>
+      <div id="chatLog" style="display:flex;flex-direction:column;gap:14px"></div>
     </div>
     <p class="ask-disclaimer">回答はTabistockに投稿された旅程記事をもとにAIが生成しています。最新の現地情報や料金は、必ず公式サイト等でご確認ください。</p>
   </section>
+
+  <div class="composer" id="composer" hidden>
+    <div class="composer-in">
+      <textarea id="chatInput" rows="1" placeholder="続けて質問する"></textarea>
+      <button type="button" id="chatSend">送信</button>
+    </div>
+  </div>
 
   <script>
   (function(){
@@ -380,7 +410,7 @@
     if(dq)dq.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();go();}});
   })();
   </script>
-  <!-- AIに相談：公開記事をAIが読んで質問に答える（/api/ask） -->
+  <!-- AIに相談：公開記事をAIが読んで質問に答える（/api/ask）。チャット形式で続けて質問できる -->
   <script type="module">
     import { auth } from "./firebase-config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -389,71 +419,134 @@
     const whenAuthReady = new Promise((resolve) => {
       const un = onAuthStateChanged(auth, (u) => { authReady = true; un(); resolve(u); });
     });
-    const input = document.getElementById("askInput");
-    const btn = document.getElementById("askBtn");
-    const result = document.getElementById("askResult");
-    const answerEl = document.getElementById("askAnswer");
-    const refsEl = document.getElementById("askRefs");
-    const chips = document.getElementById("askChips");
+    const $ = (id) => document.getElementById(id);
+    const input = $("askInput"), btn = $("askBtn"), chips = $("askChips");
+    const chat = $("chat"), log = $("chatLog"), composer = $("composer");
+    const chatInput = $("chatInput"), chatSend = $("chatSend"), chatNew = $("chatNew");
     const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-    async function ask() {
-      const q = (input.value || "").trim();
-      if (!q) { input.focus(); return; }
-      result.hidden = false;
-      refsEl.innerHTML = "";
-      result.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    // 会話はこの端末に保存（同じブラウザなら閉じても続きから）。アカウントごとに分ける
+    const MAX_KEEP = 40;          // 端末に残す発言の数
+    let conv = [];                // [{role:"user",content}, {role:"assistant",content,articles,fares}]
+    let storeKey = null;
+    function load() {
+      try { const v = JSON.parse(localStorage.getItem(storeKey) || "[]"); return Array.isArray(v) ? v : []; }
+      catch (e) { return []; }
+    }
+    function save() {
+      if (!storeKey) return;
+      try { localStorage.setItem(storeKey, JSON.stringify(conv.slice(-MAX_KEEP))); } catch (e) {}
+    }
+
+    function refsHTML(m) {
+      const fareLink = m.fares
+        ? `<a class="ask-ref" href="./flights.html"><span class="ask-ref-ct">航空券</span><span class="ask-ref-tt">相場カレンダーで月ごとの値段を見る</span><span class="ask-ref-ar">→</span></a>`
+        : "";
+      const refs = m.articles || [];
+      const arts = refs.length
+        ? `<p class="ask-refs-title">詳しくはこちらの記事を参考に</p>` + refs.map(a =>
+            `<a class="ask-ref" href="./articles/view.html?id=${esc(a.id)}">` +
+            (a.country ? `<span class="ask-ref-ct">${esc(a.country)}</span>` : "") +
+            `<span class="ask-ref-tt">${esc(a.title)}</span><span class="ask-ref-ar">→</span></a>`).join("")
+        : "";
+      return fareLink + arts;
+    }
+    function bubble(m) {
+      const el = document.createElement("div");
+      if (m.role === "user") { el.className = "msg-u"; el.textContent = m.content; }
+      else {
+        el.className = "msg-a";
+        el.innerHTML = `<div class="ask-answer">${m.html || esc(m.content).replace(/\n/g, "<br>")}</div>` +
+          `<div class="ask-refs">${refsHTML(m)}</div>`;
+      }
+      return el;
+    }
+    function render() {
+      const on = conv.length > 0;
+      chat.hidden = !on; composer.hidden = !on;
+      document.body.classList.toggle("chatting", on);
+      log.innerHTML = "";
+      conv.forEach((m) => log.appendChild(bubble(m)));
+    }
+    function scrollEnd() {
+      requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
+    }
+
+    let busy = false;
+    async function send(q) {
+      q = (q || "").trim();
+      if (!q || busy) return;
       const user = authReady ? auth.currentUser : await whenAuthReady;
       if (!user) {
-        answerEl.innerHTML = `相談機能を使うにはログインが必要です。<a href="account.html">ログイン / 新規登録はこちら</a>`;
+        chat.hidden = false;
+        log.innerHTML = "";
+        log.appendChild(bubble({ role: "assistant", html: `相談機能を使うにはログインが必要です。<a href="account.html?next=ask.html">ログイン / 新規登録はこちら</a>` }));
         return;
       }
-      btn.disabled = true;
-      const old = btn.textContent;
-      btn.textContent = "考え中…";
-      answerEl.textContent = "AIが旅程記事を読んでいます…";
+      busy = true; btn.disabled = true; chatSend.disabled = true;
+      conv.push({ role: "user", content: q });
+      render();
+      const typing = bubble({ role: "assistant", html: `<span class="dots">AIが旅程記事を読んでいます</span>` });
+      typing.classList.add("typing");
+      log.appendChild(typing);
+      scrollEnd();
       try {
         const idToken = await user.getIdToken();
+        // AIには直近の会話だけ送る（長くなりすぎないように）
+        const history = conv.slice(-20).map((m) => m.role === "user"
+          ? { role: "user", content: m.content }
+          : { role: "assistant", content: m.content, articleIds: (m.articles || []).map((a) => a.id), usedFares: !!m.fares });
         const res = await fetch("/api/ask", {
           method: "POST",
           headers: { "content-type": "application/json", "authorization": "Bearer " + idToken },
-          body: JSON.stringify({ question: q })
+          body: JSON.stringify({ messages: history })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "failed");
-        answerEl.innerHTML = esc(data.answer).replace(/\n/g, "<br>");
-        const refs = data.articles || [];
-        // 相場カレンダーの数字を使った回答なら、カレンダーへのリンクも出す
-        const fareLink = data.fares
-          ? `<a class="ask-ref" href="./flights.html"><span class="ask-ref-ct">航空券</span><span class="ask-ref-tt">相場カレンダーで月ごとの値段を見る</span><span class="ask-ref-ar">→</span></a>`
-          : "";
-        refsEl.innerHTML = fareLink;
-        if (refs.length) {
-          refsEl.innerHTML = fareLink + `<p class="ask-refs-title">詳しくはこちらの記事を参考に</p>` +
-            refs.map(a =>
-              `<a class="ask-ref" href="./articles/view.html?id=${esc(a.id)}">` +
-              (a.country ? `<span class="ask-ref-ct">${esc(a.country)}</span>` : "") +
-              `<span class="ask-ref-tt">${esc(a.title)}</span>` +
-              `<span class="ask-ref-ar">→</span></a>`
-            ).join("");
-        }
+        conv.push({ role: "assistant", content: data.answer || "", articles: data.articles || [], fares: !!data.fares });
+        save();
       } catch (e) {
-        answerEl.textContent = "うまく相談できませんでした。少し時間をおいて、もう一度お試しください。";
-        refsEl.innerHTML = "";
-      } finally {
-        btn.disabled = false;
-        btn.textContent = old;
+        conv.pop(); // 失敗した質問は履歴に残さない（入力欄に戻す）
+        chatInput.value = q;
+        render();
+        log.appendChild(bubble({ role: "assistant", html: "うまく相談できませんでした。少し時間をおいて、もう一度お試しください。" }));
+        busy = false; btn.disabled = false; chatSend.disabled = false;
+        scrollEnd();
+        return;
       }
+      busy = false; btn.disabled = false; chatSend.disabled = false;
+      render();
+      scrollEnd();
     }
-    if (btn) btn.addEventListener("click", ask);
+
+    // 最初の質問（上の入力欄・例のボタン）
+    if (btn) btn.addEventListener("click", () => { const q = input.value; input.value = ""; send(q); });
     if (input) input.addEventListener("keydown", e => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); ask(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); btn.click(); }
     });
     if (chips) chips.addEventListener("click", e => {
       const c = e.target.closest(".ask-chip");
-      if (!c) return;
-      input.value = c.textContent.trim();
-      ask();
+      if (c) send(c.textContent);
+    });
+    // 続けて質問（下の入力欄）
+    chatSend.addEventListener("click", () => { const q = chatInput.value; chatInput.value = ""; chatInput.style.height = ""; send(q); });
+    chatInput.addEventListener("keydown", e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); chatSend.click(); }
+    });
+    chatInput.addEventListener("input", () => { chatInput.style.height = "auto"; chatInput.style.height = Math.min(chatInput.scrollHeight, 140) + "px"; });
+    // 新しい相談：会話を消して最初の画面に戻る
+    chatNew.addEventListener("click", () => {
+      conv = []; save(); render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      setTimeout(() => input && input.focus(), 300);
+    });
+
+    // ログインしていれば、この端末に残っている会話を復元
+    whenAuthReady.then((u) => {
+      if (!u) return;
+      storeKey = "tabistock-ask-v1:" + u.uid;
+      conv = load();
+      if (conv.length) { render(); }
     });
   </script>
   <script type="module" src="./auth-status.js"></script>
