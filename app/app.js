@@ -258,7 +258,7 @@ function drawSheet() {
     sel[k] = on ? sel[k].filter((x) => !vals.some((v) => String(v) === String(x))) : [...new Set([...sel[k], ...vals])];
     haptic(); keep();
   }));
-  $("bsClr").onclick = () => { sel = { country: [], pref: [], [key]: [] }; drawSheet(); };
+  $("bsClr").onclick = () => { sel = { country: [], pref: [], [key]: [] }; Object.assign(state, sel); renderSearch(); drawSheet(); };
   $("bsOk").onclick = () => { Object.assign(state, sel); closeSheet(); renderSearch(); };
 }
 function closeSheet() { $("ov").classList.remove("show"); $("bs").classList.remove("show"); }
@@ -273,34 +273,49 @@ function setSeg(i) {
   renderSearch();
 }
 // 探すの地図（Leaflet）。記事のある国を緑で塗り、拡大すると国名と件数が出る。国をタップするとその国で絞り込む。
-let SMAP = null, SHAPES = null, WORLDGJ = null;
+let SMAP = null, SHAPES = null, mapSel = null;
+// 日付変更線をまたぐ国（ロシア・フィジーなど）は経度をつなげて、地図を横切る帯にならないようにする
+const ringsOf = (iso) => (SHAPES[iso] || []).map((r) => { const pts = []; let prev = null; for (let i = 0; i < r.length; i += 2) { let lng = r[i]; if (prev !== null) { while (lng - prev > 180) lng -= 360; while (lng - prev < -180) lng += 360; } prev = lng; pts.push([r[i + 1], lng]); } return pts; });
 async function renderMap(list) {
-  $("results").innerHTML = `<div id="smap"></div><p class="maphint">記事のある国を緑で表示。拡大すると国名が出ます。国をタップするとその国の旅を一覧で表示（${list.length}件）</p>`;
+  $("results").innerHTML = `<div id="smap"></div><p class="maphint">記事のある国を緑で表示。拡大すると国名が出ます。国をタップすると下に記事が出ます</p><div id="mapList"></div>`;
   if (SMAP) { try { SMAP.remove(); } catch (e) {} SMAP = null; }
-  try {
-    await loadLeaflet();
-    [SHAPES, WORLDGJ] = await Promise.all([SHAPES || fetch("/country-shapes.json").then((r) => r.json()), WORLDGJ || fetch("/world-base.json").then((r) => r.json())]);
-  } catch (e) { $("smap").innerHTML = '<p class="loading">地図を読み込めませんでした</p>'; return; }
+  try { await loadLeaflet(); SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json())); }
+  catch (e) { $("smap").innerHTML = '<p class="loading">地図を読み込めませんでした</p>'; return; }
   const box = $("smap"); if (!box) return;
-  const map = L.map(box, { zoomControl: false, attributionControl: false, worldCopyJump: true, minZoom: 1.5, maxZoom: 7, zoomSnap: 0.5 }).setView([30, 110], 2);
+  const map = L.map(box, { zoomControl: false, attributionControl: false, worldCopyJump: true, minZoom: 1.5, maxZoom: 7, zoomSnap: 0.5, preferCanvas: true }).setView([30, 110], 2);
   SMAP = map;
-  L.geoJSON(WORLDGJ, { style: { fillColor: "#f6f1e6", fillOpacity: 1, color: "#d8e3dd", weight: 0.6 }, interactive: false }).addTo(map);
   const by = {};
   list.forEach((d) => (d.countries || []).forEach((c) => (by[c] = (by[c] || 0) + 1)));
+  const isoTo = {}; Object.entries(COUNTRY_ISO).forEach(([v, iso]) => (isoTo[iso] = v));
+  // 陸地は国ごとの細かい形で描く（海岸線と色付けの境界をそろえる）
+  const layers = {};
+  Object.keys(SHAPES).forEach((iso) => {
+    const c = isoTo[iso], n = c ? by[c] || 0 : 0;
+    const lay = L.polygon(ringsOf(iso), n
+      ? { fillColor: "#1f6f5b", fillOpacity: Math.min(0.9, 0.45 + n * 0.1), color: "#fff", weight: 0.7 }
+      : { fillColor: "#f6f1e6", fillOpacity: 1, color: "#e3ddd0", weight: 0.5, interactive: false }).addTo(map);
+    if (n) { layers[c] = lay; lay.on("click", () => pickCountry(c)); }
+  });
   Object.entries(by).forEach(([c, n]) => {
-    const iso = COUNTRY_ISO[c], rings = (SHAPES[iso] || []).map((r) => { const pts = []; for (let i = 0; i < r.length; i += 2) pts.push([r[i + 1], r[i]]); return pts; });
-    const name = `${(cinfo(c) || {}).jp || c} ${n}`;
-    const go = () => { state.country = [c]; state.pref = []; setSeg(0); };
-    if (rings.length) L.polygon(rings, { fillColor: "#1f6f5b", fillOpacity: Math.min(0.9, 0.45 + n * 0.1), color: "#fff", weight: 0.8 }).addTo(map).on("click", go);
-    const ll = COUNTRY_LL[c];
-    if (ll) {
-      const small = !rings.length;
-      const m = L.circleMarker(ll, { radius: small ? 5 : 0.1, color: "#fff", weight: small ? 1.5 : 0, fillColor: "#1f6f5b", fillOpacity: small ? 1 : 0 }).addTo(map).on("click", go);
-      m.bindTooltip(name, { permanent: true, direction: "center", className: "cl", interactive: false });
-    }
+    const ll = COUNTRY_LL[c]; if (!ll) return;
+    const small = !layers[c];
+    const m = L.circleMarker(ll, { radius: small ? 5 : 0.1, color: "#fff", weight: small ? 1.5 : 0, fillColor: "#1f6f5b", fillOpacity: small ? 1 : 0 }).addTo(map).on("click", () => pickCountry(c));
+    m.bindTooltip(`${(cinfo(c) || {}).jp || c} ${n}`, { permanent: true, direction: "center", className: "cl", interactive: false });
   });
   const zs = () => box.classList.toggle("zs", map.getZoom() < 3.5);
   map.on("zoomend", zs); zs();
+  function pickCountry(c) {
+    haptic();
+    if (mapSel && layers[mapSel]) layers[mapSel].setStyle({ color: "#fff", weight: 0.7 });
+    mapSel = c;
+    if (layers[c]) { layers[c].setStyle({ color: "#e2683b", weight: 2.2 }); layers[c].bringToFront(); }
+    const ds = list.filter((d) => (d.countries || []).includes(c));
+    const ml = $("mapList");
+    ml.innerHTML = `<div class="sh" style="padding-top:18px"><h2>${esc((cinfo(c) || {}).jp || c)}の旅 <small style="font-family:Manrope;color:var(--muted);font-size:13px">${ds.length}件</small></h2><button id="mlx">閉じる</button></div><div class="ogrid">${ds.map(gridCard).join("")}</div>`;
+    $("mlx").onclick = () => { ml.innerHTML = ""; if (layers[mapSel]) layers[mapSel].setStyle({ color: "#fff", weight: 0.7 }); mapSel = null; };
+    const sc = $("search"); sc.scrollTo({ top: ml.offsetTop - 120, behavior: "smooth" });
+  }
+  if (mapSel && by[mapSel]) pickCountry(mapSel);
 }
 function renderSearch() {
   $("qx").style.display = state.q ? "grid" : "none";
@@ -321,7 +336,7 @@ $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) 
 const STACK = [];
 const FRAMES = { "post": ["/post.html", "旅程を投稿"], "post-transit": ["/post-transit.html", "トランジットを投稿"], "account": ["/account.html", "設定"], "notify": ["/account.html#notifications", "通知"], "ask": ["/ask.html", "AI相談"], "flights": ["/flights.html", "航空券の相場"] };
 const BACK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
-function isPageHash(h) { return /^#(a-|u-|dm|w-)/.test(h); }
+function isPageHash(h) { return /^#(a-|u-|dm|w-|f-|x-)/.test(h); }
 function route() {
   const h = location.hash;
   if (!isPageHash(h)) { while (STACK.length) popPage(); return; }
@@ -338,13 +353,15 @@ function pushPage(h) {
   $("tab").classList.add("hide");
   swipeBack(el);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
-  const m = h.match(/^#(a|u|dm|w)-?(.*)$/);
+  const m = h.match(/^#(a|u|dm|w|f|x)-?(.*)$/);
   const kind = m[1], arg = decodeURIComponent(m[2] || "");
   if (kind === "a") pageArticle(el, arg);
   else if (kind === "u") pageUser(el, arg);
   else if (kind === "dm" && !arg) pageInbox(el);
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
+  else if (kind === "f") pageFollows(el, arg);
+  else if (kind === "x") pageBlocks(el);
   haptic();
 }
 function popPage() {
@@ -423,7 +440,7 @@ async function pageArticle(el, id) {
         return `<div class="day"><button ${has ? "data-day" : ""}><div class="th ${ph[0] ? "" : "no"}" style="${ph[0] ? `background-image:url('${esc(ph[0])}')` : ""}">${ph[0] ? "" : i + 1}</div><div><small>DAY ${i + 1}${x.date ? "　" + esc(x.date) : ""}</small><p>${esc(x.summary || "")}</p></div>${has ? '<span class="pm">＋</span>' : ""}</button>
           <div class="body">${ph.length ? `<div class="dpw"><div class="dphotos">${ph.map((u, k) => `<img src="${esc(u)}" alt="" loading="lazy" data-dv="${i}" data-k="${k}">`).join("")}</div>${ph.length > 1 ? `<span class="dpc">1/${ph.length}</span>` : ""}</div>` : ""}${String(x.text || "").trim() ? `<p class="ph">${para(x.text)}</p>` : ""}</div></div>`;
       }).join("")}</div>` : ""}
-      ${d.comment ? `<div class="dh"><h2>投稿者のコメント</h2></div><p class="ph2">${para(d.comment)}</p>` : ""}
+      ${d.comment ? `<div class="dh"><h2>投稿者のコメント</h2></div><p class="ph2 cmt">${para(d.comment)}</p>` : ""}
       <div class="dh"><h2>投稿者</h2></div>
       ${authors.map((u) => { const p = PROF[u] || {}; return `<div class="acard"><a href="#u-${esc(u)}"><img src="${esc(avatarOf(u))}" alt=""></a><div><a href="#u-${esc(u)}"><b>${esc(p.nickname || authorName(d))}</b></a>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}</div>${u !== me ? `<button class="btn-s" data-follow="${esc(u)}">フォロー</button>` : ""}</div>`; }).join("")}
       <div class="dh"><h2>コメント <small id="ccount" style="font-family:Manrope;color:var(--muted)"></small></h2></div>
@@ -528,7 +545,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611190600"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611190627"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -632,7 +649,7 @@ async function pageUser(el, uid) {
   const igUrl = ig ? (/^https?:\/\//.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/") : "";
   const isMe = uid === me;
   el.innerHTML = bar(p.nickname || "旅人", isMe ? "" : '<button class="mo" data-umore>…</button>') + `<div class="ps under2">
-    <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><div><b data-fc>—</b><span>フォロワー</span></div><div><b data-gc>—</b><span>フォロー</span></div></div></div>
+    <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><a href="#f-followers-${esc(uid)}"><b data-fc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(uid)}"><b data-gc>—</b><span>フォロー</span></a></div></div>
       <h1>${esc(p.nickname || "旅人")}</h1>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${igUrl ? `<a class="ig" href="${esc(igUrl)}" target="_blank" rel="noopener">Instagram ↗</a>` : ""}
       <div class="ub" data-ub></div></div>
     <div class="sh" style="padding-top:26px"><h2>投稿</h2></div>
@@ -761,13 +778,91 @@ function renderMe() {
   }
   const p = PROF[me] || {};
   const mine = ALL.filter((d) => d.authorId === me || (d.coAuthorIds || []).includes(me));
-  box.innerHTML = `<div class="prof"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div><b>${esc(p.nickname || "旅人")}</b><small>${esc(p.bio || "")}</small></div></div>
-    <div class="stats"><div><b>${mine.length}</b>投稿</div><div><b>${saved.size}</b>保存</div><div><b>—</b>フォロワー</div></div>
-    <div class="grp"><button data-go="saved">保存した旅</button><a href="#u-${esc(me)}">自分のプロフィール</a><a href="#w-account">プロフィール・通知の設定</a><a href="#dm">メッセージ</a></div>
-    <h3 style="margin:30px 20px -16px;font-size:11px;color:var(--muted);font-weight:500;font-family:Manrope;letter-spacing:.14em">SUPPORT</h3>
-    <div class="grp"><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="https://www.instagram.com/tabistock/">お問い合わせ（Instagram）</a></div>
-    <div class="grp"><a href="#w-account" style="color:#d4493f">アカウントの削除・ブロックしたユーザー</a></div>
-    ${mine.length ? `<div class="sh" style="padding-top:30px"><h2>自分の投稿</h2></div><div class="ogrid">${mine.map(gridCard).join("")}</div>` : ""}`;
+  const ig = String(p.instagram || "").trim();
+  const igUrl = ig ? (/^https?:\/\//.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/") : "";
+  box.innerHTML = `<div class="mehead"><b>${esc(p.nickname || "旅人")}</b><button class="hb" id="meMenu" aria-label="メニュー"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+    <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt="">
+      <div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー</span></a></div></div>
+      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${igUrl ? `<a class="ig" href="${esc(igUrl)}" target="_blank" rel="noopener">Instagram ↗</a>` : ""}
+      <div class="ub"><a class="btn-g" href="#w-account">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
+    <div class="sh" style="padding-top:24px"><h2>自分の投稿</h2></div>
+    ${mine.length ? `<div class="ogrid">${mine.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません<br><br><a class="btn-s" href="#w-post">旅を投稿する</a></p>'}`;
+  getCountFromServer(collection(db, "users", me, "followers")).then((r) => { const e = box.querySelector("[data-mfc]"); if (e) e.textContent = r.data().count; }).catch(() => {});
+  getCountFromServer(collection(db, "users", me, "following")).then((r) => { const e = box.querySelector("[data-mgc]"); if (e) e.textContent = r.data().count; }).catch(() => {});
+  $("meMenu").onclick = meMenu;
+}
+// マイページのハンバーガーメニュー
+function meMenu() {
+  haptic();
+  $("bs").innerHTML = `<div class="grab"></div><div class="shs mmenu">
+    <a class="srow" href="#w-account">プロフィール・通知の設定</a>
+    <a class="srow" href="#dm">メッセージ</a>
+    <a class="srow" href="#x-blocks">ブロックしたユーザー</a>
+    <p class="mlab">SUPPORT</p>
+    <a class="srow" href="/terms.html" target="_blank">利用規約</a>
+    <a class="srow" href="/privacy.html" target="_blank">プライバシーポリシー</a>
+    <a class="srow" href="https://www.instagram.com/tabistock/" target="_blank" rel="noopener">お問い合わせ（Instagram）</a>
+    <p class="mlab">ACCOUNT</p>
+    <button class="srow" id="mmOut">ログアウト</button>
+    <button class="srow red" id="mmDel">アカウントを削除</button></div>`;
+  $("ov").classList.add("show"); $("bs").classList.add("show");
+  $("bs").querySelectorAll("a.srow").forEach((a) => a.addEventListener("click", closeSheet));
+  $("mmOut").onclick = async () => { if (!confirm("ログアウトしますか？")) return; closeSheet(); try { const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"); await A.signOut(auth); toast("ログアウトしました"); } catch (e) { toast("ログアウトできませんでした"); } };
+  $("mmDel").onclick = deleteAccountSheet;
+}
+// アカウント削除（パスワードを入れ直して確定。サーバーの /api/deleteAccount が全データを消す）
+function deleteAccountSheet() {
+  $("bs").innerHTML = `<div class="grab"></div><div class="shs"><h3 style="color:#d4493f">アカウントを削除</h3>
+    <p style="font-size:13.5px;line-height:1.75">削除すると、次のデータがすべて消え、<b>元に戻せません</b>。</p>
+    <ul style="font-size:13px;line-height:1.85;padding-left:1.3em;margin:6px 0 4px"><li>投稿した記事（写真を含む）</li><li>書いたコメント、いいね</li><li>DMのメッセージ（相手側の履歴からも消えます）</li><li>プロフィール、保存した記事、フォロー、通知</li></ul>
+    <p style="font-size:12px;color:var(--muted)">共同投稿者になっている他の人の記事は残り、あなたの名前だけが外れます。</p>
+    <p style="font-size:13px;font-weight:700;margin:14px 0 6px">確認のため、パスワードを入力してください</p>
+    <input id="delPw" type="password" autocomplete="current-password" style="width:100%;border:1px solid var(--line);padding:12px;font:inherit;font-size:16px;background:#fff;border-radius:2px">
+    <p id="delMsg" style="font-size:12.5px;color:#d4493f;margin-top:8px"></p>
+    <button class="ok" id="delGo" style="background:#d4493f">削除する</button></div>`;
+  $("delGo").onclick = async () => {
+    const pw = $("delPw").value, msg = $("delMsg"), user = auth.currentUser;
+    if (!user) { msg.textContent = "ログインしてからもう一度お試しください。"; return; }
+    if (!pw) { msg.textContent = "パスワードを入力してください。"; return; }
+    if (!confirm("本当に削除しますか？この操作は取り消せません。")) return;
+    const go = $("delGo"); go.disabled = true; go.textContent = "削除中…"; msg.textContent = "";
+    try {
+      const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+      await A.reauthenticateWithCredential(user, A.EmailAuthProvider.credential(user.email, pw));
+      const token = await user.getIdToken(true);
+      const r = await fetch("/api/deleteAccount", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token }, body: JSON.stringify({ confirm: "DELETE" }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error === "admin account" ? "管理者アカウントはここからは削除できません。" : "削除に失敗しました（" + r.status + "）。");
+      try { localStorage.clear(); } catch (e) {}
+      await A.signOut(auth).catch(() => {});
+      closeSheet(); toast("アカウントを削除しました");
+    } catch (e) {
+      const c = e && e.code;
+      msg.textContent = c === "auth/wrong-password" || c === "auth/invalid-credential" || c === "auth/invalid-login-credentials" ? "パスワードが違います。" : c === "auth/too-many-requests" ? "試行回数が多すぎます。しばらくしてからお試しください。" : (e && e.message) || "削除に失敗しました。";
+      go.disabled = false; go.textContent = "削除する";
+    }
+  };
+}
+
+// フォロワー／フォロー一覧（#f-followers-UID / #f-following-UID）
+async function pageFollows(el, arg) {
+  const [kind, uid] = [arg.split("-")[0], arg.slice(arg.indexOf("-") + 1)];
+  el.innerHTML = bar(kind === "followers" ? "フォロワー" : "フォロー") + '<div class="ps under2 nb"><div id="flist"><p class="loading">読み込み中…</p></div></div>';
+  let ids = [];
+  try { (await getDocs(collection(db, "users", uid, kind))).forEach((s) => ids.push(s.id)); } catch (e) {}
+  await loadProfiles(ids);
+  el.querySelector("#flist").innerHTML = ids.length ? ids.map((u) => { const p = PROF[u] || {}; return `<a class="cv2" href="#u-${esc(u)}"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><span class="m"><b>${esc(p.nickname || "旅人")}</b><p>${esc(p.bio || "")}</p></span></a>`; }).join("") : `<p class="fol-empty">${kind === "followers" ? "まだフォロワーはいません。" : "まだ誰もフォローしていません。"}</p>`;
+}
+// ブロックしたユーザー（#x-blocks）
+async function pageBlocks(el) {
+  el.innerHTML = bar("ブロックしたユーザー") + '<div class="ps under2 nb"><div id="blist"><p class="loading">読み込み中…</p></div></div>';
+  const M = await mod();
+  const draw = async () => {
+    const list = await M.listBlocked();
+    el.querySelector("#blist").innerHTML = list.length ? list.map((b) => `<div class="cv2"><a href="#u-${esc(b.uid)}" style="display:flex;align-items:center;gap:12px;flex:1"><img src="${esc((PROF[b.uid] || {}).photoURL || DEF_AV)}" alt=""><b>${esc(b.nickname || "ユーザー")}</b></a><button class="btn-g" data-unb="${esc(b.uid)}">解除</button></div>`).join("") : '<p class="fol-empty">ブロックしているユーザーはいません。</p>';
+    el.querySelectorAll("[data-unb]").forEach((b) => (b.onclick = async () => { await M.unblockUser(b.dataset.unb); draw(); }));
+  };
+  draw();
 }
 
 // ---------- その他のボタン ----------

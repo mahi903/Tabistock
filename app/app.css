@@ -560,3 +560,17 @@ a{color:inherit;text-decoration:none}
 .shs .pick button{aspect-ratio:3/4;background:#e9dcc6 center/cover;border-radius:2px}
 #rmap,#smap{position:relative;z-index:0;isolation:isolate}
 .fsub{display:flex;justify-content:space-between;align-items:center}
+
+.ph2.cmt{color:var(--ink);font-weight:700;font-size:14.5px;line-height:1.9}
+#smap{height:58vh}
+
+/* マイページ */
+#me.pt{padding-top:calc(var(--st) + 10px)}
+.mehead{display:flex;align-items:center;justify-content:space-between;padding:6px 16px 14px 20px}
+.mehead b{font-size:20px;font-weight:900}
+.mehead .hb{width:40px;height:40px;display:grid;place-items:center;color:var(--ink)}
+.uhead .st a{display:block}
+.mmenu .srow{font-weight:500;color:var(--ink)}
+.mmenu .srow.red{color:#d4493f}
+.mlab{font-family:Manrope;font-weight:800;font-size:10.5px;letter-spacing:.14em;color:var(--muted);margin:16px 0 0}
+.cv2 .btn-g{flex:none}
