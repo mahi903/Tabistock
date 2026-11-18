@@ -506,3 +506,57 @@ a{color:inherit;text-decoration:none}
 .viewer .vs div{flex:none;width:100%;height:100%;background:center/contain no-repeat;scroll-snap-align:start}
 .viewer .vx{position:absolute;top:calc(var(--st) + 10px);right:14px;color:#fff;font-size:26px;width:40px;height:40px}
 .viewer .vc{position:absolute;bottom:calc(var(--sb) + 20px);left:0;right:0;text-align:center;color:#fff;font-family:Manrope;font-weight:800;font-size:13px}
+/* ===== v3 修正 ===== */
+.day.open .body{max-height:none}
+.day .body{padding-left:0}
+.dpw{position:relative;margin:4px 0 12px}
+.dphotos{margin:0;gap:0}
+.dphotos img{width:100%;height:260px}
+.dpc{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.38);color:#fff;font-family:Manrope;font-weight:700;font-size:11px;padding:2px 7px;border-radius:9px;pointer-events:none}
+.cost .h b{color:var(--ink)}
+.sheet h1{font-size:22px}
+.feat{height:330px}
+.feat .tt{font-size:22px}
+.act{gap:8px}
+.act .ab{flex:1;height:48px;display:flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:700;border:1px solid var(--line);background:#fff;border-radius:10px;color:var(--ink)}
+.act .ab svg{width:20px;height:20px;flex:none}
+.act .ab b{font-family:Manrope;font-weight:800}
+.act .ab.liked svg path{fill:var(--terra);stroke:var(--terra)}
+.act .ab.saved svg path{fill:var(--ink)}
+/* 絞り込みシート：線で区切るリスト＋四角いチェック */
+.bs{border-radius:12px 12px 0 0;padding-bottom:calc(var(--sb) + 14px)}
+.fsec{border-top:1px solid var(--ink);margin-top:16px}
+.fsec:first-child{margin-top:4px}
+.fhead{display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px}
+.fhead b{font-size:13px;font-weight:900}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;column-gap:16px}
+.fgrid.one{grid-template-columns:1fr}
+.frow{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px;text-align:left;width:100%}
+.frow .bx{width:18px;height:18px;border:1.5px solid #b9b2a4;border-radius:2px;flex:none;display:grid;place-items:center;background:#fff}
+.frow.on .bx{background:var(--green);border-color:var(--green)}
+.frow.on .bx:after{content:'';width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.frow .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.frow small{font-family:Manrope;font-weight:800;font-size:11px;color:var(--muted)}
+.frow.zero .nm{color:#a9afb8}
+.fall{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--green);font-weight:700}
+.fall .bx{width:15px;height:15px;border:1.5px solid var(--green);border-radius:2px;display:grid;place-items:center}
+.fall.on .bx{background:var(--green)}
+.fall.on .bx:after{content:'';width:7px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.fsub{font-size:11px;color:var(--muted);font-family:Manrope;font-weight:800;letter-spacing:.08em;margin:12px 0 0}
+/* 探す：Leaflet の地図 */
+#smap{height:calc(100vh - 330px);min-height:380px;margin-top:14px;background:#cfe1da;border-top:1px solid var(--line)}
+#smap .leaflet-tooltip.cl{background:none;border:0;box-shadow:none;font-family:'Noto Sans JP';font-weight:700;font-size:11px;color:#17423a;text-shadow:0 0 3px #fff,0 0 3px #fff;padding:0}
+#smap .leaflet-tooltip.cl:before{display:none}
+#smap.zs .leaflet-tooltip.cl{display:none}
+.rtabs{display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;margin-top:10px;border-bottom:1px solid var(--line)}
+.rtabs::-webkit-scrollbar{display:none}
+.rtabs button{font-size:13px;font-weight:700;color:#a1a8b2;padding:6px 0 8px;white-space:nowrap}
+.rtabs button.on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
+#rmap{margin-top:0;border-top:0}
+/* 共有シート */
+.shs .srow{display:flex;align-items:center;gap:12px;width:100%;padding:15px 2px;border-bottom:1px solid var(--line);font-size:14.5px;font-weight:700;text-align:left}
+.shs .srow svg{width:22px;height:22px;color:var(--green)}
+.shs .pick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:52vh;overflow-y:auto;margin-top:6px}
+.shs .pick button{aspect-ratio:3/4;background:#e9dcc6 center/cover;border-radius:2px}
+#rmap,#smap{position:relative;z-index:0;isolation:isolate}
+.fsub{display:flex;justify-content:space-between;align-items:center}
