@@ -11,6 +11,10 @@ service cloud.firestore {
       return isSignedIn()
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
+    // owner が request.auth.uid をブロックしているか
+    function blockedBy(owner) {
+      return exists(/databases/$(database)/documents/users/$(owner)/blocks/$(request.auth.uid));
+    }
 
     // ---- ユーザープロフィール（非公開・email等を含む） ----
     match /users/{uid} {
@@ -41,7 +45,14 @@ service cloud.firestore {
       // 追加・削除は「フォローする本人」が自分のUIDを出し入れする。
       match /followers/{followerUid} {
         allow read:  if true;
-        allow write: if isSignedIn() && request.auth.uid == followerUid;
+        allow delete: if isSignedIn() && request.auth.uid == followerUid;
+        // ブロックされている相手はフォローできない
+        allow create, update: if isSignedIn() && request.auth.uid == followerUid && !blockedBy(uid);
+      }
+
+      // ブロックしたユーザー。本人だけが読み書きできる（相手には分からない）。
+      match /blocks/{targetUid} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
 
       // 通知。受信者（uid本人）だけが閲覧・既読更新・削除できる。
@@ -50,7 +61,8 @@ service cloud.firestore {
         allow read, update, delete: if isSignedIn() && request.auth.uid == uid;
         allow create: if isSignedIn()
                       && request.resource.data.fromUid == request.auth.uid
-                      && request.resource.data.type is string;
+                      && request.resource.data.type is string
+                      && !blockedBy(uid);
       }
     }
 
@@ -211,12 +223,31 @@ service cloud.firestore {
                get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
         }
         allow read: if inConv();
+        // 相手にブロックされていたら送れない
+        function notBlocked() {
+          let p = get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
+          return !blockedBy(p[0]) && !blockedBy(p[1]);
+        }
         allow create: if inConv()
+                      && notBlocked()
                       && request.resource.data.senderId == request.auth.uid
                       && request.resource.data.text is string
                       && request.resource.data.text.size() > 0
                       && request.resource.data.text.size() <= 2000;
       }
     }
-  }
+
+    // ---- 通報（App Store ガイドライン 1.2） ----
+    // ログインユーザーが作成（通報者＝自分・status は open 固定）。閲覧・対応は管理者のみ。
+    match /reports/{reportId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.reporterUid == request.auth.uid
+                    && request.resource.data.status == 'open'
+                    && request.resource.data.type in ['article', 'comment', 'user', 'message']
+                    && request.resource.data.reason is string
+                    && request.resource.data.note is string
+                    && request.resource.data.note.size() <= 500;
+      allow read, update, delete: if isAdmin();
+    }
+}
 }

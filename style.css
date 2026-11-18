@@ -2290,6 +2290,29 @@ a.hero-author:hover .hero-author-name {
   padding: 2px 4px;
 }
 .comment-del:hover { text-decoration: underline; }
+.comment-more {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0 6px 4px;
+}
+.comment-del + .comment-more { margin-left: 4px; }
+.report-article {
+  display: block;
+  margin: 26px auto 0;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-family: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .comment-text {
   font-size: 15px;
   line-height: 1.7;

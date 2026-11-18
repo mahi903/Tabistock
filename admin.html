@@ -64,7 +64,8 @@
         <button id="tab-published" type="button">公開中</button>
         <button id="tab-rejected" type="button">却下</button>
         <button id="tab-draft" type="button">下書き</button>
-        <button id="tab-users" type="button" style="margin-left:auto">ユーザー</button>
+        <button id="tab-reports" type="button" style="margin-left:auto">通報<span id="repBadge"></span></button>
+        <button id="tab-users" type="button">ユーザー</button>
       </div>
       <div id="msg"></div>
       <div id="list"><div class="empty">読み込み中…</div></div>
@@ -165,6 +166,71 @@ function bindButtons(){
   });
 }
 
+// ===== 通報（reports）=====
+const REASON_JP = { spam:"スパム・宣伝", harass:"誹謗中傷・嫌がらせ", inappropriate:"不適切な内容", privacy:"個人情報", impersonation:"なりすまし", other:"その他" };
+const TYPE_JP = { article:"記事", comment:"コメント", user:"ユーザー", message:"メッセージ" };
+function targetLink(r){
+  if(r.type==="article") return `./articles/view.html?id=${encodeURIComponent(r.articleId||r.targetId)}`;
+  if(r.type==="comment") return `./articles/view.html?id=${encodeURIComponent(r.articleId)}#comments`;
+  return `./user.html?uid=${encodeURIComponent(r.targetUid||r.targetId)}`;
+}
+function renderReport(r){
+  const dt = r.createdAt?.seconds ? new Date(r.createdAt.seconds*1000).toLocaleString('ja-JP') : '';
+  let acts = '';
+  if(r.status==="open"){
+    if(r.type==="comment") acts += `<button class="b-del" data-ract="delcomment" data-id="${esc(r.id)}">コメントを削除</button>`;
+    if(r.type==="article") acts += `<button class="b-reject" data-ract="hidearticle" data-id="${esc(r.id)}">記事を非公開</button>`;
+    acts += `<button class="b-approve" data-ract="resolve" data-id="${esc(r.id)}">対応済みにする</button>`;
+  }
+  return `<div class="item" id="rep-${esc(r.id)}">
+    <div class="meta">
+      <h3>${esc(TYPE_JP[r.type]||r.type)}／${esc(REASON_JP[r.reason]||r.reason)}${r.status!=="open"?'（対応済み）':''}</h3>
+      <p class="who">${esc(dt)}</p>
+      ${r.excerpt?`<p class="lead">「${esc(r.excerpt)}」</p>`:''}
+      ${r.note?`<p class="lead">通報者のメモ：${esc(r.note)}</p>`:''}
+    </div>
+    <div class="actions">
+      <a class="b-view" href="${targetLink(r)}" target="_blank">対象を見る</a>${acts}
+    </div>
+  </div>`;
+}
+let reportsCache = {};
+async function loadReports(){
+  $("list").innerHTML = '<div class="empty">読み込み中…</div>';
+  try{
+    const snap = await getDocs(collection(db, "reports"));
+    const docs = [];
+    snap.forEach(x => docs.push({ id: x.id, ...x.data() }));
+    docs.sort((a,b) => (a.status==="open"?0:1)-(b.status==="open"?0:1) || (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+    reportsCache = {}; docs.forEach(d => reportsCache[d.id] = d);
+    paintRepBadge(docs.filter(d => d.status==="open").length);
+    if(!docs.length){ $("list").innerHTML = `<div class="empty">通報はありません。</div>`; return; }
+    $("list").innerHTML = `<p class="sub" style="margin:0 0 14px">未対応はApp Storeの規定上、24時間以内に確認してください。ユーザー自体を止めるときはFirebaseコンソールのAuthenticationで無効化します。</p>` + docs.map(renderReport).join("");
+    document.querySelectorAll("[data-ract]").forEach(btn => btn.addEventListener("click", async () => {
+      const r = reportsCache[btn.dataset.id]; if(!r) return;
+      try{
+        if(btn.dataset.ract==="delcomment"){
+          if(!confirm("このコメントを削除しますか？")) return;
+          await deleteDoc(doc(db,"articles",r.articleId,"comments",r.targetId));
+        }else if(btn.dataset.ract==="hidearticle"){
+          if(!confirm("この記事を非公開（却下）にしますか？")) return;
+          await updateDoc(doc(db,"articles",r.articleId||r.targetId), { status:"rejected", updatedAt: serverTimestamp() });
+        }
+        await updateDoc(doc(db,"reports",r.id), { status:"resolved", resolvedAt: serverTimestamp(), action: btn.dataset.ract });
+        msg("対応しました。", "ok");
+        loadReports();
+      }catch(err){ console.error(err); msg("操作に失敗しました：" + (err.message||err), "err"); }
+    }));
+  }catch(err){
+    console.error(err);
+    $("list").innerHTML = `<div class="empty">読み込みエラー：${esc(err.message||err)}</div>`;
+  }
+}
+function paintRepBadge(n){ $("repBadge").textContent = n ? `（${n}）` : ""; }
+async function countOpenReports(){
+  try{ const sn = await getDocs(query(collection(db,"reports"), where("status","==","open"))); paintRepBadge(sn.size); }catch(e){}
+}
+
 // ===== ユーザー一覧（公開情報のみ：メアド等は含まない）=====
 function renderUser(d){
   const photo = d.photoURL || "";
@@ -200,13 +266,13 @@ async function loadUsers(){
   }
 }
 
-const TABS = ["pending","published","rejected","draft","users"];
+const TABS = ["pending","published","rejected","draft","reports","users"];
 TABS.forEach(t => {
   $("tab-"+t).addEventListener("click", () => {
     currentTab = t;
     TABS.forEach(x => $("tab-"+x).classList.toggle("on", x===t));
     msg("", "");
-    if(t==="users") loadUsers(); else loadList();
+    if(t==="users") loadUsers(); else if(t==="reports") loadReports(); else loadList();
   });
 });
 
@@ -225,6 +291,7 @@ onAuthStateChanged(auth, async (user) => {
   $("gate").innerHTML = "";
   $("panel").style.display = "block";
   loadList();
+  countOpenReports();
 });
 </script>
   <!-- Vercel Web Analytics -->

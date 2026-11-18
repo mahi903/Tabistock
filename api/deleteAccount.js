@@ -137,12 +137,16 @@ export default async function handler(req, res) {
       stats.conversations++;
     }
 
-    // 5) プロフィール・ユーザー情報・アイコン
+    // 5) 本人が出した通報
+    const reps = await db.collection("reports").where("reporterUid", "==", uid).get();
+    for (const r of reps.docs) await r.ref.delete();
+
+    // 6) プロフィール・ユーザー情報・アイコン
     await rdel(me);
     await rdel(db.collection("publicProfiles").doc(uid));
     await delFolder(`avatars/${uid}/`);
 
-    // 6) ログイン情報（最後に消す）
+    // 7) ログイン情報（最後に消す）
     await admin.auth().deleteUser(uid);
 
     res.status(200).json({ ok: true, ...stats });

@@ -623,6 +623,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/f
 import { renderArticleBody, esc, para, cinfo, COUNTRY_ISO, DAYS_OPT } from "../tabistock-render.js";
 import { sendNotification } from "../notify.js";
 import { initPhotoViewer } from "../photo-viewer.js";
+import { openReport, openMenu, getBlocked, blockUser } from "../moderation.js";
 
 const root = document.getElementById("article-root");
 const id = new URLSearchParams(location.search).get("id");
@@ -1347,6 +1348,16 @@ function initComments(){
   const defAvatar = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e7ddcb%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2240%22%20r%3D%2218%22%20fill%3D%22%23b9ad95%22%2F%3E%3Cpath%20d%3D%22M20%2086c0-17%2013-28%2030-28s30%2011%2030%2028z%22%20fill%3D%22%23b9ad95%22%2F%3E%3C%2Fsvg%3E";
 
   let me = null, myName = "", myPhoto = "", amAdmin = false;
+  let blocked = new Set();
+
+  // 記事そのものの通報リンク（コメント欄の下）
+  if(!document.getElementById("reportArticle")){
+    const ra = document.createElement("button");
+    ra.id = "reportArticle"; ra.type = "button"; ra.className = "report-article";
+    ra.textContent = "この記事を通報する";
+    ra.addEventListener("click", () => openReport({ type:"article", targetId:id, articleId:id, targetUid:(articleAuthorIds&&articleAuthorIds[0])||"", excerpt:articleTitle||document.title }));
+    section.appendChild(ra);
+  }
 
   const fmt = (ts) => {
     try{
@@ -1358,6 +1369,7 @@ function initComments(){
 
   const likesCache = {};   // cid -> { count, mine }
   const authorOf = {};     // cid -> authorId（返信通知用）
+  const commentById = {};  // cid -> コメント（通報・ブロック用）
 
   const actionBar = (c, isReply) => {
     const st = likesCache[c.id] || { count:0, mine:false };
@@ -1390,6 +1402,7 @@ function initComments(){
       +     '<strong>'+nameHTML+badge+'</strong>'
       +     '<span class="comment-time">'+esc(fmt(c.createdAt))+'</span>'
       +     (canDel ? '<button class="comment-del" type="button" data-del="'+esc(c.id)+'">削除</button>' : '')
+      +     ((me && c.authorId && c.authorId !== me) ? '<button class="comment-more" type="button" data-more="'+esc(c.id)+'" aria-label="その他">…</button>' : '')
       +   '</div>'
       +   '<div class="comment-text">'+para(c.text || "")+'</div>'
       +   actionBar(c, isReply)
@@ -1476,6 +1489,16 @@ function initComments(){
         }catch(e){ console.error(e); alert("削除できませんでした。"); }
       });
     });
+    cList.querySelectorAll("[data-more]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const cid = btn.getAttribute("data-more");
+        const c = commentById[cid] || {};
+        openMenu([
+          { label: "このコメントを通報", red: true, onClick: () => openReport({ type:"comment", targetId:cid, articleId:id, targetUid:c.authorId||"", excerpt:c.text||"" }) },
+          { label: (c.authorName||"このユーザー")+"さんをブロック", red: true, onClick: async () => { if(await blockUser(c.authorId, c.authorName)){ blocked = await getBlocked(); await loadComments(); } } }
+        ]);
+      });
+    });
     cList.querySelectorAll("[data-like]").forEach(btn => {
       btn.addEventListener("click", () => toggleLike(btn.getAttribute("data-like"), btn));
     });
@@ -1487,8 +1510,14 @@ function initComments(){
   const loadComments = async () => {
     try{
       const qs = await getDocs(query(col, orderBy("createdAt","desc")));
-      const all = [];
+      let all = [];
       qs.forEach(s => all.push(Object.assign({ id: s.id }, s.data())));
+      // ブロックした相手のコメント（と、その返信）は表示しない
+      if(blocked.size){
+        const hidden = new Set(all.filter(c => blocked.has(c.authorId)).map(c => c.id));
+        all = all.filter(c => !hidden.has(c.id) && !hidden.has(c.parentId));
+      }
+      all.forEach(c => { commentById[c.id] = c; });
       all.forEach(c => { authorOf[c.id] = c.authorId || null; });
       if(cCount) cCount.textContent = all.length ? "("+all.length+")" : "";
 
@@ -1552,6 +1581,7 @@ function initComments(){
       }catch(e){}
       try{ amAdmin = (await getDoc(doc(db,"admins",me))).exists(); }catch(e){ amAdmin = false; }
     }
+    blocked = me ? await getBlocked() : new Set();
     renderForm();
     await loadComments();
   });

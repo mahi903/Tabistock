@@ -45,6 +45,11 @@
   .me .actions a,.me .actions button{display:flex;align-items:center;justify-content:center;width:100%;padding:12px 14px;border-radius:4px;font-size:13px;font-weight:700;line-height:1;text-decoration:none;text-align:center;cursor:pointer;font-family:inherit;border:none}
   .a-main{background:#e2683b;color:#fff}
   .del-link{display:block;margin:22px auto 0;background:none;border:0;color:#d4493f;font-size:13px;text-decoration:underline;cursor:pointer;font-family:inherit}
+  .blk-link{display:block;margin:22px auto 0;background:none;border:0;color:#6c7787;font-size:13px;text-decoration:underline;cursor:pointer;font-family:inherit}
+  .blk-link + .del-link{margin-top:10px}
+  .blk-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0ebe1;font-size:14px}
+  .blk-row a{color:#1b2330;font-weight:700;text-decoration:none}
+  .blk-row button{border:1.5px solid #1f6f5b;background:#fff;color:#1f6f5b;border-radius:999px;padding:5px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
   .del-ov{position:fixed;inset:0;background:rgba(15,20,25,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
   .del-ov[hidden]{display:none}
   .del-box{background:#fff;border-radius:20px;max-width:420px;width:100%;padding:22px 20px;max-height:90vh;overflow:auto}
@@ -288,6 +293,7 @@
       <div class="actions" style="margin-top:18px">
         <button class="a-ghost" id="logoutBtn" type="button">ログアウト</button>
       </div>
+      <button class="blk-link" id="blkOpen" type="button">ブロックしたユーザー</button>
       <button class="del-link" id="delOpen" type="button">アカウントを削除</button>
       </div><!-- /me-foot -->
       </div><!-- /me-side -->
@@ -340,6 +346,13 @@
     </div>
   </div>
 
+<div class="del-ov" id="blkOv" hidden>
+  <div class="del-box" role="dialog" aria-modal="true">
+    <h2 style="color:#1b2330">ブロックしたユーザー</h2>
+    <div id="blkList"></div>
+    <div class="del-btns"><button class="a-ghost" id="blkClose" type="button">閉じる</button></div>
+  </div>
+</div>
 <div class="del-ov" id="delOv" hidden>
   <div class="del-box" role="dialog" aria-modal="true" aria-labelledby="delTitle">
     <h2 id="delTitle">アカウントを削除</h2>
@@ -374,6 +387,7 @@ import { ref as sRef, uploadBytes, getDownloadURL }
 import { renderCard } from "./tabistock-render.js";
 import { enablePush, disablePush, isPushSupported } from "./push.js";
 import { sendNotification } from "./notify.js";
+import { listBlocked, unblockUser } from "./moderation.js";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
@@ -480,6 +494,18 @@ $("submitBtn").onclick = async () => {
 };
 
 $("logoutBtn").onclick = () => signOut(auth);
+
+// ---- ブロックしたユーザー ----
+async function drawBlocked(){
+  const box = $("blkList");
+  box.innerHTML = '<p class="del-note">読み込み中…</p>';
+  const list = await listBlocked();
+  if(!list.length){ box.innerHTML = '<p class="del-note">ブロックしているユーザーはいません。</p>'; return; }
+  box.innerHTML = list.map(b => `<div class="blk-row"><a href="./user.html?uid=${encodeURIComponent(b.uid)}">${esc(b.nickname || "ユーザー")}</a><button type="button" data-unblk="${esc(b.uid)}">解除</button></div>`).join("");
+  box.querySelectorAll("[data-unblk]").forEach(btn => btn.onclick = async () => { await unblockUser(btn.dataset.unblk); drawBlocked(); });
+}
+$("blkOpen").onclick = () => { $("blkOv").hidden = false; drawBlocked(); };
+$("blkClose").onclick = () => { $("blkOv").hidden = true; };
 
 // ---- アカウント削除 ----
 const delOv = $("delOv");
