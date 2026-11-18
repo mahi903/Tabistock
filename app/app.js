@@ -440,7 +440,7 @@ async function pageArticle(el, id) {
         return `<div class="day"><button ${has ? "data-day" : ""}><div class="th ${ph[0] ? "" : "no"}" style="${ph[0] ? `background-image:url('${esc(ph[0])}')` : ""}">${ph[0] ? "" : i + 1}</div><div><small>DAY ${i + 1}${x.date ? "　" + esc(x.date) : ""}</small><p>${esc(x.summary || "")}</p></div>${has ? '<span class="pm">＋</span>' : ""}</button>
           <div class="body">${ph.length ? `<div class="dpw"><div class="dphotos">${ph.map((u, k) => `<img src="${esc(u)}" alt="" loading="lazy" data-dv="${i}" data-k="${k}">`).join("")}</div>${ph.length > 1 ? `<span class="dpc">1/${ph.length}</span>` : ""}</div>` : ""}${String(x.text || "").trim() ? `<p class="ph">${para(x.text)}</p>` : ""}</div></div>`;
       }).join("")}</div>` : ""}
-      ${d.comment ? `<div class="dh"><h2>投稿者のコメント</h2></div><p class="ph2 cmt">${para(d.comment)}</p>` : ""}
+      ${d.comment ? `<div class="dh"><h2>投稿者のコメント</h2></div><p class="ph2">${para(d.comment)}</p>` : ""}
       <div class="dh"><h2>投稿者</h2></div>
       ${authors.map((u) => { const p = PROF[u] || {}; return `<div class="acard"><a href="#u-${esc(u)}"><img src="${esc(avatarOf(u))}" alt=""></a><div><a href="#u-${esc(u)}"><b>${esc(p.nickname || authorName(d))}</b></a>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}</div>${u !== me ? `<button class="btn-s" data-follow="${esc(u)}">フォロー</button>` : ""}</div>`; }).join("")}
       <div class="dh"><h2>コメント <small id="ccount" style="font-family:Manrope;color:var(--muted)"></small></h2></div>
@@ -450,12 +450,15 @@ async function pageArticle(el, id) {
     </div></div>
     <div class="pnav"><div class="topnav">${esc(titleOf(d))}</div>
       <button class="fb" style="left:16px" data-back aria-label="戻る"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      ${me && (d.authorId === me || (d.coAuthorIds || []).includes(me)) ? '<button class="fb" style="right:64px" data-own aria-label="記事のメニュー"><svg width="18" height="18" viewBox="0 0 24 24" fill="#1b2330"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' : ""}
       <button class="fb" style="right:16px" data-share aria-label="共有"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12"/></svg></button></div>
     <div class="act show"><button class="ab" data-like aria-label="いいね"><svg viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><b data-lc></b>いいね</button>
       <button class="ab ${saved.has(d.id) ? "saved" : ""}" data-save="${esc(d.id)}" aria-label="保存"><svg viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3.5h11v17l-5.5-3.6-5.5 3.6z"/></svg>保存</button>
       <button class="ab" data-share2 aria-label="共有"><svg viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12"/></svg>共有</button></div>`;
   const ps = el.querySelector(".ps");
   ps.onscroll = () => { const on = ps.scrollTop > 360; el.querySelector(".topnav").classList.toggle("show", on); el.querySelectorAll(".pnav .fb").forEach((b) => b.classList.toggle("solid", on)); };
+  fitRatio(el.querySelector(".gal"), imgs[0], true);
+  el.querySelectorAll(".dphotos").forEach((g) => { const im = g.querySelector("img"); if (im) fitRatio(g, im.getAttribute("src")); });
   const gal = el.querySelector(".gal");
   gal.onscroll = () => { const i = Math.round(gal.scrollLeft / gal.clientWidth); el.querySelectorAll(".dots i").forEach((x, j) => x.classList.toggle("on", i === j)); };
   gal.querySelectorAll("[data-hv]").forEach((x) => (x.onclick = () => openViewer(imgs, +x.dataset.hv)));
@@ -471,6 +474,7 @@ async function pageArticle(el, id) {
   setTimeout(() => el.querySelectorAll(".bar span").forEach((x) => (x.style.flex = x.dataset.f)), 380);
   el.querySelector("[data-share]").onclick = () => shareMenu(d);
   el.querySelector("[data-share2]").onclick = () => shareMenu(d);
+  const own = el.querySelector("[data-own]"); if (own) own.onclick = () => postMenu(d.id);
   el.querySelector("#repA").onclick = async () => (await mod()).openReport({ type: "article", targetId: d.id, articleId: d.id, targetUid: d.authorId || "", excerpt: titleOf(d) });
   el.querySelectorAll("[data-follow]").forEach((b) => wireFollow(b, b.dataset.follow));
   if (hasRoute) drawRoute(el.querySelector("#rmap"), d);
@@ -484,6 +488,17 @@ let MOD = null;
 const mod = async () => (MOD = MOD || (await import("../moderation.js")));
 let NOTI = null;
 const notify = async (o) => { try { NOTI = NOTI || (await import("../notify.js")); NOTI.sendNotification(o); } catch (e) {} };
+
+// 写真の縦横比に合わせて枠の高さを決める（Instagram と同じく 4:5〜1.91:1 の範囲）
+function fitRatio(box, url, hero) {
+  if (!box || !url) return;
+  const im = new Image();
+  im.onload = () => {
+    const r = Math.min(1.91, Math.max(0.8, im.naturalWidth / im.naturalHeight));
+    box.style.height = "auto"; box.style.aspectRatio = String(r);
+  };
+  im.src = url;
+}
 
 // ルートマップ（Leaflet を必要なときだけ読み込む）
 function loadLeaflet() {
@@ -545,7 +560,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611190627"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611190641"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -746,7 +761,8 @@ async function pageThread(el, other) {
 
 // ---------- 埋め込みページ（投稿フォームなど。アプリ版の画面ができるまでの間） ----------
 function pageFrame(el, name) {
-  const f = FRAMES[name] || ["/" + name + ".html", ""];
+  let f = FRAMES[name] || ["/" + name + ".html", ""];
+  if (name.startsWith("edit-")) { const id = name.slice(5), d = BY[id] || {}; f = [(d.type === "transit" ? "/post-transit.html" : "/post.html") + "?edit=" + encodeURIComponent(id), "記事を編集"]; }
   el.innerHTML = bar(f[1]) + `<iframe class="wf" src="${esc(f[0])}" title="${esc(f[1])}"></iframe>`;
 }
 
@@ -780,17 +796,121 @@ function renderMe() {
   const mine = ALL.filter((d) => d.authorId === me || (d.coAuthorIds || []).includes(me));
   const ig = String(p.instagram || "").trim();
   const igUrl = ig ? (/^https?:\/\//.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/") : "";
+  myTab = myTab || "trips";
   box.innerHTML = `<div class="mehead"><b>${esc(p.nickname || "旅人")}</b><button class="hb" id="meMenu" aria-label="メニュー"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt="">
       <div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー</span></a></div></div>
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${igUrl ? `<a class="ig" href="${esc(igUrl)}" target="_blank" rel="noopener">Instagram ↗</a>` : ""}
       <div class="ub"><a class="btn-g" href="#w-account">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
-    <div class="sh" style="padding-top:24px"><h2>自分の投稿</h2></div>
-    ${mine.length ? `<div class="ogrid">${mine.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません<br><br><a class="btn-s" href="#w-post">旅を投稿する</a></p>'}`;
+    <div class="mtabs" id="mtabs"><button class="on" data-mt="trips">旅程<b data-mn="trips"></b></button><button data-mt="transit">トランジット<b data-mn="transit"></b></button><button data-mt="collab">共同投稿<b data-mn="collab"></b><i id="invDot" hidden></i></button></div>
+    <div id="myPosts"><p class="loading">読み込み中…</p></div>`;
+  box.querySelectorAll("[data-mt]").forEach((b) => (b.onclick = () => { myTab = b.dataset.mt; box.querySelectorAll("[data-mt]").forEach((x) => x.classList.toggle("on", x === b)); drawMyPosts(); haptic(); }));
+  loadMyPosts();
   getCountFromServer(collection(db, "users", me, "followers")).then((r) => { const e = box.querySelector("[data-mfc]"); if (e) e.textContent = r.data().count; }).catch(() => {});
   getCountFromServer(collection(db, "users", me, "following")).then((r) => { const e = box.querySelector("[data-mgc]"); if (e) e.textContent = r.data().count; }).catch(() => {});
   $("meMenu").onclick = meMenu;
 }
+// ---------- 自分の投稿（旅程／トランジット／共同投稿）と記事メニュー ----------
+const STATUS_LABEL = { published: "公開中", pending: "承認待ち", rejected: "却下", draft: "下書き", hidden: "非表示" };
+let myTab = "trips", MY = { trips: [], transit: [], collab: [], invites: [] };
+async function loadMyPosts() {
+  if (!me) return;
+  const docs = [], invites = [];
+  try {
+    const [a, b, c] = await Promise.all([
+      getDocs(query(collection(db, "articles"), where("authorId", "==", me))),
+      getDocs(query(collection(db, "articles"), where("coAuthorIds", "array-contains", me))).catch(() => null),
+      getDocs(query(collection(db, "articles"), where("coAuthorInvites", "array-contains", me))).catch(() => null)
+    ]);
+    a.forEach((x) => docs.push({ id: x.id, ...x.data() }));
+    if (b) b.forEach((x) => { if (!docs.some((d) => d.id === x.id)) docs.push({ id: x.id, ...x.data(), _collab: true }); });
+    if (c) c.forEach((x) => invites.push({ id: x.id, ...x.data() }));
+  } catch (e) { const el = $("myPosts"); if (el) el.innerHTML = '<p class="loading">読み込めませんでした</p>'; return; }
+  docs.forEach((d) => (BY[d.id] = BY[d.id] || d));
+  docs.sort((x, y) => ((y.createdAt || {}).seconds || 0) - ((x.createdAt || {}).seconds || 0));
+  const owned = docs.filter((d) => !d._collab);
+  MY = { trips: owned.filter((d) => d.type !== "transit"), transit: owned.filter((d) => d.type === "transit"), collab: docs.filter((d) => d._collab || (d.coAuthorIds || []).length || (d.coAuthorInvites || []).length), invites };
+  await loadProfiles(invites.map((d) => d.authorId));
+  ["trips", "transit", "collab"].forEach((k) => { const n = document.querySelector(`[data-mn="${k}"]`); if (n) n.textContent = MY[k].length || ""; });
+  const dot = $("invDot"); if (dot) dot.hidden = !invites.length;
+  drawMyPosts();
+}
+function myCard(d) {
+  const st = STATUS_LABEL[d.status] ? d.status : "pending";
+  return `<div class="mycard"><a class="oc" href="#a-${esc(d.id)}" style="background-image:url('${esc(thumbOf(d))}')">${ovText({ ...d, title: d.title || "(無題)" })}</a>
+    <div class="mymeta">${st !== "published" ? `<span class="pst s-${st}">${STATUS_LABEL[st]}</span>` : ""}${d._collab ? '<span class="pst">共同投稿</span>' : ""}<button class="pmn" data-pm="${esc(d.id)}" aria-label="メニュー">…</button></div></div>`;
+}
+function drawMyPosts() {
+  const box = $("myPosts"); if (!box) return;
+  const list = MY[myTab] || [];
+  const empty = { trips: '<p class="empty">まだ旅程がありません<br><br><a class="btn-s" href="#w-post">旅程を投稿する</a></p>', transit: '<p class="empty">まだトランジット記事がありません<br><br><a class="btn-s" href="#w-post-transit">トランジットを投稿する</a></p>', collab: '<p class="empty">共同投稿はまだありません。<br>投稿の編集画面から、一緒に旅した友達を招待できます。</p>' };
+  let inv = "";
+  if (myTab === "collab" && MY.invites.length) {
+    inv = `<p class="fsub" style="margin:14px 20px 6px">招待 ${MY.invites.length}件</p>` + MY.invites.map((d) => `<div class="cv2"><a href="#a-${esc(d.id)}"><img src="${esc(thumbOf(d))}" alt="" style="border-radius:2px"></a><span class="m"><b>${esc(d.title || "(無題)")}</b><p>${esc(authorName(d))}さんから共同投稿の招待</p></span><button class="btn-s" data-inv="accept" data-id="${esc(d.id)}">承認</button><button class="btn-g" data-inv="decline" data-id="${esc(d.id)}">辞退</button></div>`).join("");
+  }
+  box.innerHTML = inv + (list.length ? `<div class="ogrid">${list.map(myCard).join("")}</div>` : (inv ? "" : empty[myTab]));
+  box.querySelectorAll("[data-pm]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); postMenu(b.dataset.pm); }));
+  box.querySelectorAll("[data-inv]").forEach((b) => (b.onclick = async () => {
+    b.disabled = true;
+    try {
+      const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+      const ref = doc(db, "articles", b.dataset.id);
+      if (b.dataset.inv === "accept") await F.updateDoc(ref, { coAuthorInvites: F.arrayRemove(me), coAuthorIds: F.arrayUnion(me) });
+      else await F.updateDoc(ref, { coAuthorInvites: F.arrayRemove(me) });
+      haptic(); loadMyPosts();
+    } catch (e) { toast("操作できませんでした"); b.disabled = false; }
+  }));
+}
+// 記事メニュー（サイトのマイページと同じ：編集／共同投稿者／投稿者を譲る／非表示・再公開／削除・抜ける）
+async function postMenu(id) {
+  let d = BY[id];
+  if (!d) return;
+  const collab = d.authorId !== me;
+  const people = (d.coAuthorIds || []).length + (d.coAuthorInvites || []).length;
+  const it = [];
+  it.push(`<a class="srow" href="#w-edit-${esc(id)}">編集</a>`);
+  if (people || collab) it.push(`<button class="srow" data-pa="people">共同投稿者<small style="margin-left:auto;color:var(--muted)">${people + (collab ? 1 : 0)}人</small></button>`);
+  if (!collab && (d.coAuthorIds || []).length) it.push('<button class="srow" data-pa="handover">投稿者を譲る</button>');
+  if (d.status === "published") it.push('<button class="srow" data-pa="hide">非表示にする</button>');
+  if (d.status === "hidden") it.push('<button class="srow" data-pa="show">再公開する</button>');
+  it.push(collab ? '<button class="srow red" data-pa="leave">共同投稿から抜ける</button>' : '<button class="srow red" data-pa="delete">削除</button>');
+  $("bs").innerHTML = `<div class="grab"></div><div class="shs mmenu"><h3 style="font-size:15px">${esc(d.title || "(無題)")}</h3>${it.join("")}</div>`;
+  $("ov").classList.add("show"); $("bs").classList.add("show");
+  $("bs").querySelectorAll("a.srow").forEach((a) => a.addEventListener("click", closeSheet));
+  $("bs").querySelectorAll("[data-pa]").forEach((b) => (b.onclick = () => postAction(b.dataset.pa, d)));
+}
+async function postAction(act, d) {
+  const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  const ref = doc(db, "articles", d.id);
+  if (act === "people") {
+    const rows = [[d.authorId, "投稿者"], ...(d.coAuthorIds || []).map((u) => [u, "共同投稿者"]), ...(d.coAuthorInvites || []).map((u) => [u, "招待中"])];
+    await loadProfiles(rows.map((r) => r[0]));
+    $("bs").innerHTML = `<div class="grab"></div><div class="shs"><h3>共同投稿者</h3>${rows.map(([u, role]) => `<a class="cv2" href="#u-${esc(u)}" style="padding-left:0;padding-right:0"><img src="${esc((PROF[u] || {}).photoURL || DEF_AV)}" alt=""><span class="m"><b>${esc((PROF[u] || {}).nickname || "旅人")}${u === me ? "（あなた）" : ""}</b><p>${role}</p></span></a>`).join("")}<p style="font-size:12px;color:var(--muted);margin-top:10px">招待や取り消しは「編集」画面からできます</p></div>`;
+    $("bs").querySelectorAll("a").forEach((a) => a.addEventListener("click", closeSheet));
+    return;
+  }
+  if (act === "delete" && !confirm("この投稿を削除しますか？この操作は取り消せません。")) return;
+  if (act === "leave" && !confirm("この共同投稿から抜けますか？あなたのプロフィールに表示されなくなり、編集もできなくなります。")) return;
+  closeSheet();
+  try {
+    if (act === "hide") await F.updateDoc(ref, { status: "hidden", updatedAt: serverTimestamp() });
+    else if (act === "show") await F.updateDoc(ref, { status: "published", updatedAt: serverTimestamp() });
+    else if (act === "delete") await deleteDoc(ref);
+    else if (act === "leave") await F.updateDoc(ref, { coAuthorIds: F.arrayRemove(me) });
+    else if (act === "handover") {
+      const ids = d.coAuthorIds || []; await loadProfiles(ids);
+      const names = ids.map((u) => (PROF[u] || {}).nickname || "旅人");
+      let idx = 0;
+      if (ids.length > 1) { const a = prompt("誰に投稿者を譲りますか？番号を入力してください。\n" + names.map((n, i) => `${i + 1}. ${n}`).join("\n")); if (a == null) return; idx = parseInt(a, 10) - 1; if (!(idx >= 0 && idx < ids.length)) { toast("番号が正しくありません"); return; } }
+      if (!confirm(`「${d.title || "(無題)"}」の投稿者を ${names[idx]} さんに譲りますか？\nあなたは共同投稿者として残ります。`)) return;
+      await F.updateDoc(ref, { authorId: ids[idx], authorNickname: names[idx], coAuthorIds: [...ids.filter((u) => u !== ids[idx]), me] });
+      notify({ toUid: ids[idx], type: "handover", articleId: d.id, articleTitle: d.title || "" });
+    }
+    toast("完了しました"); haptic();
+    delete BY[d.id]; loadMyPosts(); loadAll();
+  } catch (e) { toast("操作できませんでした"); }
+}
+
 // マイページのハンバーガーメニュー
 function meMenu() {
   haptic();

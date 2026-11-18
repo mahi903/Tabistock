@@ -561,7 +561,6 @@ a{color:inherit;text-decoration:none}
 #rmap,#smap{position:relative;z-index:0;isolation:isolate}
 .fsub{display:flex;justify-content:space-between;align-items:center}
 
-.ph2.cmt{color:var(--ink);font-weight:700;font-size:14.5px;line-height:1.9}
 #smap{height:58vh}
 
 /* マイページ */
@@ -574,3 +573,26 @@ a{color:inherit;text-decoration:none}
 .mmenu .srow.red{color:#d4493f}
 .mlab{font-family:Manrope;font-weight:800;font-size:10.5px;letter-spacing:.14em;color:var(--muted);margin:16px 0 0}
 .cv2 .btn-g{flex:none}
+
+/* マイページの投稿タブ */
+.mtabs{display:flex;margin:22px 0 10px;border-bottom:1px solid var(--line)}
+.mtabs button{flex:1;padding:10px 0 9px;font-size:13.5px;font-weight:700;color:#a1a8b2;position:relative}
+.mtabs button.on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
+.mtabs b{font-family:Manrope;font-weight:800;font-size:11px;margin-left:4px;color:var(--muted)}
+.mtabs i{position:absolute;top:8px;right:18%;width:7px;height:7px;border-radius:50%;background:var(--terra)}
+.mycard{position:relative}
+.mycard .oc{height:240px}
+.mymeta{position:absolute;top:6px;left:6px;right:6px;display:flex;gap:4px;align-items:flex-start;z-index:2}
+.pst{font-size:10.5px;font-weight:700;background:rgba(255,255,255,.92);color:var(--ink);padding:2px 6px;border-radius:2px}
+.pst.s-pending{color:#b26a00}.pst.s-draft{color:var(--muted)}.pst.s-rejected,.pst.s-hidden{color:#d4493f}
+.pmn{margin-left:auto;width:30px;height:26px;border-radius:2px;background:rgba(0,0,0,.35);color:#fff;font-size:15px;line-height:1;padding-bottom:6px}
+.gal{transition:height .2s}
+.dphotos{transition:height .2s}
+.dphotos img{height:100%}
+.gal div{background-position:center}
+.page .dots{top:auto;bottom:14px}
+.page .gtop{height:100%}
+.dphotos{aspect-ratio:4/3;height:auto}
+.dphotos{align-items:stretch}
+.dphotos img{height:auto!important;align-self:stretch;object-fit:cover}
+.day .body{position:relative;z-index:1;background:var(--bg)}
