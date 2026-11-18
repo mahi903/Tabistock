@@ -15,6 +15,9 @@
   "functions": {
     "api/ask.js": {
       "maxDuration": 60
+    },
+    "api/deleteAccount.js": {
+      "maxDuration": 60
     }
   }
 }

@@ -44,6 +44,20 @@
   .me .actions{display:flex;flex-direction:column;gap:10px}
   .me .actions a,.me .actions button{display:flex;align-items:center;justify-content:center;width:100%;padding:12px 14px;border-radius:4px;font-size:13px;font-weight:700;line-height:1;text-decoration:none;text-align:center;cursor:pointer;font-family:inherit;border:none}
   .a-main{background:#e2683b;color:#fff}
+  .del-link{display:block;margin:22px auto 0;background:none;border:0;color:#d4493f;font-size:13px;text-decoration:underline;cursor:pointer;font-family:inherit}
+  .del-ov{position:fixed;inset:0;background:rgba(15,20,25,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+  .del-ov[hidden]{display:none}
+  .del-box{background:#fff;border-radius:20px;max-width:420px;width:100%;padding:22px 20px;max-height:90vh;overflow:auto}
+  .del-box h2{font-size:18px;margin:0 0 10px;color:#d4493f}
+  .del-box p{font-size:14px;line-height:1.7;margin:0 0 8px}
+  .del-box ul{font-size:13.5px;line-height:1.8;margin:0 0 10px;padding-left:1.3em}
+  .del-box .del-note{font-size:12.5px;color:#6c7787}
+  .del-box label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}
+  .del-box input{width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid #e9dcc6;border-radius:12px;font-size:16px;font-family:inherit}
+  .del-btns{display:flex;gap:10px;margin-top:14px}
+  .del-btns button{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+  .del-go{background:#d4493f;color:#fff;border:0}
+  .del-go:disabled,.del-btns .a-ghost:disabled{opacity:.6}
   .a-ghost{background:#faf6ee;color:#1f6f5b;border:1.5px solid #1f6f5b !important}
   .sub-link{display:block;text-align:right;margin-top:12px;font-size:12px;font-weight:700;color:#1f6f5b;text-decoration:underline;text-underline-offset:3px}
   .badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-top:8px}
@@ -274,6 +288,7 @@
       <div class="actions" style="margin-top:18px">
         <button class="a-ghost" id="logoutBtn" type="button">ログアウト</button>
       </div>
+      <button class="del-link" id="delOpen" type="button">アカウントを削除</button>
       </div><!-- /me-foot -->
       </div><!-- /me-side -->
       <section class="me-main">
@@ -325,11 +340,32 @@
     </div>
   </div>
 
+<div class="del-ov" id="delOv" hidden>
+  <div class="del-box" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+    <h2 id="delTitle">アカウントを削除</h2>
+    <p>削除すると、次のデータがすべて消え、<b>元に戻せません</b>。</p>
+    <ul>
+      <li>投稿した記事（写真を含む）</li>
+      <li>書いたコメント、いいね</li>
+      <li>DMのメッセージ（相手側の履歴からも消えます）</li>
+      <li>プロフィール、保存した記事、フォロー、通知</li>
+    </ul>
+    <p class="del-note">共同投稿者になっている他の人の記事は残り、あなたの名前だけが外れます。</p>
+    <label for="delPw">確認のため、パスワードを入力してください</label>
+    <input id="delPw" type="password" autocomplete="current-password">
+    <div class="msg" id="delMsg"></div>
+    <div class="del-btns">
+      <button class="a-ghost" id="delCancel" type="button">やめる</button>
+      <button class="del-go" id="delGo" type="button">削除する</button>
+    </div>
+  </div>
+</div>
 <script type="module">
 import { auth, db, storage } from "./firebase-config.js";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
-  onAuthStateChanged, updateProfile, sendEmailVerification, sendPasswordResetEmail
+  onAuthStateChanged, updateProfile, sendEmailVerification, sendPasswordResetEmail,
+  EmailAuthProvider, reauthenticateWithCredential
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp, collection, query, where, getDocs, getCountFromServer, arrayUnion, arrayRemove }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -444,6 +480,46 @@ $("submitBtn").onclick = async () => {
 };
 
 $("logoutBtn").onclick = () => signOut(auth);
+
+// ---- アカウント削除 ----
+const delOv = $("delOv");
+$("delOpen").onclick = () => { $("delPw").value = ""; $("delMsg").textContent = ""; delOv.hidden = false; setTimeout(() => $("delPw").focus(), 50); };
+$("delCancel").onclick = () => { delOv.hidden = true; };
+delOv.addEventListener("click", (e) => { if (e.target === delOv && !$("delGo").disabled) delOv.hidden = true; });
+$("delGo").onclick = async () => {
+  const user = auth.currentUser;
+  const pw = $("delPw").value;
+  const msg = $("delMsg");
+  if (!user) { msg.textContent = "ログインしてからもう一度お試しください。"; return; }
+  if (!pw) { msg.textContent = "パスワードを入力してください。"; return; }
+  if (!confirm("本当に削除しますか？この操作は取り消せません。")) return;
+  const go = $("delGo"), cancel = $("delCancel");
+  go.disabled = true; cancel.disabled = true; go.textContent = "削除中…";
+  msg.textContent = "データを削除しています。画面を閉じずにお待ちください。";
+  try {
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, pw));
+    const token = await user.getIdToken(true);
+    const r = await fetch("/api/deleteAccount", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify({ confirm: "DELETE" })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      if (j.error === "admin account") throw new Error("管理者アカウントはここからは削除できません。");
+      throw new Error("削除に失敗しました（" + r.status + "）。時間をおいてもう一度お試しください。");
+    }
+    try { localStorage.clear(); } catch (e) {}
+    await signOut(auth).catch(() => {});
+    location.replace("/?deleted=1");
+  } catch (e) {
+    const c = e && e.code;
+    msg.textContent = (c === "auth/wrong-password" || c === "auth/invalid-credential" || c === "auth/invalid-login-credentials")
+      ? "パスワードが違います。"
+      : (c === "auth/too-many-requests" ? "試行回数が多すぎます。しばらくしてからお試しください。" : (e && e.message) || "削除に失敗しました。");
+    go.disabled = false; cancel.disabled = false; go.textContent = "削除する";
+  }
+};
 
 /* ===== プッシュ通知（トグル） ===== */
 const PUSH_PREF = "tabistock_push"; // この端末での希望状態 "on" | "off"
