@@ -45,6 +45,12 @@
   .me .actions a,.me .actions button{display:flex;align-items:center;justify-content:center;width:100%;padding:12px 14px;border-radius:4px;font-size:13px;font-weight:700;line-height:1;text-decoration:none;text-align:center;cursor:pointer;font-family:inherit;border:none}
   .a-main{background:#e2683b;color:#fff}
   .del-link{display:block;margin:22px auto 0;background:none;border:0;color:#d4493f;font-size:13px;text-decoration:underline;cursor:pointer;font-family:inherit}
+  .agree{display:flex;align-items:flex-start;gap:8px;font-size:13px;margin:14px 0 0;line-height:1.6;cursor:pointer}
+  .agree.hide{display:none}
+  .agree input{width:18px;height:18px;margin:2px 0 0;accent-color:#1f6f5b;flex:none}
+  .agree a{color:#1f6f5b}
+  .legal-links{display:flex;justify-content:center;gap:16px;margin:16px 0 0;font-size:12px}
+  .legal-links a{color:#6c7787}
   .blk-link{display:block;margin:22px auto 0;background:none;border:0;color:#6c7787;font-size:13px;text-decoration:underline;cursor:pointer;font-family:inherit}
   .blk-link + .del-link{margin-top:10px}
   .blk-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0ebe1;font-size:14px}
@@ -225,6 +231,7 @@
       <label for="password">パスワード</label>
       <input id="password" type="password" autocomplete="current-password" placeholder="6文字以上">
 
+      <label class="agree hide" id="agreeWrap"><input type="checkbox" id="agree"> <span><a href="./terms.html" target="_blank">利用規約</a>と<a href="./privacy.html" target="_blank">プライバシーポリシー</a>に同意します</span></label>
       <button class="btn" id="submitBtn" type="button">ログイン</button>
       <p id="forgotWrap" style="text-align:center;margin:12px 0 0;font-size:13px">
         <a href="#" id="forgotLink" style="color:#1f6f5b;text-decoration:underline">パスワードを忘れた方</a>
@@ -295,6 +302,7 @@
       </div>
       <button class="blk-link" id="blkOpen" type="button">ブロックしたユーザー</button>
       <button class="del-link" id="delOpen" type="button">アカウントを削除</button>
+      <p class="legal-links"><a href="./terms.html">利用規約</a><a href="./privacy.html">プライバシーポリシー</a></p>
       </div><!-- /me-foot -->
       </div><!-- /me-side -->
       <section class="me-main">
@@ -402,6 +410,7 @@ function setMode(m){
   $("submitBtn").textContent = m==="login" ? "ログイン" : "登録する";
   $("password").autocomplete = m==="login" ? "current-password" : "new-password";
   $("forgotWrap").classList.toggle("hide", m!=="login");
+  $("agreeWrap").classList.toggle("hide", m!=="signup");
   showMsg("", "");
 }
 $("tabLogin").onclick = () => setMode("login");
@@ -447,6 +456,7 @@ $("submitBtn").onclick = async () => {
   const nickname = $("nickname").value.trim();
   if(!email || !password){ showMsg("メールアドレスとパスワードを入力してください。", "err"); return; }
   if(mode==="signup" && !nickname){ showMsg("ニックネームを入力してください。", "err"); return; }
+  if(mode==="signup" && !$("agree").checked){ showMsg("利用規約とプライバシーポリシーへの同意が必要です。", "err"); return; }
 
   $("submitBtn").disabled = true;
   showMsg(mode==="login" ? "ログイン中…" : "登録中…", "ok");

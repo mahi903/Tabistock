@@ -7,7 +7,7 @@
 //   - HTML（ページ遷移）はネット優先＋失敗時キャッシュ（更新を即反映）。
 //   - CSS/JS/画像は stale-while-revalidate（まず表示→裏で更新）。
 
-const VERSION = 'tabistock-v246';
+const VERSION = 'tabistock-v247';
 const CACHE = VERSION;
 
 // ---- プッシュ通知（FCM）----
@@ -58,6 +58,8 @@ const PRECACHE = [
   '/',
   '/index.html',
   '/flights.html',
+  '/privacy.html',
+  '/terms.html',
   '/style.css',
   '/firebase-config.js',
   '/tabistock-render.js',
