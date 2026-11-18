@@ -565,7 +565,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611190708"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611190710"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -929,6 +929,7 @@ function meMenu() {
     <a class="srow" href="#w-account">通知の設定</a>
     <a class="srow" href="#dm">メッセージ</a>
     <a class="srow" href="#x-blocks">ブロックしたユーザー</a>
+    <button class="srow" id="mmPw">パスワードを変更</button>
     <p class="mlab">SUPPORT</p>
     <a class="srow" href="/terms.html" target="_blank">利用規約</a>
     <a class="srow" href="/privacy.html" target="_blank">プライバシーポリシー</a>
@@ -940,7 +941,42 @@ function meMenu() {
   $("bs").querySelectorAll("a.srow").forEach((a) => a.addEventListener("click", closeSheet));
   $("mmOut").onclick = async () => { if (!confirm("ログアウトしますか？")) return; closeSheet(); try { const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"); await A.signOut(auth); toast("ログアウトしました"); } catch (e) { toast("ログアウトできませんでした"); } };
   $("mmDel").onclick = deleteAccountSheet;
+  $("mmPw").onclick = passwordSheet;
 }
+// パスワード変更（今のパスワードで本人確認 → 新しいパスワードに更新）。忘れた場合は再設定メールを送る
+function passwordSheet() {
+  const u = auth.currentUser;
+  const inp = (id, ph, ac) => `<input id="${id}" type="password" autocomplete="${ac}" placeholder="${ph}" style="width:100%;border:0;border-bottom:1px solid var(--ink);background:none;padding:12px 0;font:inherit;font-size:16px;outline:none;margin-top:6px">`;
+  $("bs").innerHTML = `<div class="grab"></div><div class="shs"><h3>パスワードを変更</h3>
+    ${inp("pwNow", "今のパスワード", "current-password")}${inp("pwNew", "新しいパスワード（6文字以上）", "new-password")}${inp("pwNew2", "新しいパスワード（確認）", "new-password")}
+    <p id="pwMsg" style="font-size:12.5px;margin-top:10px;color:#d4493f"></p>
+    <button class="ok" id="pwGo">変更する</button>
+    <button id="pwForgot" style="display:block;margin:14px auto 0;font-size:12.5px;color:var(--muted);text-decoration:underline">今のパスワードを忘れた（再設定メールを送る）</button></div>`;
+  $("ov").classList.add("show"); $("bs").classList.add("show");
+  const msg = (t, ok) => { const m = $("pwMsg"); m.textContent = t; m.style.color = ok ? "var(--green)" : "#d4493f"; };
+  $("pwGo").onclick = async () => {
+    const now = $("pwNow").value, nw = $("pwNew").value, nw2 = $("pwNew2").value;
+    if (!now || !nw) { msg("パスワードを入力してください"); return; }
+    if (nw.length < 6) { msg("新しいパスワードは6文字以上にしてください"); return; }
+    if (nw !== nw2) { msg("確認用のパスワードが一致しません"); return; }
+    const b = $("pwGo"); b.disabled = true; b.textContent = "変更中…";
+    try {
+      const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+      await A.reauthenticateWithCredential(u, A.EmailAuthProvider.credential(u.email, now));
+      await A.updatePassword(u, nw);
+      closeSheet(); toast("パスワードを変更しました"); haptic();
+    } catch (e) {
+      const c = e && e.code;
+      msg(c === "auth/wrong-password" || c === "auth/invalid-credential" || c === "auth/invalid-login-credentials" ? "今のパスワードが違います" : c === "auth/too-many-requests" ? "試行回数が多すぎます。しばらくしてからお試しください" : c === "auth/weak-password" ? "もっと強いパスワードにしてください" : "変更できませんでした");
+      b.disabled = false; b.textContent = "変更する";
+    }
+  };
+  $("pwForgot").onclick = async () => {
+    try { const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"); await A.sendPasswordResetEmail(auth, u.email); msg(`${u.email} に再設定メールを送りました`, true); }
+    catch (e) { msg("メールを送れませんでした"); }
+  };
+}
+
 // アカウント削除（パスワードを入れ直して確定。サーバーの /api/deleteAccount が全データを消す）
 function deleteAccountSheet() {
   $("bs").innerHTML = `<div class="grab"></div><div class="shs"><h3 style="color:#d4493f">アカウントを削除</h3>
