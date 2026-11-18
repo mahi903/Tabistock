@@ -83,6 +83,7 @@ function go(k, opt = {}) {
   VIEWS.forEach((t) => ($(t).hidden = t !== k));
   renderTab();
   if (k === "search") {
+    if (opt.reset) { Object.assign(state, { q: "", country: [], pref: [], budget: [], days: [], style: [] }); $("q").value = ""; }
     if (opt.country) { state.country = [opt.country]; state.pref = []; }
     if (opt.style) state.style = [opt.style];
     renderSearch();
@@ -94,7 +95,7 @@ document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-go]");
   if (!b) return;
   e.preventDefault();
-  go(b.dataset.go, { country: b.dataset.country, style: b.dataset.style });
+  go(b.dataset.go, b.dataset.reset ? { reset: 1, country: b.dataset.country, style: b.dataset.style } : {});
 });
 
 // ---------- ホーム ----------
@@ -438,7 +439,7 @@ async function pageArticle(el, id) {
         const ph = x.photoUrls || [];
         const has = String(x.text || "").trim() || ph.length;
         return `<div class="day"><button ${has ? "data-day" : ""}><div class="th ${ph[0] ? "" : "no"}" style="${ph[0] ? `background-image:url('${esc(ph[0])}')` : ""}">${ph[0] ? "" : i + 1}</div><div><small>DAY ${i + 1}${x.date ? "　" + esc(x.date) : ""}</small><p>${esc(x.summary || "")}</p></div>${has ? '<span class="pm">＋</span>' : ""}</button>
-          <div class="body">${ph.length ? `<div class="dpw"><div class="dphotos">${ph.map((u, k) => `<img src="${esc(u)}" alt="" loading="lazy" data-dv="${i}" data-k="${k}">`).join("")}</div>${ph.length > 1 ? `<span class="dpc">1/${ph.length}</span>` : ""}</div>` : ""}${String(x.text || "").trim() ? `<p class="ph">${para(x.text)}</p>` : ""}</div></div>`;
+          <div class="body"><div class="bin">${ph.length ? `<div class="dpw"><div class="dphotos">${ph.map((u, k) => `<img src="${esc(u)}" alt="" loading="lazy" data-dv="${i}" data-k="${k}">`).join("")}</div>${ph.length > 1 ? `<span class="dpc">1/${ph.length}</span>` : ""}</div>` : ""}${String(x.text || "").trim() ? `<p class="ph">${para(x.text)}</p>` : ""}</div></div></div>`;
       }).join("")}</div>` : ""}
       ${d.comment ? `<div class="dh"><h2>投稿者のコメント</h2></div><p class="ph2">${para(d.comment)}</p>` : ""}
       <div class="dh"><h2>投稿者</h2></div>
@@ -560,7 +561,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611190641"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611190647"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
