@@ -81,6 +81,7 @@ function go(k, opt = {}) {
   if (k === curTab && !Object.keys(opt).length) { $(k).scrollTo({ top: 0, behavior: "smooth" }); return; }
   curTab = k; haptic();
   VIEWS.forEach((t) => ($(t).hidden = t !== k));
+  $("aiCmp").hidden = k !== "ai";
   renderTab();
   if (k === "search") {
     if (opt.reset) { Object.assign(state, { q: "", country: [], pref: [], budget: [], days: [], style: [] }); $("q").value = ""; }
@@ -90,6 +91,7 @@ function go(k, opt = {}) {
   }
   if (k === "me") renderMe();
   if (k === "saved") renderSaved();
+  if (k === "ai") { aiLoad(); aiRender(); }
 }
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-go]");
@@ -337,7 +339,7 @@ $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) 
 const STACK = [];
 const FRAMES = { "post": ["/post.html", "旅程を投稿"], "post-transit": ["/post-transit.html", "トランジットを投稿"], "account": ["/account.html", "設定"], "notify": ["/account.html#notifications", "通知"], "ask": ["/ask.html", "AI相談"], "flights": ["/flights.html", "航空券の相場"] };
 const BACK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
-function isPageHash(h) { return /^#(a-|u-|dm|w-|f-|x-)/.test(h); }
+function isPageHash(h) { return /^#(a-|u-|dm|w-|f-|x-|n$)/.test(h); }
 function route() {
   const h = location.hash;
   if (!isPageHash(h)) { while (STACK.length) popPage(); return; }
@@ -351,10 +353,10 @@ function pushPage(h) {
   el.className = "page"; el.style.zIndex = 40 + STACK.length;
   $("pages").appendChild(el);
   STACK.push({ hash: h, el });
-  $("tab").classList.add("hide");
+  $("tab").classList.add("hide"); $("aiCmp").hidden = true;
   swipeBack(el);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
-  const m = h.match(/^#(a|u|dm|w|f|x)-?(.*)$/);
+  const m = h.match(/^#(a|u|dm|w|f|x|n)-?(.*)$/);
   const kind = m[1], arg = decodeURIComponent(m[2] || "");
   if (kind === "a") pageArticle(el, arg);
   else if (kind === "u") pageUser(el, arg);
@@ -362,7 +364,9 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
+  else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x") pageBlocks(el);
+  else if (kind === "n") pageNotify(el);
   haptic();
 }
 function popPage() {
@@ -370,7 +374,7 @@ function popPage() {
   if (top.cleanup) try { top.cleanup(); } catch (e) {}
   top.el.classList.remove("open");
   setTimeout(() => top.el.remove(), 380);
-  if (!STACK.length) $("tab").classList.remove("hide");
+  if (!STACK.length) { $("tab").classList.remove("hide"); $("aiCmp").hidden = curTab !== "ai"; }
 }
 const back = () => (history.length > 1 ? history.back() : (location.hash = ""));
 function swipeBack(el) {
@@ -561,7 +565,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611190647"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611190708"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -656,6 +660,11 @@ async function wireFollow(btn, uid, onChange) {
   };
 }
 
+// SNS（Instagram・X・note・TikTok・YouTube）。ユーザー名でもURLでも入力できる
+const SNS = [["instagram", "Instagram", (h) => `https://www.instagram.com/${h}/`], ["x", "X", (h) => `https://x.com/${h}`], ["note", "note", (h) => `https://note.com/${h}`], ["tiktok", "TikTok", (h) => `https://www.tiktok.com/@${h}`], ["youtube", "YouTube", (h) => `https://www.youtube.com/@${h}`]];
+function snsUrl(key, v) { v = String(v || "").trim(); if (!v) return ""; if (/^https?:\/\//.test(v)) return v; const f = SNS.find((x) => x[0] === key); return f ? f[2](v.replace(/^@/, "")) : ""; }
+function snsLinks(p) { const a = SNS.map(([k, l]) => { const u = snsUrl(k, p[k]); return u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${l} ↗</a>` : ""; }).filter(Boolean); return a.length ? `<div class="sns">${a.join("")}</div>` : ""; }
+
 // ---------- プロフィール ----------
 async function pageUser(el, uid) {
   await loadProfiles([uid]);
@@ -666,7 +675,7 @@ async function pageUser(el, uid) {
   const isMe = uid === me;
   el.innerHTML = bar(p.nickname || "旅人", isMe ? "" : '<button class="mo" data-umore>…</button>') + `<div class="ps under2">
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><a href="#f-followers-${esc(uid)}"><b data-fc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(uid)}"><b data-gc>—</b><span>フォロー</span></a></div></div>
-      <h1>${esc(p.nickname || "旅人")}</h1>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${igUrl ? `<a class="ig" href="${esc(igUrl)}" target="_blank" rel="noopener">Instagram ↗</a>` : ""}
+      <h1>${esc(p.nickname || "旅人")}</h1>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${snsLinks(p)}
       <div class="ub" data-ub></div></div>
     <div class="sh" style="padding-top:26px"><h2>投稿</h2></div>
     ${posts.length ? `<div class="ogrid">${posts.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません</p>'}
@@ -677,7 +686,7 @@ async function pageUser(el, uid) {
   };
   cnt();
   const ub = el.querySelector("[data-ub]");
-  if (isMe) { ub.innerHTML = '<a class="btn-g" href="#w-account">プロフィールを編集</a>'; return; }
+  if (isMe) { ub.innerHTML = '<a class="btn-g" href="#x-profile">プロフィールを編集</a>'; return; }
   let blocked = false; if (me) { try { blocked = await (await mod()).isBlocked(uid); } catch (e) {} }
   if (blocked) { ub.innerHTML = '<span style="font-size:13px;color:var(--muted);align-self:center">ブロック中</span><button class="btn-g" data-unb>ブロックを解除</button>'; el.querySelector("[data-unb]").onclick = async () => { await (await mod()).unblockUser(uid); back(); }; }
   else {
@@ -801,8 +810,8 @@ function renderMe() {
   box.innerHTML = `<div class="mehead"><b>${esc(p.nickname || "旅人")}</b><button class="hb" id="meMenu" aria-label="メニュー"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt="">
       <div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー</span></a></div></div>
-      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${igUrl ? `<a class="ig" href="${esc(igUrl)}" target="_blank" rel="noopener">Instagram ↗</a>` : ""}
-      <div class="ub"><a class="btn-g" href="#w-account">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
+      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${snsLinks(p)}
+      <div class="ub"><a class="btn-g" href="#x-profile">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
     <div class="mtabs" id="mtabs"><button class="on" data-mt="trips">旅程<b data-mn="trips"></b></button><button data-mt="transit">トランジット<b data-mn="transit"></b></button><button data-mt="collab">共同投稿<b data-mn="collab"></b><i id="invDot" hidden></i></button></div>
     <div id="myPosts"><p class="loading">読み込み中…</p></div>`;
   box.querySelectorAll("[data-mt]").forEach((b) => (b.onclick = () => { myTab = b.dataset.mt; box.querySelectorAll("[data-mt]").forEach((x) => x.classList.toggle("on", x === b)); drawMyPosts(); haptic(); }));
@@ -916,7 +925,8 @@ async function postAction(act, d) {
 function meMenu() {
   haptic();
   $("bs").innerHTML = `<div class="grab"></div><div class="shs mmenu">
-    <a class="srow" href="#w-account">プロフィール・通知の設定</a>
+    <a class="srow" href="#x-profile">プロフィールを編集</a>
+    <a class="srow" href="#w-account">通知の設定</a>
     <a class="srow" href="#dm">メッセージ</a>
     <a class="srow" href="#x-blocks">ブロックしたユーザー</a>
     <p class="mlab">SUPPORT</p>
@@ -986,9 +996,142 @@ async function pageBlocks(el) {
   draw();
 }
 
+// ---------- 通知（#n） ----------
+async function pageNotify(el) {
+  el.innerHTML = bar("通知") + '<div class="ps under2 nb"><div id="nlist"><p class="loading">読み込み中…</p></div></div>';
+  const box = el.querySelector("#nlist");
+  if (!me) { box.innerHTML = '<p class="fol-empty"><a href="#w-account">ログイン</a>すると通知が届きます。</p>'; return; }
+  let items = [];
+  try { (await getDocs(collection(db, "users", me, "notifications"))).forEach((x) => items.push({ id: x.id, ...x.data() })); } catch (e) {}
+  items.sort((a, b) => ((b.createdAt || {}).seconds || 0) - ((a.createdAt || {}).seconds || 0));
+  items = items.slice(0, 80);
+  await loadProfiles(items.map((n) => n.fromUid).filter(Boolean));
+  box.innerHTML = items.length ? items.map((n) => {
+    const name = `<b>${esc(n.fromNickname || (PROF[n.fromUid] || {}).nickname || "ある旅人")}</b>`, t = esc(n.articleTitle || "旅程");
+    let txt, href;
+    if (n.type === "follow") { txt = `${name}さんがあなたをフォローしました`; href = "#u-" + esc(n.fromUid || ""); }
+    else if (n.type === "dm") { txt = `${name}さんからメッセージが届きました`; href = "#dm-" + esc(n.fromUid || ""); }
+    else if (n.type === "handover") { txt = `${name}さんから「${t}」の投稿者を引き継ぎました`; href = "#a-" + esc(n.articleId || ""); }
+    else if (n.type === "collab") { txt = `${name}さんから「${t}」の共同投稿に招待されました`; href = "#a-" + esc(n.articleId || ""); }
+    else if (n.type === "comment") { txt = `${name}さんが「${t}」にコメントしました`; href = "#a-" + esc(n.articleId || ""); }
+    else { txt = `${name}さんがあなたの旅程「${t}」にいいねしました`; href = "#a-" + esc(n.articleId || ""); }
+    return `<a class="nrow ${n.read ? "" : "un"}" href="${href}"><img src="${esc(avatarOf(n.fromUid))}" alt=""><span class="nt">${txt}<small>${esc(ago((n.createdAt || {}).seconds))}</small></span></a>`;
+  }).join("") : '<p class="fol-empty">通知はまだありません。</p>';
+  // 開いたら既読にする
+  const un = items.filter((n) => !n.read);
+  if (un.length) {
+    try { const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"); const b = F.writeBatch(db); un.forEach((n) => b.update(doc(db, "users", me, "notifications", n.id), { read: true })); await b.commit(); $("bellDot").hidden = true; } catch (e) {}
+  }
+}
+
+// ---------- プロフィール編集（#x-profile） ----------
+async function pageProfileEdit(el) {
+  if (!me) { el.innerHTML = bar("プロフィールを編集") + '<div class="ps under2"><p class="fol-empty"><a href="#w-account">ログイン</a>してください。</p></div>'; return; }
+  await loadProfiles([me]);
+  const p = PROF[me] || {};
+  el.innerHTML = bar("プロフィールを編集", '<button class="mo" id="pfSave" style="font-size:15px;font-weight:700;color:var(--green);padding:0 4px">保存</button>') + `<div class="ps under2 nb"><div class="pfe">
+    <div class="pfav"><img id="pfImg" src="${esc(p.photoURL || DEF_AV)}" alt=""><label class="btn-g">写真を変更<input type="file" accept="image/*" id="pfFile" hidden></label></div>
+    <label class="pfl">ユーザーネーム<input id="pfNick" maxlength="30" value="${esc(p.nickname || "")}"></label>
+    <label class="pfl">自己紹介<textarea id="pfBio" rows="4" maxlength="300">${esc(p.bio || "")}</textarea></label>
+    <p class="pfh">SNS（ユーザー名 または URL）</p>
+    ${SNS.map(([k, l]) => `<label class="pfl">${l}<input data-sns="${k}" autocapitalize="off" autocorrect="off" placeholder="${k === "note" ? "noteのID" : "@なしのユーザー名"}" value="${esc(p[k] || "")}"></label>`).join("")}
+    <p class="pfm" id="pfMsg"></p></div></div>`;
+  const msg = (t, ok) => { const m = el.querySelector("#pfMsg"); m.textContent = t; m.style.color = ok ? "var(--green)" : "#d4493f"; };
+  el.querySelector("#pfFile").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    msg("アイコンをアップロード中…", true);
+    try {
+      const blob = await squareJpeg(f, 256);
+      const S = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
+      const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+      const { storage } = await import("../firebase-config.js");
+      const r = S.ref(storage, `avatars/${me}/avatar.jpg`);
+      await S.uploadBytes(r, blob, { contentType: "image/jpeg" });
+      const url = await S.getDownloadURL(r);
+      await A.updateProfile(auth.currentUser, { photoURL: url });
+      await setDoc(doc(db, "users", me), { photoURL: url }, { merge: true });
+      await setDoc(doc(db, "publicProfiles", me), { photoURL: url }, { merge: true });
+      PROF[me] = { ...(PROF[me] || {}), photoURL: url };
+      el.querySelector("#pfImg").src = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+      msg("アイコンを更新しました", true);
+    } catch (err) { msg("アップロードに失敗しました"); }
+  };
+  el.querySelector("#pfSave").onclick = async () => {
+    const nick = el.querySelector("#pfNick").value.trim(), bio = el.querySelector("#pfBio").value.trim();
+    const sns = {}; el.querySelectorAll("[data-sns]").forEach((i) => (sns[i.dataset.sns] = i.value.trim()));
+    const instagram = sns.instagram;
+    if (!nick) { msg("ユーザーネームを入力してください"); return; }
+    msg("保存中…", true);
+    try {
+      if (nick !== (p.nickname || "")) {
+        const dup = await getDocs(query(collection(db, "publicProfiles"), where("nickname", "==", nick)));
+        let taken = false; dup.forEach((x) => { if (x.id !== me) taken = true; });
+        if (taken) { msg("このユーザーネームは既に使われています"); return; }
+        const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+        await A.updateProfile(auth.currentUser, { displayName: nick });
+      }
+      await setDoc(doc(db, "publicProfiles", me), { nickname: nick, bio, ...sns, ...(p.photoURL ? { photoURL: p.photoURL } : {}) }, { merge: true });
+      await setDoc(doc(db, "users", me), { nickname: nick, bio, ...sns }, { merge: true });
+      PROF[me] = { ...(PROF[me] || {}), nickname: nick, bio, ...sns };
+      toast("プロフィールを保存しました"); haptic();
+      if (curTab === "me") renderMe();
+      back();
+    } catch (err) { msg("保存に失敗しました"); }
+  };
+}
+function squareJpeg(file, size) {
+  return new Promise((ok, ng) => {
+    const img = new Image();
+    img.onload = () => { const s = Math.min(img.width, img.height); const c = document.createElement("canvas"); c.width = c.height = size; c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size); c.toBlob((b) => (b ? ok(b) : ng(new Error("変換失敗"))), "image/jpeg", 0.85); };
+    img.onerror = () => ng(new Error("読み込み失敗"));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ---------- AI相談（タブ） ----------
+let aiConv = [], aiBusy = false;
+const aiKey = () => (me ? "tabistock-ask-v1:" + me : null);
+function aiLoad() { try { const v = JSON.parse(localStorage.getItem(aiKey()) || "[]"); aiConv = Array.isArray(v) ? v : []; } catch (e) { aiConv = []; } }
+function aiSave() { try { if (aiKey()) localStorage.setItem(aiKey(), JSON.stringify(aiConv.slice(-40))); } catch (e) {} }
+function aiBubble(m) {
+  if (m.role === "user") return `<div class="msg u">${esc(m.content)}</div>`;
+  const arts = (m.articles || []).map((a) => `<a class="aref" href="#a-${esc(a.id)}">${a.country ? `<em>${esc(a.country)}</em>` : ""}<span>${esc(a.title)}</span><b>→</b></a>`).join("");
+  const fare = m.fares ? '<a class="aref" href="#w-flights"><em>航空券</em><span>相場カレンダーで月ごとの値段を見る</span><b>→</b></a>' : "";
+  return `<div class="msg a">${m.html || esc(m.content).replace(/\n/g, "<br>")}${arts || fare ? `<div class="arefs">${fare}${arts ? '<p class="arh">詳しくはこちらの記事を参考に</p>' + arts : ""}</div>` : ""}</div>`;
+}
+function aiRender(extra = "") {
+  $("aiIntro").hidden = !!aiConv.length; $("aiNew").hidden = !aiConv.length;
+  $("aiLog").innerHTML = aiConv.map(aiBubble).join("") + extra;
+  requestAnimationFrame(() => $("ai").scrollTo({ top: 1e6, behavior: "smooth" }));
+}
+async function aiSend(q) {
+  q = (q || "").trim(); if (!q || aiBusy) return;
+  if (!me) { aiRender(aiBubble({ role: "assistant", html: '相談するには<a href="#w-account" style="color:var(--green);font-weight:700">ログイン</a>が必要です。' })); return; }
+  aiBusy = true; $("aiSend").disabled = true;
+  aiConv.push({ role: "user", content: q });
+  aiRender('<div class="msg a"><span class="typing"><i></i><i></i><i></i></span> 旅程記事を読んでいます</div>');
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const history = aiConv.slice(-20).map((m) => (m.role === "user" ? { role: "user", content: m.content } : { role: "assistant", content: m.content, articleIds: (m.articles || []).map((a) => a.id), usedFares: !!m.fares }));
+    const r = await fetch("/api/ask", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token }, body: JSON.stringify({ messages: history }) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(String(r.status));
+    aiConv.push({ role: "assistant", content: data.answer || "", articles: data.articles || [], fares: !!data.fares });
+    aiSave(); aiRender();
+  } catch (e) {
+    aiConv.pop(); $("aiIn").value = q;
+    aiRender(aiBubble({ role: "assistant", html: `うまく相談できませんでした。少し時間をおいてもう一度お試しください。<br><small style="color:var(--muted)">（エラー：${esc((e && e.message) || "通信")}）</small>` }));
+  }
+  aiBusy = false; $("aiSend").disabled = false;
+}
+document.querySelectorAll(".aichips button").forEach((b) => (b.onclick = () => aiSend(b.textContent)));
+$("aiCmp").onsubmit = (e) => { e.preventDefault(); const v = $("aiIn").value; $("aiIn").value = ""; $("aiIn").style.height = "auto"; aiSend(v); };
+$("aiIn").oninput = () => { const t = $("aiIn"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 110) + "px"; };
+$("aiNew").onclick = () => { if (!confirm("今の会話を消して、新しい相談を始めますか？")) return; aiConv = []; aiSave(); aiRender(); };
+
 // ---------- その他のボタン ----------
 $("dmBtn").onclick = () => (location.hash = "#dm");
-$("bellBtn").onclick = () => (location.hash = "#w-notify");
+$("bellBtn").onclick = () => (location.hash = "#n");
 
 // ---------- 読み込み ----------
 async function loadAll() {
@@ -1027,6 +1170,7 @@ onAuthStateChanged(auth, async (u) => {
   }
   if (curTab === "me") renderMe();
   if (!$("folPane").hidden) renderFeed();
+  if (curTab === "ai") { aiLoad(); aiRender(); }
 });
 
 renderTab();
