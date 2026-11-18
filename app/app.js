@@ -8,7 +8,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
-  STYLES, COST_ITEMS, DAYS_OPT, REGION_JP
+  STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, COUNTRY_LL
 } from "../tabistock-render.js";
 
 const $ = (id) => document.getElementById(id);
@@ -77,14 +77,14 @@ function renderTab() {
   $("tab").innerHTML = TABS.map(([k, l]) => `<button class="${k === act ? "on" : ""}${k === "post" ? " tpost" : ""}" data-go="${k}"><svg viewBox="0 0 24 24">${I[k]}</svg>${l}</button>`).join("");
 }
 function go(k, opt = {}) {
-  if ($("article").classList.contains("open")) closeArticle(true);
+  if (STACK.length) { location.hash = ""; }
   if (k === curTab && !Object.keys(opt).length) { $(k).scrollTo({ top: 0, behavior: "smooth" }); return; }
   curTab = k; haptic();
   VIEWS.forEach((t) => ($(t).hidden = t !== k));
   renderTab();
   if (k === "search") {
-    if (opt.country) state.country = opt.country;
-    if (opt.style) state.style = opt.style;
+    if (opt.country) state.country = [opt.country];
+    if (opt.style) state.style = [opt.style];
     renderSearch();
   }
   if (k === "me") renderMe();
@@ -129,7 +129,7 @@ $("home").addEventListener("scroll", () => {
 // フォロー中：フォローしている人の公開記事を新しい順に
 async function renderFeed() {
   const box = $("folPane");
-  if (!me) { box.innerHTML = '<p class="fol-empty">ログインすると、フォローしている人の新しい旅がここに流れます。<br><br><a href="/account.html" style="color:var(--green);font-weight:700">ログイン・新規登録 →</a></p>'; return; }
+  if (!me) { box.innerHTML = '<p class="fol-empty">ログインすると、フォローしている人の新しい旅がここに流れます。<br><br><a href="#w-account" style="color:var(--green);font-weight:700">ログイン・新規登録 →</a></p>'; return; }
   box.innerHTML = '<p class="fol-empty">読み込み中…</p>';
   let ids = [];
   try { (await getDocs(collection(db, "users", me, "following"))).forEach((s) => ids.push(s.id)); } catch (e) {}
@@ -142,9 +142,9 @@ async function renderFeed() {
   box.innerHTML = list.slice(0, 30).map((d) => {
     const imgs = (d.heroUrls && d.heroUrls.length ? d.heroUrls : [thumbOf(d)]).filter(Boolean);
     return `<article class="post">
-      <div class="ph"><img src="${esc(avatarOf(d.authorId))}" alt=""><div><b>${esc(authorName(d))}</b><small>${esc(ago(pubSec(d)))}・${esc(placeJp(d))}</small></div></div>
+      <div class="ph"><a href="#u-${esc(d.authorId)}"><img src="${esc(avatarOf(d.authorId))}" alt=""></a><div><b>${esc(authorName(d))}</b><small>${esc(ago(pubSec(d)))}・${esc(placeJp(d))}</small></div></div>
       <div class="pgn"><a class="pg" href="#a-${esc(d.id)}">${imgs.map((u) => `<div style="background-image:url('${esc(u)}')"></div>`).join("")}</a>${imgs.length > 1 ? `<span>1/${imgs.length}</span>` : ""}</div>
-      <div class="acts"><a href="/ask.html">${AIc}AI</a><button class="sv ${saved.has(d.id) ? "on" : ""}" data-save="${esc(d.id)}">${SAVE}</button></div>
+      <div class="acts"><a href="#w-ask">${AIc}AI</a><button class="sv ${saved.has(d.id) ? "on" : ""}" data-save="${esc(d.id)}">${SAVE}</button></div>
       <div class="pc"><div class="pl">${esc(placeJp(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</div><h3>${esc(titleOf(d))}</h3>${d.lead ? `<p>${esc(String(d.lead).replace(/\n+/g, " "))}</p>` : ""}<a class="more" href="#a-${esc(d.id)}">旅程を見る →</a></div>
     </article>`;
   }).join("");
@@ -161,155 +161,502 @@ function ago(sec) {
 }
 
 // ---------- 探す ----------
-const BUD = [[5, "〜5万円"], [10, "〜10万円"], [15, "〜15万円"], [20, "〜20万円"], [30, "〜30万円"], [999, "30万円〜"]];
-const DAYS = [[1, "日帰り"], [3, "〜3日"], [7, "〜1週間"], [14, "〜2週間"], [999, "2週間〜"]];
-const state = { q: "", country: null, budget: null, days: null, style: null };
+const BUD = [[0, 5, "〜5万円"], [5, 10, "5〜10万円"], [10, 15, "10〜15万円"], [15, 20, "15〜20万円"], [20, 30, "20〜30万円"], [30, 1e9, "30万円〜"]];
+const DAYS = [[0, 1, "日帰り"], [1, 3, "2〜3日"], [3, 7, "4日〜1週間"], [7, 14, "8日〜2週間"], [14, 1e9, "2週間以上"]];
+const state = { q: "", country: [], budget: [], days: [], style: [], map: 0 };
+const LABEL = { country: "国・地域", budget: "予算", days: "日数", style: "スタイル" };
 function nDays(d) {
   if (d.dateStart && d.dateEnd) return Math.round((new Date(d.dateEnd) - new Date(d.dateStart)) / 864e5) + 1;
   return null;
 }
-function match(d) {
+function hasStyle(d, v) { return (d.styles || []).includes(v) || (v === "transit" && d.type === "transit"); }
+function match(d, skip) {
   const q = state.q.trim().toLowerCase();
   if (q) {
     const hay = [titleOf(d), d.lead, placeJp(d), placeEn(d), d.airport, ...(d.days || []).map((x) => x && x.summary)].join(" ").toLowerCase();
     if (!hay.includes(q)) return false;
   }
-  if (state.country && !(d.countries || []).includes(state.country)) return false;
-  if (state.style && !(d.styles || []).includes(state.style) && !(state.style === "transit" && d.type === "transit")) return false;
-  if (state.budget != null) {
+  if (skip !== "country" && state.country.length && !state.country.some((c) => (d.countries || []).includes(c))) return false;
+  if (skip !== "style" && state.style.length && !state.style.some((v) => hasStyle(d, v))) return false;
+  if (skip !== "budget" && state.budget.length) {
     const t = costTotalOf(d) / 1e4; if (!t) return false;
-    const i = state.budget, max = BUD[i][0], min = i ? BUD[i - 1][0] : 0;
-    if (max === 999 ? t <= min : t > max) return false;
+    if (!state.budget.some((i) => t > BUD[i][0] && t <= BUD[i][1])) return false;
   }
-  if (state.days != null) {
+  if (skip !== "days" && state.days.length) {
     const n = nDays(d); if (!n) return false;
-    const i = state.days, max = DAYS[i][0], min = i ? DAYS[i - 1][0] : 0;
-    if (max === 999 ? n <= min : n > max || (i > 0 && n <= min)) return false;
+    if (!state.days.some((i) => n > DAYS[i][0] && n <= DAYS[i][1])) return false;
   }
   return true;
 }
+// 各項目の選択肢：[値, 表示名, グループ]
+function optionsOf(key) {
+  if (key === "country") {
+    const vs = [...new Set(ALL.flatMap((d) => d.countries || []))];
+    return vs.map((v) => cinfo(v)).filter(Boolean).map((c) => [c.v, c.jp, REGION_JP[c.r] || "その他"]);
+  }
+  if (key === "budget") return BUD.map((b, i) => [i, b[2]]);
+  if (key === "days") return DAYS.map((b, i) => [i, b[2]]);
+  return STYLES.filter((s) => ALL.some((d) => hasStyle(d, s.v))).map((s) => [s.v, s.tag]);
+}
+function summary(key) {
+  const v = state[key]; if (!v.length) return "すべて";
+  const opts = optionsOf(key); const first = (opts.find((o) => String(o[0]) === String(v[0])) || [0, ""])[1];
+  return v.length > 1 ? `${first} ほか${v.length - 1}` : first;
+}
+function renderFilters() {
+  $("filters").innerHTML = ["country", "budget", "days", "style"].map((k) => `<button class="dd ${state[k].length ? "on" : ""}" data-sheet="${k}"><small>${LABEL[k]}</small><span>${esc(summary(k))}</span>${CH}</button>`).join("");
+  $("filters").querySelectorAll("[data-sheet]").forEach((b) => (b.onclick = () => openSheet(b.dataset.sheet)));
+}
+// 下から出る複数選択シート
+let sheetKey = null, sheetSel = [];
+function openSheet(key) {
+  sheetKey = key; sheetSel = [...state[key]]; haptic();
+  drawSheet();
+  $("ov").classList.add("show"); $("bs").classList.add("show");
+}
+function drawSheet() {
+  const key = sheetKey, opts = optionsOf(key);
+  const cnt = (val) => ALL.filter((d) => match(d, key) && (key === "country" ? (d.countries || []).includes(val) : key === "style" ? hasStyle(d, val) : key === "budget" ? (() => { const t = costTotalOf(d) / 1e4; return t > BUD[val][0] && t <= BUD[val][1]; })() : (() => { const n = nDays(d); return n && n > DAYS[val][0] && n <= DAYS[val][1]; })())).length;
+  const chip = (o) => { const on = sheetSel.some((x) => String(x) === String(o[0])); return `<button class="ck ${on ? "on" : ""}" data-v="${esc(o[0])}">${esc(o[1])}<small>${cnt(o[0])}</small></button>`; };
+  let body = "";
+  if (key === "country") {
+    const groups = {}; opts.forEach((o) => (groups[o[2]] = groups[o[2]] || []).push(o));
+    body = Object.entries(groups).map(([g, os]) => `<p class="grpT">${esc(g)}</p><div class="chips2">${os.map(chip).join("")}</div>`).join("");
+  } else body = `<div class="chips2" style="margin-top:6px">${opts.map(chip).join("")}</div>`;
+  const tmp = state[key]; state[key] = sheetSel; const n = ALL.filter((d) => match(d)).length; state[key] = tmp;
+  $("bs").innerHTML = `<div class="grab"></div><div class="bsh"><h3>${LABEL[key]}<small style="font-size:12px;color:var(--muted);font-weight:500;margin-left:8px">複数選べます</small></h3><button id="bsClr">クリア</button></div>
+    <div class="bsb">${body}<div style="height:12px"></div></div>
+    <button class="ok" id="bsOk">${n}件の旅を表示</button>`;
+  $("bs").querySelectorAll(".ck").forEach((b) => (b.onclick = () => {
+    const raw = b.dataset.v, v = key === "budget" || key === "days" ? Number(raw) : raw;
+    const i = sheetSel.findIndex((x) => String(x) === String(v));
+    if (i >= 0) sheetSel.splice(i, 1); else sheetSel.push(v);
+    haptic(); const st = $("bs").querySelector(".bsb").scrollTop; drawSheet(); $("bs").querySelector(".bsb").scrollTop = st;
+  }));
+  $("bsClr").onclick = () => { sheetSel = []; drawSheet(); };
+  $("bsOk").onclick = () => { state[key] = sheetSel; closeSheet(); renderSearch(); };
+}
+function closeSheet() { $("ov").classList.remove("show"); $("bs").classList.remove("show"); }
+$("ov").onclick = closeSheet;
+
+// リスト／地図
+document.querySelectorAll("#seg [data-seg]").forEach((b) => (b.onclick = () => setSeg(+b.dataset.seg)));
+function setSeg(i) {
+  state.map = i; haptic();
+  $("seg").classList.toggle("rt", !!i);
+  [...$("seg").querySelectorAll("button")].forEach((b, j) => b.classList.toggle("on", i === j));
+  renderSearch();
+}
+let WORLD = null;
+async function worldPath() {
+  if (WORLD) return WORLD;
+  const g = await fetch("/world-base.json").then((r) => r.json());
+  let d = "";
+  const ring = (pts) => { let s = "", px = null; pts.forEach(([lng, lat]) => { const x = MX(lng), y = MY(lat); s += (px === null || Math.abs(x - px) > MW / 2 ? "M" : "L") + x.toFixed(0) + " " + y.toFixed(0); px = x; }); return s + "Z"; };
+  (g.features || []).forEach((f) => { const gm = f.geometry || {}; const polys = gm.type === "Polygon" ? [gm.coordinates] : gm.type === "MultiPolygon" ? gm.coordinates : []; polys.forEach((p) => p.forEach((r) => (d += ring(r)))); });
+  WORLD = d; return d;
+}
+// 正距円筒図法（西経170°〜、北緯78°〜南緯48°）。高さ440pxで横にスクロール
+const L0 = -170, SPAN = 350, NN = 78, SS = -48, MH = 440, MW = Math.round(MH * SPAN / (NN - SS));
+const MX = (lng) => (((lng < L0 ? lng + 360 : lng) - L0) / SPAN) * MW;
+const MY = (lat) => ((NN - lat) / (NN - SS)) * MH;
+async function renderMap(list) {
+  const by = {};
+  list.forEach((d) => (d.countries || []).forEach((c) => { if (COUNTRY_LL[c]) (by[c] = by[c] || []).push(d); }));
+  $("results").innerHTML = `<div class="map" id="mapbox"><div class="cv" style="width:${MW}px;height:${MH}px"><p class="loading">地図を読み込み中…</p></div></div><p class="maphint">国名をタップすると、その国の旅だけを一覧で表示します（${list.length}件）</p>`;
+  let land = ""; try { land = await worldPath(); } catch (e) {}
+  const pins = Object.entries(by).map(([c, ds]) => { const [lat, lng] = COUNTRY_LL[c]; return `<button class="pin" data-c="${esc(c)}" style="left:${MX(lng).toFixed(0)}px;top:${MY(lat).toFixed(0)}px"><span>${esc((cinfo(c) || {}).jp || c)}<b>${ds.length}</b></span><i></i></button>`; }).join("");
+  const box = $("mapbox"); if (!box) return;
+  box.innerHTML = `<div class="cv" style="width:${MW}px;height:${MH}px"><svg class="w" viewBox="0 0 ${MW} ${MH}" style="position:absolute;inset:0;width:100%;height:100%"><path class="land" d="${land}"/></svg>${pins}</div>`;
+  box.scrollLeft = MX(110) - box.clientWidth / 2;
+  box.querySelectorAll(".pin").forEach((b) => (b.onclick = () => { state.country = [b.dataset.c]; setSeg(0); }));
+}
 function renderSearch() {
   $("qx").style.display = state.q ? "grid" : "none";
-  const countries = [...new Set(ALL.flatMap((d) => d.countries || []))].map((v) => cinfo(v)).filter(Boolean).sort((a, b) => a.jp.localeCompare(b.jp, "ja"));
-  const styles = STYLES.filter((s) => ALL.some((d) => (d.styles || []).includes(s.v) || (s.v === "transit" && d.type === "transit")));
-  const sel = (key, label, opts) => {
-    const v = state[key];
-    const cur = v == null ? "すべて" : (opts.find((o) => String(o[0]) === String(v)) || [0, "すべて"])[1];
-    return `<label class="dd ${v != null ? "on" : ""}"><small>${label}</small><span>${esc(cur)}</span>${CH}<select data-f="${key}"><option value="">すべて</option>${opts.map(([val, l]) => `<option value="${esc(val)}" ${String(v) === String(val) ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>`;
-  };
-  $("filters").innerHTML = sel("country", "国・地域", countries.map((c) => [c.v, c.jp])) + sel("budget", "予算", BUD.map((b, i) => [i, b[1]])) + sel("days", "日数", DAYS.map((d, i) => [i, d[1]])) + sel("style", "スタイル", styles.map((s) => [s.v, s.tag]));
-  $("filters").querySelectorAll("select").forEach((s) => s.addEventListener("change", () => {
-    const k = s.dataset.f, v = s.value; haptic();
-    state[k] = v === "" ? null : (k === "budget" || k === "days" ? Number(v) : v);
-    renderSearch();
-  }));
-  const list = ALL.filter(match);
+  renderFilters();
+  const list = ALL.filter((d) => match(d));
+  if (state.map) { renderMap(list); return; }
   $("results").innerHTML = `<div class="cnt"><span><b>${list.length}件</b>の旅</span><span>新しい順</span></div>` +
     (list.length ? `<div class="ogrid">${list.map(gridCard).join("")}</div>` : `<div class="empty">条件に合う旅がありません<br><br><button class="chip" id="clr" style="margin:auto">条件をクリア</button></div>`);
-  const clr = $("clr"); if (clr) clr.onclick = () => { Object.assign(state, { q: "", country: null, budget: null, days: null, style: null }); $("q").value = ""; renderSearch(); };
+  const clr = $("clr"); if (clr) clr.onclick = () => { Object.assign(state, { q: "", country: [], budget: [], days: [], style: [] }); $("q").value = ""; renderSearch(); };
 }
 $("q").addEventListener("input", (e) => { state.q = e.target.value; renderSearch(); });
 $("qx").addEventListener("click", (e) => { e.preventDefault(); $("q").value = ""; state.q = ""; renderSearch(); });
 $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) => `<i class="${h <= 12 ? "lo" : ""}" style="height:${h}px"></i>`).join("");
 
+// ---------- 積み重ねページ ----------
+// 記事(#a-ID)・プロフィール(#u-UID)・DM一覧(#dm)・DM(#dm-UID)・埋め込みページ(#w-名前) を右から重ねて開く。
+// 戻るボタン／左端スワイプは history.back() で閉じる。
+const STACK = [];
+const FRAMES = { "post": ["/post.html", "旅程を投稿"], "post-transit": ["/post-transit.html", "トランジットを投稿"], "account": ["/account.html", "設定"], "notify": ["/account.html#notifications", "通知"], "ask": ["/ask.html", "AI相談"], "flights": ["/flights.html", "航空券の相場"] };
+const BACK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+function isPageHash(h) { return /^#(a-|u-|dm|w-)/.test(h); }
+function route() {
+  const h = location.hash;
+  if (!isPageHash(h)) { while (STACK.length) popPage(); return; }
+  const idx = STACK.findIndex((x) => x.hash === h);
+  if (idx >= 0) { while (STACK.length > idx + 1) popPage(); return; }
+  pushPage(h);
+}
+window.addEventListener("hashchange", route);
+function pushPage(h) {
+  const el = document.createElement("section");
+  el.className = "page"; el.style.zIndex = 40 + STACK.length;
+  $("pages").appendChild(el);
+  STACK.push({ hash: h, el });
+  $("tab").classList.add("hide");
+  swipeBack(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
+  const m = h.match(/^#(a|u|dm|w)-?(.*)$/);
+  const kind = m[1], arg = decodeURIComponent(m[2] || "");
+  if (kind === "a") pageArticle(el, arg);
+  else if (kind === "u") pageUser(el, arg);
+  else if (kind === "dm" && !arg) pageInbox(el);
+  else if (kind === "dm") pageThread(el, arg);
+  else if (kind === "w") pageFrame(el, arg);
+  haptic();
+}
+function popPage() {
+  const top = STACK.pop(); if (!top) return;
+  if (top.cleanup) try { top.cleanup(); } catch (e) {}
+  top.el.classList.remove("open");
+  setTimeout(() => top.el.remove(), 380);
+  if (!STACK.length) $("tab").classList.remove("hide");
+}
+const back = () => (history.length > 1 ? history.back() : (location.hash = ""));
+function swipeBack(el) {
+  let sx = null;
+  el.addEventListener("touchstart", (e) => { const t = e.touches[0]; if (t.clientX < 28) sx = t.clientX; }, { passive: true });
+  el.addEventListener("touchmove", (e) => { if (sx == null) return; const dx = e.touches[0].clientX - sx; if (dx > 0) { el.style.transition = "none"; el.style.transform = `translateX(${dx}px)`; } }, { passive: true });
+  el.addEventListener("touchend", (e) => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; el.style.transition = ""; el.style.transform = ""; if (dx > 100) back(); sx = null; });
+}
+const bar = (title, extra = "") => `<div class="bar2"><button class="bk2" data-back>${BACK}</button><b>${esc(title)}</b>${extra}</div>`;
+document.addEventListener("click", (e) => { if (e.target.closest("[data-back]")) { e.preventDefault(); back(); } });
+
+// ---------- 写真ビューア ----------
+function openViewer(urls, start) {
+  const v = document.createElement("div");
+  v.className = "viewer";
+  v.innerHTML = `<div class="vs">${urls.map((u) => `<div style="background-image:url('${esc(u)}')"></div>`).join("")}</div><button class="vx" aria-label="閉じる">✕</button><div class="vc">${start + 1} / ${urls.length}</div>`;
+  $("app").appendChild(v);
+  const vs = v.querySelector(".vs");
+  requestAnimationFrame(() => (vs.scrollLeft = start * vs.clientWidth));
+  vs.onscroll = () => (v.querySelector(".vc").textContent = `${Math.round(vs.scrollLeft / vs.clientWidth) + 1} / ${urls.length}`);
+  v.querySelector(".vx").onclick = () => v.remove();
+}
+
 // ---------- 記事 ----------
 let cur = null;
-async function openArticle(id) {
+async function pageArticle(el, id) {
+  el.innerHTML = '<div class="ps"><p class="loading" style="padding-top:120px">読み込み中…</p></div>';
   let d = BY[id];
-  if (!d) {
-    try { const s = await getDoc(doc(db, "articles", id)); if (s.exists()) { d = { id: s.id, ...s.data() }; BY[id] = d; } } catch (e) {}
-  }
-  if (!d) { toast("記事が見つかりませんでした"); return; }
-  cur = d; haptic();
+  if (!d) { try { const s = await getDoc(doc(db, "articles", id)); if (s.exists()) { d = { id: s.id, ...s.data() }; BY[id] = d; } } catch (e) {} }
+  if (!d) { el.innerHTML = bar("記事") + '<div class="ps under2"><p class="empty">記事が見つかりませんでした</p></div>'; return; }
+  cur = d;
   await loadProfiles([d.authorId, ...(d.coAuthorIds || [])]);
+  const mv = isDomestic(d) || !!d.notFromJapan;
   const imgs = (d.heroUrls && d.heroUrls.length ? d.heroUrls : [thumbOf(d)]).filter(Boolean);
-  const tags = [placeJp(d), daysLabel(d), ...(d.styles || []).map((v) => (STYLES.find((s) => s.v === v) || {}).tag)].filter(Boolean);
+  const tags = [placeJp(d), daysLabel(d), ...(d.styles || []).map((v) => (STYLES.find((x) => x.v === v) || {}).tag)].filter(Boolean);
   const stars = d.difficulty ? "★".repeat(d.difficulty) + "☆".repeat(5 - d.difficulty) : "";
   const facts = d.type === "transit"
     ? [["空港・都市", d.airport], ["乗り継ぎ", d.layover ? d.layover + "時間" : ""]]
+    : isDomestic(d) ? [["旅行時期", fmtPeriod(d.dateStart, d.dateEnd)], ["難易度", stars]]
     : [["通貨", d.currency], ["言語", d.language], ["治安", d.safety], ["難易度", stars]];
   const costs = d.costs || {}, total = costTotalOf(d);
-  const crow = COST_ITEMS.map((it) => [it.l, Number(costs[it.k] || 0)]).filter((c) => c[1] > 0).sort((a, b) => b[1] - a[1]);
+  const lab = (k, l) => (mv && k === "flight" ? "移動" : mv && k === "transit" ? "現地の交通" : l);
+  const crow = COST_ITEMS.map((it) => [lab(it.k, it.l), Number(costs[it.k] || 0)]).filter((c) => c[1] > 0).sort((a, b) => b[1] - a[1]);
   const days = d.days || [];
   const authors = [d.authorId, ...(d.coAuthorIds || [])].filter(Boolean);
-  $("article").innerHTML = `<div style="position:relative"><div class="gal" id="gal">${imgs.map((u) => `<div style="background-image:url('${esc(u)}')"></div>`).join("")}</div><div class="gtop"></div>
-    ${imgs.length > 1 ? `<div class="dots" id="dots">${imgs.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>` : ""}</div>
+  const flights = d.flights || [], services = d.services || [];
+  const hasRoute = d.type === "transit" ? (d.places || []).some((p) => p && typeof p.lat === "number") : days.some((x) => (x.places || []).some((p) => p && typeof p.lat === "number") || typeof x.lat === "number");
+  el.innerHTML = `<div class="ps" id="aps">
+    <div style="position:relative"><div class="gal">${imgs.map((u, i) => `<div data-hv="${i}" style="background-image:url('${esc(u)}')"></div>`).join("")}</div><div class="gtop"></div>
+    ${imgs.length > 1 ? `<div class="dots">${imgs.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>` : ""}</div>
     <div class="sheet">
       <div class="meta">${tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
       <h1>${esc(titleOf(d))}</h1>${d.lead ? `<p class="lead">${esc(d.lead)}</p>` : ""}
-      <div class="sau">${authors.map((u) => `<a href="/user.html?uid=${esc(u)}" style="display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none"><img src="${esc(avatarOf(u))}" alt=""><b>${esc((PROF[u] || {}).nickname || (u === d.authorId ? authorName(d) : "旅人"))}</b></a>`).join("")}<span>${esc(fmtPeriod(d.dateStart, d.dateEnd))}</span></div>
+      <div class="sau">${authors.map((u) => `<a href="#u-${esc(u)}" style="display:flex;align-items:center;gap:8px"><img src="${esc(avatarOf(u))}" alt=""><b>${esc((PROF[u] || {}).nickname || (u === d.authorId ? authorName(d) : "旅人"))}</b></a>`).join("")}<span>${esc(isDomestic(d) ? "" : fmtPeriod(d.dateStart, d.dateEnd))}</span></div>
       ${facts.some((f) => f[1]) ? `<div class="facts" style="grid-template-columns:repeat(${facts.length},1fr)">${facts.map((f) => `<div><small>${f[0]}</small>${esc(f[1] || "—")}</div>`).join("")}</div>` : ""}
       ${total ? `<div class="cost"><div class="h"><span>この旅にかかった費用</span><b>${yen(total)}</b></div>
-        <div class="bar" id="bar">${crow.map((c, i) => `<span style="flex:0.0001;background:${COL[i % COL.length]}" data-f="${c[1]}"></span>`).join("")}</div>
-        <div class="lg">${crow.map((c, i) => `<button data-hl="${i}"><i style="background:${COL[i % COL.length]}"></i>${esc(c[0])}<b>${yen(c[1])}</b></button>`).join("")}</div><div class="pct" id="pct"></div></div>` : ""}
+        <div class="bar">${crow.map((c, i) => `<span style="flex:0.0001;background:${COL[i % COL.length]}" data-f="${c[1]}"></span>`).join("")}</div>
+        <div class="lg">${crow.map((c, i) => `<button data-hl="${i}"><i style="background:${COL[i % COL.length]}"></i>${esc(c[0])}<b>${yen(c[1])}</b></button>`).join("")}</div><div class="pct"></div></div>` : ""}
       ${d.type === "transit" && d.body ? `<div class="dh"><h2>トランジットの記録</h2></div><p class="ph2">${para(d.body)}</p>` : ""}
       ${days.length ? `<div class="dh"><h2>旅の記録</h2><small style="color:var(--muted);font-size:12px">${days.length}日間</small></div>
       <div class="days">${days.map((x, i) => {
-        const ph = (x.photoUrls || [])[0];
-        const more = (x.photoUrls || []).slice(0, 6);
-        return `<div class="day"><button data-day><div class="th ${ph ? "" : "no"}" style="${ph ? `background-image:url('${esc(ph)}')` : ""}">${ph ? "" : i + 1}</div><div><small>DAY ${i + 1}${x.date ? "　" + esc(x.date) : ""}</small><p>${esc(x.summary || "")}</p></div><span class="pm">＋</span></button>
-          <div class="body">${more.map((u) => `<img src="${esc(u)}" alt="" loading="lazy">`).join("")}${x.text ? `<p class="ph">${para(x.text)}</p>` : ""}</div></div>`;
+        const ph = x.photoUrls || [];
+        const has = String(x.text || "").trim() || ph.length;
+        return `<div class="day"><button ${has ? "data-day" : ""}><div class="th ${ph[0] ? "" : "no"}" style="${ph[0] ? `background-image:url('${esc(ph[0])}')` : ""}">${ph[0] ? "" : i + 1}</div><div><small>DAY ${i + 1}${x.date ? "　" + esc(x.date) : ""}</small><p>${esc(x.summary || "")}</p></div>${has ? '<span class="pm">＋</span>' : ""}</button>
+          <div class="body">${ph.length ? `<div class="dphotos">${ph.map((u, k) => `<img src="${esc(u)}" alt="" loading="lazy" data-dv="${i}" data-k="${k}">`).join("")}</div>${ph.length > 1 ? `<p class="dcount">${ph.length}枚・横にスワイプ</p>` : ""}` : ""}${String(x.text || "").trim() ? `<p class="ph">${para(x.text)}</p>` : ""}</div></div>`;
       }).join("")}</div>` : ""}
+      ${flights.length ? `<div class="dh"><h2>${mv ? "移動" : "航空券"}</h2></div><div class="rows2">${flights.map((f, i) => `<div class="r2"><small>${mv ? "区間" : "航路"}${i + 1}</small><div>${esc(f.route || "")}<span>${esc([f.airline].filter(Boolean).join("・"))}</span></div>${f.price ? `<b>${yen(f.price)}</b>` : ""}</div>`).join("")}
+        ${d.flightWhen ? `<div class="r2"><small>予約時期</small><div>${esc(d.flightWhen)}</div></div>` : ""}${d.flightSite ? `<div class="r2"><small>予約サイト</small><div>${esc(d.flightSite)}</div></div>` : ""}</div>` : ""}
+      ${services.length ? `<div class="dh"><h2>利用サービス</h2></div><div class="rows2">${services.map((x) => `<div class="r2"><small>${esc(x.label || "")}</small><div>${(x.items || []).map(esc).join("<br>")}</div></div>`).join("")}</div>` : ""}
+      ${hasRoute ? `<div class="dh"><h2>ルートマップ</h2></div><div id="rmap"></div>` : ""}
       ${d.comment ? `<div class="dh"><h2>投稿者のコメント</h2></div><p class="ph2">${para(d.comment)}</p>` : ""}
-      <p style="margin:26px 0 10px"><a href="/articles/view.html?id=${esc(d.id)}" style="font-size:12.5px;color:var(--muted)">サイト版で見る（地図・航空券・コメント）→</a></p>
-    </div>`;
-  $("artNav").innerHTML = `<div class="topnav" id="topnav">${esc(titleOf(d))}</div>
-    <button class="fb" style="left:16px" id="artBack" aria-label="戻る"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <button class="fb" style="right:16px" id="artShare" aria-label="共有"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12"/></svg></button>`;
-  $("artNav").classList.add("show");
-  $("artBack").onclick = () => history.back();
-  $("artShare").onclick = async () => {
-    const url = location.origin + "/articles/view.html?id=" + d.id;
-    try { if (navigator.share) await navigator.share({ title: titleOf(d), url }); else { await navigator.clipboard.writeText(url); toast("リンクをコピーしました"); } } catch (e) {}
-  };
-  const art = $("article");
-  art.scrollTop = 0; art.classList.add("open"); $("act").classList.add("show"); $("tab").classList.add("hide");
-  $("askBtn").href = "/ask.html";
-  paintSave();
-  art.onscroll = () => { const on = art.scrollTop > 360; $("topnav").classList.toggle("show", on); document.querySelectorAll("#artNav .fb").forEach((b) => b.classList.toggle("solid", on)); };
-  const gal = $("gal");
-  gal.onscroll = () => { const i = Math.round(gal.scrollLeft / gal.clientWidth); const ds = $("dots"); if (ds) [...ds.children].forEach((x, j) => x.classList.toggle("on", i === j)); };
-  art.querySelectorAll("[data-day]").forEach((b) => (b.onclick = () => { b.parentNode.classList.toggle("open"); haptic(); }));
-  art.querySelectorAll("[data-hl]").forEach((b) => (b.onclick = () => {
-    const i = +b.dataset.hl, c = crow[i]; haptic();
-    [...$("bar").children].forEach((s, j) => (s.style.opacity = j === i ? 1 : 0.25));
-    const p = $("pct"); p.style.display = "block"; p.textContent = `${c[0]}は全体の${Math.round((c[1] / total) * 100)}%（${yen(c[1])}）`;
-    clearTimeout(b._t); b._t = setTimeout(() => { [...$("bar").children].forEach((s) => (s.style.opacity = 1)); p.style.display = "none"; }, 2600);
+      <div class="dh"><h2>投稿者</h2></div>
+      ${authors.map((u) => { const p = PROF[u] || {}; return `<div class="acard"><a href="#u-${esc(u)}"><img src="${esc(avatarOf(u))}" alt=""></a><div><a href="#u-${esc(u)}"><b>${esc(p.nickname || authorName(d))}</b></a>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}</div>${u !== me ? `<button class="btn-s" data-follow="${esc(u)}">フォロー</button>` : ""}</div>`; }).join("")}
+      <div class="dh"><h2>コメント <small id="ccount" style="font-family:Manrope;color:var(--muted)"></small></h2></div>
+      <div id="clist"><p class="loading">読み込み中…</p></div>
+      <div id="cform"></div>
+      <p style="margin:22px 0 4px"><button id="repA" style="font-size:12px;color:var(--muted);text-decoration:underline">この記事を通報する</button></p>
+    </div></div>
+    <div class="pnav"><div class="topnav">${esc(titleOf(d))}</div>
+      <button class="fb" style="left:16px" data-back aria-label="戻る"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button class="fb" style="right:16px" data-share aria-label="共有"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12"/></svg></button></div>
+    <div class="act show"><button class="ib lk" data-like aria-label="いいね"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><span data-lc></span></button>
+      <button class="ib ${saved.has(d.id) ? "on" : ""}" data-save="${esc(d.id)}" aria-label="保存"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2"><path d="M6.5 3.5h11v17l-5.5-3.6-5.5 3.6z" stroke-linejoin="round"/></svg></button>
+      <a class="ai" href="#w-ask"><svg width="18" height="18" viewBox="0 0 24 24" style="color:#fff">${I.ai}</svg>AIに相談</a></div>`;
+  const ps = el.querySelector(".ps");
+  ps.onscroll = () => { const on = ps.scrollTop > 360; el.querySelector(".topnav").classList.toggle("show", on); el.querySelectorAll(".pnav .fb").forEach((b) => b.classList.toggle("solid", on)); };
+  const gal = el.querySelector(".gal");
+  gal.onscroll = () => { const i = Math.round(gal.scrollLeft / gal.clientWidth); el.querySelectorAll(".dots i").forEach((x, j) => x.classList.toggle("on", i === j)); };
+  gal.querySelectorAll("[data-hv]").forEach((x) => (x.onclick = () => openViewer(imgs, +x.dataset.hv)));
+  el.querySelectorAll("[data-day]").forEach((b) => (b.onclick = () => { b.parentNode.classList.toggle("open"); haptic(); }));
+  el.querySelectorAll("[data-dv]").forEach((im) => (im.onclick = () => openViewer(days[+im.dataset.dv].photoUrls, +im.dataset.k)));
+  el.querySelectorAll("[data-hl]").forEach((b) => (b.onclick = () => {
+    const i = +b.dataset.hl, c = crow[i], barEl = el.querySelector(".bar"), p = el.querySelector(".pct"); haptic();
+    [...barEl.children].forEach((x, j) => (x.style.opacity = j === i ? 1 : 0.25));
+    p.style.display = "block"; p.textContent = `${c[0]}は全体の${Math.round((c[1] / total) * 100)}%（${yen(c[1])}）`;
+    clearTimeout(b._t); b._t = setTimeout(() => { [...barEl.children].forEach((x) => (x.style.opacity = 1)); p.style.display = "none"; }, 2600);
   }));
-  setTimeout(() => { const bar = $("bar"); if (bar) [...bar.children].forEach((s) => (s.style.flex = s.dataset.f)); }, 350);
+  setTimeout(() => el.querySelectorAll(".bar span").forEach((x) => (x.style.flex = x.dataset.f)), 380);
+  el.querySelector("[data-share]").onclick = () => share(titleOf(d), location.origin + "/articles/view.html?id=" + d.id);
+  el.querySelector("#repA").onclick = async () => (await mod()).openReport({ type: "article", targetId: d.id, articleId: d.id, targetUid: d.authorId || "", excerpt: titleOf(d) });
+  el.querySelectorAll("[data-follow]").forEach((b) => wireFollow(b, b.dataset.follow));
+  if (hasRoute) drawRoute(el.querySelector("#rmap"), d);
+  wireArticleLike(el, d);
+  loadComments(el, d);
 }
-function closeArticle(silent) {
-  $("artNav").classList.remove("show"); $("article").classList.remove("open"); $("act").classList.remove("show"); $("tab").classList.remove("hide");
-  if (!silent && location.hash.startsWith("#a-")) history.replaceState(null, "", location.pathname);
+async function share(title, url) {
+  try { if (navigator.share) await navigator.share({ title, url }); else { await navigator.clipboard.writeText(url); toast("リンクをコピーしました"); } } catch (e) {}
 }
-// 左端からのスワイプで戻る
-(function () {
-  let sx = null; const el = $("article");
-  el.addEventListener("touchstart", (e) => { const t = e.touches[0]; if (t.clientX < 30) sx = t.clientX; }, { passive: true });
-  el.addEventListener("touchmove", (e) => { if (sx == null) return; const dx = e.touches[0].clientX - sx; if (dx > 0) { el.style.transition = "none"; el.style.transform = `translateX(${dx}px)`; } }, { passive: true });
-  el.addEventListener("touchend", (e) => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; el.style.transition = ""; el.style.transform = ""; if (dx > 100) history.back(); sx = null; });
-})();
-// 記事は #a-<id> で開く（戻るボタン・スワイプで閉じられるように）
-function route() {
-  const m = location.hash.match(/^#a-(.+)$/);
-  if (m) openArticle(decodeURIComponent(m[1]));
-  else if ($("article").classList.contains("open")) closeArticle(true);
+let MOD = null;
+const mod = async () => (MOD = MOD || (await import("../moderation.js")));
+let NOTI = null;
+const notify = async (o) => { try { NOTI = NOTI || (await import("../notify.js")); NOTI.sendNotification(o); } catch (e) {} };
+
+// ルートマップ（Leaflet を必要なときだけ読み込む）
+function loadLeaflet() {
+  if (window.L) return Promise.resolve();
+  return new Promise((ok, ng) => {
+    const c = document.createElement("link"); c.rel = "stylesheet"; c.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(c);
+    const s = document.createElement("script"); s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; s.onload = ok; s.onerror = ng; document.head.appendChild(s);
+  });
 }
-window.addEventListener("hashchange", route);
+async function drawRoute(box, d) {
+  const pts = [];
+  if (d.type === "transit") (d.places || []).forEach((p) => p && typeof p.lat === "number" && pts.push({ n: 0, lat: p.lat, lng: p.lng, name: p.name || "" }));
+  else (d.days || []).forEach((x, i) => {
+    if (Array.isArray(x.places) && x.places.length) x.places.forEach((p) => typeof p.lat === "number" && pts.push({ n: i + 1, lat: p.lat, lng: p.lng, name: p.name || "" }));
+    else if (typeof x.lat === "number") pts.push({ n: i + 1, lat: x.lat, lng: x.lng, name: "" });
+  });
+  try { await loadLeaflet(); } catch (e) { box.innerHTML = '<p class="loading">地図を読み込めませんでした</p>'; return; }
+  const map = L.map(box, { scrollWheelZoom: false, minZoom: 2, attributionControl: true });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap", maxZoom: 18 }).addTo(map);
+  const ms = pts.map((p) => L.circleMarker([p.lat, p.lng], { radius: 7, color: "#fff", weight: 2, fillColor: "#e2683b", fillOpacity: 1 }).addTo(map).bindPopup((p.n ? `DAY ${p.n}` : "") + (p.name ? "　" + esc(p.name) : "")));
+  if (ms.length) map.fitBounds(L.featureGroup(ms).getBounds().pad(0.3), { maxZoom: 9 });
+}
+
+// いいね（記事）
+async function wireArticleLike(el, d) {
+  const b = el.querySelector("[data-like]"), n = el.querySelector("[data-lc]");
+  let cnt = 0, mine = false;
+  try { cnt = (await getCountFromServer(collection(db, "articles", d.id, "likes"))).data().count; } catch (e) {}
+  if (me) { try { mine = (await getDoc(doc(db, "articles", d.id, "likes", me))).exists(); } catch (e) {} }
+  const paint = () => { b.classList.toggle("on", mine); n.textContent = cnt || ""; };
+  paint();
+  b.onclick = async () => {
+    if (!me) { toast("いいねするにはログインが必要です"); return; }
+    const ref = doc(db, "articles", d.id, "likes", me);
+    try {
+      if (mine) { await deleteDoc(ref); mine = false; cnt = Math.max(0, cnt - 1); }
+      else { await setDoc(ref, { likedAt: serverTimestamp() }); mine = true; cnt++; [d.authorId, ...(d.coAuthorIds || [])].forEach((u) => notify({ toUid: u, type: "like", articleId: d.id, articleTitle: titleOf(d) })); }
+      haptic(); paint();
+    } catch (e) { toast("いいねできませんでした"); }
+  };
+}
+
+// コメント
+async function loadComments(el, d) {
+  const list = el.querySelector("#clist"), form = el.querySelector("#cform");
+  let all = [];
+  try { const qs = await getDocs(collection(db, "articles", d.id, "comments")); qs.forEach((s) => all.push({ id: s.id, ...s.data() })); } catch (e) {}
+  let blocked = new Set(); if (me) { try { blocked = await (await mod()).getBlocked(); } catch (e) {} }
+  const hidden = new Set(all.filter((c) => blocked.has(c.authorId)).map((c) => c.id));
+  all = all.filter((c) => !hidden.has(c.id) && !hidden.has(c.parentId));
+  all.sort((a, b) => ((a.createdAt && a.createdAt.seconds) || 0) - ((b.createdAt && b.createdAt.seconds) || 0));
+  el.querySelector("#ccount").textContent = all.length ? all.length : "";
+  const one = (c, rp) => `<div class="cm ${rp ? "rp" : ""}"><a href="${c.authorId ? "#u-" + esc(c.authorId) : "#"}"><img src="${esc(c.authorPhotoURL || DEF_AV)}" alt=""></a><div class="cb"><div class="ch"><b>${esc(c.authorName || "ゲスト")}</b><small>${esc(ago((c.createdAt || {}).seconds))}</small>${me ? `<button data-cmore="${esc(c.id)}">…</button>` : ""}</div><div class="ct">${para(c.text || "")}</div>${!rp && me ? `<div class="ca"><button data-reply="${esc(c.id)}">返信</button></div>` : ""}</div></div>`;
+  const tops = all.filter((c) => !c.parentId);
+  list.innerHTML = tops.length ? tops.map((c) => one(c) + all.filter((r) => r.parentId === c.id).map((r) => one(r, true)).join("")).join("") : '<p style="font-size:13px;color:var(--muted);padding:6px 0">まだコメントはありません。</p>';
+  let replyTo = null;
+  form.innerHTML = me ? `<div class="cform"><textarea id="ctext" maxlength="1000" rows="1" placeholder="コメントを書く…"></textarea><button id="csend">送信</button></div><p id="crep" style="font-size:12px;color:var(--green);margin-top:6px" hidden></p>`
+    : '<p style="font-size:13px;margin-top:10px"><a href="#w-account" style="color:var(--green);font-weight:700">ログイン</a>するとコメントできます。</p>';
+  list.querySelectorAll("[data-reply]").forEach((b) => (b.onclick = () => { replyTo = b.dataset.reply; const c = all.find((x) => x.id === replyTo); const r = el.querySelector("#crep"); r.hidden = false; r.textContent = `${c.authorName || "ゲスト"} さんに返信中（タップで取り消し）`; r.onclick = () => { replyTo = null; r.hidden = true; }; el.querySelector("#ctext").focus(); }));
+  list.querySelectorAll("[data-cmore]").forEach((b) => (b.onclick = async () => {
+    const c = all.find((x) => x.id === b.dataset.cmore); const M = await mod();
+    const items = [];
+    if (c.authorId === me) items.push({ label: "このコメントを削除", red: true, onClick: async () => { if (!confirm("このコメントを削除しますか？")) return; try { await deleteDoc(doc(db, "articles", d.id, "comments", c.id)); loadComments(el, d); } catch (e) { toast("削除できませんでした"); } } });
+    else {
+      items.push({ label: "このコメントを通報", red: true, onClick: () => M.openReport({ type: "comment", targetId: c.id, articleId: d.id, targetUid: c.authorId || "", excerpt: c.text || "" }) });
+      items.push({ label: `${c.authorName || "このユーザー"}さんをブロック`, red: true, onClick: async () => { if (await M.blockUser(c.authorId, c.authorName)) loadComments(el, d); } });
+    }
+    M.openMenu(items);
+  }));
+  const send = el.querySelector("#csend");
+  if (send) send.onclick = async () => {
+    const t = el.querySelector("#ctext"), text = t.value.trim(); if (!text) return;
+    send.disabled = true;
+    try {
+      const pr = PROF[me] || {};
+      const { addDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+      await addDoc(collection(db, "articles", d.id, "comments"), { authorId: me, authorName: pr.nickname || "ゲスト", authorPhotoURL: pr.photoURL || "", text, ...(replyTo ? { parentId: replyTo } : {}), createdAt: serverTimestamp() });
+      [d.authorId, ...(d.coAuthorIds || [])].forEach((u) => notify({ toUid: u, type: "comment", articleId: d.id, articleTitle: titleOf(d) }));
+      t.value = ""; replyTo = null; loadComments(el, d); haptic();
+    } catch (e) { toast("コメントできませんでした"); }
+    send.disabled = false;
+  };
+}
+
+// フォローボタン
+async function wireFollow(btn, uid, onChange) {
+  let on = false;
+  if (me) { try { on = (await getDoc(doc(db, "users", me, "following", uid))).exists(); } catch (e) {} }
+  const paint = () => { btn.classList.toggle("on", on); btn.textContent = on ? "フォロー中" : "フォロー"; };
+  paint();
+  btn.onclick = async () => {
+    if (!me) { toast("フォローするにはログインが必要です"); return; }
+    btn.disabled = true;
+    try {
+      if (on) { await deleteDoc(doc(db, "users", me, "following", uid)); await deleteDoc(doc(db, "users", uid, "followers", me)); on = false; }
+      else { await setDoc(doc(db, "users", me, "following", uid), { createdAt: serverTimestamp() }); await setDoc(doc(db, "users", uid, "followers", me), { createdAt: serverTimestamp() }); on = true; notify({ toUid: uid, type: "follow" }); }
+      haptic(); paint(); onChange && onChange(on);
+    } catch (e) { toast("フォローできませんでした"); }
+    btn.disabled = false;
+  };
+}
+
+// ---------- プロフィール ----------
+async function pageUser(el, uid) {
+  await loadProfiles([uid]);
+  const p = PROF[uid] || {};
+  const posts = ALL.filter((d) => d.authorId === uid || (d.coAuthorIds || []).includes(uid));
+  const ig = String(p.instagram || "").trim();
+  const igUrl = ig ? (/^https?:\/\//.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/") : "";
+  const isMe = uid === me;
+  el.innerHTML = bar(p.nickname || "旅人", isMe ? "" : '<button class="mo" data-umore>…</button>') + `<div class="ps under2">
+    <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><div><b data-fc>—</b><span>フォロワー</span></div><div><b data-gc>—</b><span>フォロー</span></div></div></div>
+      <h1>${esc(p.nickname || "旅人")}</h1>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${igUrl ? `<a class="ig" href="${esc(igUrl)}" target="_blank" rel="noopener">Instagram ↗</a>` : ""}
+      <div class="ub" data-ub></div></div>
+    <div class="sh" style="padding-top:26px"><h2>投稿</h2></div>
+    ${posts.length ? `<div class="ogrid">${posts.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません</p>'}
+  </div>`;
+  const cnt = async () => {
+    try { el.querySelector("[data-fc]").textContent = (await getCountFromServer(collection(db, "users", uid, "followers"))).data().count; } catch (e) {}
+    try { el.querySelector("[data-gc]").textContent = (await getCountFromServer(collection(db, "users", uid, "following"))).data().count; } catch (e) {}
+  };
+  cnt();
+  const ub = el.querySelector("[data-ub]");
+  if (isMe) { ub.innerHTML = '<a class="btn-g" href="#w-account">プロフィールを編集</a>'; return; }
+  let blocked = false; if (me) { try { blocked = await (await mod()).isBlocked(uid); } catch (e) {} }
+  if (blocked) { ub.innerHTML = '<span style="font-size:13px;color:var(--muted);align-self:center">ブロック中</span><button class="btn-g" data-unb>ブロックを解除</button>'; el.querySelector("[data-unb]").onclick = async () => { await (await mod()).unblockUser(uid); back(); }; }
+  else {
+    ub.innerHTML = '<button class="btn-s" data-f>フォロー</button><a class="btn-g" href="#dm-' + esc(uid) + '">メッセージ</a>';
+    wireFollow(el.querySelector("[data-f]"), uid, cnt);
+  }
+  el.querySelector("[data-umore]").onclick = async () => {
+    const M = await mod();
+    M.openMenu([
+      { label: "このユーザーを通報", red: true, onClick: () => M.openReport({ type: "user", targetId: uid, targetUid: uid, excerpt: p.nickname || "" }) },
+      { label: "ブロックする", red: true, onClick: async () => { if (await M.blockUser(uid, p.nickname)) back(); } }
+    ]);
+  };
+}
+
+// ---------- DM ----------
+const convIdOf = (a, b) => [a, b].sort().join("__");
+async function pageInbox(el) {
+  el.innerHTML = bar("メッセージ") + `<div class="ps under2 nb"><div class="htabs" style="position:static;margin-top:0;padding-top:4px"><button class="on" data-dt="0">DM</button><button data-dt="1">コミュニティ</button></div><div id="ilist"><p class="loading">読み込み中…</p></div><div id="clist2" hidden></div></div>`;
+  el.querySelectorAll("[data-dt]").forEach((b) => (b.onclick = () => { const i = +b.dataset.dt; el.querySelectorAll("[data-dt]").forEach((x, j) => x.classList.toggle("on", i === j)); el.querySelector("#ilist").hidden = !!i; el.querySelector("#clist2").hidden = !i; }));
+  el.querySelector("#clist2").innerHTML = '<p class="comhead">行き先ごとの部屋で、行った人・これから行く人が相談し合える場所です。<span class="soon">COMING SOON</span></p>';
+  const box = el.querySelector("#ilist");
+  if (!me) { box.innerHTML = '<p class="fol-empty">メッセージを使うには<a href="#w-account">ログイン</a>してください。</p>'; return; }
+  const { onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  let blocked = new Set(); try { blocked = await (await mod()).getBlocked(); } catch (e) {}
+  const unsub = onSnapshot(query(collection(db, "conversations"), where("participants", "array-contains", me)), async (snap) => {
+    const docs = snap.docs.map((x) => x.data()).sort((a, b) => ((b.updatedAt || {}).seconds || 0) - ((a.updatedAt || {}).seconds || 0));
+    const others = docs.map((c) => (c.participants || []).find((u) => u !== me) || me);
+    await loadProfiles(others);
+    const rows = docs.map((c, i) => {
+      const o = others[i]; if (blocked.has(o) || !c.lastMessage) return "";
+      const pr = PROF[o] || {}, un = (c.unread || {})[me] || 0;
+      return `<a class="cv2 ${un ? "un" : ""}" href="#dm-${esc(o)}"><img src="${esc(pr.photoURL || DEF_AV)}" alt=""><span class="m"><b>${esc(pr.nickname || "旅人")}</b><p>${c.lastSenderId === me ? "あなた: " : ""}${esc(c.lastMessage || "")}</p></span><span class="tm">${esc(ago((c.updatedAt || {}).seconds))}</span>${un ? '<span class="dot"></span>' : ""}</a>`;
+    }).join("");
+    box.innerHTML = rows || '<p class="fol-empty">まだメッセージはありません。気になる旅人のプロフィールからメッセージを送ってみましょう。</p>';
+  }, () => (box.innerHTML = '<p class="fol-empty">読み込めませんでした。</p>'));
+  STACK[STACK.length - 1].cleanup = unsub;
+}
+async function pageThread(el, other) {
+  await loadProfiles([other]);
+  const pr = PROF[other] || {};
+  el.innerHTML = `<div class="thr">${bar(pr.nickname || "旅人", '<button class="mo" data-tmore>…</button>')}<div class="msgs" id="tmsgs"><p class="loading">読み込み中…</p></div><div id="tfoot"></div></div>`;
+  el.querySelector(".bar2 b").innerHTML = `<a href="#u-${esc(other)}" style="display:flex;align-items:center;gap:8px"><img src="${esc(pr.photoURL || DEF_AV)}" style="width:30px;height:30px;border-radius:50%;object-fit:cover" alt="">${esc(pr.nickname || "旅人")}</a>`;
+  const M = await mod();
+  el.querySelector("[data-tmore]").onclick = () => M.openMenu([
+    { label: "このユーザーを通報", red: true, onClick: () => M.openReport({ type: "user", targetId: other, targetUid: other, convId: me ? convIdOf(me, other) : "", excerpt: pr.nickname || "" }) },
+    { label: "ブロックする", red: true, onClick: async () => { if (await M.blockUser(other, pr.nickname)) back(); } }
+  ]);
+  const msgs = el.querySelector("#tmsgs"), foot = el.querySelector("#tfoot");
+  if (!me) { msgs.innerHTML = '<p class="fol-empty">メッセージを送るには<a href="#w-account">ログイン</a>してください。</p>'; return; }
+  if (await M.isBlocked(other)) { msgs.innerHTML = ""; foot.innerHTML = '<div class="blockedbar">このユーザーをブロックしています<button data-unb>解除</button></div>'; foot.querySelector("[data-unb]").onclick = async () => { await M.unblockUser(other); back(); }; return; }
+  const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  const cid = convIdOf(me, other), convRef = doc(db, "conversations", cid);
+  try { await setDoc(convRef, { participants: [me, other].sort(), unread: { [me]: 0 } }, { merge: true }); } catch (e) {}
+  foot.innerHTML = '<form class="cmp"><textarea rows="1" maxlength="2000" placeholder="メッセージを入力"></textarea><button disabled aria-label="送信"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></form>';
+  const form = foot.querySelector("form"), ta = form.querySelector("textarea"), sb = form.querySelector("button");
+  ta.oninput = () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 120) + "px"; sb.disabled = !ta.value.trim(); };
+  const unsub = F.onSnapshot(F.query(collection(convRef, "messages"), F.orderBy("createdAt", "asc")), (snap) => {
+    let h = "", last = "";
+    snap.forEach((s) => {
+      const m = s.data(), t = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate() : null;
+      const day = t ? `${t.getMonth() + 1}/${t.getDate()}` : "";
+      if (day && day !== last) { h += `<div class="day-sep">${day}</div>`; last = day; }
+      h += `<div class="msg ${m.senderId === me ? "u" : "a"}">${esc(m.text)}</div>`;
+    });
+    msgs.innerHTML = h || '<p class="fol-empty">最初のメッセージを送ってみましょう。</p>';
+    requestAnimationFrame(() => (msgs.scrollTop = msgs.scrollHeight));
+    F.updateDoc(convRef, { ["unread." + me]: 0 }).catch(() => {});
+  });
+  STACK[STACK.length - 1].cleanup = unsub;
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const text = ta.value.trim(); if (!text) return;
+    sb.disabled = true; ta.value = ""; ta.oninput();
+    try {
+      await F.addDoc(collection(convRef, "messages"), { senderId: me, text, createdAt: serverTimestamp() });
+      await F.updateDoc(convRef, { lastMessage: text.slice(0, 200), lastSenderId: me, updatedAt: serverTimestamp(), ["unread." + other]: F.increment(1), ["unread." + me]: 0 });
+      notify({ toUid: other, type: "dm" }); haptic();
+    } catch (err) { ta.value = text; ta.oninput(); toast(err && err.code === "permission-denied" ? "このユーザーにはメッセージを送れません" : "送信できませんでした"); }
+  };
+}
+
+// ---------- 埋め込みページ（投稿フォームなど。アプリ版の画面ができるまでの間） ----------
+function pageFrame(el, name) {
+  const f = FRAMES[name] || ["/" + name + ".html", ""];
+  el.innerHTML = bar(f[1]) + `<iframe class="wf" src="${esc(f[0])}" title="${esc(f[1])}"></iframe>`;
+}
 
 // ---------- 保存 ----------
 async function toggleSave(id) {
-  if (!me) { toast("保存するにはログインが必要です"); setTimeout(() => (location.href = "/account.html"), 900); return; }
+  if (!me) { toast("保存するにはログインが必要です"); setTimeout(() => (location.hash = "#w-account"), 900); return; }
   const ref = doc(db, "users", me, "saves", id);
   try {
     if (saved.has(id)) { await deleteDoc(ref); saved.delete(id); toast("保存を外しました"); }
     else { await setDoc(ref, { createdAt: serverTimestamp() }); saved.add(id); toast("保存しました"); }
   } catch (e) { toast("保存できませんでした"); }
-  haptic(); paintSave();
+  haptic();
   document.querySelectorAll(`[data-save="${CSS.escape(id)}"]`).forEach((b) => b.classList.toggle("on", saved.has(id)));
 }
-function paintSave() { const b = $("saveBtn"); if (b && cur) b.classList.toggle("on", saved.has(cur.id)); }
-$("saveBtn").onclick = () => cur && toggleSave(cur.id);
 document.addEventListener("click", (e) => { const b = e.target.closest("[data-save]"); if (b) { e.preventDefault(); toggleSave(b.dataset.save); } });
 
 function renderSaved() {
@@ -322,23 +669,23 @@ function renderMe() {
   const box = $("meBody");
   if (!me) {
     box.innerHTML = `<div class="lt">マイページ</div><p class="sub" style="padding-top:6px">ログインすると、保存・フォロー・投稿ができます。</p>
-      <div class="plist"><a class="pnew" href="/account.html"><span class="pt2"><b>ログイン・新規登録</b><small>サイトと同じアカウントで使えます</small></span><span class="pa">→</span></a></div>`;
+      <div class="plist"><a class="pnew" href="#w-account"><span class="pt2"><b>ログイン・新規登録</b><small>サイトと同じアカウントで使えます</small></span><span class="pa">→</span></a></div>`;
     return;
   }
   const p = PROF[me] || {};
   const mine = ALL.filter((d) => d.authorId === me || (d.coAuthorIds || []).includes(me));
   box.innerHTML = `<div class="prof"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div><b>${esc(p.nickname || "旅人")}</b><small>${esc(p.bio || "")}</small></div></div>
     <div class="stats"><div><b>${mine.length}</b>投稿</div><div><b>${saved.size}</b>保存</div><div><b>—</b>フォロワー</div></div>
-    <div class="grp"><button data-go="saved">保存した旅</button><a href="/account.html">プロフィール・通知の設定</a><a href="/dm.html">メッセージ</a></div>
+    <div class="grp"><button data-go="saved">保存した旅</button><a href="#u-${esc(me)}">自分のプロフィール</a><a href="#w-account">プロフィール・通知の設定</a><a href="#dm">メッセージ</a></div>
     <h3 style="margin:30px 20px -16px;font-size:11px;color:var(--muted);font-weight:500;font-family:Manrope;letter-spacing:.14em">SUPPORT</h3>
     <div class="grp"><a href="/terms.html">利用規約</a><a href="/privacy.html">プライバシーポリシー</a><a href="https://www.instagram.com/tabistock/">お問い合わせ（Instagram）</a></div>
-    <div class="grp"><a href="/account.html" style="color:#d4493f">アカウントの削除・ブロックしたユーザー</a></div>
+    <div class="grp"><a href="#w-account" style="color:#d4493f">アカウントの削除・ブロックしたユーザー</a></div>
     ${mine.length ? `<div class="sh" style="padding-top:30px"><h2>自分の投稿</h2></div><div class="ogrid">${mine.map(gridCard).join("")}</div>` : ""}`;
 }
 
 // ---------- その他のボタン ----------
-$("dmBtn").onclick = () => (location.href = "/dm.html");
-$("bellBtn").onclick = () => (location.href = "/account.html#notifications");
+$("dmBtn").onclick = () => (location.hash = "#dm");
+$("bellBtn").onclick = () => (location.hash = "#w-notify");
 
 // ---------- 読み込み ----------
 async function loadAll() {
@@ -377,7 +724,6 @@ onAuthStateChanged(auth, async (u) => {
   }
   if (curTab === "me") renderMe();
   if (!$("folPane").hidden) renderFeed();
-  paintSave();
 });
 
 renderTab();
