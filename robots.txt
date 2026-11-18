@@ -3,5 +3,6 @@ Allow: /
 Disallow: /admin.html
 Disallow: /account.html
 Disallow: /post.html
+Disallow: /app/
 
 Sitemap: https://tabistock.jp/sitemap.xml
