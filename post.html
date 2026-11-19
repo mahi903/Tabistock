@@ -2906,15 +2906,15 @@ drawerFilterBtns.forEach(btn => {
 <script type="module">
 import { auth, db, storage } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { saveArticle, loadMyTransits } from "./post-core.js";
 import { COUNTRY_LL, esc, derivePrefs } from "./tabistock-render.js";
 import { showPostThanks } from "./post-thanks.js";
 
 // 確認用：post.html?thanks=preview で、投稿せずに「ありがとう」演出だけを流す（記事は作られない）
 const thanksPreview = new URLSearchParams(location.search).get("thanks") === "preview";
 if(thanksPreview) showPostThanks({ onDone: () => { location.href = "index.html"; } });
-import { initCollabBox, loadCollabFrom, isMember, collabFields, notifyNewInvites, sameMembers, currentMembers } from "./collab.js";
+import { initCollabBox, loadCollabFrom, isMember, sameMembers, currentMembers } from "./collab.js";
 // 各日ミニ地図が国を中心に表示できるよう、座標表をグローバルへ
 window.COUNTRY_LL = COUNTRY_LL;
 
@@ -2922,11 +2922,6 @@ window.tabistockReady = false;
 window.tabistockUser = null;
 window.tabistockNickname = "";
 
-async function uploadAndGetUrl(path, blob){
-  const r = ref(storage, path);
-  await uploadBytes(r, blob, { contentType: "image/jpeg" });
-  return await getDownloadURL(r);
-}
 
 // ---- トランジット記事の紐付けピッカー ----
 // 自分が投稿者・共同投稿者のトランジット記事のうち、この旅程と「同じメンバー」のものだけを選べる
@@ -2938,14 +2933,7 @@ let transitPickerLoaded = false, transitParentId = null;
 window.tabistockLoadTransitPicker = async function(uid, currentParentId){
   transitParentId = currentParentId;
   try{
-    const [own, co] = await Promise.all([
-      getDocs(query(collection(db, "articles"), where("authorId", "==", uid))),
-      getDocs(query(collection(db, "articles"), where("coAuthorIds", "array-contains", uid))).catch(() => null)
-    ]);
-    const items = [];
-    const add = s => { const a = s.data(); if(a.type === "transit" && !items.some(x => x.id === s.id)) items.push({ id: s.id, ...a }); };
-    own.forEach(add); if(co) co.forEach(add);
-    items.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+    const items = await loadMyTransits(uid);
     window.__myTransitsCache = items;
     transitPickerLoaded = true;
     window.tabistockRenderTransitPicker();
@@ -2993,106 +2981,18 @@ window.tabistockGetSelectedTransits = function(){
 };
 
 window.tabistockSubmit = async function(d, st, mode){
-  const user = window.tabistockUser;
-  const nickname = window.tabistockNickname || d.author;
   const editId = window.tabistockEditId || null;
-
-  // 保存先ドキュメント（編集なら既存・新規なら自動採番）
-  const articleRef = editId ? doc(db, "articles", editId) : doc(collection(db, "articles"));
-  const id = articleRef.id;
-
-  // 公開ステータスを決定
-  let status;
-  if(mode === "draft"){
-    status = "draft";
-  }else if(!editId){
-    status = "pending";
-  }else{
-    const prev = window.tabistockEditStatus || "pending";
-    status = ["published", "pending", "hidden"].includes(prev) ? prev : "pending";
-  }
-  // 新しく投稿（申請）したときだけ「ありがとう」演出を出す（新規、または下書きからの投稿。公開中・申請中の更新では出さない）
-  const firstSubmit = mode !== "draft" && (!editId || !["published", "pending", "hidden"].includes(window.tabistockEditStatus));
-
-  st.className = "status"; st.textContent = editId ? "記事を更新中…" : "記事を作成中…";
-
-  // 写真は「既存URL＋新規ファイル」の並び順のまま保存する。新規分だけアップロード。
-  // ファイル名は day1-1.jpg のような連番だと既存写真と衝突して上書きするので、毎回ユニークにする。
-  const stamp = Date.now();
-  async function savePhotos(items, prefix, label){
-    const urls = [];
-    const total = items.filter(it => it.file).length;
-    let n = 0;
-    for(let j=0;j<items.length;j++){
-      const it = items[j];
-      if(it.url){ urls.push(it.url); continue; }
-      n++;
-      st.textContent = `${label} ${n}/${total} をアップロード中…`;
-      const blob = await window.resizeImage(it.file);
-      urls.push(await uploadAndGetUrl(`articles/${id}/${prefix}_${stamp}_${j+1}.jpg`, blob));
-    }
-    return urls;
-  }
-
-  const heroUrls = await savePhotos(d.heroPhotos || [], "hero", "ヒーロー写真");
-  const thumbUrl = heroUrls[0] || "";
-
-  const days = [];
-  for(let i=0;i<d.days.length;i++){
-    const day = d.days[i];
-    const photoUrls = await savePhotos(day.photos || [], `day${i+1}`, `DAY${i+1} 写真`);
-    const dayObj = { date: day.date, summary: day.summary, text: day.text, photoUrls };
-    const places = Array.isArray(day.places)
-      ? day.places.filter(p=>p && typeof p.lat==='number' && typeof p.lng==='number')
-                  .map(p=>(p.cc ? { name: p.name||'', lat: p.lat, lng: p.lng, cc: p.cc } : { name: p.name||'', lat: p.lat, lng: p.lng }))
-      : [];
-    if(places.length){ dayObj.places = places; }
-    if(typeof day.lat==='number' && typeof day.lng==='number'){ dayObj.lat=day.lat; dayObj.lng=day.lng; }
-    days.push(dayObj);
-  }
-
-  st.textContent = "保存中…";
-  const docData = {
-    ...collabFields(!editId, nickname, window.tabistockEditAuthorNickname),
-    status,
-    createdAt: (editId && window.tabistockEditCreatedAt) ? window.tabistockEditCreatedAt : serverTimestamp(),
-    // 公開日は承認時に admin.html が入れる。編集で消えないよう引き継ぐ
-    ...((editId && window.tabistockEditPublishedAt) ? { publishedAt: window.tabistockEditPublishedAt } : {}),
-    updatedAt: serverTimestamp(),
-    countries: d.countries, region: d.region, prefectures: d.prefectures || [], notFromJapan: !!d.notFromJapan,
-    budget: d.budget, days_v: d.days_v, styles: d.styles,
-    title: d.title, lead: d.lead,
-    dateStart: d.dateStart, dateEnd: d.dateEnd,
-    currency: d.currency, language: d.language, safety: d.safety, difficulty: d.difficulty,
-    costs: d.costs, flights: d.flights, flightWhen: d.flightWhen, flightSite: d.flightSite,
-    services: d.services, comment: d.comment,
-    agodaUrl: d.agodaUrl||'',
-    days, heroUrls, thumbUrl
-  };
-  await setDoc(articleRef, docData);
+  st.className = "status";
+  // 保存の中身は post-core.js（アプリの投稿画面と共通）
+  const { id, status, heroUrls, days, firstSubmit } = await saveArticle({
+    d, mode,
+    nickname: window.tabistockNickname || d.author,
+    edit: editId ? { id: editId, status: window.tabistockEditStatus || "pending", createdAt: window.tabistockEditCreatedAt, publishedAt: window.tabistockEditPublishedAt, authorNickname: window.tabistockEditAuthorNickname } : null,
+    transits: { selected: window.tabistockGetSelectedTransits ? window.tabistockGetSelectedTransits() : [], shown: window.__shownTransits || [] },
+    progress: (t) => { st.textContent = t; }
+  });
+  if((window.__shownTransits || []).some(t => t.parentId === id)) transitParentId = id;
   window.tabistockEditStatus = status; // 続けて編集した場合に備えて更新
-
-  notifyNewInvites(id, d.title);
-
-  // 選択されたトランジット記事の parentId を、この旅程ID に更新する。
-  // 外したものは（この旅程に紐付いていた場合のみ）parentId を解除する。
-  try{
-    const selected = window.tabistockGetSelectedTransits ? window.tabistockGetSelectedTransits() : [];
-    const all = window.__shownTransits || [];
-    for(const t of all){
-      const shouldLink = selected.includes(t.id);
-      const linkedHere = (t.parentId || null) === id;
-      if(shouldLink && (t.parentId || null) !== id){
-        st.textContent = "トランジット記事を紐付け中…";
-        await updateDoc(doc(db, "articles", t.id), { parentId: id, updatedAt: serverTimestamp() });
-        t.parentId = id; // キャッシュも更新（連続保存に備える）
-        transitParentId = id;
-      }else if(!shouldLink && linkedHere){
-        await updateDoc(doc(db, "articles", t.id), { parentId: null, updatedAt: serverTimestamp() });
-        t.parentId = null;
-      }
-    }
-  }catch(e){ console.warn("トランジット記事の紐付け更新に失敗:", e); }
 
   st.className = "status ok";
   if(mode === "draft"){

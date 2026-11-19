@@ -264,7 +264,16 @@ function drawSheet() {
   $("bsClr").onclick = () => { sel = { country: [], pref: [], [key]: [] }; Object.assign(state, sel); renderSearch(); drawSheet(); };
   $("bsOk").onclick = () => { Object.assign(state, sel); closeSheet(); renderSearch(); };
 }
-function closeSheet() { $("ov").classList.remove("show"); $("bs").classList.remove("show"); }
+let onSheetClose = null;
+function closeSheet() { $("ov").classList.remove("show"); $("bs").classList.remove("show"); const f = onSheetClose; onSheetClose = null; if (f) f(); }
+// 投稿画面などから使う汎用の下シート。mount(bs) で中身を配線、onClose は閉じたときに1回だけ
+function openBS(html, mount, onClose) {
+  onSheetClose = onClose || null; haptic();
+  const bs = $("bs");
+  bs.innerHTML = html ? `<div class="grab"></div>${html}` : "";
+  if (mount) mount(bs);
+  $("ov").classList.add("show"); bs.classList.add("show");
+}
 $("ov").onclick = closeSheet;
 
 // リスト／地図
@@ -339,7 +348,7 @@ $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) 
 const STACK = [];
 const FRAMES = { "post": ["/post.html", "旅程を投稿"], "post-transit": ["/post-transit.html", "トランジットを投稿"], "account": ["/account.html", "設定"], "notify": ["/account.html#notifications", "通知"], "ask": ["/ask.html", "AI相談"], "flights": ["/flights.html", "航空券の相場"] };
 const BACK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
-function isPageHash(h) { return /^#(a-|u-|dm|w-|f-|x-|n$)/.test(h); }
+function isPageHash(h) { return /^#(a-|u-|dm|w-|f-|x-|n$|p$|p-)/.test(h); }
 function route() {
   const h = location.hash;
   if (!isPageHash(h)) { while (STACK.length) popPage(); return; }
@@ -356,7 +365,7 @@ function pushPage(h) {
   $("tab").classList.add("hide"); $("aiCmp").hidden = true;
   swipeBack(el);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
-  const m = h.match(/^#(a|u|dm|w|f|x|n)-?(.*)$/);
+  const m = h.match(/^#(a|u|dm|w|f|x|n|p)-?(.*)$/);
   const kind = m[1], arg = decodeURIComponent(m[2] || "");
   if (kind === "a") pageArticle(el, arg);
   else if (kind === "u") pageUser(el, arg);
@@ -368,6 +377,7 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611191528").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -566,7 +576,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611190715"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611191528"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -770,7 +780,17 @@ async function pageThread(el, other) {
   };
 }
 
-// ---------- 埋め込みページ（投稿フォームなど。アプリ版の画面ができるまでの間） ----------
+// ---------- 投稿・編集（app/post.js）に渡す道具 ----------
+function postCtx() {
+  return {
+    me, bar, back, toast, haptic, loadLeaflet,
+    sheet: openBS, closeSheet,
+    onSaved: (id) => { delete BY[id]; loadMyPosts(); },
+    done: () => { go("me"); setTimeout(loadMyPosts, 400); }
+  };
+}
+
+// ---------- 埋め込みページ（トランジット投稿など。アプリ版の画面ができるまでの間） ----------
 function pageFrame(el, name) {
   let f = FRAMES[name] || ["/" + name + ".html", ""];
   if (name.startsWith("edit-")) { const id = name.slice(5), d = BY[id] || {}; f = [(d.type === "transit" ? "/post-transit.html" : "/post.html") + "?edit=" + encodeURIComponent(id), "記事を編集"]; }
@@ -854,7 +874,7 @@ function myCard(d) {
 function drawMyPosts() {
   const box = $("myPosts"); if (!box) return;
   const list = MY[myTab] || [];
-  const empty = { trips: '<p class="empty">まだ旅程がありません<br><br><a class="btn-s" href="#w-post">旅程を投稿する</a></p>', transit: '<p class="empty">まだトランジット記事がありません<br><br><a class="btn-s" href="#w-post-transit">トランジットを投稿する</a></p>', collab: '<p class="empty">共同投稿はまだありません。<br>投稿の編集画面から、一緒に旅した友達を招待できます。</p>' };
+  const empty = { trips: '<p class="empty">まだ旅程がありません<br><br><a class="btn-s" href="#p">旅程を投稿する</a></p>', transit: '<p class="empty">まだトランジット記事がありません<br><br><a class="btn-s" href="#w-post-transit">トランジットを投稿する</a></p>', collab: '<p class="empty">共同投稿はまだありません。<br>投稿の編集画面から、一緒に旅した友達を招待できます。</p>' };
   let inv = "";
   if (myTab === "collab" && MY.invites.length) {
     inv = `<p class="fsub" style="margin:14px 20px 6px">招待 ${MY.invites.length}件</p>` + MY.invites.map((d) => `<div class="cv2"><a href="#a-${esc(d.id)}"><img src="${esc(thumbOf(d))}" alt="" style="border-radius:2px"></a><span class="m"><b>${esc(d.title || "(無題)")}</b><p>${esc(authorName(d))}さんから共同投稿の招待</p></span><button class="btn-s" data-inv="accept" data-id="${esc(d.id)}">承認</button><button class="btn-g" data-inv="decline" data-id="${esc(d.id)}">辞退</button></div>`).join("");
@@ -879,7 +899,7 @@ async function postMenu(id) {
   const collab = d.authorId !== me;
   const people = (d.coAuthorIds || []).length + (d.coAuthorInvites || []).length;
   const it = [];
-  it.push(`<a class="srow" href="#w-edit-${esc(id)}">編集</a>`);
+  it.push(`<a class="srow" href="${d.type === "transit" ? "#w-edit-" : "#p-"}${esc(id)}">編集</a>`);
   if (people || collab) it.push(`<button class="srow" data-pa="people">共同投稿者<small style="margin-left:auto;color:var(--muted)">${people + (collab ? 1 : 0)}人</small></button>`);
   if (!collab && (d.coAuthorIds || []).length) it.push('<button class="srow" data-pa="handover">投稿者を譲る</button>');
   if (d.status === "published") it.push('<button class="srow" data-pa="hide">非表示にする</button>');
