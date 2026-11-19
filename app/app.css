@@ -808,3 +808,7 @@ select.pfi{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
 .pform input[type=number]::-webkit-inner-spin-button,.pform input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .pform input[type=number]{-moz-appearance:textfield}
 .pdiv{border-top:1px solid var(--ink);margin:30px 0 -4px}
+.pbk{display:flex;align-items:center;gap:2px;padding:0 10px 0 4px;color:var(--ink);font-size:14px !important}
+.pbk[hidden]{display:none}
+.pbk svg{color:var(--green)}
+#pAnim{will-change:transform,opacity}

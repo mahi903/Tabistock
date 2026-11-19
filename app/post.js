@@ -223,10 +223,11 @@ function shell() {
   const title = editing ? (S.edit.status === "draft" ? "下書きを編集" : "投稿を編集") : "旅程を投稿";
   root.innerHTML = C.bar(title, '<button class="pstn" id="pStepBtn"></button>')
     + `<div class="pprog" id="pProg">${STEPS.map(() => "<i></i>").join("")}</div>`
-    + '<div class="ps pform" id="pScroll"><div id="pBan"></div><div class="phd" id="pHead"></div><div class="pbd" id="pBody"></div></div>'
-    + `<div class="pfoot"><button class="pdr" id="pDraft">下書き保存</button><button class="pnx" id="pNext"></button></div>`;
+    + '<div class="ps pform" id="pScroll"><div id="pBan"></div><div id="pAnim"><div class="phd" id="pHead"></div><div class="pbd" id="pBody"></div></div></div>'
+    + `<div class="pfoot"><button class="pbk" id="pPrev" aria-label="前のステップへ"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>戻る</button><button class="pdr" id="pDraft">下書き保存</button><button class="pnx" id="pNext"></button></div>`;
   root.querySelector("#pStepBtn").onclick = stepSheet;
   root.querySelector("#pDraft").onclick = () => submit("draft");
+  root.querySelector("#pPrev").onclick = () => goStep(S.step - 1);
   root.querySelector("#pNext").onclick = () => { if (S.step < STEPS.length - 1) goStep(S.step + 1); else submit("publish"); };
   // 戻るボタン：この端末に保存してから閉じる
   root.querySelector("[data-back]").addEventListener("click", () => { if (S.dirty) { autosave(); if (!S.paused) C.toast("入力内容はこの端末に残しました"); } }, true);
@@ -235,10 +236,26 @@ function shell() {
   root.addEventListener("click", onClick);
   drawStep();
 }
+// ステップの切り替え：今の画面を進む方向へ流しながら消し、次の画面を反対側からゆっくり出す
+let stepAnim = null;
 function goStep(i) {
-  S.step = Math.max(0, Math.min(STEPS.length - 1, i));
-  C.haptic(); drawStep();
-  root.querySelector("#pScroll").scrollTop = 0;
+  i = Math.max(0, Math.min(STEPS.length - 1, i));
+  if (i === S.step) return;
+  const dir = i > S.step ? 1 : -1;
+  S.step = i; C.haptic();
+  const box = root.querySelector("#pAnim"), sc = root.querySelector("#pScroll");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!box.animate || reduce) { drawStep(); sc.scrollTop = 0; return; }
+  if (stepAnim) stepAnim.cancel();
+  const ease = "cubic-bezier(.3,.7,.3,1)";
+  stepAnim = box.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: `translateX(${-28 * dir}px)` }], { duration: 170, easing: "ease-in", fill: "forwards" });
+  const out = stepAnim;
+  out.onfinish = () => {
+    drawStep(); sc.scrollTop = 0;
+    out.cancel();   // 消すときの「透明のまま」を外してから、次の画面を出す
+    stepAnim = box.animate([{ opacity: 0, transform: `translateX(${36 * dir}px)` }, { opacity: 1, transform: "none" }], { duration: 380, easing: ease });
+    stepAnim.onfinish = () => (stepAnim = null);
+  };
 }
 function drawProg() {
   const p = root && root.querySelector("#pProg"); if (!p) return;
@@ -255,6 +272,7 @@ function drawStep() {
   nx.classList.toggle("go", last);
   // 一度承認された記事は、下書きにすると公開が外れるので下書き保存を出さない
   root.querySelector("#pDraft").hidden = !!(S.edit && ["published", "hidden"].includes(S.edit.status));
+  root.querySelector("#pPrev").hidden = S.step === 0;
   if (st.k === "basic" || st.k === "days") drawAllPhotos();
   if (st.k === "finish") mountFinish();
   drawProg();
