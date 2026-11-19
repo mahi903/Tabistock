@@ -72,10 +72,35 @@ async function loadProfiles(uids) {
 const TABS = [["home", "ホーム"], ["search", "探す"], ["post", "投稿"], ["ai", "AI"], ["me", "マイページ"]];
 const VIEWS = ["home", "search", "post", "ai", "me", "saved"];
 let curTab = "home";
+// 下のタブ。選んでいる丸い背景（.ind）は1つだけ置いて、選んだタブまで横にすべらせる（インスタの Liquid Glass 風）
 function renderTab() {
   const act = curTab === "saved" ? "me" : curTab;
-  $("tab").innerHTML = TABS.map(([k, l]) => `<button class="${k === act ? "on" : ""}${k === "post" ? " tpost" : ""}" data-go="${k}"><svg viewBox="0 0 24 24">${I[k]}</svg>${l}</button>`).join("");
+  const tab = $("tab");
+  if (!tab.querySelector(".ind")) {
+    tab.innerHTML = '<i class="ind"></i>' + TABS.map(([k, l]) => `<button class="${k === "post" ? "tpost" : ""}" data-go="${k}"><svg viewBox="0 0 24 24">${I[k]}</svg>${l}</button>`).join("");
+  }
+  const btns = [...tab.querySelectorAll("button")];
+  const target = btns.find((b) => b.dataset.go === act);
+  btns.forEach((b) => b.classList.toggle("on", b === target));
+  moveInd(target);
 }
+let indAt = null;
+function moveInd(target) {
+  const ind = $("tab").querySelector(".ind");
+  if (!ind || !target) return;
+  const x = target.offsetLeft, w = target.offsetWidth;
+  if (!w) { requestAnimationFrame(() => moveInd(target)); return; }   // まだレイアウト前
+  const to = `translateX(${x}px)`;
+  ind.style.width = w + "px";
+  if (indAt === null || !ind.animate || matchMedia("(prefers-reduced-motion: reduce)").matches) { ind.style.transform = to; indAt = x; return; }
+  if (indAt === x) return;
+  const from = `translateX(${indAt}px)`, mid = `translateX(${(indAt + x) / 2}px) scale(1.18, .9)`;
+  ind.style.transform = to;
+  // 動いている途中で少し横に伸びて、着いたらぷるっと戻る
+  ind.animate([{ transform: from }, { transform: mid, offset: 0.45 }, { transform: `${to} scale(.96, 1.04)`, offset: 0.8 }, { transform: to }], { duration: 480, easing: "cubic-bezier(.3,.7,.3,1)" });
+  indAt = x;
+}
+addEventListener("resize", () => { indAt = null; renderTab(); });
 function go(k, opt = {}) {
   if (STACK.length) { location.hash = ""; }
   if (k === curTab && !Object.keys(opt).length) { $(k).scrollTo({ top: 0, behavior: "smooth" }); return; }
@@ -428,8 +453,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200019").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200019").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200030").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200030").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -628,7 +653,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611200019"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611200030"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
