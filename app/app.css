@@ -901,3 +901,9 @@ select.pfi{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
 .fdots i{flex:1;width:auto;height:2px;background:rgba(255,255,255,.35);overflow:hidden;transition:none}
 .fdots i b{display:block;height:100%;background:#fff;transform:scaleX(0);transform-origin:left center}
 #feat .feat .tag{top:28px}
+/* ゲージは右上に小さく。表示中の1本だけ長くして、その中が溜まっていく */
+.fdots{left:auto;right:20px;top:18px;gap:5px}
+.fdots i{flex:none;width:22px;height:3px;border-radius:0;transition:width .5s cubic-bezier(.3,.7,.3,1)}
+.fdots i.on{width:40px;background:rgba(255,255,255,.35)}
+#feat .feat .tag{top:16px}
+.fdots{filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
