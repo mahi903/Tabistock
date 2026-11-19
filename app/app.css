@@ -670,10 +670,10 @@ a{color:inherit;text-decoration:none}
 .phd p{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.6}
 .pbd{padding:4px 20px 30px}
 .pf{margin-top:22px}
-.pl{display:flex;align-items:baseline;gap:8px;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.qlb{display:flex;align-items:baseline;gap:8px;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px}
 .po{font-size:11px;font-weight:500;color:var(--muted)}
-.ph2{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.6;display:block}
-.ph2.lk{color:var(--green);font-weight:700;text-decoration:none;margin-top:12px}
+.qhint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.6;display:block}
+.qhint.lk{color:var(--green);font-weight:700;text-decoration:none;margin-top:12px}
 .pfi{display:block;width:100%;border:0;border-bottom:1px solid #cfc6b6;background:none;padding:9px 0;font:inherit;font-size:16px;color:var(--ink);outline:none;resize:none;border-radius:0;-webkit-appearance:none;appearance:none}
 .pfi:focus{border-bottom-color:var(--ink)}
 .pfi::placeholder{color:#b3ab9c}
@@ -735,7 +735,7 @@ select.pfi{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
 .padd2{display:block;width:100%;text-align:center;padding:14px 0;margin-top:4px;font-size:13.5px;font-weight:700;color:var(--green);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 /* サービス */
 .psv{border-top:1px solid var(--ink);padding-top:10px;margin-top:18px}
-.psv .pl{margin:0}
+.psv .qlb{margin:0}
 /* 日程 */
 .pday{border-top:1px solid var(--ink);padding:12px 0 6px;margin-top:6px}
 .pdh{display:flex;align-items:baseline;gap:10px}
@@ -886,3 +886,13 @@ select.pfi{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
 .fzm{position:absolute;right:12px;top:12px;z-index:5;display:flex;flex-direction:column;background:#fff;border:1px solid var(--ink)}
 .fzm button{width:36px;height:36px;display:grid;place-items:center;font-size:18px;font-weight:700;color:var(--ink)}
 .fzm button+button{border-top:1px solid var(--line)}
+/* ピックアップ（自動スライド） */
+#feat{position:relative;margin-top:18px}
+.fcar{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.fcar::-webkit-scrollbar{display:none}
+.fcar .feat{flex:none;width:100%;margin:0;scroll-snap-align:start;scroll-snap-stop:always}
+.feat .pl{color:#fff;opacity:1}
+.feat .pl svg{fill:#fff}
+.fdots{position:absolute;right:20px;top:20px;z-index:3;display:flex;gap:4px;pointer-events:none}
+.fdots i{width:14px;height:2px;background:rgba(255,255,255,.45);transition:background .3s,width .3s}
+.fdots i.on{background:#fff;width:22px}

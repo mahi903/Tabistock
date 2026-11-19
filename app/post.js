@@ -279,21 +279,21 @@ function drawStep() {
 }
 
 // ---------- 各ステップ ----------
-const fld = (label, inner, opt = "") => `<div class="pf"><label class="pl">${label}${opt ? `<span class="po">${opt}</span>` : ""}</label>${inner}</div>`;
+const fld = (label, inner, opt = "") => `<div class="pf"><label class="qlb">${label}${opt ? `<span class="po">${opt}</span>` : ""}</label>${inner}</div>`;
 const pick = (id, vals, ph) => `<button class="ppk" id="${id}"><span class="${vals ? "" : "ph"}">${esc(vals || ph)}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>`;
 const BODY = {
   basic() { return BODY.where() + '<div class="pdiv"></div>' + BODY.top(); },
   where() {
     const cs = F.countries.map((v) => cinfo(v).jp).join("、");
     const n = nightsOf(F.dateStart, F.dateEnd);
-    return fld("国", pick("pkCountry", cs, "国を選ぶ（複数可）") + '<p class="ph2">周遊なら複数選べます。1つ目の国で地域が決まります。</p>')
+    return fld("国", pick("pkCountry", cs, "国を選ぶ（複数可）") + '<p class="qhint">周遊なら複数選べます。1つ目の国で地域が決まります。</p>')
       + (isDom() ? fld("都道府県", pick("pkPref", F.prefectures.join("、"), "都道府県を選ぶ（複数可）")) : "")
       + (!isDom() && F.countries.length ? `<label class="pck"><input type="checkbox" data-f="notFromJapan" ${F.notFromJapan ? "checked" : ""}><span class="bx"></span>出発地が日本以外（留学先や世界一周中など）</label>` : "")
-      + fld("旅行時期", `<div class="pdt"><input type="date" data-f="dateStart" value="${esc(F.dateStart)}"><span>〜</span><input type="date" data-f="dateEnd" value="${esc(F.dateEnd)}"></div><p class="ph2" id="pNights">${n > 0 ? `${n - 1}泊${n}日・DAYを${n}日ぶん用意します` : n < 0 || (F.dateStart && F.dateEnd && n < 1) ? "終了日が開始日より前になっています" : "開始日と終了日を選ぶと、DAYが日数ぶん用意されます"}</p>`)
+      + fld("旅行時期", `<div class="pdt"><input type="date" data-f="dateStart" value="${esc(F.dateStart)}"><span>〜</span><input type="date" data-f="dateEnd" value="${esc(F.dateEnd)}"></div><p class="qhint" id="pNights">${n > 0 ? `${n - 1}泊${n}日・DAYを${n}日ぶん用意します` : n < 0 || (F.dateStart && F.dateEnd && n < 1) ? "終了日が開始日より前になっています" : "開始日と終了日を選ぶと、DAYが日数ぶん用意されます"}</p>`)
       + fld("旅スタイル", pick("pkStyle", F.styles.map((v) => (STYLES.find((s) => s.v === v) || {}).l).filter(Boolean).join("、"), "選ぶ（複数可）"));
   },
   top() {
-    return fld("トップ写真", `<div class="pph" data-ph="hero"></div><p class="ph2">1枚目が表紙（サムネ）になります。タップで並べ替え・削除。</p>`)
+    return fld("トップ写真", `<div class="pph" data-ph="hero"></div><p class="qhint">1枚目が表紙（サムネ）になります。タップで並べ替え・削除。</p>`)
       + fld("タイトル", `<input class="pfi" data-f="title" value="${esc(F.title)}" placeholder="${esc(ex("title"))}">`)
       + fld("リード文", `<textarea class="pfi" data-f="lead" rows="2" placeholder="${esc(ex("lead"))}">${esc(F.lead)}</textarea>`, "短い一言")
       + (!isDom() ? fld("治安", `<div class="prad">${SAFETY.map((v) => `<button class="frow ${F.safety === v ? "on" : ""}" data-safety="${esc(v)}"><span class="bx rd"></span><span class="nm">${v}</span></button>`).join("")}</div>`) : "")
@@ -304,13 +304,13 @@ const BODY = {
     const lab = (it) => (mv && it.k === "flight" ? "移動" : mv && it.k === "transit" ? "現地の交通" : it.l);
     const b = t > 0 ? BUDGETS.find((x) => x.v === budgetFromYen(t)) : null;
     return `<div class="pcost">${COST_ITEMS.map((it) => `<label class="pcr"><span>${lab(it)}</span><span class="yen"><small>¥</small><input type="number" inputmode="numeric" min="0" step="1000" data-cost="${it.k}" value="${esc(F.costs[it.k] || "")}" placeholder="0"></span></label>`).join("")}</div>
-      <div class="ptot"><span>合計</span><b class="num" id="pTotal">${yen(t)}</b></div><p class="ph2" id="pBudget">${b ? `予算の区分：${b.l}` : "0円の項目は空のままでOKです"}</p>`;
+      <div class="ptot"><span>合計</span><b class="num" id="pTotal">${yen(t)}</b></div><p class="qhint" id="pBudget">${b ? `予算の区分：${b.l}` : "0円の項目は空のままでOKです"}</p>`;
   },
   move() {
     const mv = isMove(), w = mv ? "区間" : "航路";
     return F.legs.map((l, i) => `<div class="pleg" data-leg="${i}">
         <div class="plh"><b>${w} ${i + 1}</b>${F.legs.length > 1 ? `<button class="pxs" data-legdel="${i}">削除</button>` : ""}</div>
-        ${mv ? `<div class="pf"><label class="pl">手段</label><select class="pfi" data-lf="mode">${MOVE_MODES.map((m) => `<option value="${m.v}" ${(l.mode || (isDom() ? "shinkansen" : "plane")) === m.v ? "selected" : ""}>${m.l}</option>`).join("")}</select></div>` : ""}
+        ${mv ? `<div class="pf"><label class="qlb">手段</label><select class="pfi" data-lf="mode">${MOVE_MODES.map((m) => `<option value="${m.v}" ${(l.mode || (isDom() ? "shinkansen" : "plane")) === m.v ? "selected" : ""}>${m.l}</option>`).join("")}</select></div>` : ""}
         <div class="ptrip"><button data-trip="oneway" class="${l.trip !== "round" ? "on" : ""}">片道</button><button data-trip="round" class="${l.trip === "round" ? "on" : ""}">往復</button></div>
         <div class="prt"><input class="pfi" data-lf="from" value="${esc(l.from)}" placeholder="${esc(ex("from"))}"><span>${l.trip === "round" ? "↔" : "→"}</span><input class="pfi" data-lf="to" value="${esc(l.to)}" placeholder="${esc(ex("to"))}"></div>
         ${fld("乗り継ぎ", `<input class="pfi" data-lf="transit" value="${esc(l.transit)}" placeholder="例：ソウル（複数は「、」で区切り）">`, "任意")}
@@ -321,20 +321,20 @@ const BODY = {
       + `<div class="p2c" style="margin-top:22px">${fld("予約時期", `<input class="pfi" data-f="flightWhen" value="${esc(F.flightWhen)}" placeholder="${esc(ex("when"))}">`, mv ? "任意" : "")}${fld("予約サイト", `<input class="pfi" data-f="flightSite" value="${esc(F.flightSite)}" placeholder="${esc(ex("site"))}">`, mv ? "任意" : "")}</div>`;
   },
   svc() {
-    return SERVICE_CATS.map((cat) => `<div class="psv"><p class="pl">${esc(cat.k)}</p><div class="fgrid">${cat.opts.map((o) => `<button class="frow ${(F.svc[cat.k] || []).includes(o) ? "on" : ""}" data-svc="${esc(cat.k)}" data-o="${esc(o)}"><span class="bx"></span><span class="nm">${esc(o)}</span></button>`).join("")}</div>
+    return SERVICE_CATS.map((cat) => `<div class="psv"><p class="qlb">${esc(cat.k)}</p><div class="fgrid">${cat.opts.map((o) => `<button class="frow ${(F.svc[cat.k] || []).includes(o) ? "on" : ""}" data-svc="${esc(cat.k)}" data-o="${esc(o)}"><span class="bx"></span><span class="nm">${esc(o)}</span></button>`).join("")}</div>
       <input class="pfi sm" data-svco="${esc(cat.k)}" value="${esc(F.svcOther[cat.k] || "")}" placeholder="その他（${esc(cat.ex)}）"></div>`).join("")
       + (S.isAdmin ? fld("宿泊ホテルのAgodaリンク", `<input class="pfi" data-f="agodaUrl" value="${esc(F.agodaUrl)}" placeholder="https://px.a8.net/...">`, "管理者のみ") : "");
   },
   days() {
     return `<div id="pDays">${F.days.map(dayHtml).join("")}</div><button class="padd2" data-dayadd>＋ 日を追加</button>
-      <div class="pauto"><button class="btn-g" id="pAuto">本文から場所を自動検出</button><p class="ph2">各日の文章をAIが読んで観光地を推定し、地図にピンを置きます。</p><p class="ph2" id="pAutoMsg" style="white-space:pre-line"></p></div>`;
+      <div class="pauto"><button class="btn-g" id="pAuto">本文から場所を自動検出</button><p class="qhint">各日の文章をAIが読んで観光地を推定し、地図にピンを置きます。</p><p class="qhint" id="pAutoMsg" style="white-space:pre-line"></p></div>`;
   },
   finish() {
     const miss = checks().filter((c) => !c.ok);
-    return fld("投稿者コメント", `<textarea class="pfi" data-f="comment" rows="6" placeholder="${esc(ex("comment"))}">${esc(F.comment)}</textarea><p class="ph2">安く抑えた工夫・こうしておけばよかった点・持ち物・現地のリアルな本音を。</p>`)
-      + `<div class="pf"><label class="pl">トランジット記事を紐付け<span class="po">任意</span></label><div id="pTr"></div><a class="ph2 lk" href="#w-post-transit">＋ トランジット記事を新しく投稿する</a></div>`
+    return fld("投稿者コメント", `<textarea class="pfi" data-f="comment" rows="6" placeholder="${esc(ex("comment"))}">${esc(F.comment)}</textarea><p class="qhint">安く抑えた工夫・こうしておけばよかった点・持ち物・現地のリアルな本音を。</p>`)
+      + `<div class="pf"><label class="qlb">トランジット記事を紐付け<span class="po">任意</span></label><div id="pTr"></div><a class="qhint lk" href="#w-post-transit">＋ トランジット記事を新しく投稿する</a></div>`
       + `<div class="pf pcol" id="pCollab"></div>`
-      + `<div class="pchk" id="pChk">${miss.length ? `<p class="pl">投稿まであと${miss.length}項目</p>${miss.map((c) => `<button class="pmis" data-jump="${c.s}"><span>${esc(c.l)}</span><small>${esc(STEPS[c.s].t())}</small>›</button>`).join("")}` : '<p class="pready">投稿の準備ができました</p>'}</div>`;
+      + `<div class="pchk" id="pChk">${miss.length ? `<p class="qlb">投稿まであと${miss.length}項目</p>${miss.map((c) => `<button class="pmis" data-jump="${c.s}"><span>${esc(c.l)}</span><small>${esc(STEPS[c.s].t())}</small>›</button>`).join("")}` : '<p class="pready">投稿の準備ができました</p>'}</div>`;
   }
 };
 
@@ -498,9 +498,9 @@ function countrySheet() {
   const list = () => {
     const regions = [...new Set(COUNTRIES.map((c) => c.r))];
     const html = regions.map((r) => { const cs = COUNTRIES.filter((c) => c.r === r && hit(c)); return cs.length ? `<div class="fsec"><div class="fhead"><b>${esc(REGION_JP[r] || r)}</b></div><div class="fgrid">${cs.map((c) => frow("data-c", c.v, c.jp, F.countries.includes(c.v))).join("")}</div></div>` : ""; }).join("");
-    return html || '<p class="ph2" style="padding:20px 0">見つかりませんでした</p>';
+    return html || '<p class="qhint" style="padding:20px 0">見つかりませんでした</p>';
   };
-  const selHtml = () => F.countries.length ? F.countries.map((v, i) => `<button class="psel" data-c="${v}">${i === 0 ? "<em>地域</em>" : ""}${esc(cinfo(v).jp)}<span>×</span></button>`).join("") : '<span class="ph2">まだ選んでいません</span>';
+  const selHtml = () => F.countries.length ? F.countries.map((v, i) => `<button class="psel" data-c="${v}">${i === 0 ? "<em>地域</em>" : ""}${esc(cinfo(v).jp)}<span>×</span></button>`).join("") : '<span class="qhint">まだ選んでいません</span>';
   pickSheet("国を選ぶ", () => `<input class="pfi psr" id="pkQ" placeholder="国名で検索（例：トルコ／turkey）" autocomplete="off"><div class="pselw" id="pkSel">${selHtml()}</div><div id="pkList">${list()}</div>`,
     (bs) => {
       const qi = bs.querySelector("#pkQ"); qi.value = q;
@@ -561,7 +561,7 @@ async function mapPage(i) {
   const day = F.days[i];
   const ov = document.createElement("div");
   ov.className = "pmap";
-  ov.innerHTML = `<div class="bar2"><b>DAY ${i + 1} の場所</b><button class="mo" id="pmDone" style="font-size:15px;font-weight:700;color:var(--green)">完了</button></div><div class="pmm" id="pmMap"></div><div class="pml"><p class="ph2" id="pmHint">地図をタップするとピンを置けます（複数OK）</p><div id="pmList"></div></div>`;
+  ov.innerHTML = `<div class="bar2"><b>DAY ${i + 1} の場所</b><button class="mo" id="pmDone" style="font-size:15px;font-weight:700;color:var(--green)">完了</button></div><div class="pmm" id="pmMap"></div><div class="pml"><p class="qhint" id="pmHint">地図をタップするとピンを置けます（複数OK）</p><div id="pmList"></div></div>`;
   root.appendChild(ov);
   requestAnimationFrame(() => ov.classList.add("open"));
   const close = () => { ov.classList.remove("open"); setTimeout(() => ov.remove(), 300); drawStep(); };
@@ -635,7 +635,7 @@ function drawTransits() {
   const box = root.querySelector("#pTr"); if (!box) return;
   const items = S.transits.filter(sameMembers);
   S.shownTransits = items;
-  if (!items.length) { box.innerHTML = `<p class="ph2">${currentMembers().length > 1 ? "この旅程と同じメンバーのトランジット記事がありません。" : "まだトランジット記事がありません。"}</p>`; return; }
+  if (!items.length) { box.innerHTML = `<p class="qhint">${currentMembers().length > 1 ? "この旅程と同じメンバーのトランジット記事がありません。" : "まだトランジット記事がありません。"}</p>`; return; }
   const sel = F.transitSel || [];
   box.innerHTML = items.map((t) => {
     const other = t.parentId && (!S.edit || t.parentId !== S.edit.id);

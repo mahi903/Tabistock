@@ -101,20 +101,45 @@ document.addEventListener("click", (e) => {
 });
 
 // ---------- ホーム ----------
+// ピックアップの自動スライド（5秒ごと。指で触っている間と、ホームを見ていない間は止める）
+let carTimer = null;
+function startCarousel(n) {
+  clearInterval(carTimer);
+  const car = $("fcar"); if (!car || n < 2) return;
+  let hold = false, idx = 0;
+  const dots = () => { const i = Math.round(car.scrollLeft / car.clientWidth); if (i !== idx) { idx = i; } document.querySelectorAll("#fdots i").forEach((d, j) => d.classList.toggle("on", j === idx)); };
+  car.addEventListener("scroll", dots, { passive: true });
+  car.addEventListener("touchstart", () => (hold = true), { passive: true });
+  car.addEventListener("touchend", () => setTimeout(() => (hold = false), 3000), { passive: true });
+  carTimer = setInterval(() => {
+    if (hold || curTab !== "home" || STACK.length || $("home").hidden || document.hidden) return;
+    car.scrollTo({ left: ((idx + 1) % n) * car.clientWidth, behavior: "smooth" });
+  }, 5000);
+}
 function renderHome() {
   const trips = ALL.filter((d) => d.type !== "transit" && !isDomestic(d));
   const jp = ALL.filter((d) => d.type !== "transit" && isDomestic(d));
   const tr = ALL.filter((d) => d.type === "transit");
-  // ピックアップ：写真のある海外の旅から、日替わりで1本
+  // ピックアップ：中欧ヨーロッパ・中央アジア・イタリア（8泊9日）の3本を自動でスライド。見つからない分は写真のある海外の旅で補う
   const pool = trips.filter((d) => thumbOf(d));
-  // ピックアップ：イタリア8泊9日の記事を固定（見つからなければ日替わり）
-  const pick = pool.find((d) => /イタリア/.test(titleOf(d)) && /8泊9日/.test(titleOf(d))) || pool.find((d) => (d.countries || []).includes("italy") && daysLabel(d) === "8泊9日") || (pool.length ? pool[Math.floor(Date.now() / 864e5) % pool.length] : null);
-  if (pick) {
-    $("feat").innerHTML = `<a class="feat" href="#a-${esc(pick.id)}" style="background-image:url('${esc(thumbOf(pick))}')"><span class="tag">PICK UP</span>
-      <div class="in"><div class="pl">${PIN} ${esc(placeJp(pick))}</div><div class="tt">${esc(titleOf(pick))}</div>
-      <div class="row"><div class="au"><img src="${esc(avatarOf(pick.authorId))}" alt="">${esc(authorName(pick))}${pick.dateStart ? "・" + esc(pick.dateStart.slice(0, 4) + "年" + Number(pick.dateStart.slice(5, 7)) + "月") : ""}</div></div></div></a>`;
+  const has = (d, cs) => (d.countries || []).some((c) => cs.includes(c));
+  const finders = [
+    (d) => /中欧/.test(titleOf(d)) || (has(d, ["czech", "austria", "hungary", "slovakia", "poland"]) && !has(d, ["italy"])),
+    (d) => /中央アジア/.test(titleOf(d)) || has(d, ["kazakhstan", "kyrgyzstan", "uzbekistan", "tajikistan", "turkmenistan"]),
+    (d) => (/イタリア/.test(titleOf(d)) && /8泊9日/.test(titleOf(d))) || ((d.countries || []).includes("italy") && daysLabel(d) === "8泊9日"),
+  ];
+  const picks = [];
+  finders.forEach((f) => { const d = pool.find((x) => !picks.includes(x) && f(x)); if (d) picks.push(d); });
+  for (const d of pool) { if (picks.length >= 3) break; if (!picks.includes(d)) picks.push(d); }
+  const pick = picks[0];
+  if (picks.length) {
+    $("feat").innerHTML = `<div class="fcar" id="fcar">${picks.map((p) => `<a class="feat" href="#a-${esc(p.id)}" style="background-image:url('${esc(thumbOf(p))}')"><span class="tag">PICK UP</span>
+      <div class="in"><div class="pl">${PIN} ${esc(placeJp(p))}</div><div class="tt">${esc(titleOf(p))}</div>
+      <div class="row"><div class="au"><img src="${esc(avatarOf(p.authorId))}" alt="">${esc(authorName(p))}${p.dateStart ? "・" + esc(p.dateStart.slice(0, 4) + "年" + Number(p.dateStart.slice(5, 7)) + "月") : ""}</div></div></div></a>`).join("")}</div>`
+      + (picks.length > 1 ? `<div class="fdots" id="fdots">${picks.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>` : "");
+    startCarousel(picks.length);
   }
-  $("newList").innerHTML = trips.filter((d) => d !== pick).slice(0, 10).map(cardH).join("") || '<p class="loading">まだ記事がありません</p>';
+  $("newList").innerHTML = trips.filter((d) => !picks.includes(d)).slice(0, 10).map(cardH).join("") || '<p class="loading">まだ記事がありません</p>';
   $("jpSec").hidden = !jp.length; $("jpList").innerHTML = jp.slice(0, 10).map(cardH).join("");
   $("trSec").hidden = !tr.length; $("trList").innerHTML = tr.slice(0, 10).map(cardH).join("");
 }
@@ -377,8 +402,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611191546").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611191546").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611191704").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611191704").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -577,7 +602,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611191546"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611191704"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {

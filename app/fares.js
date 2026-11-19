@@ -133,7 +133,7 @@ function detail(meta) {
   const top3 = have.slice().sort((a, b) => a.p - b.p).slice(0, 3);
   root.querySelector("#fDetail").innerHTML = `<div class="fdt">
     <div class="fdh"><h3>${esc(meta.n)}</h3><small>${esc(meta.k)}・${oName}・往復</small></div>
-    ${best ? `<div class="fbest"><small>いちばん安い月</small><b class="num">${yen(best.p)}</b><p>${mLabel(best.m)}${best.dep ? "・" + when(best) : ""}・${best.from}発・${legs(best)}</p></div>` : '<p class="ph2" style="padding:14px 0">まだデータがありません</p>'}
+    ${best ? `<div class="fbest"><small>いちばん安い月</small><b class="num">${yen(best.p)}</b><p>${mLabel(best.m)}${best.dep ? "・" + when(best) : ""}・${best.from}発・${legs(best)}</p></div>` : '<p class="qhint" style="padding:14px 0">まだデータがありません</p>'}
     <div class="fch">${s.map((x) => `<div class="fc"><span class="v num ${x.p === mn ? "min" : ""}">${x.p ? man(x.p) : "-"}</span><i class="${x.p ? (x.p === mn ? "min" : "") : "none"}" style="height:${x.p ? Math.max(10, Math.round((x.p / mx) * 110)) : 6}px"></i><span class="m">${mLabel(x.m)}${x.m.endsWith("-01") ? `<br><em>${x.m.slice(2, 4)}年</em>` : ""}</span></div>`).join("")}</div>
     ${top3.length ? `<div class="ftop">${top3.map((x, i) => `<div class="ftr"><span class="num">${i + 1}</span><span class="t"><b>${mLabel(x.m)}</b><small>${x.dep ? when(x) + "・" : ""}${x.from}発・${legs(x)}</small></span><b class="num">${yen(x.p)}</b></div>`).join("")}</div>` : ""}
   </div>`;
