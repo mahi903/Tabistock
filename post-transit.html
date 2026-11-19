@@ -581,121 +581,38 @@ window.populateForm = function(d){
 <script type="module">
 import { auth, db, storage } from "./firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { collection, doc, setDoc, getDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { saveTransit, loadMyTrips } from "./post-core.js";
 import { showPostThanks } from "./post-thanks.js";
 import { COUNTRY_LL } from "./tabistock-render.js";
-import { collab, initCollabBox, loadCollabFrom, renderCollab, isMember, membersOf, sameMembers, collabFields, notifyNewInvites } from "./collab.js";
+import { collab, initCollabBox, loadCollabFrom, renderCollab, isMember, membersOf, sameMembers } from "./collab.js";
 window.COUNTRY_LL = COUNTRY_LL;
 
 window.tabistockReady = false;
 window.tabistockUser = null;
 window.tabistockNickname = "";
 
-/* 画像リサイズ（長辺1280px / JPEG 0.82） */
-function loadImage(file){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=URL.createObjectURL(file); }); }
-async function resizeImage(file,maxEdge=1280,q=0.82){
-  // メモリ節約：縮小しながらデコード（createImageBitmap）。
-  // まず幅 maxEdge で読み込み、縦長で長辺がまだ大きければ小さいbitmapから再縮小。
-  // 失敗時（古い端末など）は従来の <img> デコード方式へフォールバック。
-  try{
-    let bmp = await createImageBitmap(file, { resizeWidth:maxEdge, imageOrientation:'from-image' });
-    if(Math.max(bmp.width,bmp.height) > maxEdge){
-      const scale = maxEdge/Math.max(bmp.width,bmp.height);
-      const bmp2 = await createImageBitmap(bmp, { resizeWidth:Math.round(bmp.width*scale), resizeHeight:Math.round(bmp.height*scale) });
-      bmp.close(); bmp = bmp2;
-    }
-    const cv=document.createElement('canvas'); cv.width=bmp.width; cv.height=bmp.height;
-    cv.getContext('2d').drawImage(bmp,0,0); bmp.close();
-    return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
-  }catch(e){
-    const img=await loadImage(file);
-    const scale=Math.min(1,maxEdge/Math.max(img.width,img.height));
-    const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
-    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-    cv.getContext('2d').drawImage(img,0,0,w,h);
-    return await new Promise(r=>cv.toBlob(r,'image/jpeg',q));
-  }
-}
-async function uploadAndGetUrl(path, blob){
-  const r = ref(storage, path);
-  await uploadBytes(r, blob, { contentType: "image/jpeg" });
-  return await getDownloadURL(r);
-}
+
 
 // 親記事ピッカー用：自分が投稿者・共同投稿者の旅行記事（トランジット以外）のうち、
 // この記事と「同じメンバー」のものだけを取得（共同投稿に、他人だけの旅程が紛れ込まないように）
 window.loadMyItineraries = async function(){
   const user = window.tabistockUser; if(!user) return [];
-  const [own, co] = await Promise.all([
-    getDocs(query(collection(db, "articles"), where("authorId", "==", user.uid))),
-    getDocs(query(collection(db, "articles"), where("coAuthorIds", "array-contains", user.uid))).catch(() => null)
-  ]);
-  const docs=[];
-  const add = s => { const a={id:s.id, ...s.data()}; if(a.type!=="transit" && sameMembers(a) && !docs.some(x=>x.id===a.id)) docs.push(a); };
-  own.forEach(add); if(co) co.forEach(add);
-  docs.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-  return docs;
+  return (await loadMyTrips(user.uid)).filter(sameMembers);
 };
 
 window.tabistockTransitSubmit = async function(d, st, mode){
-  const user = window.tabistockUser;
   const nickname = window.tabistockNickname || d.author;
   const editId = window.tabistockEditId || null;
-
-  const articleRef = editId ? doc(db, "articles", editId) : doc(collection(db, "articles"));
-  const id = articleRef.id;
-
-  let status;
-  if(mode === "draft"){ status = "draft"; }
-  else if(!editId){ status = "pending"; }
-  else { const prev = window.tabistockEditStatus || "pending"; status = ["published", "pending", "hidden"].includes(prev) ? prev : "pending"; }
-  // 新しく投稿（申請）したときだけ「ありがとう」演出を出す（新規、または下書きからの投稿。公開中・申請中の更新では出さない）
-  const firstSubmit = mode !== "draft" && (!editId || !["published", "pending", "hidden"].includes(window.tabistockEditStatus));
-
-  st.className = "status"; st.textContent = editId ? "記事を更新中…" : "記事を作成中…";
-
-  // 写真：既存URLを保持したうえで、新規選択分を末尾に追加アップロードする。
-  // （以前は新規があると既存を丸ごと捨てていたため、追加保存で既存写真が消えていた）
-  // ファイル名は hero1.jpg 固定だと既存と衝突して上書きするので、ユニークなキーにする。
-  let heroUrls = (d.photoExisting || []).slice();
-  if(d.photoFiles.length){
-    for(let i=0;i<d.photoFiles.length;i++){
-      st.textContent = `写真 ${i+1}/${d.photoFiles.length} をアップロード中…`;
-      const blob = await resizeImage(d.photoFiles[i]);
-      const key = `hero_${Date.now()}_${i+1}.jpg`;
-      heroUrls.push(await uploadAndGetUrl(`articles/${id}/${key}`, blob));
-    }
-  }
-  const thumbUrl = heroUrls[0] || "";
-
-  const region = d.region || "";
-  const places = (d.places||[])
-    .filter(p=>p && typeof p.lat==='number' && typeof p.lng==='number')
-    .map(p=>({ name:p.name||'', lat:p.lat, lng:p.lng }));
-
-  st.textContent = "保存中…";
-  const docData = {
-    type: "transit",
-    ...collabFields(!editId, nickname, window.tabistockEditAuthorNickname),
-    status,
-    createdAt: (editId && window.tabistockEditCreatedAt) ? window.tabistockEditCreatedAt : serverTimestamp(),
-    // 公開日は承認時に admin.html が入れる。編集で消えないよう引き継ぐ
-    ...((editId && window.tabistockEditPublishedAt) ? { publishedAt: window.tabistockEditPublishedAt } : {}),
-    updatedAt: serverTimestamp(),
-    countries: [d.country], region,
-    styles: ["transit"],
-    airport: d.airport,
-    layover: Number(d.layover) || null,
-    title: d.title,
-    body: d.body,
-    places,
-    heroUrls, thumbUrl,
-    parentId: d.parentId || null,
-  };
-  await setDoc(articleRef, docData);
+  st.className = "status";
+  // 保存の中身は post-core.js（アプリの投稿画面と共通）。写真は「保存済み → 新しく選んだもの」の順
+  const { id, status, heroUrls, firstSubmit } = await saveTransit({
+    d: { ...d, photos: [...(d.photoExisting || []).map((url) => ({ url })), ...(d.photoFiles || []).map((file) => ({ file }))] },
+    mode, nickname,
+    edit: editId ? { id: editId, status: window.tabistockEditStatus || "pending", createdAt: window.tabistockEditCreatedAt, publishedAt: window.tabistockEditPublishedAt, authorNickname: window.tabistockEditAuthorNickname } : null,
+    progress: (t) => { st.textContent = t; }
+  });
   window.tabistockEditStatus = status;
-  notifyNewInvites(id, d.title || "トランジット記事");
 
   st.className = "status ok";
   if(mode === "draft"){ st.textContent = "下書きを保存しました。マイページの「あなたの投稿」から続きを編集できます。"; }

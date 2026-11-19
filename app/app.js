@@ -426,8 +426,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611191716").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611191716").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611192228").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611192228").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -626,7 +626,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611191716"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611192228"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -924,7 +924,7 @@ function myCard(d) {
 function drawMyPosts() {
   const box = $("myPosts"); if (!box) return;
   const list = MY[myTab] || [];
-  const empty = { trips: '<p class="empty">まだ旅程がありません<br><br><a class="btn-s" href="#p">旅程を投稿する</a></p>', transit: '<p class="empty">まだトランジット記事がありません<br><br><a class="btn-s" href="#w-post-transit">トランジットを投稿する</a></p>', collab: '<p class="empty">共同投稿はまだありません。<br>投稿の編集画面から、一緒に旅した友達を招待できます。</p>' };
+  const empty = { trips: '<p class="empty">まだ旅程がありません<br><br><a class="btn-s" href="#p">旅程を投稿する</a></p>', transit: '<p class="empty">まだトランジット記事がありません<br><br><a class="btn-s" href="#p-transit">トランジットを投稿する</a></p>', collab: '<p class="empty">共同投稿はまだありません。<br>投稿の編集画面から、一緒に旅した友達を招待できます。</p>' };
   let inv = "";
   if (myTab === "collab" && MY.invites.length) {
     inv = `<p class="fsub" style="margin:14px 20px 6px">招待 ${MY.invites.length}件</p>` + MY.invites.map((d) => `<div class="cv2"><a href="#a-${esc(d.id)}"><img src="${esc(thumbOf(d))}" alt="" style="border-radius:2px"></a><span class="m"><b>${esc(d.title || "(無題)")}</b><p>${esc(authorName(d))}さんから共同投稿の招待</p></span><button class="btn-s" data-inv="accept" data-id="${esc(d.id)}">承認</button><button class="btn-g" data-inv="decline" data-id="${esc(d.id)}">辞退</button></div>`).join("");
@@ -949,7 +949,7 @@ async function postMenu(id) {
   const collab = d.authorId !== me;
   const people = (d.coAuthorIds || []).length + (d.coAuthorInvites || []).length;
   const it = [];
-  it.push(`<a class="srow" href="${d.type === "transit" ? "#w-edit-" : "#p-"}${esc(id)}">編集</a>`);
+  it.push(`<a class="srow" href="#p-${esc(id)}">編集</a>`);
   if (people || collab) it.push(`<button class="srow" data-pa="people">共同投稿者<small style="margin-left:auto;color:var(--muted)">${people + (collab ? 1 : 0)}人</small></button>`);
   if (!collab && (d.coAuthorIds || []).length) it.push('<button class="srow" data-pa="handover">投稿者を譲る</button>');
   if (d.status === "published") it.push('<button class="srow" data-pa="hide">非表示にする</button>');

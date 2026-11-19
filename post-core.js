@@ -252,6 +252,75 @@ export async function loadMyTransits(uid){
   return items;
 }
 
+// 写真は並び順のまま。新規分（{file}）だけ縮小してアップロードし、URLの並びを返す（ファイル名は毎回ユニークに）
+function photoSaver(id, progress){
+  const stamp = Date.now();
+  return async function(items, prefix, label){
+    const urls = [];
+    const total = items.filter((it) => it.file).length;
+    let n = 0;
+    for(let j = 0; j < items.length; j++){
+      const it = items[j];
+      if(it.url){ urls.push(it.url); continue; }
+      n++;
+      progress(`${label} ${n}/${total} をアップロード中…`);
+      const blob = await resizeImage(it.file);
+      urls.push(await uploadAndGetUrl(`articles/${id}/${prefix}_${stamp}_${j + 1}.jpg`, blob));
+    }
+    return urls;
+  };
+}
+function statusOf(edit, mode){
+  if(mode === "draft") return "draft";
+  if(!edit || !edit.id) return "pending";
+  return ["published", "pending", "hidden"].includes(edit.status) ? edit.status : "pending";
+}
+const isFirstSubmit = (edit, mode) => mode !== "draft" && (!edit || !edit.id || !["published", "pending", "hidden"].includes(edit.status));
+
+// 自分が投稿者・共同投稿者の旅程記事（トランジット以外。新しい順）。トランジット記事の紐付け先に使う
+export async function loadMyTrips(uid){
+  const [own, co] = await Promise.all([
+    getDocs(query(collection(db, "articles"), where("authorId", "==", uid))),
+    getDocs(query(collection(db, "articles"), where("coAuthorIds", "array-contains", uid))).catch(() => null)
+  ]);
+  const items = [];
+  const add = (s) => { const a = s.data(); if(a.type !== "transit" && !items.some((x) => x.id === s.id)) items.push({ id: s.id, ...a }); };
+  own.forEach(add); if(co) co.forEach(add);
+  items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+  return items;
+}
+
+/* トランジット記事を保存する。
+   d … { country, region, airport, layover, title, body, photos:[{url}|{file}], places:[{name,lat,lng}], parentId }
+   戻り値 … { id, status, heroUrls, firstSubmit } */
+export async function saveTransit({ d, edit = null, mode = "publish", nickname = "", progress = () => {} }){
+  const editId = edit && edit.id || null;
+  const articleRef = editId ? doc(db, "articles", editId) : doc(collection(db, "articles"));
+  const id = articleRef.id;
+  const status = statusOf(edit, mode), firstSubmit = isFirstSubmit(edit, mode);
+  progress(editId ? "記事を更新中…" : "記事を作成中…");
+  const heroUrls = await photoSaver(id, progress)(d.photos || [], "hero", "写真");
+  const places = (d.places || []).filter((p) => p && typeof p.lat === "number" && typeof p.lng === "number").map((p) => ({ name: p.name || "", lat: p.lat, lng: p.lng }));
+  progress("保存中…");
+  await setDoc(articleRef, {
+    type: "transit",
+    ...collabFields(!editId, nickname || d.author, edit && edit.authorNickname),
+    status,
+    createdAt: (editId && edit.createdAt) ? edit.createdAt : serverTimestamp(),
+    // 公開日は承認時に admin.html が入れる。編集で消えないよう引き継ぐ
+    ...((editId && edit.publishedAt) ? { publishedAt: edit.publishedAt } : {}),
+    updatedAt: serverTimestamp(),
+    countries: [d.country], region: d.region || "",
+    styles: ["transit"],
+    airport: d.airport, layover: Number(d.layover) || null,
+    title: d.title || "", body: d.body || "",
+    places, heroUrls, thumbUrl: heroUrls[0] || "",
+    parentId: d.parentId || null
+  });
+  notifyNewInvites(id, d.title || "トランジット記事");
+  return { id, status, heroUrls, firstSubmit };
+}
+
 /* 記事を保存する。
    d       … フォームの内容（post.html の gather() と同じ形。写真は {url} / {file} の並び）
    edit    … 編集中の記事 { id, status, createdAt, publishedAt, authorNickname }（新規は null）
@@ -272,22 +341,7 @@ export async function saveArticle({ d, edit = null, mode = "publish", nickname =
   const firstSubmit = mode !== "draft" && (!editId || !["published", "pending", "hidden"].includes(edit.status));
 
   progress(editId ? "記事を更新中…" : "記事を作成中…");
-  // 写真は並び順のまま。新規分だけアップロード（ファイル名は毎回ユニークに）
-  const stamp = Date.now();
-  async function savePhotos(items, prefix, label){
-    const urls = [];
-    const total = items.filter((it) => it.file).length;
-    let n = 0;
-    for(let j = 0; j < items.length; j++){
-      const it = items[j];
-      if(it.url){ urls.push(it.url); continue; }
-      n++;
-      progress(`${label} ${n}/${total} をアップロード中…`);
-      const blob = await resizeImage(it.file);
-      urls.push(await uploadAndGetUrl(`articles/${id}/${prefix}_${stamp}_${j + 1}.jpg`, blob));
-    }
-    return urls;
-  }
+  const savePhotos = photoSaver(id, progress);
   const heroUrls = await savePhotos(d.heroPhotos || [], "hero", "トップ写真");
   const days = [];
   for(let i = 0; i < d.days.length; i++){

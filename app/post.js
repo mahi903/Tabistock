@@ -7,9 +7,9 @@ import {
   esc, yen, cinfo, budgetFromYen, derivePrefs
 } from "../tabistock-render.js";
 import {
-  SERVICE_CATS, COUNTRY_YOMI, acNorm, airlineMatches, daysVOf, nightsOf, currencyOf, languageOf, saveArticle, loadMyTransits
+  SERVICE_CATS, COUNTRY_YOMI, acNorm, airlineMatches, daysVOf, nightsOf, currencyOf, languageOf, saveArticle, loadMyTransits, saveTransit, loadMyTrips
 } from "../post-core.js";
-import { collab, initCollabBox, loadCollabFrom, isMember, sameMembers, currentMembers } from "../collab.js";
+import { collab, initCollabBox, loadCollabFrom, isMember, sameMembers, currentMembers, membersOf } from "../collab.js";
 import { showPostThanks } from "../post-thanks.js";
 
 let C = null;          // app.js から渡される道具（bar / back / toast / haptic / シート / Leaflet など）
@@ -20,7 +20,7 @@ let root = null;       // このページの要素
 const SAFETY = ["とても安全", "比較的安全", "普通", "やや注意が必要", "注意が必要"];
 const STYLE_HEADS = { solo: "誰と行くか", nature: "旅のスタイル" };
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
-const AS_KEY = (uid, id) => `tabistock-app-post-v1:${uid}:${id || "new"}`;
+const AS_KEY = (uid, id, kind) => `tabistock-app-post-v1:${uid}:${id || (kind === "transit" ? "new-transit" : "new")}`;
 
 const newLeg = () => ({ mode: "", trip: "oneway", from: "", to: "", transit: "", airline: "", price: "" });
 const newDay = () => ({ summary: "", text: "", photos: [], places: [], open: false });
@@ -29,7 +29,9 @@ function blank() {
     countries: [], prefectures: [], notFromJapan: false, styles: [], dateStart: "", dateEnd: "",
     title: "", lead: "", safety: "", difficulty: 3, hero: [],
     costs: {}, legs: [newLeg()], flightWhen: "", flightSite: "",
-    svc: {}, svcOther: {}, days: [newDay()], comment: "", agodaUrl: "", transitSel: null
+    svc: {}, svcOther: {}, days: [newDay()], comment: "", agodaUrl: "", transitSel: null,
+    // トランジット記事用
+    airport: "", layover: "", body: "", places: [], parentId: null
   };
 }
 const isDom = () => F.countries.length > 0 && F.countries.every((v) => v === "japan");
@@ -52,7 +54,7 @@ const EX = {
 };
 const ex = (k) => EX[k][isDom() ? 0 : isLocal() ? 1 : 2];
 
-const STEPS = [
+const TRIP_STEPS = [
   { k: "basic", t: () => "基本情報", h: () => "行った国と時期、記事の一番上に出るタイトルや写真です。" },
   { k: "cost", t: () => "費用", h: () => "実際にかかった金額（円）。合計から予算が自動で決まります。" },
   { k: "move", t: () => (isMove() ? "移動" : "航空券"), h: () => (isMove() ? "区間ごとに手段と値段を書けます。" : "周遊で何回か取った場合は航路を追加できます。") },
@@ -60,9 +62,21 @@ const STEPS = [
   { k: "days", t: () => "日程", h: () => "各日を一言で（必須）。文章・写真・場所は「＋」から。" },
   { k: "finish", t: () => "仕上げ", h: () => "投稿者コメントを書いたら完成です。" }
 ];
+// トランジット記事（乗り継ぎの記録）は3ステップ
+const TRANSIT_STEPS = [
+  { k: "t_basic", t: () => "基本情報", h: () => "経由した国・空港と、乗り継ぎの時間です。" },
+  { k: "t_rec", t: () => "乗り継ぎの記録", h: () => "空港での過ごし方や、市内に出たならその様子を。写真と場所も残せます。" },
+  { k: "t_finish", t: () => "仕上げ", h: () => "どの旅行のときの乗り継ぎかを紐付けると、旅程の記事にも表示されます。" }
+];
+let STEPS = TRIP_STEPS;
 
 // ---------- チェック（サイトの validate と同じ項目） ----------
 function checks() {
+  if (S.kind === "transit") return [
+    { s: 0, l: "経由した国", ok: F.countries.length > 0 },
+    { s: 0, l: "空港名", ok: !!F.airport.trim() },
+    { s: 0, l: "乗り継ぎ時間", ok: !!F.layover }
+  ];
   const dom = isDom(), move = isMove();
   const legs = F.legs.filter(legFilled);
   const filled = F.days.filter((d) => d.summary.trim()).length;
@@ -120,6 +134,24 @@ function toData() {
       lat: d.places.length ? d.places[0].lat : null, lng: d.places.length ? d.places[0].lng : null
     }))
   };
+}
+function toTransit() {
+  const c = F.countries[0] || "";
+  return {
+    author: S.nickname, country: c, region: c ? (cinfo(c) || {}).r || "" : "",
+    airport: F.airport.trim(), layover: F.layover, title: F.title.trim(), body: F.body.trim(),
+    photos: F.hero.slice(), places: F.places.map((p) => ({ name: p.name || "", lat: p.lat, lng: p.lng })), parentId: F.parentId || null
+  };
+}
+function fromTransit(a) {
+  const f = blank();
+  Object.assign(f, {
+    countries: (a.countries || []).filter((v) => cinfo(v)).slice(0, 1), airport: a.airport || "", layover: a.layover ? String(a.layover) : "",
+    title: a.title || "", body: a.body || "", hero: (a.heroUrls || []).map((url) => ({ url })),
+    places: (a.places || []).filter((p) => p && typeof p.lat === "number" && typeof p.lng === "number").map((p) => ({ name: p.name || "", lat: p.lat, lng: p.lng })),
+    parentId: a.parentId || null
+  });
+  return f;
 }
 // 記事（Firestore）→ フォーム
 function fromDoc(a) {
@@ -183,13 +215,31 @@ function autosave() {
 const countNew = () => F.hero.filter((x) => x.file).length + F.days.reduce((t, d) => t + d.photos.filter((x) => x.file).length, 0);
 
 // ---------- ページ ----------
-export async function pagePost(el, editId, ctx) {
+// 投稿画面は重ねて開けるので（旅程の仕上げ → トランジットを追加 など）、
+// 閉じたときに1つ前の投稿画面の状態に戻す
+export async function pagePost(el, arg, ctx) {
+  const prev = S ? { C, F, S, root, STEPS } : null;
+  await openPost(el, arg, ctx);
+  const mine = S;
+  if (prev && mine) mine.stacked = true;
+  return () => {
+    if (S === mine) { clearTimeout(asTimer); autosave(); }
+    if (prev) ({ C, F, S, root, STEPS } = prev);
+    else S = null;
+  };
+}
+async function openPost(el, arg, ctx) {
   C = ctx; root = el;
-  S = { step: 0, edit: null, uid: ctx.me, nickname: "", isAdmin: false, transits: [], dirty: false, asKey: AS_KEY(ctx.me, editId), base: "", paused: false };
+  // arg … ""（旅程の新規） / "記事ID"（編集） / "transit"・"transit~旅程ID"（トランジットの新規。旅程IDがあれば最初から紐付け）
+  let editId = arg || null, kind = "trip", presetParent = null;
+  if (/^transit(~|$)/.test(arg || "")) { kind = "transit"; presetParent = arg.split("~")[1] || null; editId = null; }
+  S = { step: 0, kind, edit: null, uid: ctx.me, nickname: "", isAdmin: false, transits: [], trips: [], dirty: false, asKey: "", base: "", paused: false };
   F = blank();
+  STEPS = kind === "transit" ? TRANSIT_STEPS : TRIP_STEPS;
   Object.assign(collab, { me: null, ownerId: null, ids: [], invites: [], origInvites: [], canManage: true });
-  if (!ctx.me) { el.innerHTML = C.bar("旅程を投稿") + '<div class="ps under2"><p class="fol-empty"><a href="#x-login">ログイン</a>すると投稿できます。</p></div>'; return; }
-  el.innerHTML = C.bar(editId ? "投稿を編集" : "旅程を投稿") + '<div class="ps"><p class="loading" style="padding-top:140px">読み込み中…</p></div>';
+  const T0 = kind === "transit" ? "トランジットを投稿" : "旅程を投稿";
+  if (!ctx.me) { el.innerHTML = C.bar(T0) + '<div class="ps under2"><p class="fol-empty"><a href="#x-login">ログイン</a>すると投稿できます。</p></div>'; return; }
+  el.innerHTML = C.bar(editId ? "投稿を編集" : T0) + '<div class="ps"><p class="loading" style="padding-top:140px">読み込み中…</p></div>';
   try {
     const u = await getDoc(doc(db, "users", ctx.me));
     S.nickname = (u.exists() && u.data().nickname) || (auth.currentUser && auth.currentUser.displayName) || "";
@@ -200,27 +250,40 @@ export async function pagePost(el, editId, ctx) {
     try { const s = await getDoc(doc(db, "articles", editId)); if (s.exists()) a = s.data(); } catch (e) {}
     if (!a) { el.innerHTML = C.bar("投稿を編集") + '<div class="ps under2"><p class="empty">記事が見つかりませんでした</p></div>'; return; }
     if (!isMember(a, ctx.me) && !S.isAdmin) { el.innerHTML = C.bar("投稿を編集") + '<div class="ps under2"><p class="empty">この記事を編集する権限がありません</p></div>'; return; }
-    F = fromDoc(a);
+    if (a.type === "transit") { S.kind = "transit"; STEPS = TRANSIT_STEPS; F = fromTransit(a); }
+    else F = fromDoc(a);
     S.edit = { id: editId, status: a.status || "pending", createdAt: a.createdAt || null, publishedAt: a.publishedAt || null, authorNickname: a.authorNickname || "" };
     collab.me = ctx.me;
     loadCollabFrom(a, { isAdmin: S.isAdmin });
   } else {
     collab.me = ctx.me; collab.ownerId = ctx.me;
+    // 旅程から「トランジットを追加」で来たときは、その旅程に紐付け、共同投稿のメンバーもそろえておく
+    if (presetParent) {
+      try {
+        const ps = await getDoc(doc(db, "articles", presetParent));
+        if (ps.exists() && ps.data().type !== "transit" && isMember(ps.data(), ctx.me)) {
+          F.parentId = presetParent;
+          F.countries = [];
+          collab.invites = membersOf(ps.data()).filter((u) => u !== ctx.me);
+        }
+      } catch (e) {}
+    }
   }
+  S.asKey = AS_KEY(ctx.me, S.edit && S.edit.id, S.kind);
   S.base = sig();
   shell();
-  loadMyTransits(ctx.me).then((l) => { S.transits = l; if (F.transitSel === null) F.transitSel = l.filter((t) => editId && t.parentId === editId).map((t) => t.id); S.base = sig(); if (STEPS[S.step].k === "finish") drawStep(); }).catch(() => {});
+  if (S.kind === "transit") loadMyTrips(ctx.me).then((l) => { S.trips = l; if (STEPS[S.step].k === "t_finish") drawStep(); }).catch(() => {});
+  else loadMyTransits(ctx.me).then((l) => { S.transits = l; if (F.transitSel === null) F.transitSel = l.filter((t) => editId && t.parentId === editId).map((t) => t.id); S.base = sig(); if (STEPS[S.step].k === "finish") drawStep(); }).catch(() => {});
   // 前回の入力が残っていれば
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(S.asKey) || "null"); } catch (e) {}
   if (saved && saved.data && JSON.stringify(saved.data) !== S.base) { S.paused = true; banner(saved); }
   else if (saved) { try { localStorage.removeItem(S.asKey); } catch (e) {} }
-  return () => { autosave(); };
 }
 
 function shell() {
   const editing = !!S.edit;
-  const title = editing ? (S.edit.status === "draft" ? "下書きを編集" : "投稿を編集") : "旅程を投稿";
+  const title = editing ? (S.edit.status === "draft" ? "下書きを編集" : "投稿を編集") : S.kind === "transit" ? "トランジットを投稿" : "旅程を投稿";
   root.innerHTML = C.bar(title, '<button class="pstn" id="pStepBtn"></button>')
     + `<div class="pprog" id="pProg">${STEPS.map(() => "<i></i>").join("")}</div>`
     + '<div class="ps pform" id="pScroll"><div id="pBan"></div><div id="pAnim"><div class="phd" id="pHead"></div><div class="pbd" id="pBody"></div></div></div>'
@@ -273,15 +336,36 @@ function drawStep() {
   // 一度承認された記事は、下書きにすると公開が外れるので下書き保存を出さない
   root.querySelector("#pDraft").hidden = !!(S.edit && ["published", "hidden"].includes(S.edit.status));
   root.querySelector("#pPrev").hidden = S.step === 0;
-  if (st.k === "basic" || st.k === "days") drawAllPhotos();
+  if (["basic", "days", "t_rec"].includes(st.k)) drawAllPhotos();
   if (st.k === "finish") mountFinish();
+  if (st.k === "t_finish") mountTransitFinish();
   drawProg();
 }
 
 // ---------- 各ステップ ----------
 const fld = (label, inner, opt = "") => `<div class="pf"><label class="qlb">${label}${opt ? `<span class="po">${opt}</span>` : ""}</label>${inner}</div>`;
 const pick = (id, vals, ph) => `<button class="ppk" id="${id}"><span class="${vals ? "" : "ph"}">${esc(vals || ph)}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>`;
+const LAYOVERS = Array.from({ length: 48 }, (_, i) => i + 1);
 const BODY = {
+  t_basic() {
+    const c = F.countries[0];
+    return fld("経由した国", pick("pkCountry", c ? cinfo(c).jp : "", "国を選ぶ"))
+      + fld("空港名", `<input class="pfi" data-f="airport" value="${esc(F.airport)}" placeholder="例：仁川空港（ICN）">`)
+      + fld("乗り継ぎ時間", `<select class="pfi" data-f="layover"><option value="">選んでください</option>${LAYOVERS.map((h) => `<option value="${h}" ${String(F.layover) === String(h) ? "selected" : ""}>${h}時間</option>`).join("")}</select>`)
+      + fld("タイトル", `<input class="pfi" data-f="title" value="${esc(F.title)}" placeholder="例：仁川で乗り継ぎ10時間｜市内に出てチムジルバンと食べ歩き">`, "任意");
+  },
+  t_rec() {
+    const pins = F.places.length ? F.places.map((p) => esc(p.name || "名前なしのピン")).join("、") : "";
+    return fld("本文", `<textarea class="pfi" data-f="body" rows="8" placeholder="例：トランジットビザ不要で入国できました。空港鉄道で市内へ約1時間。明洞を散歩してチムジルバンで仮眠…">${esc(F.body)}</textarea>`, "任意")
+      + fld("写真", `<div class="pph" data-ph="hero"></div><p class="qhint">1枚目が一覧のサムネになります。</p>`, "任意")
+      + fld("場所", `<button class="ppk" data-tmap><span class="${pins ? "" : "ph"}">${pins || "地図でピンを置く"}</span><b>${F.places.length ? F.places.length + "か所" : ""}</b></button>`, "任意");
+  },
+  t_finish() {
+    const miss = checks().filter((c) => !c.ok);
+    return `<div class="pf"><label class="qlb">どの旅行のときの乗り継ぎ？<span class="po">任意</span></label><div id="pPar"></div></div>`
+      + `<div class="pf pcol" id="pCollab"></div>`
+      + `<div class="pchk">${miss.length ? `<p class="qlb">投稿まであと${miss.length}項目</p>${miss.map((c) => `<button class="pmis" data-jump="${c.s}"><span>${esc(c.l)}</span><small>${esc(STEPS[c.s].t())}</small>›</button>`).join("")}` : '<p class="pready">投稿の準備ができました</p>'}</div>`;
+  },
   basic() { return BODY.where() + '<div class="pdiv"></div>' + BODY.top(); },
   where() {
     const cs = F.countries.map((v) => cinfo(v).jp).join("、");
@@ -332,7 +416,7 @@ const BODY = {
   finish() {
     const miss = checks().filter((c) => !c.ok);
     return fld("投稿者コメント", `<textarea class="pfi" data-f="comment" rows="6" placeholder="${esc(ex("comment"))}">${esc(F.comment)}</textarea><p class="qhint">安く抑えた工夫・こうしておけばよかった点・持ち物・現地のリアルな本音を。</p>`)
-      + `<div class="pf"><label class="qlb">トランジット記事を紐付け<span class="po">任意</span></label><div id="pTr"></div><a class="qhint lk" href="#w-post-transit">＋ トランジット記事を新しく投稿する</a></div>`
+      + `<div class="pf"><label class="qlb">トランジット記事を紐付け<span class="po">任意</span></label><div id="pTr"></div><a class="qhint lk" href="#p-transit${S.edit ? "~" + esc(S.edit.id) : ""}">＋ トランジット記事を新しく投稿する</a></div>`
       + `<div class="pf pcol" id="pCollab"></div>`
       + `<div class="pchk" id="pChk">${miss.length ? `<p class="qlb">投稿まであと${miss.length}項目</p>${miss.map((c) => `<button class="pmis" data-jump="${c.s}"><span>${esc(c.l)}</span><small>${esc(STEPS[c.s].t())}</small>›</button>`).join("")}` : '<p class="pready">投稿の準備ができました</p>'}</div>`;
   }
@@ -395,7 +479,7 @@ function syncDays() {
 function onClick(e) {
   const t = e.target.closest("button,a"); if (!t) return;
   const d = t.dataset;
-  if (t.id === "pkCountry") return countrySheet();
+  if (t.id === "pkCountry") return countrySheet(S.kind === "transit");
   if (t.id === "pkPref") return prefSheet();
   if (t.id === "pkStyle") return styleSheet();
   if (t.id === "pAuto") return autoDetect();
@@ -412,7 +496,8 @@ function onClick(e) {
   if (d.dayadd !== undefined) { F.days.push(newDay()); drawStep(); dirty(); return; }
   if (d.dayopen !== undefined) { const x = F.days[+d.dayopen]; x.open = !x.open; drawStep(); return; }
   if (d.daymenu !== undefined) return dayMenu(+d.daymenu);
-  if (d.daymap !== undefined) return mapPage(+d.daymap);
+  if (d.daymap !== undefined) return mapPage(F.days[+d.daymap].places, `DAY ${+d.daymap + 1} の場所`);
+  if (d.tmap !== undefined) return mapPage(F.places, "乗り継ぎで行った場所");
   if (d.jump !== undefined) return goStep(+d.jump);
   if (d.th !== undefined) return photoMenu(t.closest("[data-ph]").dataset.ph, +d.th);
   if (d.ac !== undefined) {
@@ -491,7 +576,7 @@ function pickSheet(title, bodyFn, wire, onDone) {
   };
   C.sheet("", draw, onDone);
 }
-function countrySheet() {
+function countrySheet(single) {
   let q = "";
   const toKata = (t) => t.replace(/[ぁ-ゖ]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) + 0x60));
   const hit = (c) => { if (!q) return true; const qk = toKata(q), ql = q.toLowerCase(); return c.jp.includes(qk) || c.en.toLowerCase().includes(ql) || c.v.toLowerCase().includes(ql) || toKata(COUNTRY_YOMI[c.v] || "").includes(qk); };
@@ -501,16 +586,17 @@ function countrySheet() {
     return html || '<p class="qhint" style="padding:20px 0">見つかりませんでした</p>';
   };
   const selHtml = () => F.countries.length ? F.countries.map((v, i) => `<button class="psel" data-c="${v}">${i === 0 ? "<em>地域</em>" : ""}${esc(cinfo(v).jp)}<span>×</span></button>`).join("") : '<span class="qhint">まだ選んでいません</span>';
-  pickSheet("国を選ぶ", () => `<input class="pfi psr" id="pkQ" placeholder="国名で検索（例：トルコ／turkey）" autocomplete="off"><div class="pselw" id="pkSel">${selHtml()}</div><div id="pkList">${list()}</div>`,
+  pickSheet(single ? "経由した国" : "国を選ぶ", () => `<input class="pfi psr" id="pkQ" placeholder="国名で検索（例：トルコ／turkey）" autocomplete="off">${single ? "" : `<div class="pselw" id="pkSel">${selHtml()}</div>`}<div id="pkList">${list()}</div>`,
     (bs) => {
       const qi = bs.querySelector("#pkQ"); qi.value = q;
       qi.oninput = () => { q = qi.value.trim(); bs.querySelector("#pkList").innerHTML = list(); };
       bs.querySelector(".bsb").onclick = (e) => {
         const b = e.target.closest("[data-c]"); if (!b) return;
         const v = b.dataset.c, j = F.countries.indexOf(v);
+        if (single) { F.countries = [v]; dirty(); C.closeSheet(); return; }
         if (j >= 0) F.countries.splice(j, 1); else F.countries.push(v);
         C.haptic(); dirty();
-        bs.querySelector("#pkSel").innerHTML = selHtml();
+        if (bs.querySelector("#pkSel")) bs.querySelector("#pkSel").innerHTML = selHtml();
         bs.querySelectorAll(`[data-c="${v}"].frow`).forEach((x) => x.classList.toggle("on", j < 0));
       };
     }, () => drawStep());
@@ -557,11 +643,11 @@ function dayMenu(i) {
 async function reverseCountry(lat, lng) {
   try { const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=3&lat=${lat}&lon=${lng}`, { headers: { Accept: "application/json" } }); if (!r.ok) return ""; const j = await r.json(); return (j && j.address && j.address.country_code) || ""; } catch (e) { return ""; }
 }
-async function mapPage(i) {
-  const day = F.days[i];
+async function mapPage(places, label) {
+  const day = { places };
   const ov = document.createElement("div");
   ov.className = "pmap";
-  ov.innerHTML = `<div class="bar2"><b>DAY ${i + 1} の場所</b><button class="mo" id="pmDone" style="font-size:15px;font-weight:700;color:var(--green)">完了</button></div><div class="pmm" id="pmMap"></div><div class="pml"><p class="qhint" id="pmHint">地図をタップするとピンを置けます（複数OK）</p><div id="pmList"></div></div>`;
+  ov.innerHTML = `<div class="bar2"><b>${esc(label)}</b><button class="mo" id="pmDone" style="font-size:15px;font-weight:700;color:var(--green)">完了</button></div><div class="pmm" id="pmMap"></div><div class="pml"><p class="qhint" id="pmHint">地図をタップするとピンを置けます（複数OK）</p><div id="pmList"></div></div>`;
   root.appendChild(ov);
   requestAnimationFrame(() => ov.classList.add("open"));
   const close = () => { ov.classList.remove("open"); setTimeout(() => ov.remove(), 300); drawStep(); };
@@ -626,6 +712,25 @@ async function autoDetect() {
   root.querySelector("#pAutoMsg").textContent = `完了：${hitDays}日・合計${pins}個のピンを置きました。` + (miss ? `\n${miss}日は場所を特定できませんでした（地図で追加できます）。` : "") + (empty ? `\n${empty}日は文章が空でした。` : "");
 }
 
+// ---------- トランジットの仕上げ：旅程への紐付け・共同投稿者 ----------
+function mountTransitFinish() {
+  initCollabBox(root.querySelector("#pCollab"), { me: S.uid, onChange: drawParents });
+  drawParents();
+}
+function drawParents() {
+  const box = root.querySelector("#pPar"); if (!box) return;
+  const items = S.trips.filter(sameMembers);
+  if (F.parentId && !items.some((t) => t.id === F.parentId)) { const cur = S.trips.find((t) => t.id === F.parentId); if (cur) items.unshift(cur); }
+  if (!items.length) { box.innerHTML = `<p class="qhint">${currentMembers().length > 1 ? "この記事と同じメンバーの旅程がありません。" : "紐付けできる旅程がまだありません。"}</p>`; return; }
+  box.innerHTML = items.map((t) => `<button class="frow ptr ${F.parentId === t.id ? "on" : ""}" data-par="${esc(t.id)}"><span class="bx rd"></span><span class="tpi" style="background-image:url('${esc(t.thumbUrl || (t.heroUrls || [])[0] || "")}')"></span><span class="nm">${esc(t.title || "（無題）")}<small>${esc((t.countries || []).map((c) => (cinfo(c) || {}).jp).filter(Boolean).join("・"))}${t.status === "draft" ? "　下書き" : ""}</small></span></button>`).join("");
+  box.onclick = (e) => {
+    const b = e.target.closest("[data-par]"); if (!b) return;
+    F.parentId = F.parentId === b.dataset.par ? null : b.dataset.par;   // もう一度押すと解除
+    box.querySelectorAll("[data-par]").forEach((x) => x.classList.toggle("on", x.dataset.par === F.parentId));
+    C.haptic(); dirty();
+  };
+}
+
 // ---------- 仕上げ：トランジット・共同投稿者 ----------
 function mountFinish() {
   initCollabBox(root.querySelector("#pCollab"), { me: S.uid, onChange: drawTransits });
@@ -668,7 +773,8 @@ function banner(saved) {
 // ---------- 保存 ----------
 async function submit(mode) {
   if (S.saving) return;
-  if (mode === "draft" && !F.title.trim()) { C.toast("下書きでもタイトルは必要です"); goStep(0); return; }
+  if (S.kind === "transit" && mode === "draft" && !F.countries.length) { C.toast("下書きでも経由した国は必要です"); goStep(0); return; }
+  if (S.kind !== "transit" && mode === "draft" && !F.title.trim()) { C.toast("下書きでもタイトルは必要です"); goStep(0); return; }
   if (mode === "publish") {
     const miss = checks().filter((c) => !c.ok);
     if (miss.length) {
@@ -682,25 +788,41 @@ async function submit(mode) {
   ov.className = "psave"; ov.innerHTML = '<div class="spin"></div><p id="psvMsg">保存の準備中…</p>';
   root.appendChild(ov);
   try {
-    const r = await saveArticle({
-      d: toData(), mode, nickname: S.nickname, edit: S.edit,
-      transits: { selected: F.transitSel || [], shown: S.shownTransits || S.transits.filter(sameMembers) },
-      progress: (t) => { const m = ov.querySelector("#psvMsg"); if (m) m.textContent = t; }
-    });
+    const progress = (t) => { const m = ov.querySelector("#psvMsg"); if (m) m.textContent = t; };
+    const r = S.kind === "transit"
+      ? await saveTransit({ d: toTransit(), mode, nickname: S.nickname, edit: S.edit, progress })
+      : await saveArticle({
+          d: toData(), mode, nickname: S.nickname, edit: S.edit,
+          transits: { selected: F.transitSel || [], shown: S.shownTransits || S.transits.filter(sameMembers) },
+          progress
+        });
     // 次の保存で同じ写真を二重にアップロードしないよう、保存済みのURLに置き換える
     F.hero = r.heroUrls.map((url) => ({ url }));
-    F.days.forEach((d, i) => (d.photos = ((r.days[i] || {}).photoUrls || []).map((url) => ({ url }))));
-    try { localStorage.removeItem(S.asKey); localStorage.removeItem(AS_KEY(S.uid, r.id)); } catch (e) {}
+    if (r.days) F.days.forEach((d, i) => (d.photos = ((r.days[i] || {}).photoUrls || []).map((url) => ({ url }))));
+    try { localStorage.removeItem(S.asKey); localStorage.removeItem(AS_KEY(S.uid, r.id, S.kind)); } catch (e) {}
     S.edit = { ...(S.edit || { createdAt: null, publishedAt: null, authorNickname: S.nickname }), id: r.id, status: r.status };
-    S.asKey = AS_KEY(S.uid, r.id); S.base = sig(); S.dirty = false;
+    S.asKey = AS_KEY(S.uid, r.id, S.kind); S.base = sig(); S.dirty = false;
     ov.remove(); S.saving = false;
     C.haptic();
     C.onSaved(r.id);
     { const tb = root.querySelector(".bar2 b"); if (tb) tb.textContent = r.status === "draft" ? "下書きを編集" : "投稿を編集"; }
     if (mode === "draft") { C.toast("下書きを保存しました"); drawStep(); return; }
-    if (r.firstSubmit) { showPostThanks({ onDone: () => C.done(r.id) }); return; }
+    // 旅程の投稿画面から開いたトランジットは、保存したら旅程の画面に戻り、その旅程に紐付け済みにする
+    const finish = (S.stacked && S.kind === "transit") ? () => {
+      const newId = r.id;
+      C.back();
+      setTimeout(() => {
+        if (!S || S.kind !== "trip") return;
+        loadMyTransits(S.uid).then((l) => {
+          S.transits = l; F.transitSel = F.transitSel || [];
+          if (!F.transitSel.includes(newId)) F.transitSel.push(newId);
+          dirty(); if (STEPS[S.step].k === "finish") drawStep();
+        }).catch(() => {});
+      }, 450);
+    } : () => C.done(r.id);
+    if (r.firstSubmit) { showPostThanks({ onDone: finish, goLabel: (S.stacked && S.kind === "transit") ? "旅程の編集に戻る" : "マイページへ" }); return; }
     C.toast(r.status === "published" ? "記事を更新しました" : "更新しました。承認後に公開されます");
-    C.done(r.id);
+    finish();
   } catch (err) {
     console.error(err);
     ov.remove(); S.saving = false;

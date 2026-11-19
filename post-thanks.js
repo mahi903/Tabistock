@@ -158,7 +158,7 @@ const HTML = `
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
-export function showPostThanks({ onDone } = {}){
+export function showPostThanks({ onDone, goLabel } = {}){
   if(!document.getElementById("ptCss")){
     const st = document.createElement("style");
     st.id = "ptCss"; st.textContent = CSS;
@@ -174,6 +174,7 @@ export function showPostThanks({ onDone } = {}){
   requestAnimationFrame(() => el.classList.add("on"));
 
   const $ = (s) => el.querySelector(s);
+  if(goLabel) $(".pt-go").textContent = goLabel;   // 「マイページへ」以外の行き先のとき（アプリで旅程の画面に戻る など）
   const screen = $(".pt-screen"), finger = $(".pt-finger"), cap = $(".pt-cap");
   let run = 0; // 「もう一度見る」で前の再生を止めるための番号
 
