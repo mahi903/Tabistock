@@ -36,5 +36,17 @@ service firebase.storage {
       // 整理が必要なときは管理者が Firebase コンソールから行う。
       allow update, delete: if false;
     }
+
+    // DMの写真： dm/{会話ID}/{送った人のuid}/{fileName}
+    // 会話IDは参加者2人のuidを「__」でつないだもの。参加者だけが見られる・本人だけが送れる
+    match /dm/{convId}/{uid}/{fileName} {
+      allow read: if isSignedIn() && request.auth.uid in convId.split('__');
+      allow create: if isSignedIn()
+                    && request.auth.uid == uid
+                    && request.auth.uid in convId.split('__')
+                    && request.resource.size < 10 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow update, delete: if false;
+    }
   }
 }

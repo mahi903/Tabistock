@@ -215,7 +215,7 @@ service cloud.firestore {
       // 更新：参加者本人（lastMessage や unread の更新）。
       allow update: if isParticipant();
 
-      // メッセージ：参加者だけ閲覧・送信。送信者＝自分、本文1〜2000文字。編集・削除は不可。
+      // メッセージ：参加者だけ閲覧・送信。送信者＝自分、本文1〜2000文字または写真。編集・削除は不可。
       match /messages/{msgId} {
         function inConv() {
           return isSignedIn()
@@ -228,12 +228,18 @@ service cloud.firestore {
           let p = get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
           return !blockedBy(p[0]) && !blockedBy(p[1]);
         }
-        allow create: if inConv()
+        // 文章（1〜2000文字）・写真（このアプリの Storage の dm/ に上げたもの）・記事（記事ID）のどれかが必要
+      allow create: if inConv()
                       && notBlocked()
                       && request.resource.data.senderId == request.auth.uid
                       && request.resource.data.text is string
-                      && request.resource.data.text.size() > 0
-                      && request.resource.data.text.size() <= 2000;
+                      && request.resource.data.text.size() <= 2000
+                      && (request.resource.data.text.size() > 0
+                          || (request.resource.data.imageUrl is string
+                              && request.resource.data.imageUrl.matches('https://firebasestorage[.]googleapis[.]com/.*dm%2F.*'))
+                          || (request.resource.data.articleId is string
+                              && request.resource.data.articleId.size() > 0
+                              && request.resource.data.articleId.size() <= 40));
       }
     }
 

@@ -1,7 +1,7 @@
 // Tabistock アプリ版（app/）
 // サイトと同じ Firestore を読み、アプリ用のデザインで表示する。
 // 第1段階：ホーム（おすすめ／フォロー中）・探す・記事。投稿／AI／DM などは当面サイトのページへつなぐ。
-import { auth, db } from "../firebase-config.js";
+import { auth, db, storage } from "../firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, getCountFromServer, serverTimestamp
@@ -453,8 +453,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200036").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200036").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200053").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200053").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -637,10 +637,12 @@ function shareMenu(d) {
   const ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12"/></svg>';
   $("bs").innerHTML = `<div class="grab"></div><div class="shs"><h3>共有</h3>
     <button class="srow" data-sa="story">${ICS}ストーリー画像を作成（インスタ向け）</button>
+    <button class="srow" data-sa="dm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg>DMで送る</button>
     <button class="srow" data-sa="copy">${ICL}リンクをコピー</button>
     <button class="srow" data-sa="other">${ICO}ほかのアプリで共有</button></div>`;
   $("ov").classList.add("show"); $("bs").classList.add("show");
   const q = (a) => $("bs").querySelector(`[data-sa="${a}"]`);
+  q("dm").onclick = () => dmShareArticle(d);
   q("copy").onclick = async () => { try { await navigator.clipboard.writeText(url); toast("リンクをコピーしました"); } catch (e) { toast(url); } closeSheet(); };
   q("other").onclick = async () => { closeSheet(); try { if (navigator.share) await navigator.share({ title, url }); else { await navigator.clipboard.writeText(url); toast("リンクをコピーしました"); } } catch (e) {} };
   q("story").onclick = () => {
@@ -653,7 +655,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611200036"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611200053"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -831,22 +833,53 @@ async function pageThread(el, other) {
   const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   const cid = convIdOf(me, other), convRef = doc(db, "conversations", cid);
   try { await setDoc(convRef, { participants: [me, other].sort(), unread: { [me]: 0 } }, { merge: true }); } catch (e) {}
-  foot.innerHTML = '<form class="cmp"><textarea rows="1" maxlength="2000" placeholder="メッセージを入力"></textarea><button disabled aria-label="送信"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></form>';
-  const form = foot.querySelector("form"), ta = form.querySelector("textarea"), sb = form.querySelector("button");
+  foot.innerHTML = '<form class="cmp"><label class="tph" aria-label="写真を送る"><input type="file" accept="image/*" multiple hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg></label><button type="button" class="tph tart" aria-label="記事を送る"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l3 3V20.5H6z"/><path d="M9 10h6M9 13.5h6M9 17h4"/></svg></button><textarea rows="1" maxlength="2000" placeholder="メッセージを入力"></textarea><button disabled aria-label="送信"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></form>';
+  const form = foot.querySelector("form"), ta = form.querySelector("textarea"), sb = form.querySelector("button[aria-label='送信']");
+  form.querySelector(".tart").onclick = () => pickArticle((d) => dmSend(other, { articleId: d.id }, "📄 " + titleOf(d).slice(0, 60)));
   ta.oninput = () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 120) + "px"; sb.disabled = !ta.value.trim(); };
   const unsub = F.onSnapshot(F.query(collection(convRef, "messages"), F.orderBy("createdAt", "asc")), (snap) => {
-    let h = "", last = "";
+    let h = "", last = "", prev = "";
     snap.forEach((s) => {
       const m = s.data(), t = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate() : null;
       const day = t ? `${t.getMonth() + 1}/${t.getDate()}` : "";
-      if (day && day !== last) { h += `<div class="day-sep">${day}</div>`; last = day; }
-      h += `<div class="msg ${m.senderId === me ? "u" : "a"}">${esc(m.text)}</div>`;
+      if (day && day !== last) { h += `<div class="day-sep">${day}</div>`; last = day; prev = ""; }
+      const who = m.senderId === me ? "u" : "a", cont = prev === who ? " c" : "";
+      prev = who;
+      // 写真のメッセージ（縦横比を保ったまま表示。タップで大きく）
+      if (m.imageUrl) h += `<button class="msg img ${who}${cont}" data-dmimg="${esc(m.imageUrl)}" style="aspect-ratio:${Number(m.w) > 0 && Number(m.h) > 0 ? `${Number(m.w)}/${Number(m.h)}` : "4/3"}"><img src="${esc(m.imageUrl)}" alt="写真" loading="lazy"></button>`;
+      if (m.articleId) h += dmArtCard(m.articleId, who, m.imageUrl ? " c" : cont);
+      if (m.text) h += `<div class="msg ${who}${m.imageUrl || m.articleId ? " c" : cont}">${esc(m.text)}</div>`;
     });
-    msgs.innerHTML = h || '<p class="fol-empty">最初のメッセージを送ってみましょう。</p>';
+    msgs.innerHTML = (h || '<p class="fol-empty">最初のメッセージを送ってみましょう。</p>') + pend.map((p) => `<div class="msg img u sending" style="aspect-ratio:${p.r}"><span>送信中…</span></div>`).join("");
     requestAnimationFrame(() => (msgs.scrollTop = msgs.scrollHeight));
+    fillArtCards(msgs);
     F.updateDoc(convRef, { ["unread." + me]: 0 }).catch(() => {});
   });
   STACK[STACK.length - 1].cleanup = unsub;
+  msgs.onclick = (e) => { const b = e.target.closest("[data-dmimg]"); if (b) viewImage(b.dataset.dmimg); };
+  // 写真を送る：縮小（長辺1600px）→ Storage の dm/{会話ID}/{自分}/ にアップロード → メッセージとして保存
+  const pend = [];
+  foot.querySelector(".tph input").onchange = async (e) => {
+    const files = [...e.target.files]; e.target.value = "";
+    if (!files.length) return;
+    const { resizeImage } = await import("../post-core.js");
+    const S = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
+    for (const f of files) {
+      const p = { r: "4/3" }; pend.push(p); msgs.insertAdjacentHTML("beforeend", `<div class="msg img u sending" style="aspect-ratio:4/3"><span>送信中…</span></div>`); msgs.scrollTop = msgs.scrollHeight;
+      try {
+        const blob = await resizeImage(f, 1600, 0.82);
+        const bmp = await createImageBitmap(blob); const w = bmp.width, hh = bmp.height; bmp.close(); p.r = `${w}/${hh}`;
+        const r = S.ref(storage, `dm/${cid}/${me}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`);
+        await S.uploadBytes(r, blob, { contentType: "image/jpeg" });
+        const url = await S.getDownloadURL(r);
+        await F.addDoc(collection(convRef, "messages"), { senderId: me, text: "", imageUrl: url, w, h: hh, createdAt: serverTimestamp() });
+        await F.updateDoc(convRef, { lastMessage: "📷 写真", lastSenderId: me, updatedAt: serverTimestamp(), ["unread." + other]: F.increment(1), ["unread." + me]: 0 });
+        notify({ toUid: other, type: "dm" }); haptic();
+      } catch (err) { console.error(err); toast(err && /unauthorized|permission/i.test(err.code || "") ? "このユーザーには写真を送れません" : "写真を送れませんでした"); }
+      pend.splice(pend.indexOf(p), 1);
+      msgs.querySelectorAll(".sending").forEach((x, i) => { if (i >= pend.length) x.remove(); });
+    }
+  };
   form.onsubmit = async (e) => {
     e.preventDefault();
     const text = ta.value.trim(); if (!text) return;
@@ -857,6 +890,75 @@ async function pageThread(el, other) {
       notify({ toUid: other, type: "dm" }); haptic();
     } catch (err) { ta.value = text; ta.oninput(); toast(err && err.code === "permission-denied" ? "このユーザーにはメッセージを送れません" : "送信できませんでした"); }
   };
+}
+
+// DMで記事を送る・表示する
+async function dmSend(other, data, preview) {
+  if (!me) { toast("ログインが必要です"); return false; }
+  const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  const convRef = doc(db, "conversations", convIdOf(me, other));
+  try {
+    await setDoc(convRef, { participants: [me, other].sort() }, { merge: true });
+    await F.addDoc(collection(convRef, "messages"), { senderId: me, text: "", ...data, createdAt: serverTimestamp() });
+    await F.updateDoc(convRef, { lastMessage: preview, lastSenderId: me, updatedAt: serverTimestamp(), ["unread." + other]: F.increment(1), ["unread." + me]: 0 });
+    notify({ toUid: other, type: "dm" }); haptic();
+    return true;
+  } catch (e) { console.error(e); toast(e && e.code === "permission-denied" ? "このユーザーには送れません" : "送れませんでした"); return false; }
+}
+function dmArtCard(id, who, cont) {
+  const d = BY[id];
+  const inner = d ? `<span class="ai" style="background-image:url('${esc(thumbOf(d))}')"></span><span class="at"><small>${esc(placeJp(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</small><b>${esc(titleOf(d) || "(無題)")}</b><em>旅程を見る →</em></span>`
+    : `<span class="ai"></span><span class="at"><small>Tabistock</small><b>記事を読み込み中…</b></span>`;
+  return `<a class="msg art ${who}${cont}" href="#a-${esc(id)}" data-art="${esc(id)}">${inner}</a>`;
+}
+// 手元にない記事（下書き・自分の未公開など）は1件ずつ取りにいって、カードを埋める
+async function fillArtCards(box) {
+  const ids = [...new Set([...box.querySelectorAll("[data-art]")].map((a) => a.dataset.art))].filter((id) => !BY[id]);
+  for (const id of ids) {
+    try { const sn = await getDoc(doc(db, "articles", id)); if (sn.exists()) BY[id] = { id, ...sn.data() }; } catch (e) {}
+    box.querySelectorAll(`[data-art="${CSS.escape(id)}"]`).forEach((a) => {
+      const cls = a.className.replace(/^msg art /, "").split(" ");
+      if (BY[id]) a.outerHTML = dmArtCard(id, cls[0], cls[1] ? " " + cls[1] : "");
+      else a.querySelector("b").textContent = "見られない記事です";
+    });
+  }
+}
+// 送る記事を選ぶシート（自分の記事 → 保存した旅）
+function pickArticle(onPick) {
+  const mine = ALL.filter((d) => d.authorId === me || (d.coAuthorIds || []).includes(me));
+  const sv = ALL.filter((d) => saved.has(d.id) && !mine.includes(d));
+  const row = (d) => `<button class="srow aprow" data-ap="${esc(d.id)}"><span class="ai" style="background-image:url('${esc(thumbOf(d))}')"></span><span class="at"><b>${esc(titleOf(d) || "(無題)")}</b><small>${esc(placeJp(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</small></span></button>`;
+  const body = (mine.length ? `<p class="fsub">自分の記事</p>${mine.map(row).join("")}` : "") + (sv.length ? `<p class="fsub" style="margin-top:14px">保存した旅</p>${sv.map(row).join("")}` : "");
+  openBS(`<div class="shs"><h3>記事を送る</h3><div class="apl">${body || '<p class="fol-empty">送れる記事がまだありません。公開した記事か、保存した旅から選べます。</p>'}</div></div>`, (bs) =>
+    bs.querySelectorAll("[data-ap]").forEach((b) => (b.onclick = () => { closeSheet(); onPick(BY[b.dataset.ap]); })));
+}
+// 記事の共有メニューから「DMで送る」：最近やりとりした人から選ぶ
+async function dmShareArticle(d) {
+  if (!me) { closeSheet(); toast("DMで送るにはログインが必要です"); location.hash = "#x-login"; return; }
+  openBS(`<div class="shs"><h3>DMで送る</h3><div id="dmsl"><p class="loading">読み込み中…</p></div></div>`);
+  let docs = [];
+  try { const qs = await getDocs(query(collection(db, "conversations"), where("participants", "array-contains", me))); qs.forEach((x) => docs.push(x.data())); } catch (e) {}
+  docs = docs.filter((c) => c.lastMessage).sort((a, b) => ((b.updatedAt || {}).seconds || 0) - ((a.updatedAt || {}).seconds || 0));
+  const others = [...new Set(docs.map((c) => (c.participants || []).find((u) => u !== me)).filter(Boolean))];
+  await loadProfiles(others);
+  const box = $("bs").querySelector("#dmsl"); if (!box) return;
+  box.innerHTML = others.length ? others.map((u) => `<button class="srow aprow" data-to="${esc(u)}"><img src="${esc((PROF[u] || {}).photoURL || DEF_AV)}" alt=""><span class="at"><b>${esc((PROF[u] || {}).nickname || "旅人")}</b></span><span class="snd">送る</span></button>`).join("")
+    : '<p class="fol-empty">まだDMでやりとりした人がいません。相手のプロフィールの「メッセージ」から始められます。</p>';
+  box.querySelectorAll("[data-to]").forEach((b) => (b.onclick = async () => {
+    b.disabled = true; b.querySelector(".snd").textContent = "送信中…";
+    if (await dmSend(b.dataset.to, { articleId: d.id }, "📄 " + titleOf(d).slice(0, 60))) { b.querySelector(".snd").textContent = "送りました"; b.classList.add("done"); toast("送りました"); }
+    else { b.disabled = false; b.querySelector(".snd").textContent = "送る"; }
+  }));
+}
+
+// 写真を全画面で見る（DMの写真など）。タップで閉じる
+function viewImage(url) {
+  const v = document.createElement("div");
+  v.className = "imgview";
+  v.innerHTML = `<img src="${esc(url)}" alt=""><button aria-label="閉じる">×</button>`;
+  $("app").appendChild(v);
+  requestAnimationFrame(() => v.classList.add("on"));
+  v.onclick = () => { v.classList.remove("on"); setTimeout(() => v.remove(), 250); };
 }
 
 // ---------- 投稿・編集（app/post.js）に渡す道具 ----------
