@@ -169,21 +169,6 @@ function startCarousel(n) {
   };
   carRaf = requestAnimationFrame(tick);
 }
-// 旅の一枚：記事のDAYの写真を大小組み合わせて敷き詰める（タップでその記事へ）。開くたびに並びが変わる
-let mosSeed = Math.floor(Math.random() * 1e9);
-function renderMosaic() {
-  const box = $("mosaic"); if (!box) return;
-  const rnd = ((a) => () => { a = (a * 1664525 + 1013904223) % 4294967296; return a / 4294967296; })(mosSeed);
-  const pool = [];
-  ALL.filter((d) => d.type !== "transit").forEach((d) => (d.days || []).forEach((dy, di) => (dy.photoUrls || []).forEach((u) => pool.push({ d, u, di }))));
-  // 同じ記事ばかりにならないよう、1記事あたり最大2枚
-  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-  const cnt = {}, pick = [];
-  for (const p of pool) { if ((cnt[p.d.id] || 0) >= 2) continue; cnt[p.d.id] = (cnt[p.d.id] || 0) + 1; pick.push(p); if (pick.length >= 15) break; }
-  $("mosSec").hidden = pick.length < 6;
-  const n = pick.length - (pick.length % 3);
-  box.innerHTML = pick.slice(0, n).map((p, i) => `<a class="mt ${i % 10 === 0 ? "big" : i % 10 === 7 ? "big r" : ""}" href="#a-${esc(p.d.id)}"><img src="${esc(p.u)}" alt="" loading="lazy" decoding="async"><span>${esc(placeJp(p.d))}・DAY${p.di + 1}</span></a>`).join("");
-}
 function renderHome() {
   ALL.slice(0, 40).forEach((d) => { const u = thumbOf(d); if (u) ratioOf(u, () => {}); });   // 記事を開いたときにトップ写真が上下に動かないよう、先に縦横比を調べておく
   const trips = ALL.filter((d) => d.type !== "transit" && !isDomestic(d));
@@ -209,7 +194,6 @@ function renderHome() {
     startCarousel(picks.length);
   }
   $("newList").innerHTML = trips.filter((d) => !picks.includes(d)).slice(0, 10).map(cardH).join("") || '<p class="loading">まだ記事がありません</p>';
-  renderMosaic();
   $("jpSec").hidden = !jp.length; $("jpList").innerHTML = jp.slice(0, 10).map(cardH).join("");
   $("trSec").hidden = !tr.length; $("trList").innerHTML = tr.slice(0, 10).map(cardH).join("");
 }
@@ -473,8 +457,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200518").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200518").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200523").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200523").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -691,7 +675,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611200518"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611200523"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1535,7 +1519,6 @@ onAuthStateChanged(auth, async (u) => {
 
 renderTab();
 loadAll().then(route).finally(hideSplash);
-$("mosShuffle").onclick = () => { mosSeed = Math.floor(Math.random() * 1e9); haptic(); renderMosaic(); };
 // 起動画面を閉じる：ホームの最初に見える写真（ピックアップと新着の先頭）を読み込み終えてから、ゲージを満タンにしてふわっと消す。
 // 通信が遅くても、起動から最大4秒で閉じる
 async function hideSplash() {
