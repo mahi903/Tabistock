@@ -1091,3 +1091,5 @@ html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
 .mehead{padding-bottom:16px}
 .mehead b{font-size:20px;font-weight:900}
 .uhead .side h1{font-size:15px;font-weight:700;margin:0 0 6px;line-height:1.35}
+#search .sfi{margin-top:6px}
+#search .snum{padding-top:12px}
