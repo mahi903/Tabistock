@@ -457,8 +457,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200136").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200136").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200147").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200147").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -601,22 +601,16 @@ function fitRatio(box, url) {
   if (!box || !url) return;
   ratioOf(url, (r) => { box.style.height = "auto"; box.style.aspectRatio = String(r); });
 }
-// DAYの写真：今見ている写真の縦横比に合わせて、枠の高さをゆっくり変える（1枚目の比率に固定しない）
+// DAYの写真：枠の高さは「その日の中でいちばん縦長の写真」に合わせて固定する（スワイプしても本文の位置は動かない）。
+// 写真は切らずに全体を表示（横長の写真は上下に余白が出る）
 function fitDayPhotos(g) {
   const urls = [...g.querySelectorAll("img")].map((x) => x.getAttribute("src"));
   const rs = urls.map(() => null);
-  let cur = 0;
-  const apply = (anim) => {
-    const r = rs[cur]; if (!r || !g.clientWidth) return;
-    g.style.transition = anim ? "height .3s cubic-bezier(.3,.7,.3,1)" : "none";
-    g.style.aspectRatio = "auto";
-    g.style.height = Math.round(g.clientWidth / r) + "px";
-  };
-  urls.forEach((u, i) => ratioOf(u, (r) => { rs[i] = r; if (i === cur) apply(false); }));
-  g.addEventListener("scroll", () => {
-    const i = Math.round(g.scrollLeft / g.clientWidth);
-    if (i !== cur) { cur = i; apply(true); }
-  }, { passive: true });
+  urls.forEach((u, i) => ratioOf(u, (r) => {
+    rs[i] = r;
+    const known = rs.filter(Boolean);
+    g.style.aspectRatio = String(Math.min(...known));   // 縦長の写真が読み込まれたら、その高さに合わせる
+  }));
 }
 
 // ルートマップ（Leaflet を必要なときだけ読み込む）
@@ -681,7 +675,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611200136"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611200147"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1041,7 +1035,7 @@ function renderMe() {
       <div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー中</span></a></div></div></div>
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${snsLinks(p)}
       <div class="ub"><a class="btn-g" href="#x-profile">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
-    <div class="mtabs" id="mtabs"><button class="on" data-mt="trips">旅程<b data-mn="trips"></b></button><button data-mt="transit">トランジット<b data-mn="transit"></b></button><button data-mt="collab">共同投稿<b data-mn="collab"></b><i id="invDot" hidden></i></button></div>
+    <div class="mtabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips">旅程<b data-mn="trips"></b></button><button class="${myTab === "transit" ? "on" : ""}" data-mt="transit">トランジット<b data-mn="transit"></b></button><button class="${myTab === "collab" ? "on" : ""}" data-mt="collab">共同投稿<b data-mn="collab"></b><i id="invDot" hidden></i></button></div>
     <div id="myPosts"><p class="loading">読み込み中…</p></div>`;
   box.querySelectorAll("[data-mt]").forEach((b) => (b.onclick = () => { myTab = b.dataset.mt; box.querySelectorAll("[data-mt]").forEach((x) => x.classList.toggle("on", x === b)); drawMyPosts(); haptic(); }));
   loadMyPosts();
@@ -1087,7 +1081,7 @@ function drawMyPosts() {
   if (myTab === "collab" && MY.invites.length) {
     inv = `<p class="fsub" style="margin:14px 20px 6px">招待 ${MY.invites.length}件</p>` + MY.invites.map((d) => `<div class="cv2"><a href="#a-${esc(d.id)}"><img src="${esc(thumbOf(d))}" alt="" style="border-radius:2px"></a><span class="m"><b>${esc(d.title || "(無題)")}</b><p>${esc(authorName(d))}さんから共同投稿の招待</p></span><button class="btn-s" data-inv="accept" data-id="${esc(d.id)}">承認</button><button class="btn-g" data-inv="decline" data-id="${esc(d.id)}">辞退</button></div>`).join("");
   }
-  box.innerHTML = inv + (list.length ? `<div class="ogrid">${list.map(myCard).join("")}</div>` : (inv ? "" : empty[myTab]));
+  box.innerHTML = inv + (list.length ? `<div class="ogrid">${list.map((d) => myCard(d)).join("")}</div>` : (inv ? "" : empty[myTab]));
   box.querySelectorAll("[data-pm]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); postMenu(b.dataset.pm); }));
   box.querySelectorAll("[data-inv]").forEach((b) => (b.onclick = async () => {
     b.disabled = true;

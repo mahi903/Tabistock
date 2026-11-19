@@ -1007,3 +1007,6 @@ html.native #app{top:env(safe-area-inset-top,0px)}
 /* 記事トップの写真：高さの変化にアニメーションをかけない（読み込み後に上下に動いて見えるのを防ぐ）。横スワイプ中に縦にずれないように */
 .gal{transition:none;overflow-y:hidden;overscroll-behavior-x:contain;touch-action:pan-x pan-y}
 .dphotos{overflow-y:hidden;overscroll-behavior-x:contain}
+/* DAYの写真：枠は固定、写真は切らずに全体を表示 */
+.dphotos{transition:none!important;height:auto!important;background:#f1ece2}
+.dphotos img{object-fit:contain!important;background:#f1ece2}
