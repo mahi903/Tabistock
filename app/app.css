@@ -643,3 +643,16 @@ a{color:inherit;text-decoration:none}
 .sns{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px}
 .sns a{font-size:12.5px;color:var(--green);font-weight:700}
 .pfh{font-size:12px;font-weight:700;color:var(--ink);margin-top:26px;padding-top:14px;border-top:1px solid var(--line)}
+
+/* ログイン */
+.lgn{padding:30px 24px 0}
+.lglogo{height:30px;display:block;margin:0 auto}
+.lgsub{text-align:center;font-size:12.5px;color:var(--muted);margin-top:10px}
+.agree2{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.6;margin-top:18px}
+.agree2 input{width:18px;height:18px;margin-top:2px;accent-color:var(--green);flex:none}
+.agree2 a{color:var(--green);text-decoration:underline}
+.agree2[hidden]{display:none}
+.lgfg{display:block;margin:16px auto 0;font-size:12.5px;color:var(--muted);text-decoration:underline}
+.lgfg[hidden]{display:none}
+.lgn .ok{display:block;width:100%;height:50px;border-radius:10px;background:var(--green);color:#fff;font-weight:700;font-size:15px}
+.lgn .ok:disabled{opacity:.6}

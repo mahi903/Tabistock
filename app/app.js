@@ -133,7 +133,7 @@ $("home").addEventListener("scroll", () => {
 // フォロー中：フォローしている人の公開記事を新しい順に
 async function renderFeed() {
   const box = $("folPane");
-  if (!me) { box.innerHTML = '<p class="fol-empty">ログインすると、フォローしている人の新しい旅がここに流れます。<br><br><a href="#w-account" style="color:var(--green);font-weight:700">ログイン・新規登録 →</a></p>'; return; }
+  if (!me) { box.innerHTML = '<p class="fol-empty">ログインすると、フォローしている人の新しい旅がここに流れます。<br><br><a href="#x-login" style="color:var(--green);font-weight:700">ログイン・新規登録 →</a></p>'; return; }
   box.innerHTML = '<p class="fol-empty">読み込み中…</p>';
   let ids = [];
   try { (await getDocs(collection(db, "users", me, "following"))).forEach((s) => ids.push(s.id)); } catch (e) {}
@@ -365,6 +365,7 @@ function pushPage(h) {
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
+  else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
   haptic();
@@ -565,7 +566,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611190710"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611190715"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -590,7 +591,7 @@ async function wireArticleLike(el, d) {
   const paint = () => { b.classList.toggle("liked", mine); n.textContent = cnt || ""; };
   paint();
   b.onclick = async () => {
-    if (!me) { toast("いいねするにはログインが必要です"); return; }
+    if (!me) { toast("いいねするにはログインが必要です"); location.hash = "#x-login"; return; }
     const ref = doc(db, "articles", d.id, "likes", me);
     try {
       if (mine) { await deleteDoc(ref); mine = false; cnt = Math.max(0, cnt - 1); }
@@ -615,7 +616,7 @@ async function loadComments(el, d) {
   list.innerHTML = tops.length ? tops.map((c) => one(c) + all.filter((r) => r.parentId === c.id).map((r) => one(r, true)).join("")).join("") : '<p style="font-size:13px;color:var(--muted);padding:6px 0">まだコメントはありません。</p>';
   let replyTo = null;
   form.innerHTML = me ? `<div class="cform"><textarea id="ctext" maxlength="1000" rows="1" placeholder="コメントを書く…"></textarea><button id="csend">送信</button></div><p id="crep" style="font-size:12px;color:var(--green);margin-top:6px" hidden></p>`
-    : '<p style="font-size:13px;margin-top:10px"><a href="#w-account" style="color:var(--green);font-weight:700">ログイン</a>するとコメントできます。</p>';
+    : '<p style="font-size:13px;margin-top:10px"><a href="#x-login" style="color:var(--green);font-weight:700">ログイン</a>するとコメントできます。</p>';
   list.querySelectorAll("[data-reply]").forEach((b) => (b.onclick = () => { replyTo = b.dataset.reply; const c = all.find((x) => x.id === replyTo); const r = el.querySelector("#crep"); r.hidden = false; r.textContent = `${c.authorName || "ゲスト"} さんに返信中（タップで取り消し）`; r.onclick = () => { replyTo = null; r.hidden = true; }; el.querySelector("#ctext").focus(); }));
   list.querySelectorAll("[data-cmore]").forEach((b) => (b.onclick = async () => {
     const c = all.find((x) => x.id === b.dataset.cmore); const M = await mod();
@@ -649,7 +650,7 @@ async function wireFollow(btn, uid, onChange) {
   const paint = () => { btn.classList.toggle("on", on); btn.textContent = on ? "フォロー中" : "フォロー"; };
   paint();
   btn.onclick = async () => {
-    if (!me) { toast("フォローするにはログインが必要です"); return; }
+    if (!me) { toast("フォローするにはログインが必要です"); location.hash = "#x-login"; return; }
     btn.disabled = true;
     try {
       if (on) { await deleteDoc(doc(db, "users", me, "following", uid)); await deleteDoc(doc(db, "users", uid, "followers", me)); on = false; }
@@ -709,7 +710,7 @@ async function pageInbox(el) {
   el.querySelectorAll("[data-dt]").forEach((b) => (b.onclick = () => { const i = +b.dataset.dt; el.querySelectorAll("[data-dt]").forEach((x, j) => x.classList.toggle("on", i === j)); el.querySelector("#ilist").hidden = !!i; el.querySelector("#clist2").hidden = !i; }));
   el.querySelector("#clist2").innerHTML = '<p class="comhead">行き先ごとの部屋で、行った人・これから行く人が相談し合える場所です。<span class="soon">COMING SOON</span></p>';
   const box = el.querySelector("#ilist");
-  if (!me) { box.innerHTML = '<p class="fol-empty">メッセージを使うには<a href="#w-account">ログイン</a>してください。</p>'; return; }
+  if (!me) { box.innerHTML = '<p class="fol-empty">メッセージを使うには<a href="#x-login">ログイン</a>してください。</p>'; return; }
   const { onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   let blocked = new Set(); try { blocked = await (await mod()).getBlocked(); } catch (e) {}
   const unsub = onSnapshot(query(collection(db, "conversations"), where("participants", "array-contains", me)), async (snap) => {
@@ -736,7 +737,7 @@ async function pageThread(el, other) {
     { label: "ブロックする", red: true, onClick: async () => { if (await M.blockUser(other, pr.nickname)) back(); } }
   ]);
   const msgs = el.querySelector("#tmsgs"), foot = el.querySelector("#tfoot");
-  if (!me) { msgs.innerHTML = '<p class="fol-empty">メッセージを送るには<a href="#w-account">ログイン</a>してください。</p>'; return; }
+  if (!me) { msgs.innerHTML = '<p class="fol-empty">メッセージを送るには<a href="#x-login">ログイン</a>してください。</p>'; return; }
   if (await M.isBlocked(other)) { msgs.innerHTML = ""; foot.innerHTML = '<div class="blockedbar">このユーザーをブロックしています<button data-unb>解除</button></div>'; foot.querySelector("[data-unb]").onclick = async () => { await M.unblockUser(other); back(); }; return; }
   const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   const cid = convIdOf(me, other), convRef = doc(db, "conversations", cid);
@@ -778,7 +779,7 @@ function pageFrame(el, name) {
 
 // ---------- 保存 ----------
 async function toggleSave(id) {
-  if (!me) { toast("保存するにはログインが必要です"); setTimeout(() => (location.hash = "#w-account"), 900); return; }
+  if (!me) { toast("保存するにはログインが必要です"); setTimeout(() => (location.hash = "#x-login"), 900); return; }
   const ref = doc(db, "users", me, "saves", id);
   try {
     if (saved.has(id)) { await deleteDoc(ref); saved.delete(id); toast("保存を外しました"); }
@@ -799,7 +800,7 @@ function renderMe() {
   const box = $("meBody");
   if (!me) {
     box.innerHTML = `<div class="lt">マイページ</div><p class="sub" style="padding-top:6px">ログインすると、保存・フォロー・投稿ができます。</p>
-      <div class="plist"><a class="pnew" href="#w-account"><span class="pt2"><b>ログイン・新規登録</b><small>サイトと同じアカウントで使えます</small></span><span class="pa">→</span></a></div>`;
+      <div class="plist"><a class="pnew" href="#x-login"><span class="pt2"><b>ログイン・新規登録</b><small>サイトと同じアカウントで使えます</small></span><span class="pa">→</span></a></div>`;
     return;
   }
   const p = PROF[me] || {};
@@ -1032,11 +1033,76 @@ async function pageBlocks(el) {
   draw();
 }
 
+// ---------- ログイン・新規登録（#x-login） ----------
+const AUTH_ERR = { "auth/invalid-email": "メールアドレスの形式が正しくありません。", "auth/missing-password": "パスワードを入力してください。", "auth/weak-password": "パスワードは6文字以上にしてください。", "auth/email-already-in-use": "このメールアドレスは既に登録されています。ログインしてください。", "auth/invalid-credential": "メールアドレスかパスワードが違います。", "auth/invalid-login-credentials": "メールアドレスかパスワードが違います。", "auth/user-not-found": "アカウントが見つかりません。新規登録してください。", "auth/wrong-password": "パスワードが違います。", "auth/too-many-requests": "試行回数が多すぎます。しばらく待ってから再度お試しください。", "auth/network-request-failed": "通信エラーです。接続を確認してください。" };
+function pageLogin(el) {
+  let mode = "login";
+  el.innerHTML = bar("") + `<div class="ps under2 nb"><div class="lgn">
+    <img src="./logo.png" alt="Tabistock" class="lglogo">
+    <p class="lgsub">大学生のリアルな旅程と費用が集まる場所</p>
+    <div class="mtabs" style="margin:26px 0 6px"><button class="on" data-lm="login">ログイン</button><button data-lm="signup">新規登録</button></div>
+    <label class="pfl" id="lgNickW" hidden>ユーザーネーム（記事に表示される名前）<input id="lgNick" maxlength="30" autocomplete="nickname"></label>
+    <label class="pfl">メールアドレス<input id="lgEmail" type="email" autocomplete="email" autocapitalize="off" placeholder="you@example.com"></label>
+    <label class="pfl">パスワード<input id="lgPw" type="password" autocomplete="current-password" placeholder="6文字以上"></label>
+    <label class="agree2" id="lgAgreeW" hidden><input type="checkbox" id="lgAgree"><span><a href="/terms.html" target="_blank">利用規約</a>と<a href="/privacy.html" target="_blank">プライバシーポリシー</a>に同意します</span></label>
+    <p class="pfm" id="lgMsg"></p>
+    <button class="ok" id="lgGo" style="margin-top:18px">ログイン</button>
+    <button id="lgForgot" class="lgfg">パスワードを忘れた方</button>
+  </div></div>`;
+  const $$ = (id) => el.querySelector("#" + id);
+  const msg = (t, ok) => { const m = $$("lgMsg"); m.textContent = t; m.style.color = ok ? "var(--green)" : "#d4493f"; };
+  const setMode = (m) => {
+    mode = m;
+    el.querySelectorAll("[data-lm]").forEach((b) => b.classList.toggle("on", b.dataset.lm === m));
+    $$("lgNickW").hidden = m !== "signup"; $$("lgAgreeW").hidden = m !== "signup"; $$("lgForgot").hidden = m !== "login";
+    $$("lgGo").textContent = m === "login" ? "ログイン" : "登録する";
+    $$("lgPw").autocomplete = m === "login" ? "current-password" : "new-password";
+    msg("");
+  };
+  el.querySelectorAll("[data-lm]").forEach((b) => (b.onclick = () => { setMode(b.dataset.lm); haptic(); }));
+  $$("lgGo").onclick = async () => {
+    const email = $$("lgEmail").value.trim(), pw = $$("lgPw").value, nick = $$("lgNick").value.trim();
+    if (!email || !pw) { msg("メールアドレスとパスワードを入力してください。"); return; }
+    if (mode === "signup" && !nick) { msg("ユーザーネームを入力してください。"); return; }
+    if (mode === "signup" && !$$("lgAgree").checked) { msg("利用規約とプライバシーポリシーへの同意が必要です。"); return; }
+    const go = $$("lgGo"); go.disabled = true; msg(mode === "login" ? "ログイン中…" : "登録中…", true);
+    try {
+      const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+      if (mode === "signup") {
+        const dup = await getDocs(query(collection(db, "publicProfiles"), where("nickname", "==", nick)));
+        if (!dup.empty) { msg("このユーザーネームは既に使われています。別の名前にしてください。"); go.disabled = false; return; }
+        const cred = await A.createUserWithEmailAndPassword(auth, email, pw);
+        await A.updateProfile(cred.user, { displayName: nick });
+        await setDoc(doc(db, "users", cred.user.uid), { nickname: nick, email, createdAt: serverTimestamp() });
+        await setDoc(doc(db, "publicProfiles", cred.user.uid), { nickname: nick, createdAt: serverTimestamp() }, { merge: true });
+        try { await A.sendEmailVerification(cred.user); } catch (e) {}
+        await A.signOut(auth);   // メールの確認が済むまではログインしない（サイトと同じ）
+        setMode("login");
+        msg("確認メールを送りました。メールのリンクを開いて認証してから、ログインしてください。", true);
+      } else {
+        const cred = await A.signInWithEmailAndPassword(auth, email, pw);
+        if (!cred.user.emailVerified) {
+          try { await A.sendEmailVerification(cred.user); } catch (e) {}
+          await A.signOut(auth);
+          msg("メールアドレスが未確認です。確認メールのリンクを開いて認証してください（確認メールを再送しました）。");
+        } else { toast("ログインしました"); haptic(); back(); }
+      }
+    } catch (e) { msg(AUTH_ERR[e && e.code] || "エラー：" + ((e && e.code) || "不明")); }
+    go.disabled = false;
+  };
+  $$("lgForgot").onclick = async () => {
+    const email = $$("lgEmail").value.trim();
+    if (!email) { msg("上にメールアドレスを入れてから押してください。"); return; }
+    try { const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"); await A.sendPasswordResetEmail(auth, email); msg(`${email} に再設定メールを送りました。`, true); }
+    catch (e) { msg(AUTH_ERR[e && e.code] || "メールを送れませんでした。"); }
+  };
+}
+
 // ---------- 通知（#n） ----------
 async function pageNotify(el) {
   el.innerHTML = bar("通知") + '<div class="ps under2 nb"><div id="nlist"><p class="loading">読み込み中…</p></div></div>';
   const box = el.querySelector("#nlist");
-  if (!me) { box.innerHTML = '<p class="fol-empty"><a href="#w-account">ログイン</a>すると通知が届きます。</p>'; return; }
+  if (!me) { box.innerHTML = '<p class="fol-empty"><a href="#x-login">ログイン</a>すると通知が届きます。</p>'; return; }
   let items = [];
   try { (await getDocs(collection(db, "users", me, "notifications"))).forEach((x) => items.push({ id: x.id, ...x.data() })); } catch (e) {}
   items.sort((a, b) => ((b.createdAt || {}).seconds || 0) - ((a.createdAt || {}).seconds || 0));
@@ -1062,7 +1128,7 @@ async function pageNotify(el) {
 
 // ---------- プロフィール編集（#x-profile） ----------
 async function pageProfileEdit(el) {
-  if (!me) { el.innerHTML = bar("プロフィールを編集") + '<div class="ps under2"><p class="fol-empty"><a href="#w-account">ログイン</a>してください。</p></div>'; return; }
+  if (!me) { el.innerHTML = bar("プロフィールを編集") + '<div class="ps under2"><p class="fol-empty"><a href="#x-login">ログイン</a>してください。</p></div>'; return; }
   await loadProfiles([me]);
   const p = PROF[me] || {};
   el.innerHTML = bar("プロフィールを編集", '<button class="mo" id="pfSave" style="font-size:15px;font-weight:700;color:var(--green);padding:0 4px">保存</button>') + `<div class="ps under2 nb"><div class="pfe">
@@ -1142,7 +1208,7 @@ function aiRender(extra = "") {
 }
 async function aiSend(q) {
   q = (q || "").trim(); if (!q || aiBusy) return;
-  if (!me) { aiRender(aiBubble({ role: "assistant", html: '相談するには<a href="#w-account" style="color:var(--green);font-weight:700">ログイン</a>が必要です。' })); return; }
+  if (!me) { aiRender(aiBubble({ role: "assistant", html: '相談するには<a href="#x-login" style="color:var(--green);font-weight:700">ログイン</a>が必要です。' })); return; }
   aiBusy = true; $("aiSend").disabled = true;
   aiConv.push({ role: "user", content: q });
   aiRender('<div class="msg a"><span class="typing"><i></i><i></i><i></i></span> 旅程記事を読んでいます</div>');
