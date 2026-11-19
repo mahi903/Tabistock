@@ -990,3 +990,7 @@ html.native #app{top:env(safe-area-inset-top,0px)}
 #app.typing .tab{transform:translateY(calc(100% + var(--sb) + 30px))}
 #app.typing .aicmp{bottom:8px}
 #ai{padding-bottom:calc(max(calc(env(safe-area-inset-bottom,0px) - 12px),10px) + 150px)}
+/* タブはアイコンだけ（インスタと同じ）。押せる範囲は広いまま */
+.tab button{padding:11px 0;gap:0}
+.tab svg{width:25px;height:25px}
+.aicmp{bottom:calc(max(calc(env(safe-area-inset-bottom,0px) - 12px),10px) + 68px)}
