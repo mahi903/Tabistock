@@ -1010,3 +1010,12 @@ html.native #app{top:env(safe-area-inset-top,0px)}
 /* DAYの写真：枠は固定、写真は切らずに全体を表示 */
 .dphotos{transition:none!important;height:auto!important;background:#f1ece2}
 .dphotos img{object-fit:contain!important;background:#f1ece2}
+/* 起動画面（ゲージ） */
+#splash{position:absolute;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .3s ease}
+#splash[hidden]{display:none}
+#splash img{width:168px;height:auto}
+#splash .sg{display:block;width:84px;height:3px;background:#e8e1d3;overflow:hidden}
+#splash .sg i{display:block;height:100%;background:var(--green);transform:scaleX(0);transform-origin:left;animation:sgfill .8s cubic-bezier(.4,0,.2,1) .05s forwards}
+#splash.out{opacity:0}
+@keyframes sgfill{to{transform:scaleX(1)}}
+html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
