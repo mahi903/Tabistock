@@ -170,6 +170,7 @@ function startCarousel(n) {
   carRaf = requestAnimationFrame(tick);
 }
 function renderHome() {
+  ALL.slice(0, 40).forEach((d) => { const u = thumbOf(d); if (u) ratioOf(u, () => {}); });   // 記事を開いたときにトップ写真が上下に動かないよう、先に縦横比を調べておく
   const trips = ALL.filter((d) => d.type !== "transit" && !isDomestic(d));
   const jp = ALL.filter((d) => d.type !== "transit" && isDomestic(d));
   const tr = ALL.filter((d) => d.type === "transit");
@@ -456,8 +457,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200125").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200125").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200136").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200136").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -553,8 +554,8 @@ async function pageArticle(el, id) {
       <button class="ab" data-share2 aria-label="共有"><svg viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12"/></svg>共有</button></div>`;
   const ps = el.querySelector(".ps");
   ps.onscroll = () => { const on = ps.scrollTop > 360; el.querySelector(".topnav").classList.toggle("show", on); el.querySelectorAll(".pnav .fb").forEach((b) => b.classList.toggle("solid", on)); };
-  fitRatio(el.querySelector(".gal"), imgs[0], true);
-  el.querySelectorAll(".dphotos").forEach((g) => { const im = g.querySelector("img"); if (im) fitRatio(g, im.getAttribute("src")); });
+  fitRatio(el.querySelector(".gal"), imgs[0]);
+  el.querySelectorAll(".dphotos").forEach(fitDayPhotos);
   const gal = el.querySelector(".gal");
   gal.onscroll = () => { const i = Math.round(gal.scrollLeft / gal.clientWidth); el.querySelectorAll(".dots i").forEach((x, j) => x.classList.toggle("on", i === j)); };
   gal.querySelectorAll("[data-hv]").forEach((x) => (x.onclick = () => openViewer(imgs, +x.dataset.hv)));
@@ -586,14 +587,36 @@ let NOTI = null;
 const notify = async (o) => { try { NOTI = NOTI || (await import("../notify.js")); NOTI.sendNotification(o); } catch (e) {} };
 
 // 写真の縦横比に合わせて枠の高さを決める（Instagram と同じく 4:5〜1.91:1 の範囲）
-function fitRatio(box, url, hero) {
-  if (!box || !url) return;
+// 写真の縦横比（読み込んだことのある写真は覚えておいて、次からは最初から正しい高さで出す＝表示後に上下に動かない）
+const RATIO = new Map();
+function ratioOf(url, cb) {
+  if (RATIO.has(url)) { cb(RATIO.get(url), true); return; }
   const im = new Image();
-  im.onload = () => {
-    const r = Math.min(1.91, Math.max(0.8, im.naturalWidth / im.naturalHeight));
-    box.style.height = "auto"; box.style.aspectRatio = String(r);
-  };
+  const done = () => { if (!im.naturalWidth) return; const r = Math.min(1.91, Math.max(0.8, im.naturalWidth / im.naturalHeight)); RATIO.set(url, r); cb(r, false); };
+  im.onload = done;
   im.src = url;
+  if (im.complete) done();
+}
+function fitRatio(box, url) {
+  if (!box || !url) return;
+  ratioOf(url, (r) => { box.style.height = "auto"; box.style.aspectRatio = String(r); });
+}
+// DAYの写真：今見ている写真の縦横比に合わせて、枠の高さをゆっくり変える（1枚目の比率に固定しない）
+function fitDayPhotos(g) {
+  const urls = [...g.querySelectorAll("img")].map((x) => x.getAttribute("src"));
+  const rs = urls.map(() => null);
+  let cur = 0;
+  const apply = (anim) => {
+    const r = rs[cur]; if (!r || !g.clientWidth) return;
+    g.style.transition = anim ? "height .3s cubic-bezier(.3,.7,.3,1)" : "none";
+    g.style.aspectRatio = "auto";
+    g.style.height = Math.round(g.clientWidth / r) + "px";
+  };
+  urls.forEach((u, i) => ratioOf(u, (r) => { rs[i] = r; if (i === cur) apply(false); }));
+  g.addEventListener("scroll", () => {
+    const i = Math.round(g.scrollLeft / g.clientWidth);
+    if (i !== cur) { cur = i; apply(true); }
+  }, { passive: true });
 }
 
 // ルートマップ（Leaflet を必要なときだけ読み込む）
@@ -658,7 +681,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611200125"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611200136"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
