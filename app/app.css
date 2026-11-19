@@ -1019,3 +1019,22 @@ html.native #app{top:env(safe-area-inset-top,0px)}
 #splash.out{opacity:0}
 @keyframes sgfill{to{transform:scaleX(1)}}
 html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
+/* ゲージ：まず7割まで溜めて待ち、写真の読み込みが終わったら満タンに */
+#splash .sg i{animation:sgfill7 .7s cubic-bezier(.4,0,.2,1) .05s forwards;transition:transform .25s ease-out}
+#splash.full .sg i{animation:sgfull .25s ease-out forwards}
+@keyframes sgfull{from{transform:scaleX(.7)}to{transform:scaleX(1)}}
+@keyframes sgfill7{to{transform:scaleX(.7)}}
+/* 起動画面のあと、ホームのパーツを上から順にふわっと出す */
+@keyframes introUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes introTab{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+#app.intro #home .top,#app.intro #home .htabs,#app.intro #feat,#app.intro #recPane>.sh,#app.intro #newList>*,#app.intro #recPane>div[id$="Sec"],#app.intro #recPane>.fare{animation:introUp .7s cubic-bezier(.2,.7,.2,1) backwards}
+#app.intro #home .top{animation-delay:.05s}
+#app.intro #home .htabs{animation-delay:.12s}
+#app.intro #feat{animation-delay:.2s}
+#app.intro #recPane>.sh{animation-delay:.32s}
+#app.intro #newList>*:nth-child(1){animation-delay:.38s}
+#app.intro #newList>*:nth-child(2){animation-delay:.44s}
+#app.intro #newList>*:nth-child(3){animation-delay:.5s}
+#app.intro #newList>*:nth-child(n+4){animation-delay:.56s}
+#app.intro #recPane>div[id$="Sec"],#app.intro #recPane>.fare{animation-delay:.6s}
+#app.intro .tab{animation:introTab .7s cubic-bezier(.2,.7,.2,1) .3s backwards}
