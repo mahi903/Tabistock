@@ -936,3 +936,15 @@ html.native #app{top:env(safe-area-inset-top,0px)}
 .tab button{position:relative;z-index:1;color:#5d6673;font-weight:600}
 .tab button.on{background:none;color:var(--green)}
 .tab .ind{position:absolute;left:0;top:6px;bottom:6px;border-radius:999px;background:rgba(27,35,48,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.6);pointer-events:none;transform-origin:center}
+/* ① プロフィールの数字：横幅いっぱいに均等に並べて、少し小さく */
+.uhead .side .st{display:grid;grid-template-columns:repeat(3,auto);justify-content:space-between;gap:0;max-width:250px}
+.uhead .side .st b{font-size:16px;line-height:1.25}
+.uhead .side .st span{font-size:11.5px;color:var(--muted)}
+.uhead .side h1{margin-bottom:10px}
+/* ② 下のタブ：インスタの Liquid Glass 風。ほぼ透明で、後ろの色が明るく透ける。ふちに光の反射 */
+.tab{background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.16));backdrop-filter:blur(12px) saturate(210%) brightness(1.12);-webkit-backdrop-filter:blur(12px) saturate(210%) brightness(1.12);border:1px solid rgba(255,255,255,.55);border-top-color:rgba(255,255,255,.85);box-shadow:0 10px 28px rgba(27,35,48,.13),0 1px 3px rgba(27,35,48,.06),inset 0 1px 1px rgba(255,255,255,.9),inset 0 -1px 1px rgba(255,255,255,.4),inset 0 0 22px rgba(255,255,255,.28);overflow:hidden}
+.tab:before{content:'';position:absolute;left:8%;right:8%;top:0;height:46%;border-radius:999px 999px 40% 40%;background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,0));pointer-events:none}
+.tab button{color:#2b3340;text-shadow:0 0 8px rgba(255,255,255,.85),0 0 2px rgba(255,255,255,.9)}
+.tab button svg{filter:drop-shadow(0 0 3px rgba(255,255,255,.75))}
+.tab button.on{color:var(--green)}
+.tab .ind{background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.28));border:1px solid rgba(255,255,255,.7);box-shadow:inset 0 1px 1px rgba(255,255,255,.95),inset 0 -1px 2px rgba(27,35,48,.06),0 2px 8px rgba(27,35,48,.08)}
