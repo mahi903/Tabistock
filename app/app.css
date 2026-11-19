@@ -980,3 +980,13 @@ html.native #app{top:env(safe-area-inset-top,0px)}
 .srow.aprow .snd{font-size:12.5px;font-weight:700;color:#fff;background:var(--green);padding:6px 14px;border-radius:6px}
 .srow.aprow.done .snd{background:none;color:var(--green)}
 .thr .cmp button.tart{background:none;width:34px;height:42px;border-radius:0;color:var(--green)}
+/* タブの文字の光を弱める（読みやすさは保つ程度に） */
+.tab button{text-shadow:0 0 3px rgba(255,255,255,.55)}
+.tab button svg{filter:drop-shadow(0 0 1.5px rgba(255,255,255,.5))}
+/* AI相談：吹き出しを文字の長さに合わせる */
+#aiLog .msg{width:fit-content;word-break:break-word}
+/* AI相談の入力欄：タブとの間をあける。入力中（キーボードが出ている間）はタブを隠して、入力欄を下へ */
+.aicmp{bottom:calc(max(calc(env(safe-area-inset-bottom,0px) - 12px),10px) + 74px)}
+#app.typing .tab{transform:translateY(calc(100% + var(--sb) + 30px))}
+#app.typing .aicmp{bottom:8px}
+#ai{padding-bottom:calc(max(calc(env(safe-area-inset-bottom,0px) - 12px),10px) + 150px)}
