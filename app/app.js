@@ -453,8 +453,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200053").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200053").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200105").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200105").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -655,7 +655,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611200053"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611200105"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -866,16 +866,17 @@ async function pageThread(el, other) {
     const S = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
     for (const f of files) {
       const p = { r: "4/3" }; pend.push(p); msgs.insertAdjacentHTML("beforeend", `<div class="msg img u sending" style="aspect-ratio:4/3"><span>送信中…</span></div>`); msgs.scrollTop = msgs.scrollHeight;
+      let step = "縮小";
       try {
         const blob = await resizeImage(f, 1600, 0.82);
         const bmp = await createImageBitmap(blob); const w = bmp.width, hh = bmp.height; bmp.close(); p.r = `${w}/${hh}`;
         const r = S.ref(storage, `dm/${cid}/${me}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`);
-        await S.uploadBytes(r, blob, { contentType: "image/jpeg" });
-        const url = await S.getDownloadURL(r);
-        await F.addDoc(collection(convRef, "messages"), { senderId: me, text: "", imageUrl: url, w, h: hh, createdAt: serverTimestamp() });
+        step = "アップロード"; await S.uploadBytes(r, blob, { contentType: "image/jpeg" });
+        step = "URL取得"; const url = await S.getDownloadURL(r);
+        step = "保存"; await F.addDoc(collection(convRef, "messages"), { senderId: me, text: "", imageUrl: url, w, h: hh, createdAt: serverTimestamp() });
         await F.updateDoc(convRef, { lastMessage: "📷 写真", lastSenderId: me, updatedAt: serverTimestamp(), ["unread." + other]: F.increment(1), ["unread." + me]: 0 });
         notify({ toUid: other, type: "dm" }); haptic();
-      } catch (err) { console.error(err); toast(err && /unauthorized|permission/i.test(err.code || "") ? "このユーザーには写真を送れません" : "写真を送れませんでした"); }
+      } catch (err) { console.error(err); toast(`写真を送れませんでした（${step}：${(err && (err.code || err.message)) || err}）`); }
       pend.splice(pend.indexOf(p), 1);
       msgs.querySelectorAll(".sending").forEach((x, i) => { if (i >= pend.length) x.remove(); });
     }
