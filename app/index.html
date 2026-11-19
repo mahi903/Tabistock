@@ -12,10 +12,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script>
+// iPhone アプリ（Capacitor）の中で開いたときの目印。ホーム画面のPWAと同じく、時計やダイナミックアイランドの帯の下から画面を始める
+(function(){function chk(){var C=window.Capacitor;if(C&&((C.isNativePlatform&&C.isNativePlatform())||C.platform==="ios"))document.documentElement.classList.add("native");}chk();document.addEventListener("DOMContentLoaded",chk);})();
+</script>
 <meta name="apple-mobile-web-app-title" content="Tabistock β">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="./app.css?v=202611192228">
+<link rel="stylesheet" href="./app.css?v=202611200019">
 </head>
 <body>
 <div id="app">
@@ -59,13 +63,14 @@
     <a class="pnew" href="#p"><span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c3-1 4-5 8-5s5 3 8 2"/><circle cx="6" cy="7" r="2"/><circle cx="18" cy="9" r="2"/><path d="M8 7.5c3 .5 5 1 8 1.3"/></svg></span><span class="pt2"><b>旅程を投稿する</b><small>DAYごとの行程・費用・写真・航空券</small></span><span class="pa">→</span></a>
     <a class="pnew" href="#p-transit"><span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14l6-1 4-8h2l-1.5 7.5L19 12l2-2h1.5l-1 4.5"/><path d="M3 19h18"/></svg></span><span class="pt2"><b>トランジットを投稿する</b><small>乗り継ぎ空港での過ごし方・待ち時間</small></span><span class="pa">→</span></a>
   </div>
+  <div id="draftSec" hidden><div class="sh" style="padding-top:34px"><h2>下書き <small id="draftN" class="num" style="font-size:13px;color:var(--muted);margin-left:4px"></small></h2></div><div id="draftList"></div></div>
   <div class="sh" style="padding-top:34px"><h2>公開までの流れ</h2></div>
   <ol class="flow"><li><b>書く</b><small>旅程・費用・写真を入力</small></li><li><b>運営が確認</b><small>運営が内容をチェック</small></li><li><b>公開</b><small>ホームと検索に載ります</small></li></ol>
 </section>
 
 <!-- AI -->
 <section class="view pt" id="ai" hidden>
-  <div class="aihead"><div class="lt">AI</div><button id="aiNew" class="btn-g" hidden>新しい相談</button></div>
+  <div class="aihead"><div class="lt">AI相談</div><button id="aiNew" class="btn-g" hidden>新しい相談</button></div>
   <p class="sub" style="padding-top:4px">Tabistockの旅程記事と航空券の相場から答えます</p>
   <div id="aiIntro"><div class="aichips">
     <button>学生低予算ひとり旅のコツは？</button><button>治安がいい場所を旅行したい。</button><button>インド旅行で気をつけることは？</button><button>モンゴルでゲルに泊まりたい</button>
@@ -93,6 +98,6 @@
 <div class="bs" id="bs"></div>
 <div class="toast" id="toast"></div>
 </div>
-<script type="module" src="./app.js?v=202611192228"></script>
+<script type="module" src="./app.js?v=202611200019"></script>
 </body>
 </html>

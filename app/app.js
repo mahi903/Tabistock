@@ -90,6 +90,7 @@ function go(k, opt = {}) {
     renderSearch();
   }
   if (k === "me") renderMe();
+  if (k === "post") renderDrafts();
   if (k === "saved") renderSaved();
   if (k === "ai") { aiLoad(); aiRender(); }
 }
@@ -191,16 +192,17 @@ async function renderFeed() {
   const list = ALL.filter((d) => set.has(d.authorId) || (d.coAuthorIds || []).some((u) => set.has(u)));
   if (!list.length) { box.innerHTML = '<p class="fol-empty">フォロー中の人の記事はまだありません。</p>'; return; }
   const SAVE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6.5 3.5h11v17l-5.5-3.6-5.5 3.6z"/></svg>';
-  const AIc = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3.5l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9z"/></svg>';
+  const HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>';
   box.innerHTML = list.slice(0, 30).map((d) => {
     const imgs = (d.heroUrls && d.heroUrls.length ? d.heroUrls : [thumbOf(d)]).filter(Boolean);
     return `<article class="post">
       <div class="ph"><a href="#u-${esc(d.authorId)}"><img src="${esc(avatarOf(d.authorId))}" alt=""></a><div><b>${esc(authorName(d))}</b><small>${esc(ago(pubSec(d)))}・${esc(placeJp(d))}</small></div></div>
       <div class="pgn"><a class="pg" href="#a-${esc(d.id)}">${imgs.map((u) => `<div style="background-image:url('${esc(u)}')"></div>`).join("")}</a>${imgs.length > 1 ? `<span>1/${imgs.length}</span>` : ""}</div>
-      <div class="acts"><a href="#w-ask">${AIc}AI</a><button class="sv ${saved.has(d.id) ? "on" : ""}" data-save="${esc(d.id)}">${SAVE}</button></div>
+      <div class="acts"><button class="lk" data-flike="${esc(d.id)}" aria-label="いいね">${HEART}<b></b></button><button class="sv ${saved.has(d.id) ? "on" : ""}" data-save="${esc(d.id)}">${SAVE}</button></div>
       <div class="pc"><div class="pl">${esc(placeJp(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</div><h3>${esc(titleOf(d))}</h3>${d.lead ? `<p>${esc(String(d.lead).replace(/\n+/g, " "))}</p>` : ""}<a class="more" href="#a-${esc(d.id)}">旅程を見る →</a></div>
     </article>`;
   }).join("");
+  box.querySelectorAll("[data-flike]").forEach((b) => { const d = BY[b.dataset.flike]; if (d) wireLike(b, b.querySelector("b"), d, "on"); });
   box.querySelectorAll(".pg").forEach((g) => (g.onscroll = () => { const n = g.parentNode.querySelector("span"); if (n) n.textContent = Math.round(g.scrollLeft / g.clientWidth) + 1 + "/" + g.children.length; }));
 }
 function ago(sec) {
@@ -426,8 +428,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611192228").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611192228").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200019").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200019").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -626,7 +628,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611192228"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611200019"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -643,12 +645,14 @@ function storyEyebrow(d) {
 }
 
 // いいね（記事）
-async function wireArticleLike(el, d) {
-  const b = el.querySelector("[data-like]"), n = el.querySelector("[data-lc]");
+async function wireArticleLike(el, d) { return wireLike(el.querySelector("[data-like]"), el.querySelector("[data-lc]"), d, "liked"); }
+// いいねボタンの共通処理（記事ページの下のバーと、フォロー中の投稿で使う）
+async function wireLike(b, n, d, onCls) {
+  if (!b) return;
   let cnt = 0, mine = false;
   try { cnt = (await getCountFromServer(collection(db, "articles", d.id, "likes"))).data().count; } catch (e) {}
   if (me) { try { mine = (await getDoc(doc(db, "articles", d.id, "likes", me))).exists(); } catch (e) {} }
-  const paint = () => { b.classList.toggle("liked", mine); n.textContent = cnt || ""; };
+  const paint = () => { b.classList.toggle(onCls, mine); if (n) n.textContent = cnt || ""; };
   paint();
   b.onclick = async () => {
     if (!me) { toast("いいねするにはログインが必要です"); location.hash = "#x-login"; return; }
@@ -735,8 +739,8 @@ async function pageUser(el, uid) {
   const igUrl = ig ? (/^https?:\/\//.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/") : "";
   const isMe = uid === me;
   el.innerHTML = bar(p.nickname || "旅人", isMe ? "" : '<button class="mo" data-umore>…</button>') + `<div class="ps under2">
-    <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><a href="#f-followers-${esc(uid)}"><b data-fc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(uid)}"><b data-gc>—</b><span>フォロー</span></a></div></div>
-      <h1>${esc(p.nickname || "旅人")}</h1>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${snsLinks(p)}
+    <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><a href="#f-followers-${esc(uid)}"><b data-fc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(uid)}"><b data-gc>—</b><span>フォロー中</span></a></div></div></div>
+      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${snsLinks(p)}
       <div class="ub" data-ub></div></div>
     <div class="sh" style="padding-top:26px"><h2>投稿</h2></div>
     ${posts.length ? `<div class="ogrid">${posts.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません</p>'}
@@ -835,7 +839,7 @@ function postCtx() {
   return {
     me, bar, back, toast, haptic, loadLeaflet,
     sheet: openBS, closeSheet,
-    onSaved: (id) => { delete BY[id]; loadMyPosts(); },
+    onSaved: (id) => { delete BY[id]; loadMyPosts(); renderDrafts(); },
     done: () => { go("me"); setTimeout(loadMyPosts, 400); }
   };
 }
@@ -878,9 +882,9 @@ function renderMe() {
   const ig = String(p.instagram || "").trim();
   const igUrl = ig ? (/^https?:\/\//.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/") : "";
   myTab = myTab || "trips";
-  box.innerHTML = `<div class="mehead"><b>${esc(p.nickname || "旅人")}</b><button class="hb" id="meMenu" aria-label="メニュー"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
+  box.innerHTML = `<div class="mehead"><b>マイページ</b><button class="hb" id="meMenu" aria-label="メニュー"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt="">
-      <div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー</span></a></div></div>
+      <div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー中</span></a></div></div></div>
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${snsLinks(p)}
       <div class="ub"><a class="btn-g" href="#x-profile">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
     <div class="mtabs" id="mtabs"><button class="on" data-mt="trips">旅程<b data-mn="trips"></b></button><button data-mt="transit">トランジット<b data-mn="transit"></b></button><button data-mt="collab">共同投稿<b data-mn="collab"></b><i id="invDot" hidden></i></button></div>
@@ -916,9 +920,9 @@ async function loadMyPosts() {
   const dot = $("invDot"); if (dot) dot.hidden = !invites.length;
   drawMyPosts();
 }
-function myCard(d) {
+function myCard(d, editLink) {
   const st = STATUS_LABEL[d.status] ? d.status : "pending";
-  return `<div class="mycard"><a class="oc" href="#a-${esc(d.id)}" style="background-image:url('${esc(thumbOf(d))}')">${ovText({ ...d, title: d.title || "(無題)" })}</a>
+  return `<div class="mycard"><a class="oc" href="${editLink ? "#p-" : "#a-"}${esc(d.id)}" style="background-image:url('${esc(thumbOf(d))}')">${ovText({ ...d, title: d.title || "(無題)" })}</a>
     <div class="mymeta">${st !== "published" ? `<span class="pst s-${st}">${STATUS_LABEL[st]}</span>` : ""}${d._collab ? '<span class="pst">共同投稿</span>' : ""}<button class="pmn" data-pm="${esc(d.id)}" aria-label="メニュー">…</button></div></div>`;
 }
 function drawMyPosts() {
@@ -942,6 +946,26 @@ function drawMyPosts() {
     } catch (e) { toast("操作できませんでした"); b.disabled = false; }
   }));
 }
+// 投稿タブの下書き一覧（タップで続きを編集）
+async function renderDrafts() {
+  const sec = $("draftSec"), box = $("draftList"); if (!sec) return;
+  if (!me) { sec.hidden = true; return; }
+  const list = [];
+  try {
+    const [a, b] = await Promise.all([
+      getDocs(query(collection(db, "articles"), where("authorId", "==", me))),
+      getDocs(query(collection(db, "articles"), where("coAuthorIds", "array-contains", me))).catch(() => null)
+    ]);
+    const add = (x, co) => { const d = { id: x.id, ...x.data(), ...(co ? { _collab: true } : {}) }; if (d.status === "draft" && !list.some((y) => y.id === d.id)) { list.push(d); BY[d.id] = d; } };
+    a.forEach((x) => add(x)); if (b) b.forEach((x) => add(x, true));
+  } catch (e) { sec.hidden = true; return; }
+  list.sort((x, y) => ((y.updatedAt || y.createdAt || {}).seconds || 0) - ((x.updatedAt || x.createdAt || {}).seconds || 0));
+  sec.hidden = !list.length;
+  $("draftN").textContent = list.length || "";
+  box.innerHTML = `<div class="ogrid">${list.map((d) => myCard(d, true)).join("")}</div>`;
+  box.querySelectorAll("[data-pm]").forEach((b) => (b.onclick = (e) => { e.preventDefault(); postMenu(b.dataset.pm); }));
+}
+
 // 記事メニュー（サイトのマイページと同じ：編集／共同投稿者／投稿者を譲る／非表示・再公開／削除・抜ける）
 async function postMenu(id) {
   let d = BY[id];
@@ -988,7 +1012,7 @@ async function postAction(act, d) {
       notify({ toUid: ids[idx], type: "handover", articleId: d.id, articleTitle: d.title || "" });
     }
     toast("完了しました"); haptic();
-    delete BY[d.id]; loadMyPosts(); loadAll();
+    delete BY[d.id]; loadMyPosts(); loadAll(); if (curTab === "post") renderDrafts();
   } catch (e) { toast("操作できませんでした"); }
 }
 
