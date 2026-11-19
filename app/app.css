@@ -1053,3 +1053,4 @@ html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
 #app.intro #recPane>div[id$="Sec"],#app.intro #recPane>.fare{animation-delay:1s}
 #app.intro .tab{animation:introTab 1.15s cubic-bezier(.16,.84,.3,1) .5s backwards}
 #splash{transition:opacity .55s ease}
+.dphotos,.dphotos img{background:var(--bg)!important}
