@@ -1038,3 +1038,18 @@ html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
 #app.intro #newList>*:nth-child(n+4){animation-delay:.56s}
 #app.intro #recPane>div[id$="Sec"],#app.intro #recPane>.fare{animation-delay:.6s}
 #app.intro .tab{animation:introTab .7s cubic-bezier(.2,.7,.2,1) .3s backwards}
+/* もっとふわっと：ゆっくり・少し大きく浮かせて・ぼかしから焦点が合うように */
+@keyframes introUp{0%{opacity:0;transform:translateY(26px);filter:blur(6px)}60%{filter:blur(0)}100%{opacity:1;transform:none;filter:none}}
+@keyframes introTab{0%{opacity:0;transform:translateY(50px);filter:blur(4px)}100%{opacity:1;transform:none;filter:none}}
+#app.intro #home .top,#app.intro #home .htabs,#app.intro #feat,#app.intro #recPane>.sh,#app.intro #newList>*,#app.intro #recPane>div[id$="Sec"],#app.intro #recPane>.fare{animation-duration:1.15s;animation-timing-function:cubic-bezier(.16,.84,.3,1)}
+#app.intro #home .top{animation-delay:.08s}
+#app.intro #home .htabs{animation-delay:.22s}
+#app.intro #feat{animation-delay:.36s}
+#app.intro #recPane>.sh{animation-delay:.55s}
+#app.intro #newList>*:nth-child(1){animation-delay:.64s}
+#app.intro #newList>*:nth-child(2){animation-delay:.74s}
+#app.intro #newList>*:nth-child(3){animation-delay:.84s}
+#app.intro #newList>*:nth-child(n+4){animation-delay:.94s}
+#app.intro #recPane>div[id$="Sec"],#app.intro #recPane>.fare{animation-delay:1s}
+#app.intro .tab{animation:introTab 1.15s cubic-bezier(.16,.84,.3,1) .5s backwards}
+#splash{transition:opacity .55s ease}
