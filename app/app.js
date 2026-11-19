@@ -101,20 +101,44 @@ document.addEventListener("click", (e) => {
 });
 
 // ---------- ホーム ----------
-// ピックアップの自動スライド（5秒ごと。指で触っている間と、ホームを見ていない間は止める）
-let carTimer = null;
+// ピックアップの自動スライド（ストーリー風：上のゲージが7秒で溜まったら、ゆっくり次の記事へ）
+// 指で押さえている間・ホームを見ていない間はゲージを止める。指でめくったら、その記事からゲージをやり直す
+let carRaf = null;
 function startCarousel(n) {
-  clearInterval(carTimer);
+  cancelAnimationFrame(carRaf);
   const car = $("fcar"); if (!car || n < 2) return;
-  let hold = false, idx = 0;
-  const dots = () => { const i = Math.round(car.scrollLeft / car.clientWidth); if (i !== idx) { idx = i; } document.querySelectorAll("#fdots i").forEach((d, j) => d.classList.toggle("on", j === idx)); };
-  car.addEventListener("scroll", dots, { passive: true });
+  const DUR = 7000, SLIDE = 1200;
+  const bars = [...document.querySelectorAll("#fdots b")];
+  let idx = 0, t = 0, last = performance.now(), hold = false, moving = false;
+  const paint = () => bars.forEach((b, j) => (b.style.transform = `scaleX(${j < idx ? 1 : j === idx ? Math.min(1, t / DUR) : 0})`));
+  const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  function slideTo(i) {
+    moving = true;
+    const from = car.scrollLeft, to = i * car.clientWidth, t0 = performance.now();
+    car.style.scrollSnapType = "none";
+    idx = i; t = 0;
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / SLIDE);
+      car.scrollLeft = from + (to - from) * ease(k);
+      if (k < 1) requestAnimationFrame(step);
+      else { car.style.scrollSnapType = ""; moving = false; last = performance.now(); }
+    };
+    requestAnimationFrame(step);
+  }
+  car.addEventListener("scroll", () => { if (moving) return; const i = Math.round(car.scrollLeft / car.clientWidth); if (i !== idx) { idx = i; t = 0; } }, { passive: true });
   car.addEventListener("touchstart", () => (hold = true), { passive: true });
-  car.addEventListener("touchend", () => setTimeout(() => (hold = false), 3000), { passive: true });
-  carTimer = setInterval(() => {
-    if (hold || curTab !== "home" || STACK.length || $("home").hidden || document.hidden) return;
-    car.scrollTo({ left: ((idx + 1) % n) * car.clientWidth, behavior: "smooth" });
-  }, 5000);
+  car.addEventListener("touchend", () => (hold = false), { passive: true });
+  car.addEventListener("touchcancel", () => (hold = false), { passive: true });
+  const tick = (now) => {
+    const dt = Math.min(100, now - last); last = now;
+    if (!hold && !moving && curTab === "home" && !STACK.length && !$("home").hidden && !document.hidden) {
+      t += dt;
+      if (t >= DUR) slideTo((idx + 1) % n);
+    }
+    paint();
+    carRaf = requestAnimationFrame(tick);
+  };
+  carRaf = requestAnimationFrame(tick);
 }
 function renderHome() {
   const trips = ALL.filter((d) => d.type !== "transit" && !isDomestic(d));
@@ -136,7 +160,7 @@ function renderHome() {
     $("feat").innerHTML = `<div class="fcar" id="fcar">${picks.map((p) => `<a class="feat" href="#a-${esc(p.id)}" style="background-image:url('${esc(thumbOf(p))}')"><span class="tag">PICK UP</span>
       <div class="in"><div class="pl">${PIN} ${esc(placeJp(p))}</div><div class="tt">${esc(titleOf(p))}</div>
       <div class="row"><div class="au"><img src="${esc(avatarOf(p.authorId))}" alt="">${esc(authorName(p))}${p.dateStart ? "・" + esc(p.dateStart.slice(0, 4) + "年" + Number(p.dateStart.slice(5, 7)) + "月") : ""}</div></div></div></a>`).join("")}</div>`
-      + (picks.length > 1 ? `<div class="fdots" id="fdots">${picks.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>` : "");
+      + (picks.length > 1 ? `<div class="fdots" id="fdots">${picks.map(() => "<i><b></b></i>").join("")}</div>` : "");
     startCarousel(picks.length);
   }
   $("newList").innerHTML = trips.filter((d) => !picks.includes(d)).slice(0, 10).map(cardH).join("") || '<p class="loading">まだ記事がありません</p>';
@@ -402,8 +426,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611191704").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611191704").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611191711").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611191711").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -602,7 +626,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611191704"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611191711"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {

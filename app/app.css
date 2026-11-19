@@ -896,3 +896,8 @@ select.pfi{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
 .fdots{position:absolute;right:20px;top:20px;z-index:3;display:flex;gap:4px;pointer-events:none}
 .fdots i{width:14px;height:2px;background:rgba(255,255,255,.45);transition:background .3s,width .3s}
 .fdots i.on{background:#fff;width:22px}
+/* ストーリー風のゲージ */
+.fdots{left:20px;right:20px;top:14px;gap:4px}
+.fdots i{flex:1;width:auto;height:2px;background:rgba(255,255,255,.35);overflow:hidden;transition:none}
+.fdots i b{display:block;height:100%;background:#fff;transform:scaleX(0);transform-origin:left center}
+#feat .feat .tag{top:28px}
