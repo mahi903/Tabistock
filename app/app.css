@@ -994,3 +994,13 @@ html.native #app{top:env(safe-area-inset-top,0px)}
 .tab button{padding:11px 0;gap:0}
 .tab svg{width:25px;height:25px}
 .aicmp{bottom:calc(max(calc(env(safe-area-inset-bottom,0px) - 12px),10px) + 68px)}
+/* 横向き・iPad：スマホの枠はパソコン（マウス操作の画面）だけ。タッチ端末では全画面のまま */
+@media (min-width:600px) and (pointer:coarse){
+  #app{inset:0;left:0;top:0;width:auto;height:auto;transform:none;border-radius:0;box-shadow:none}
+  html.native #app{top:env(safe-area-inset-top,0px)}
+}
+/* 記事の いいね・保存・共有 のバーを下へ（下の余白を減らす） */
+.act{padding-bottom:max(calc(env(safe-area-inset-bottom,0px) - 8px),12px)}
+/* AI相談：入力欄の背景を画面の下まで伸ばして、入力欄とタブのすき間に会話が透けないようにする */
+.aicmp{bottom:0;padding-bottom:calc(max(calc(env(safe-area-inset-bottom,0px) - 12px),10px) + 72px);background:linear-gradient(rgba(251,249,244,0),var(--bg) 18px)}
+#app.typing .aicmp{bottom:0;padding-bottom:8px}
