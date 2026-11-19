@@ -169,6 +169,15 @@ function startCarousel(n) {
   };
   carRaf = requestAnimationFrame(tick);
 }
+// 写真のモザイク（プロフィール用）：その人が投稿者の記事の DAY の写真を、大小組み合わせて敷き詰める。
+// 共同投稿の記事は、一緒に旅した人が写っていることがあるので入れない
+function photoMosaic(arts) {
+  const items = [];
+  arts.filter((d) => d.type !== "transit").forEach((d) => (d.days || []).forEach((dy, di) => (dy.photoUrls || []).forEach((u) => items.push({ d, u, di }))));
+  (arts.filter((d) => d.type === "transit")).forEach((d) => (d.heroUrls || []).forEach((u) => items.push({ d, u, di: -1 })));
+  if (!items.length) return "";
+  return `<div class="mos">${items.map((p, i) => `<a class="mt ${i % 10 === 0 ? "big" : i % 10 === 7 ? "big r" : ""}" href="#a-${esc(p.d.id)}"><img src="${esc(p.u)}" alt="" loading="lazy" decoding="async"><span>${esc(placeJp(p.d))}${p.di >= 0 ? "・DAY" + (p.di + 1) : ""}</span></a>`).join("")}</div>`;
+}
 function renderHome() {
   ALL.slice(0, 40).forEach((d) => { const u = thumbOf(d); if (u) ratioOf(u, () => {}); });   // 記事を開いたときにトップ写真が上下に動かないよう、先に縦横比を調べておく
   const trips = ALL.filter((d) => d.type !== "transit" && !isDomestic(d));
@@ -457,8 +466,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200523").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200523").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611200526").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611200526").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -675,7 +684,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611200523"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611200526"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -789,14 +798,16 @@ async function pageUser(el, uid) {
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><a href="#f-followers-${esc(uid)}"><b data-fc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(uid)}"><b data-gc>—</b><span>フォロー中</span></a></div></div></div>
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${snsLinks(p)}
       <div class="ub" data-ub></div></div>
-    <div class="sh" style="padding-top:26px"><h2>投稿</h2></div>
-    ${posts.length ? `<div class="ogrid">${posts.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません</p>'}
+    <div class="mtabs" style="margin-top:26px"><button class="on" data-ut="posts">投稿<b>${posts.length || ""}</b></button><button data-ut="photos">写真</button></div>
+    <div data-upane="posts">${posts.length ? `<div class="ogrid">${posts.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません</p>'}</div>
+    <div data-upane="photos" hidden>${photoMosaic(posts.filter((d) => d.authorId === uid)) || '<p class="empty">まだ写真がありません</p>'}</div>
   </div>`;
   const cnt = async () => {
     try { el.querySelector("[data-fc]").textContent = (await getCountFromServer(collection(db, "users", uid, "followers"))).data().count; } catch (e) {}
     try { el.querySelector("[data-gc]").textContent = (await getCountFromServer(collection(db, "users", uid, "following"))).data().count; } catch (e) {}
   };
   cnt();
+  el.querySelectorAll("[data-ut]").forEach((b) => (b.onclick = () => { el.querySelectorAll("[data-ut]").forEach((x) => x.classList.toggle("on", x === b)); el.querySelectorAll("[data-upane]").forEach((x) => (x.hidden = x.dataset.upane !== b.dataset.ut)); haptic(); }));
   const ub = el.querySelector("[data-ub]");
   if (isMe) { ub.innerHTML = '<a class="btn-g" href="#x-profile">プロフィールを編集</a>'; return; }
   let blocked = false; if (me) { try { blocked = await (await mod()).isBlocked(uid); } catch (e) {} }
@@ -1035,7 +1046,7 @@ function renderMe() {
       <div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー中</span></a></div></div></div>
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${snsLinks(p)}
       <div class="ub"><a class="btn-g" href="#x-profile">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
-    <div class="mtabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips">旅程<b data-mn="trips"></b></button><button class="${myTab === "transit" ? "on" : ""}" data-mt="transit">トランジット<b data-mn="transit"></b></button><button class="${myTab === "collab" ? "on" : ""}" data-mt="collab">共同投稿<b data-mn="collab"></b><i id="invDot" hidden></i></button></div>
+    <div class="mtabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips">旅程<b data-mn="trips"></b></button><button class="${myTab === "transit" ? "on" : ""}" data-mt="transit">トランジット<b data-mn="transit"></b></button><button class="${myTab === "collab" ? "on" : ""}" data-mt="collab">共同投稿<b data-mn="collab"></b><i id="invDot" hidden></i></button><button class="${myTab === "photos" ? "on" : ""}" data-mt="photos">写真</button></div>
     <div id="myPosts"><p class="loading">読み込み中…</p></div>`;
   box.querySelectorAll("[data-mt]").forEach((b) => (b.onclick = () => { myTab = b.dataset.mt; box.querySelectorAll("[data-mt]").forEach((x) => x.classList.toggle("on", x === b)); drawMyPosts(); haptic(); }));
   loadMyPosts();
@@ -1075,6 +1086,11 @@ function myCard(d, editLink) {
 }
 function drawMyPosts() {
   const box = $("myPosts"); if (!box) return;
+  if (myTab === "photos") {
+    const mine = [...MY.trips, ...MY.transit].filter((d) => d.authorId === me);
+    box.innerHTML = photoMosaic(mine) || '<p class="empty">まだ写真がありません。<br>旅程の DAY に写真を入れると、ここに並びます。</p>';
+    return;
+  }
   const list = MY[myTab] || [];
   const empty = { trips: '<p class="empty">まだ旅程がありません<br><br><a class="btn-s" href="#p">旅程を投稿する</a></p>', transit: '<p class="empty">まだトランジット記事がありません<br><br><a class="btn-s" href="#p-transit">トランジットを投稿する</a></p>', collab: '<p class="empty">共同投稿はまだありません。<br>投稿の編集画面から、一緒に旅した友達を招待できます。</p>' };
   let inv = "";
