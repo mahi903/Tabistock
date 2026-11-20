@@ -19,5 +19,18 @@
     "api/deleteAccount.js": {
       "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/articles/view.html",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(facebookexternalhit|facebookcatalog|meta-externalagent|twitterbot|line-poker|slackbot|discordbot|whatsapp|telegrambot|skypeuripreview|linkedinbot|pinterest|embedly|applebot|google-inspectiontool|bingbot|googlebot|kakaotalk|redditbot|mastodon|iframely|vkshare|bot|crawler|spider).*"
+        }
+      ],
+      "destination": "/api/share"
+    }
+  ]
 }
