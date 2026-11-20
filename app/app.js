@@ -489,8 +489,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611201818").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611201818").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611201901").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611201901").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -707,7 +707,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611201818"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611201901"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1558,26 +1558,25 @@ onAuthStateChanged(auth, async (u) => {
 
 renderTab();
 loadAll().then(route).finally(hideSplash);
-// 起動画面を閉じる：ホームの最初に見える写真（ピックアップと新着の先頭）を読み込み終えてから、ゲージを満タンにしてふわっと消す。
-// 通信が遅くても、起動から最大4秒で閉じる
+// 起動画面を閉じる：ロゴアニメーションが終わり、ホームの最初に見える写真（ピックアップと新着の先頭）を読み込み終えてから、ふわっと消す。
+// 通信が遅くても、起動から最大4.5秒で閉じる
 async function hideSplash() {
   const sp = $("splash"); if (!sp || sp.hidden || sp.dataset.closing) return;
   sp.dataset.closing = "1";
   const urls = [...document.querySelectorAll("#feat .feat, #newList .oc, #newList [style*='background-image']")].slice(0, 5)
     .map((e) => (e.style.backgroundImage.match(/url\(["']?(.*?)["']?\)/) || [])[1]).filter(Boolean);
   const load = (u) => new Promise((ok) => { const im = new Image(); im.onload = im.onerror = ok; im.src = u; if (im.complete) ok(); });
-  const left = Math.max(0, 4000 - (Date.now() - (window.__splashAt || 0)));
+  const left = Math.max(0, 4500 - (Date.now() - (window.__splashAt || 0)));
   await Promise.race([Promise.all(urls.map(load)), new Promise((ok) => setTimeout(ok, left))]);
-  const wait = Math.max(0, 700 - (Date.now() - (window.__splashAt || 0)));
+  const wait = Math.max(0, 2350 - (Date.now() - (window.__splashAt || 0)));   // ロゴアニメーション（約2.2秒）が終わるまでは待つ
   setTimeout(() => {
-    sp.classList.add("full");                     // ゲージを満タンに
     setTimeout(() => {
       sp.classList.add("out");
       $("app").classList.add("intro");            // ホームの各パーツを、上から順にふわっと出す
       setTimeout(() => $("app").classList.remove("intro"), 2400);
       try { sessionStorage.setItem("tbs-splash", "1"); } catch (e) {}
       setTimeout(() => sp.remove(), 600);
-    }, 260);
+    }, 0);
   }, wait);
 }
-setTimeout(hideSplash, 4000);
+setTimeout(hideSplash, 4500);
