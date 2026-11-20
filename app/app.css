@@ -1124,3 +1124,10 @@ html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
 .ppvw+.pstn{margin-left:0}
 .pvw .pvbadge{position:absolute;left:50%;top:calc(var(--st) + 18px);transform:translateX(-50%);z-index:3;background:rgba(27,35,48,.82);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;letter-spacing:.04em;pointer-events:none}
 .pvw .sheet a{pointer-events:none}
+/* 探すの一覧は3列（数を見せつつ、タイトル・投稿者・日数も読める大きさ） */
+#search .ogrid{grid-template-columns:repeat(3,1fr);gap:6px;padding:6px 12px 0}
+#search .ogrid .oc{height:190px}
+#search .oc .ovt{left:8px;right:8px;bottom:8px}
+#search .oc b{font-size:12px}
+#search .oc em{font-size:9px}
+#search .oc small{font-size:9.5px}
