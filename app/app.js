@@ -489,8 +489,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210224").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210224").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210232").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210232").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -716,7 +716,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611210224"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611210232"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1415,6 +1415,7 @@ async function pageNotify(el) {
   let items = [];
   try { (await getDocs(collection(db, "users", me, "notifications"))).forEach((x) => items.push({ id: x.id, ...x.data() })); } catch (e) {}
   items.sort((a, b) => ((b.createdAt || {}).seconds || 0) - ((a.createdAt || {}).seconds || 0));
+  const allUnread = items.filter((n) => !n.read);   // 表示しない古い通知も含めて、未読はすべて既読にする
   items = items.slice(0, 80);
   await loadProfiles(items.map((n) => n.fromUid).filter(Boolean));
   box.innerHTML = items.length ? items.map((n) => {
@@ -1429,9 +1430,13 @@ async function pageNotify(el) {
     return `<a class="nrow ${n.read ? "" : "un"}" href="${href}"><img src="${esc(avatarOf(n.fromUid))}" alt=""><span class="nt">${txt}<small>${esc(ago((n.createdAt || {}).seconds))}</small></span></a>`;
   }).join("") : '<p class="fol-empty">通知はまだありません。</p>';
   // 開いたら既読にする
-  const un = items.filter((n) => !n.read);
+  $("bellDot").hidden = true;
+  const un = allUnread;
   if (un.length) {
-    try { const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"); const b = F.writeBatch(db); un.forEach((n) => b.update(doc(db, "users", me, "notifications", n.id), { read: true })); await b.commit(); $("bellDot").hidden = true; } catch (e) {}
+    try {
+      const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+      for (let i = 0; i < un.length; i += 400) { const b = F.writeBatch(db); un.slice(i, i + 400).forEach((n) => b.update(doc(db, "users", me, "notifications", n.id), { read: true })); await b.commit(); }
+    } catch (e) {}
   }
 }
 
@@ -1595,12 +1600,18 @@ async function loadAll() {
 
 // DMの未読数：会話の変化をずっと見張って、読んだらすぐ数字が消えるようにする
 let dmUnsub = null;
+let bellUnsub = null;
 async function watchDmBadge() {
   if (dmUnsub) { dmUnsub(); dmUnsub = null; }
+  if (bellUnsub) { bellUnsub(); bellUnsub = null; }
   const b = $("dmBadge");
-  if (!me) { b.hidden = true; return; }
+  if (!me) { b.hidden = true; $("bellDot").hidden = true; return; }
   try {
-    const { onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { onSnapshot, limit } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    // お知らせの赤い点：未読が1件でもあれば点ける（読んだら・新着が来たらすぐ反映）
+    bellUnsub = onSnapshot(query(collection(db, "users", me, "notifications"), where("read", "==", false), limit(1)), (q) => {
+      $("bellDot").hidden = q.empty || (STACK.length && STACK[STACK.length - 1].hash === "#n");
+    }, () => {});
     dmUnsub = onSnapshot(query(collection(db, "conversations"), where("participants", "array-contains", me)), (cs) => {
       let un = 0; cs.forEach((c) => { un += Number(((c.data().unread || {})[me]) || 0); });
       b.hidden = !un; b.textContent = un > 99 ? "99+" : un;
@@ -1614,10 +1625,6 @@ onAuthStateChanged(auth, async (u) => {
   if (me) {
     try { (await getDocs(collection(db, "users", me, "saves"))).forEach((s) => saved.add(s.id)); } catch (e) {}
     await loadProfiles([me]);
-    try {
-      const n = await getCountFromServer(query(collection(db, "users", me, "notifications"), where("read", "==", false)));
-      $("bellDot").hidden = !n.data().count;
-    } catch (e) {}
     watchDmBadge();
   }
   if (curTab === "me") renderMe();
