@@ -19,13 +19,13 @@
 <meta name="apple-mobile-web-app-title" content="Tabistock β">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="./app.css?v=202611202016">
+<link rel="stylesheet" href="./app.css?v=202611210013">
 </head>
 <body>
 <div id="app">
 <!-- 起動画面：ロゴの下のゲージが溜まったらホームへ（iPhoneアプリとホーム画面のPWAで開いたときだけ） -->
 <div id="splash" hidden><div class="lk" aria-label="Tabistock"><svg class="mk" viewBox="20 210 1150 900"><defs><linearGradient id="tbStem" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#244f3e"/><stop offset=".55" stop-color="#3a7e60"/><stop offset="1" stop-color="#43926e"/></linearGradient>
-<linearGradient id="tbBar" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4b9a78"/><stop offset="1" stop-color="#3f8c6b"/></linearGradient></defs><path class="ly ly2" d="M1075 485 V660 L560 876" fill="none" stroke="#bfe5d4" stroke-width="86" stroke-linejoin="round" stroke-linecap="round"/><path class="ly ly1" d="M1020 485 V640 L560 833" fill="none" stroke="#8fd2b2" stroke-width="86" stroke-linejoin="round" stroke-linecap="round"/><path class="ly ly0" d="M922 400 V560 L560 712" fill="none" stroke="#5bbd8a" stroke-width="86" stroke-linejoin="round" stroke-linecap="round"/><path class="st" d="M385 560 H705 V905 A160 160 0 0 1 385 905 Z" fill="url(#tbStem)"/><g class="br"><path d="M225 258 H795 A90 90 0 0 1 885 348 V490 A90 90 0 0 1 795 580 H225 A160 160 0 0 1 65 420 V418 A160 160 0 0 1 225 258 Z" fill="url(#tbBar)"/><path class="dk" d="M405 580 L760 258 H795 A90 90 0 0 1 885 348 V490 A90 90 0 0 1 795 580 Z" fill="#1d3b2d"/></g></svg><div class="wd"><img src="img/wl0.png" alt=""><img src="img/wl1.png" alt=""><img src="img/wl2.png" alt=""><img src="img/wl3.png" alt=""><img src="img/wl4.png" alt=""><img src="img/wl5.png" alt=""><img src="img/wl6.png" alt=""><img src="img/wl7.png" alt=""><img src="img/wl8.png" alt=""></div></div></div>
+<linearGradient id="tbBar" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4b9a78"/><stop offset="1" stop-color="#3f8c6b"/></linearGradient></defs><g class="ly ly2"><rect x="1019" y="480" width="86" height="40" rx="18" fill="#bfe5d4"/><path d="M1062 498 V638 L560 849" fill="none" stroke="#bfe5d4" stroke-width="86" stroke-linejoin="round" stroke-linecap="butt"/></g><g class="ly ly1"><rect x="949" y="425" width="86" height="40" rx="18" fill="#8fd2b2"/><path d="M992 443 V583 L560 764" fill="none" stroke="#8fd2b2" stroke-width="86" stroke-linejoin="round" stroke-linecap="butt"/></g><g class="ly ly0"><rect x="879" y="370" width="86" height="40" rx="18" fill="#5bbd8a"/><path d="M922 388 V528 L560 680" fill="none" stroke="#5bbd8a" stroke-width="86" stroke-linejoin="round" stroke-linecap="butt"/></g><path class="st" d="M385 560 H705 V975 A90 90 0 0 1 615 1065 H475 A90 90 0 0 1 385 975 Z" fill="url(#tbStem)"/><g class="br"><path d="M225 258 H795 A90 90 0 0 1 885 348 V490 A90 90 0 0 1 795 580 H225 A160 160 0 0 1 65 420 V418 A160 160 0 0 1 225 258 Z" fill="url(#tbBar)"/><path class="dk" d="M405 580 L760 258 H795 A90 90 0 0 1 885 348 V490 A90 90 0 0 1 795 580 Z" fill="#1d3b2d"/></g></svg><div class="wd"><img src="img/wl0.png" alt=""><img src="img/wl1.png" alt=""><img src="img/wl2.png" alt=""><img src="img/wl3.png" alt=""><img src="img/wl4.png" alt=""><img src="img/wl5.png" alt=""><img src="img/wl6.png" alt=""><img src="img/wl7.png" alt=""><img src="img/wl8.png" alt=""></div></div></div>
 <script>(function(){var s=document.getElementById("splash");var C=window.Capacitor;var app=(C&&((C.isNativePlatform&&C.isNativePlatform())||C.platform==="ios"))||navigator.standalone||matchMedia("(display-mode: standalone)").matches;if(app&&!sessionStorage.getItem("tbs-splash")){s.hidden=false;window.__splashAt=Date.now();}})();</script>
 
 <!-- ホーム -->
@@ -101,6 +101,6 @@
 <div class="bs" id="bs"></div>
 <div class="toast" id="toast"></div>
 </div>
-<script type="module" src="./app.js?v=202611202016"></script>
+<script type="module" src="./app.js?v=202611210013"></script>
 </body>
 </html>
