@@ -489,8 +489,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611201901").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611201901").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611201918").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611201918").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -524,12 +524,12 @@ function openViewer(urls, start) {
 
 // ---------- 記事 ----------
 let cur = null;
-async function pageArticle(el, id) {
+async function pageArticle(el, id, opt = {}) {
   el.innerHTML = '<div class="ps"><p class="loading" style="padding-top:120px">読み込み中…</p></div>';
   let d = BY[id];
   if (!d) { try { const s = await getDoc(doc(db, "articles", id)); if (s.exists()) { d = { id: s.id, ...s.data() }; BY[id] = d; } } catch (e) {} }
   if (!d) { el.innerHTML = bar("記事") + '<div class="ps under2"><p class="empty">記事が見つかりませんでした</p></div>'; return; }
-  cur = d;
+  if (!opt.preview) cur = d;
   await loadProfiles([d.authorId, ...(d.coAuthorIds || [])]);
   const mv = isDomestic(d) || !!d.notFromJapan;
   const imgs = (d.heroUrls && d.heroUrls.length ? d.heroUrls : [thumbOf(d)]).filter(Boolean);
@@ -601,6 +601,15 @@ async function pageArticle(el, id) {
     clearTimeout(b._t); b._t = setTimeout(() => { [...barEl.children].forEach((x) => (x.style.opacity = 1)); p.style.display = "none"; }, 2600);
   }));
   setTimeout(() => el.querySelectorAll(".bar span").forEach((x) => (x.style.flex = x.dataset.f)), 380);
+  if (opt.preview) {   // 投稿フォームからのプレビュー：いいね・コメント・共有などは出さない
+    el.querySelectorAll(".act, [data-own], .pnav [data-share], #clist, #cform, [data-follow]").forEach((x) => x.remove());
+    const ch = el.querySelector("#ccount"); if (ch) ch.closest(".dh").remove();
+    const rp = el.querySelector("#repA"); if (rp) rp.parentNode.remove();
+    const bk = el.querySelector(".pnav [data-back]"); bk.removeAttribute("data-back"); bk.onclick = opt.onClose;
+    el.querySelector(".pnav").insertAdjacentHTML("beforeend", '<span class="pvbadge">プレビュー</span>');
+    if (hasRoute) drawRoute(el.querySelector("#rmap"), d);
+    return;
+  }
   el.querySelector("[data-share]").onclick = () => shareMenu(d);
   el.querySelector("[data-share2]").onclick = () => shareMenu(d);
   const own = el.querySelector("[data-own]"); if (own) own.onclick = () => postMenu(d.id);
@@ -707,7 +716,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611201901"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611201918"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1017,9 +1026,20 @@ function viewImage(url) {
 }
 
 // ---------- 投稿・編集（app/post.js）に渡す道具 ----------
+// 投稿フォームのプレビュー：入力中の内容を、公開後と同じ記事ページの見た目で表示する（保存はしない）
+function openPreview(d) {
+  const el = document.createElement("section");
+  el.className = "page pvw"; el.style.zIndex = 95;
+  $("pages").appendChild(el);
+  const close = () => { el.classList.remove("open"); setTimeout(() => { el.remove(); delete BY.__pv; }, 380); haptic(); };
+  BY.__pv = { ...d, id: "__pv" };
+  pageArticle(el, "__pv", { preview: true, onClose: close });
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
+  haptic();
+}
 function postCtx() {
   return {
-    me, bar, back, toast, haptic, loadLeaflet,
+    me, bar, back, toast, haptic, loadLeaflet, preview: openPreview,
     sheet: openBS, closeSheet,
     onSaved: (id) => { delete BY[id]; loadMyPosts(); renderDrafts(); },
     done: () => { go("me"); setTimeout(loadMyPosts, 400); }

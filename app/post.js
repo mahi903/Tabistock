@@ -135,6 +135,18 @@ function toData() {
     }))
   };
 }
+// プレビュー用：入力中の内容を、記事ページがそのまま描ける形にする（写真はまだアップロードしていないので端末内のURLを使う）
+function previewData() {
+  const pv = (arr) => arr.map((it) => it.url || (it.file ? (it._full = it._full || URL.createObjectURL(it.file)) : "")).filter(Boolean);
+  if (S.kind === "transit") {
+    const t = toTransit();
+    return { type: "transit", status: "draft", authorId: C.me, authorNickname: S.nickname, countries: t.country ? [t.country] : [], region: t.region,
+      airport: t.airport, layover: t.layover, title: t.title, body: t.body, heroUrls: pv(F.hero), places: t.places };
+  }
+  const d = toData();
+  return { ...d, status: "draft", authorId: C.me, authorNickname: S.nickname, heroUrls: pv(F.hero),
+    days: d.days.map((x, i) => ({ ...x, date: dayDate(i), photoUrls: pv(F.days[i].photos) })) };
+}
 function toTransit() {
   const c = F.countries[0] || "";
   return {
@@ -284,11 +296,12 @@ async function openPost(el, arg, ctx) {
 function shell() {
   const editing = !!S.edit;
   const title = editing ? (S.edit.status === "draft" ? "下書きを編集" : "投稿を編集") : S.kind === "transit" ? "トランジットを投稿" : "旅程を投稿";
-  root.innerHTML = C.bar(title, '<button class="pstn" id="pStepBtn"></button>')
+  root.innerHTML = C.bar(title, '<button class="ppvw" id="pPv">プレビュー</button><button class="pstn" id="pStepBtn"></button>')
     + `<div class="pprog" id="pProg">${STEPS.map(() => "<i></i>").join("")}</div>`
     + '<div class="ps pform" id="pScroll"><div id="pBan"></div><div id="pAnim"><div class="phd" id="pHead"></div><div class="pbd" id="pBody"></div></div></div>'
     + `<div class="pfoot"><button class="pbk" id="pPrev" aria-label="前のステップへ"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>戻る</button><button class="pdr" id="pDraft">下書き保存</button><button class="pnx" id="pNext"></button></div>`;
   root.querySelector("#pStepBtn").onclick = stepSheet;
+  root.querySelector("#pPv").onclick = () => C.preview(previewData());
   root.querySelector("#pDraft").onclick = () => submit("draft");
   root.querySelector("#pPrev").onclick = () => goStep(S.step - 1);
   root.querySelector("#pNext").onclick = () => { if (S.step < STEPS.length - 1) goStep(S.step + 1); else submit("publish"); };
