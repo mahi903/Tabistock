@@ -489,8 +489,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210113").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210113").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210120").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210120").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -716,7 +716,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611210113"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611210120"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1443,7 +1443,7 @@ async function pageProfileEdit(el) {
   el.innerHTML = bar("プロフィールを編集", '<button class="mo" id="pfSave" style="font-size:15px;font-weight:700;color:var(--green);padding:0 4px">保存</button>') + `<div class="ps under2 nb"><div class="pfe">
     <div class="pfav"><img id="pfImg" src="${esc(p.photoURL || DEF_AV)}" alt=""><label class="btn-g">写真を変更<input type="file" accept="image/*" id="pfFile" hidden></label></div>
     <label class="pfl">ユーザーネーム<input id="pfNick" maxlength="30" value="${esc(p.nickname || "")}"></label>
-    <label class="pfl">自己紹介<textarea id="pfBio" rows="4" maxlength="300">${esc(p.bio || "")}</textarea></label>
+    <label class="pfl">自己紹介<textarea id="pfBio" rows="2" maxlength="300">${esc(p.bio || "")}</textarea></label>
     <p class="pfh">旅のスタイル <small id="tgCnt"></small></p>
     <p class="pfn">あなたの旅を表すタグを${TAG_MAX}つまで選べます</p>
     <div class="tgpick" id="tgPick"></div>
@@ -1451,6 +1451,8 @@ async function pageProfileEdit(el) {
     <p class="pfh">SNS（ユーザー名 または URL）</p>
     ${SNS.map(([k, l]) => `<label class="pfl">${l}<input data-sns="${k}" autocapitalize="off" autocorrect="off" placeholder="${k === "note" ? "noteのID" : "@なしのユーザー名"}" value="${esc(p[k] || "")}"></label>`).join("")}
     <p class="pfm" id="pfMsg"></p></div></div>`;
+  const bioEl = el.querySelector("#pfBio"), fitBio = () => { bioEl.style.height = "auto"; bioEl.style.height = Math.min(180, bioEl.scrollHeight) + "px"; };
+  bioEl.addEventListener("input", fitBio); requestAnimationFrame(fitBio);
   let tags = Array.isArray(p.tags) ? p.tags.slice(0, TAG_MAX) : [];
   const drawTags = () => {
     const all = [...tags.filter((x) => !TAG_PRESET.includes(x)), ...TAG_PRESET];

@@ -1145,3 +1145,11 @@ html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
 .tgadd button{font-size:13px;font-weight:700;color:var(--green);padding:0 14px;border:1px solid var(--green);border-radius:8px}
 /* マイページ・プロフィール：名前を上に（数字との間をあける） */
 .uhead .side h1{margin-bottom:14px}
+/* タグの文字を小さく */
+.utags{gap:5px;margin-top:10px}
+.utags span,.utags a{font-size:10.5px;padding:3px 9px}
+.tgpick button{font-size:11.5px;padding:5px 10px}
+/* 投稿タブの＋：緑をやめて他のタブと同じ色、少し大きく */
+.tab button.tpost svg{color:inherit;transform:scale(1.22)}
+/* プロフィール編集の自己紹介：余白を詰め、入力に合わせて高さが伸びる */
+#pfBio{resize:none;min-height:0;field-sizing:content;max-height:180px}
