@@ -91,7 +91,8 @@ const NTAB = () => !!(window.webkit && window.webkit.messageHandlers && window.w
 function syncNativeTab() {
   if (!NTAB()) return;
   document.documentElement.classList.add("ntab");
-  const hidden = STACK.length > 0 || $("app").classList.contains("typing");
+  const sp = $("splash");
+  const hidden = STACK.length > 0 || $("app").classList.contains("typing") || !!(sp && !sp.hidden && !sp.classList.contains("out"));   // 起動のロゴアニメーション中も隠す
   try { window.webkit.messageHandlers.tabbar.postMessage({ tab: curTab === "saved" ? "me" : curTab, hidden }); } catch (e) {}
 }
 window.tbGo = (k) => { if (k === "post" || TABS.some((t) => t[0] === k)) go(k); };
@@ -500,8 +501,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210300").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210300").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210411").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210411").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -728,7 +729,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611210300"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611210411"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1660,6 +1661,7 @@ async function hideSplash() {
   setTimeout(() => {
     setTimeout(() => {
       sp.classList.add("out");
+      setTimeout(syncNativeTab, 450);             // ロゴが消えてホームが出てくるのに合わせて、ネイティブのタブを出す
       $("app").classList.add("intro");            // ホームの各パーツを、上から順にふわっと出す
       setTimeout(() => $("app").classList.remove("intro"), 2400);
       try { sessionStorage.setItem("tbs-splash", "1"); } catch (e) {}
