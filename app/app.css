@@ -1094,5 +1094,8 @@ html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
 #search .sfi{margin-top:6px}
 #search .snum{padding-top:12px}
 /* 記事カードの角を少しだけ丸く（ホーム・探す・マイページ・プロフィール） */
-.oc,.mc .im{border-radius:10px}
-.r img{border-radius:8px}
+.oc,.mc .im{border-radius:6px}
+.r img{border-radius:5px}
+/* セクション見出し：タイトル＋「＞」で一覧へ（「すべて見る」は廃止） */
+.sh .shl{display:flex;align-items:center;gap:3px;color:var(--ink);font:inherit}
+.sh .shl .chev{width:19px;height:19px;color:#9aa1ab;margin-top:1px}
