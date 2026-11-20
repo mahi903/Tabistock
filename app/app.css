@@ -1153,3 +1153,7 @@ html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
 .tab button.tpost svg{color:inherit;transform:scale(1.22)}
 /* プロフィール編集の自己紹介：余白を詰め、入力に合わせて高さが伸びる */
 #pfBio{resize:none;min-height:0;field-sizing:content;max-height:180px}
+.pfl[hidden]{display:none}
+.lgfg[hidden]{display:none}
+/* 通知の数字：丸の真ん中にそろえる（行の高さに左右されないよう1行の高さ＝文字の大きさに） */
+.ti b{display:flex;align-items:center;justify-content:center;height:19px;min-width:19px;padding:0 5px;border-radius:10px;line-height:1;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0}

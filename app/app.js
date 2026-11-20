@@ -489,8 +489,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210120").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210120").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210224").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210224").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -716,7 +716,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611210120"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611210224"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1593,8 +1593,23 @@ async function loadAll() {
   if (curTab === "search") renderSearch();
 }
 
+// DMの未読数：会話の変化をずっと見張って、読んだらすぐ数字が消えるようにする
+let dmUnsub = null;
+async function watchDmBadge() {
+  if (dmUnsub) { dmUnsub(); dmUnsub = null; }
+  const b = $("dmBadge");
+  if (!me) { b.hidden = true; return; }
+  try {
+    const { onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    dmUnsub = onSnapshot(query(collection(db, "conversations"), where("participants", "array-contains", me)), (cs) => {
+      let un = 0; cs.forEach((c) => { un += Number(((c.data().unread || {})[me]) || 0); });
+      b.hidden = !un; b.textContent = un > 99 ? "99+" : un;
+    }, () => {});
+  } catch (e) {}
+}
 onAuthStateChanged(auth, async (u) => {
   me = u ? u.uid : null;
+  if (!me) watchDmBadge();
   saved = new Set();
   if (me) {
     try { (await getDocs(collection(db, "users", me, "saves"))).forEach((s) => saved.add(s.id)); } catch (e) {}
@@ -1603,11 +1618,7 @@ onAuthStateChanged(auth, async (u) => {
       const n = await getCountFromServer(query(collection(db, "users", me, "notifications"), where("read", "==", false)));
       $("bellDot").hidden = !n.data().count;
     } catch (e) {}
-    try {
-      const cs = await getDocs(query(collection(db, "conversations"), where("participants", "array-contains", me)));
-      let un = 0; cs.forEach((c) => { un += Number(((c.data().unread || {})[me]) || 0); });
-      const b = $("dmBadge"); b.hidden = !un; b.textContent = un > 99 ? "99+" : un;
-    } catch (e) {}
+    watchDmBadge();
   }
   if (curTab === "me") renderMe();
   if (!$("folPane").hidden) renderFeed();
