@@ -1093,3 +1093,6 @@ html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
 .uhead .side h1{font-size:15px;font-weight:700;margin:0 0 6px;line-height:1.35}
 #search .sfi{margin-top:6px}
 #search .snum{padding-top:12px}
+/* 記事カードの角を少しだけ丸く（ホーム・探す・マイページ・プロフィール） */
+.oc,.mc .im{border-radius:10px}
+.r img{border-radius:8px}
