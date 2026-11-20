@@ -1131,3 +1131,17 @@ html.native #splash{top:calc(-1 * env(safe-area-inset-top,0px))}
 #search .oc b{font-size:12px}
 #search .oc em{font-size:9px}
 #search .oc small{font-size:9.5px}
+/* 旅のスタイルのタグ */
+.utags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.utags span,.utags a{font-size:12px;font-weight:700;color:#5d6570;padding:5px 11px;border:1px solid #d9dcd6;border-radius:999px;line-height:1.3}
+.utags a.add{color:#8b929b;font-weight:600}
+.pfn{font-size:11.5px;color:var(--muted);margin-top:4px}
+.pfh small{font-family:Manrope;font-weight:700;color:var(--muted);margin-left:6px}
+.tgpick{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.tgpick button{font-size:12.5px;font-weight:600;color:#5d6570;padding:6px 12px;border:1px solid #d9dcd6;border-radius:999px;background:transparent}
+.tgpick button.on{color:#fff;background:var(--green);border-color:var(--green)}
+.tgadd{display:flex;gap:8px;margin-top:12px}
+.tgadd input{flex:1;min-width:0;font-size:14px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.tgadd button{font-size:13px;font-weight:700;color:var(--green);padding:0 14px;border:1px solid var(--green);border-radius:8px}
+/* マイページ・プロフィール：名前を上に（数字との間をあける） */
+.uhead .side h1{margin-bottom:14px}

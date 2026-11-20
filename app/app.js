@@ -489,8 +489,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210013").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210013").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210113").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210113").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -716,7 +716,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611210013"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611210113"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -816,6 +816,14 @@ async function wireFollow(btn, uid, onChange) {
 // SNS（Instagram・X・note・TikTok・YouTube）。ユーザー名でもURLでも入力できる
 const SNS = [["instagram", "Instagram", (h) => `https://www.instagram.com/${h}/`], ["x", "X", (h) => `https://x.com/${h}`], ["note", "note", (h) => `https://note.com/${h}`], ["tiktok", "TikTok", (h) => `https://www.tiktok.com/@${h}`], ["youtube", "YouTube", (h) => `https://www.youtube.com/@${h}`]];
 function snsUrl(key, v) { v = String(v || "").trim(); if (!v) return ""; if (/^https?:\/\//.test(v)) return v; const f = SNS.find((x) => x[0] === key); return f ? f[2](v.replace(/^@/, "")) : ""; }
+// 旅のスタイルのタグ（プロフィールに最大6つ）
+const TAG_MAX = 6;
+const TAG_PRESET = ["一人旅", "バックパッカー", "低予算", "弾丸旅", "周遊", "長期旅", "登山", "自然", "世界遺産", "街歩き", "食べ歩き", "カフェ巡り", "ローカル体験", "ビーチ", "秘境", "鉄道旅", "写真", "ホステル派", "国内旅", "海外旅"];
+function tagChips(p, own) {
+  const t = Array.isArray(p.tags) ? p.tags.slice(0, TAG_MAX) : [];
+  if (!t.length && !own) return "";
+  return `<div class="utags">${t.map((x) => `<span>${esc(x)}</span>`).join("")}${own && t.length < TAG_MAX ? `<a href="#x-profile" class="add" aria-label="タグを追加">＋${t.length ? "" : " 旅のスタイルを追加"}</a>` : ""}</div>`;
+}
 function snsLinks(p) { const a = SNS.map(([k, l]) => { const u = snsUrl(k, p[k]); return u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${l} ↗</a>` : ""; }).filter(Boolean); return a.length ? `<div class="sns">${a.join("")}</div>` : ""; }
 
 // ---------- プロフィール ----------
@@ -828,7 +836,7 @@ async function pageUser(el, uid) {
   const isMe = uid === me;
   el.innerHTML = bar(p.nickname || "旅人", isMe ? "" : '<button class="mo" data-umore>…</button>') + `<div class="ps under2">
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><a href="#f-followers-${esc(uid)}"><b data-fc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(uid)}"><b data-gc>—</b><span>フォロー中</span></a></div></div></div>
-      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${snsLinks(p)}
+      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${tagChips(p, false)}${snsLinks(p)}
       <div class="ub" data-ub></div></div>
     <div class="mtabs itabs" style="margin-top:26px"><button class="on" data-ut="posts" aria-label="投稿">${TI.grid}</button><button data-ut="photos" aria-label="写真">${TI.photo}</button></div>
     <div data-upane="posts">${posts.length ? `<div class="ogrid">${posts.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません</p>'}</div>
@@ -1087,7 +1095,7 @@ function renderMe() {
   box.innerHTML = `<div class="mehead"><b>${esc(p.nickname || "マイページ")}</b><button class="hb" id="meMenu" aria-label="メニュー"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt="">
       <div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー中</span></a></div></div></div>
-      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${snsLinks(p)}
+      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${tagChips(p, true)}${snsLinks(p)}
       <div class="ub"><a class="btn-g" href="#x-profile">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
     <div class="mtabs itabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips" aria-label="旅程">${TI.grid}</button><button class="${myTab === "transit" ? "on" : ""}" data-mt="transit" aria-label="トランジット">${TI.transit}</button><button class="${myTab === "collab" ? "on" : ""}" data-mt="collab" aria-label="共同投稿">${TI.collab}<i id="invDot" hidden></i></button><button class="${myTab === "photos" ? "on" : ""}" data-mt="photos" aria-label="写真">${TI.photo}</button></div>
     <div id="myPosts"><p class="loading">読み込み中…</p></div>`;
@@ -1436,9 +1444,37 @@ async function pageProfileEdit(el) {
     <div class="pfav"><img id="pfImg" src="${esc(p.photoURL || DEF_AV)}" alt=""><label class="btn-g">写真を変更<input type="file" accept="image/*" id="pfFile" hidden></label></div>
     <label class="pfl">ユーザーネーム<input id="pfNick" maxlength="30" value="${esc(p.nickname || "")}"></label>
     <label class="pfl">自己紹介<textarea id="pfBio" rows="4" maxlength="300">${esc(p.bio || "")}</textarea></label>
+    <p class="pfh">旅のスタイル <small id="tgCnt"></small></p>
+    <p class="pfn">あなたの旅を表すタグを${TAG_MAX}つまで選べます</p>
+    <div class="tgpick" id="tgPick"></div>
+    <div class="tgadd"><input id="tgNew" maxlength="12" placeholder="自分で追加（12文字まで）"><button id="tgAdd" type="button">追加</button></div>
     <p class="pfh">SNS（ユーザー名 または URL）</p>
     ${SNS.map(([k, l]) => `<label class="pfl">${l}<input data-sns="${k}" autocapitalize="off" autocorrect="off" placeholder="${k === "note" ? "noteのID" : "@なしのユーザー名"}" value="${esc(p[k] || "")}"></label>`).join("")}
     <p class="pfm" id="pfMsg"></p></div></div>`;
+  let tags = Array.isArray(p.tags) ? p.tags.slice(0, TAG_MAX) : [];
+  const drawTags = () => {
+    const all = [...tags.filter((x) => !TAG_PRESET.includes(x)), ...TAG_PRESET];
+    el.querySelector("#tgPick").innerHTML = all.map((x) => `<button type="button" class="${tags.includes(x) ? "on" : ""}" data-tg="${esc(x)}">${esc(x)}</button>`).join("");
+    el.querySelector("#tgCnt").textContent = `${tags.length}/${TAG_MAX}`;
+  };
+  drawTags();
+  el.querySelector("#tgPick").onclick = (e) => {
+    const b = e.target.closest("[data-tg]"); if (!b) return;
+    const x = b.dataset.tg;
+    if (tags.includes(x)) tags = tags.filter((y) => y !== x);
+    else if (tags.length >= TAG_MAX) { toast(`タグは${TAG_MAX}つまでです`); return; }
+    else tags.push(x);
+    drawTags(); haptic();
+  };
+  const addTag = () => {
+    const i = el.querySelector("#tgNew"), x = i.value.replace(/[#＃\s]/g, "").slice(0, 12);
+    if (!x) return;
+    if (tags.includes(x)) { i.value = ""; return; }
+    if (tags.length >= TAG_MAX) { toast(`タグは${TAG_MAX}つまでです`); return; }
+    tags.push(x); i.value = ""; drawTags(); haptic();
+  };
+  el.querySelector("#tgAdd").onclick = addTag;
+  el.querySelector("#tgNew").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } };
   const msg = (t, ok) => { const m = el.querySelector("#pfMsg"); m.textContent = t; m.style.color = ok ? "var(--green)" : "#d4493f"; };
   el.querySelector("#pfFile").onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return;
@@ -1473,9 +1509,9 @@ async function pageProfileEdit(el) {
         const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
         await A.updateProfile(auth.currentUser, { displayName: nick });
       }
-      await setDoc(doc(db, "publicProfiles", me), { nickname: nick, bio, ...sns, ...(p.photoURL ? { photoURL: p.photoURL } : {}) }, { merge: true });
-      await setDoc(doc(db, "users", me), { nickname: nick, bio, ...sns }, { merge: true });
-      PROF[me] = { ...(PROF[me] || {}), nickname: nick, bio, ...sns };
+      await setDoc(doc(db, "publicProfiles", me), { nickname: nick, bio, tags, ...sns, ...(p.photoURL ? { photoURL: p.photoURL } : {}) }, { merge: true });
+      await setDoc(doc(db, "users", me), { nickname: nick, bio, tags, ...sns }, { merge: true });
+      PROF[me] = { ...(PROF[me] || {}), nickname: nick, bio, tags, ...sns };
       toast("プロフィールを保存しました"); haptic();
       if (curTab === "me") renderMe();
       back();
