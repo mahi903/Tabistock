@@ -83,7 +83,18 @@ function renderTab() {
   const target = btns.find((b) => b.dataset.go === act);
   btns.forEach((b) => b.classList.toggle("on", b === target));
   moveInd(target);
+  syncNativeTab();
 }
+// アプリ（iPhone）では、下のタブを iOS 標準のタブバー（Liquid Glass）に任せる。
+// ネイティブ側に「tabbar」の窓口があるときだけ、Webのタブを隠して、選択中のタブと表示・非表示をネイティブへ伝える
+const NTAB = () => !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.tabbar);
+function syncNativeTab() {
+  if (!NTAB()) return;
+  document.documentElement.classList.add("ntab");
+  const hidden = STACK.length > 0 || $("app").classList.contains("typing");
+  try { window.webkit.messageHandlers.tabbar.postMessage({ tab: curTab === "saved" ? "me" : curTab, hidden }); } catch (e) {}
+}
+window.tbGo = (k) => { if (k === "post" || TABS.some((t) => t[0] === k)) go(k); };
 let indAt = null;
 function moveInd(target) {
   const ind = $("tab").querySelector(".ind");
@@ -102,8 +113,8 @@ function moveInd(target) {
 }
 addEventListener("resize", () => { indAt = null; renderTab(); });
 // タブの画面で文字を入力している間は、下のタブを隠す（キーボードの上にタブが乗って入力欄の邪魔になるため）
-document.addEventListener("focusin", (e) => { if (e.target.matches("textarea, input[type=text], input[type=search], input:not([type])") && !e.target.closest(".page, #bs")) $("app").classList.add("typing"); });
-document.addEventListener("focusout", () => setTimeout(() => { const a = document.activeElement; if (!a || !a.matches || !a.matches("textarea, input")) $("app").classList.remove("typing"); }, 50));
+document.addEventListener("focusin", (e) => { if (e.target.matches("textarea, input[type=text], input[type=search], input:not([type])") && !e.target.closest(".page, #bs")) { $("app").classList.add("typing"); syncNativeTab(); } });
+document.addEventListener("focusout", () => setTimeout(() => { const a = document.activeElement; if (!a || !a.matches || !a.matches("textarea, input")) { $("app").classList.remove("typing"); syncNativeTab(); } }, 50));
 function go(k, opt = {}) {
   if (STACK.length) { location.hash = ""; }
   if (k === curTab && !Object.keys(opt).length) { $(k).scrollTo({ top: 0, behavior: "smooth" }); return; }
@@ -474,7 +485,7 @@ function pushPage(h) {
   el.className = "page"; el.style.zIndex = 40 + STACK.length;
   $("pages").appendChild(el);
   STACK.push({ hash: h, el });
-  $("tab").classList.add("hide"); $("aiCmp").hidden = true;
+  $("tab").classList.add("hide"); $("aiCmp").hidden = true; syncNativeTab();
   swipeBack(el);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
   const m = h.match(/^#(a|u|dm|w|fare|f|x|n|p)-?(.*)$/);
@@ -489,8 +500,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210232").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210232").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210300").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210300").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -499,6 +510,7 @@ function popPage() {
   top.el.classList.remove("open");
   setTimeout(() => top.el.remove(), 380);
   if (!STACK.length) { $("tab").classList.remove("hide"); $("aiCmp").hidden = curTab !== "ai"; }
+  syncNativeTab();
 }
 const back = () => (history.length > 1 ? history.back() : (location.hash = ""));
 function swipeBack(el) {
@@ -716,7 +728,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611210232"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611210300"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
