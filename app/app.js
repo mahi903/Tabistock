@@ -84,7 +84,10 @@ function renderTab() {
   btns.forEach((b) => b.classList.toggle("on", b === target));
   moveInd(target);
   syncNativeTab();
+  if (act === "ai" && aiLastTab !== "ai") aiSymPlay();   // AI相談を開くたびに、見出しの星を組み上げ直す
+  aiLastTab = act;
 }
+let aiLastTab = null;
 // アプリ（iPhone）では、下のタブを iOS 標準のタブバー（Liquid Glass）に任せる。
 // ネイティブ側に「tabbar」の窓口があるときだけ、Webのタブを隠して、選択中のタブと表示・非表示をネイティブへ伝える
 const NTAB = () => !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.tabbar);
@@ -501,8 +504,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611210411").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611210411").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611211415").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611211415").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -729,7 +732,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611210411"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611211415"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1552,23 +1555,55 @@ let aiConv = [], aiBusy = false;
 const aiKey = () => (me ? "tabistock-ask-v1:" + me : null);
 function aiLoad() { try { const v = JSON.parse(localStorage.getItem(aiKey()) || "[]"); aiConv = Array.isArray(v) ? v : []; } catch (e) { aiConv = []; } }
 function aiSave() { try { if (aiKey()) localStorage.setItem(aiKey(), JSON.stringify(aiConv.slice(-40))); } catch (e) {} }
-function aiBubble(m) {
-  if (m.role === "user") return `<div class="msg u">${esc(m.content)}</div>`;
+// AIのシンボル：3枚のコンパスの星を、奥（薄い緑）から手前（濃い緑）へ重ねたもの。重なりは乗算で少し透ける
+const AI_SP = ["M0 -250Q-21.2 -21.2 -125 0Q-21.2 21.2 0 150Q21.2 21.2 125 0Q21.2 -21.2 0 -250Z", "M0 -210Q-17.8 -17.8 -105 0Q-17.8 17.8 0 126Q17.8 17.8 105 0Q17.8 -17.8 0 -210Z", "M0 -170Q-14.4 -14.4 -85 0Q-14.4 14.4 0 102Q14.4 14.4 85 0Q14.4 -14.4 0 -170Z"];
+const AI_COL = [["#d6f6e6", "#9fdcc0"], ["#5cc596", "#24936c"], ["#1f8a65", "#0b4636"]], AI_DY = [-40, -10, 20];
+let aiSymN = 0;
+function aiSym(cls = "") {
+  const id = "ais" + aiSymN++;
+  return `<svg class="aisym ${cls}" viewBox="-140 -300 280 480" aria-hidden="true"><defs>${AI_COL.map((c, i) => `<linearGradient id="${id}${i}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c[0]}"/><stop offset="1" stop-color="${c[1]}"/></linearGradient>`).join("")}</defs><g style="isolation:isolate">${AI_SP.map((d, i) => `<g class="s${i}" transform="translate(0 ${AI_DY[i]})"><g class="b"><path d="${d}" fill="url(#${id}${i})"/></g></g>`).join("")}</g></svg>`;
+}
+function aiSymPlay() {
+  const h = $("aiSymH"); if (!h) return;
+  h.classList.remove("in"); void h.getBoundingClientRect(); h.classList.add("in");
+}
+$("aiSymH").innerHTML = aiSym();
+function aiBody(m) {
   const arts = (m.articles || []).map((a) => `<a class="aref" href="#a-${esc(a.id)}">${a.country ? `<em>${esc(a.country)}</em>` : ""}<span>${esc(a.title)}</span><b>→</b></a>`).join("");
   const fare = m.fares ? '<a class="aref" href="#fare"><em>航空券</em><span>相場カレンダーで月ごとの値段を見る</span><b>→</b></a>' : "";
-  return `<div class="msg a">${m.html || esc(m.content).replace(/\n/g, "<br>")}${arts || fare ? `<div class="arefs">${fare}${arts ? '<p class="arh">詳しくはこちらの記事を参考に</p>' + arts : ""}</div>` : ""}</div>`;
+  return `<div class="mt">${m.html || esc(m.content).replace(/\n/g, "<br>")}</div>${arts || fare ? `<div class="arefs">${fare}${arts ? '<p class="arh">詳しくはこちらの記事を参考に</p>' + arts : ""}</div>` : ""}`;
 }
-function aiRender(extra = "") {
+function aiBubble(m) {
+  if (m.role === "user") return `<div class="msg u">${esc(m.content)}</div>`;
+  return `<div class="msg a">${aiSym()}<div class="mb">${aiBody(m)}</div></div>`;
+}
+let aiTypeT = null;
+function aiRender(extra = "", typeLast = false) {
+  clearInterval(aiTypeT);
   $("aiIntro").hidden = !!aiConv.length; $("aiNew").hidden = !aiConv.length;
   $("aiLog").innerHTML = aiConv.map(aiBubble).join("") + extra;
-  requestAnimationFrame(() => $("ai").scrollTo({ top: 1e6, behavior: "smooth" }));
+  const end = () => requestAnimationFrame(() => $("ai").scrollTo({ top: 1e6, behavior: "smooth" }));
+  end();
+  // 届いたばかりの答えは、文字が流れるように出す（記事の案内は最後にふわっと出す）
+  const m = aiConv[aiConv.length - 1];
+  if (!typeLast || !m || m.role === "user" || m.html || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const box = $("aiLog").lastElementChild, mt = box.querySelector(".mt"), refs = box.querySelector(".arefs");
+  const full = m.content || ""; let n = 0;
+  if (refs) refs.classList.add("wait");
+  mt.textContent = "";
+  aiTypeT = setInterval(() => {
+    n = Math.min(full.length, n + 3);
+    mt.innerHTML = esc(full.slice(0, n)).replace(/\n/g, "<br>");
+    if (n % 30 < 3) end();
+    if (n >= full.length) { clearInterval(aiTypeT); if (refs) refs.classList.remove("wait"); end(); }
+  }, 30);
 }
 async function aiSend(q) {
   q = (q || "").trim(); if (!q || aiBusy) return;
   if (!me) { aiRender(aiBubble({ role: "assistant", html: '相談するには<a href="#x-login" style="color:var(--green);font-weight:700">ログイン</a>が必要です。' })); return; }
   aiBusy = true; $("aiSend").disabled = true;
   aiConv.push({ role: "user", content: q });
-  aiRender('<div class="msg a"><span class="typing"><i></i><i></i><i></i></span> 旅程記事を読んでいます</div>');
+  aiRender(`<div class="msg a">${aiSym("think")}<div class="mb"><p class="th">旅程記事を探しています…</p></div></div>`);
   try {
     const token = await auth.currentUser.getIdToken();
     const history = aiConv.slice(-20).map((m) => (m.role === "user" ? { role: "user", content: m.content } : { role: "assistant", content: m.content, articleIds: (m.articles || []).map((a) => a.id), usedFares: !!m.fares }));
@@ -1576,7 +1611,7 @@ async function aiSend(q) {
     const data = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(String(r.status));
     aiConv.push({ role: "assistant", content: data.answer || "", articles: data.articles || [], fares: !!data.fares });
-    aiSave(); aiRender();
+    aiSave(); aiRender("", true);
   } catch (e) {
     aiConv.pop(); $("aiIn").value = q;
     aiRender(aiBubble({ role: "assistant", html: `うまく相談できませんでした。少し時間をおいてもう一度お試しください。<br><small style="color:var(--muted)">（エラー：${esc((e && e.message) || "通信")}）</small>` }));
