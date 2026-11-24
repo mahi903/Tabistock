@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242200";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242217";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -475,7 +475,7 @@ $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) 
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611242200");
+  const M = await import("./sodan.js?v=202611242217");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -538,6 +538,7 @@ const TI = {
   grid: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="5" height="5" rx="1.2"/><rect x="9.5" y="3" width="5" height="5" rx="1.2"/><rect x="16" y="3" width="5" height="5" rx="1.2"/><rect x="3" y="9.5" width="5" height="5" rx="1.2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1.2"/><rect x="16" y="9.5" width="5" height="5" rx="1.2"/><rect x="3" y="16" width="5" height="5" rx="1.2"/><rect x="9.5" y="16" width="5" height="5" rx="1.2"/><rect x="16" y="16" width="5" height="5" rx="1.2"/></svg>',
   transit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3.5l3.5 3.5L17 10.5"/><path d="M4 11V9.5a2.5 2.5 0 0 1 2.5-2.5h14"/><path d="M7 20.5L3.5 17 7 13.5"/><path d="M20 13v1.5a2.5 2.5 0 0 1-2.5 2.5h-14"/></svg>',
   collab: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="3.3"/><path d="M3 20c0-3.3 2.7-5.6 6-5.6s6 2.3 6 5.6"/><path d="M15.5 5.4a3.3 3.3 0 0 1 0 6.2"/><path d="M17.5 14.6c2 .7 3.5 2.6 3.5 5.4"/></svg>',
+  sodan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3.5 4.5h12v9H8.5l-3.5 3v-3H3.5z"/><path d="M17.5 8.5h3v9h-2v3l-3.5-3H10v-2"/></svg>',
   photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="3.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M20.5 15.5l-4.5-4.5L5 20.3"/></svg>',
 };
 const BACK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
@@ -572,8 +573,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242200").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242200").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242217").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242217").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -853,7 +854,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611242200"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611242217"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -975,8 +976,9 @@ async function pageUser(el, uid) {
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><a href="#f-followers-${esc(uid)}"><b data-fc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(uid)}"><b data-gc>—</b><span>フォロー中</span></a></div></div></div>
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${tagChips(p, false)}${snsLinks(p)}
       <div class="ub" data-ub></div></div>
-    <div class="mtabs itabs" style="margin-top:26px"><button class="on" data-ut="posts" aria-label="投稿">${TI.grid}</button><button data-ut="photos" aria-label="写真">${TI.photo}</button></div>
+    <div class="mtabs itabs" style="margin-top:26px"><button class="on" data-ut="posts" aria-label="投稿">${TI.grid}</button><button data-ut="sodan" aria-label="たび相談">${TI.sodan}</button><button data-ut="photos" aria-label="写真">${TI.photo}</button></div>
     <div data-upane="posts">${posts.length ? `<div class="ogrid">${posts.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません</p>'}</div>
+    <div data-upane="sodan" hidden></div>
     <div data-upane="photos" hidden>${photoMosaic(posts.filter((d) => d.authorId === uid)) || '<p class="empty">まだ写真がありません</p>'}</div>
   </div>`;
   const cnt = async () => {
@@ -984,7 +986,7 @@ async function pageUser(el, uid) {
     try { el.querySelector("[data-gc]").textContent = (await getCountFromServer(collection(db, "users", uid, "following"))).data().count; } catch (e) {}
   };
   cnt();
-  el.querySelectorAll("[data-ut]").forEach((b) => (b.onclick = () => { el.querySelectorAll("[data-ut]").forEach((x) => x.classList.toggle("on", x === b)); el.querySelectorAll("[data-upane]").forEach((x) => (x.hidden = x.dataset.upane !== b.dataset.ut)); haptic(); }));
+  el.querySelectorAll("[data-ut]").forEach((b) => (b.onclick = () => { el.querySelectorAll("[data-ut]").forEach((x) => x.classList.toggle("on", x === b)); el.querySelectorAll("[data-upane]").forEach((x) => (x.hidden = x.dataset.upane !== b.dataset.ut)); if (b.dataset.ut === "sodan") SD().then((M) => M.renderMine(el.querySelector('[data-upane="sodan"]'), uid, isMe)); haptic(); }));
   const ub = el.querySelector("[data-ub]");
   if (isMe) { ub.innerHTML = '<a class="btn-g" href="#x-profile">プロフィールを編集</a>'; return; }
   let blocked = false; if (me) { try { blocked = await (await mod()).isBlocked(uid); } catch (e) {} }
@@ -1228,13 +1230,13 @@ function renderMe() {
   const mine = ALL.filter((d) => d.authorId === me || (d.coAuthorIds || []).includes(me));
   const ig = String(p.instagram || "").trim();
   const igUrl = ig ? (/^https?:\/\//.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/") : "";
-  myTab = myTab || "trips";
+  myTab = myTab && myTab !== "transit" ? myTab : "trips";
   box.innerHTML = `<div class="mehead"><b>${esc(p.nickname || "マイページ")}</b><button class="hb" id="meMenu" aria-label="メニュー"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt="">
       <div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー中</span></a></div></div></div>
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${tagChips(p, true)}${snsLinks(p)}
-      <div class="ub"><a class="btn-g" href="#x-profile">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
-    <div class="mtabs itabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips" aria-label="旅程">${TI.grid}</button><button class="${myTab === "transit" ? "on" : ""}" data-mt="transit" aria-label="トランジット">${TI.transit}</button><button class="${myTab === "collab" ? "on" : ""}" data-mt="collab" aria-label="共同投稿">${TI.collab}<i id="invDot" hidden></i></button><button class="${myTab === "photos" ? "on" : ""}" data-mt="photos" aria-label="写真">${TI.photo}</button></div>
+      <div class="ub mub"><a class="btn-g" href="#x-profile">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
+    <div class="mtabs itabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips" aria-label="旅程">${TI.grid}</button><button class="${myTab === "collab" ? "on" : ""}" data-mt="collab" aria-label="共同投稿">${TI.collab}<i id="invDot" hidden></i></button><button class="${myTab === "sodan" ? "on" : ""}" data-mt="sodan" aria-label="たび相談">${TI.sodan}</button><button class="${myTab === "photos" ? "on" : ""}" data-mt="photos" aria-label="写真">${TI.photo}</button></div>
     <div id="myPosts"><p class="loading">読み込み中…</p></div>`;
   box.querySelectorAll("[data-mt]").forEach((b) => (b.onclick = () => { myTab = b.dataset.mt; box.querySelectorAll("[data-mt]").forEach((x) => x.classList.toggle("on", x === b)); drawMyPosts(); haptic(); }));
   loadMyPosts();
@@ -1261,7 +1263,8 @@ async function loadMyPosts() {
   docs.forEach((d) => (BY[d.id] = BY[d.id] || d));
   docs.sort((x, y) => ((y.createdAt || {}).seconds || 0) - ((x.createdAt || {}).seconds || 0));
   const owned = docs.filter((d) => !d._collab);
-  MY = { trips: owned.filter((d) => d.type !== "transit"), transit: owned.filter((d) => d.type === "transit"), collab: docs.filter((d) => d._collab || (d.coAuthorIds || []).length || (d.coAuthorInvites || []).length), invites };
+  MY = { trips: owned,   // トランジット記事も旅程タブにまとめて並べる
+     transit: owned.filter((d) => d.type === "transit"), collab: docs.filter((d) => d._collab || (d.coAuthorIds || []).length || (d.coAuthorInvites || []).length), invites };
   await loadProfiles(invites.map((d) => d.authorId));
   ["trips", "transit", "collab"].forEach((k) => { const n = document.querySelector(`[data-mn="${k}"]`); if (n) n.textContent = MY[k].length || ""; });
   const dot = $("invDot"); if (dot) dot.hidden = !invites.length;
@@ -1274,6 +1277,7 @@ function myCard(d, editLink) {
 }
 function drawMyPosts() {
   const box = $("myPosts"); if (!box) return;
+  if (myTab === "sodan") { SD().then((M) => M.renderMine(box, me, true)); return; }
   if (myTab === "photos") {
     const mine = [...MY.trips, ...MY.transit].filter((d) => d.authorId === me);
     box.innerHTML = photoMosaic(mine) || '<p class="empty">まだ写真がありません。<br>旅程の DAY に写真を入れると、ここに並びます。</p>';

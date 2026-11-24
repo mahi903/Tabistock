@@ -100,6 +100,10 @@ service cloud.firestore {
                     || (isSignedIn()
                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replyCount', 'lastReplyAt'])
                         && (delta('replyCount') == 1 || delta('replyCount') == -1))
+                    // 本人は「解決済み／未解決」を切り替えられる
+                    || (isSignedIn() && resource.data.uid == request.auth.uid
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['solved', 'solvedAt'])
+                        && request.resource.data.solved is bool)
                     // 本人は本文だけ書き直せる
                     || (isSignedIn() && resource.data.uid == request.auth.uid
                         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])

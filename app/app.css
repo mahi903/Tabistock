@@ -1324,3 +1324,20 @@ html.ntab .tab{display:none}
 .skind.k-flight{color:#2f6fa3;border-color:#2f6fa3}
 .skind.k-save{color:#a8741f;border-color:#a8741f}
 .skind.k-chat{color:#6c7787;border-color:#9aa1ab}
+/* たび相談：解決済み／未解決 */
+.sst{display:inline-flex!important;align-items:center;gap:3px;font-size:11px!important;font-weight:700;color:#e2683b!important}
+.sst.ok{color:var(--green)!important}.sst svg{width:12px!important;height:12px!important}
+.ssolve{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 20px;background:var(--green-t);border-bottom:1px solid var(--line);font-size:12px;color:var(--ink)}
+.ssolve button,.mtog{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:4px;border:1px solid var(--green);color:var(--green);background:#fff}
+.ssolve button.on,.mtog.on{background:var(--green);color:#fff}
+.ssolve button svg,.mtog svg{width:13px;height:13px}
+.mtog{margin-left:auto}
+.smine{font-size:12.5px;font-weight:700;color:#e2683b;padding:14px 20px 0}
+.mrow{padding:14px 20px;border-bottom:1px solid var(--line);cursor:pointer}
+.mtop{display:flex;align-items:center;gap:8px}.mtop .skind{margin-left:0}.mtop small{margin-left:auto;font-size:11.5px;color:var(--muted)}
+.sft>span,.sft>button{white-space:nowrap}.sft{gap:12px}
+/* マイページのボタンを少し小さく */
+.uhead .ub.mub>*{font-size:12px;padding:5px 0}
+/* マイページの「たび相談」：解決済みボタンにゆとり */
+.mrow .sft{margin-top:10px}
+.mtog{padding:7px 14px!important;font-size:12.5px!important;gap:5px!important}

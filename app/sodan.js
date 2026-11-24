@@ -6,7 +6,7 @@
 // 一覧は新しい順に最大200件を読み、種類・エリア・並び順は手元で絞り込む（複合インデックスを使わない）
 import { db } from "../firebase-config.js";
 import {
-  collection, query, orderBy, limit, getDocs, doc, getDoc, setDoc, deleteDoc, addDoc, updateDoc, increment, serverTimestamp,
+  collection, query, where, orderBy, limit, getDocs, doc, getDoc, setDoc, deleteDoc, addDoc, updateDoc, increment, serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 export const KINDS = [["q", "質問・相談"], ["info", "現地の情報"], ["flight", "航空券"], ["save", "節約"], ["chat", "雑談"]];
@@ -15,6 +15,7 @@ const kindName = (k) => (KINDS.find((x) => x[0] === k) || [, ""])[1];
 const areaName = (a) => (AREAS.find((x) => x[0] === a) || [, ""])[1];
 const HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>';
 const BUB = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 5h16v11H9l-4 4V5z"/></svg>';
+const CHK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
 const DOTS = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
 
 let C = null;                       // app.js から渡される道具（me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar, notify）
@@ -39,12 +40,20 @@ async function load(force) {
   return LIST;
 }
 
+// 質問・相談の状態：投稿した本人が「解決済み」にする
+const stateTag = (p) => (p.kind !== "q" ? "" : p.solved ? `<span class="sst ok">${CHK}解決済み</span>` : '<span class="sst">未解決</span>');
+async function setSolved(p, v) {
+  try {
+    await updateDoc(doc(db, "sodan", p.id), { solved: v, solvedAt: serverTimestamp() });
+    p.solved = v; invalidate(); C.haptic(); C.toast(v ? "解決済みにしました" : "未解決に戻しました");
+  } catch (e) { console.error(e); C.toast("変更できませんでした"); }
+}
 function postRow(p, full) {
   const text = full ? C.para(p.text) : C.esc(p.text).replace(/\n/g, "<br>");
   return `<div class="spost${full ? " full" : ""}" ${full ? "" : `data-open="${C.esc(p.id)}"`}>${avatar(p.uid, full ? 32 : 38)}<div class="sb">
     <div class="shd">${who(p.uid)}${p.kind ? `<span class="skind k-${C.esc(p.kind)}">${C.esc(kindName(p.kind))}</span>` : ""}</div>
     <p class="stx${full ? "" : " clamp"}" data-ptx="${C.esc(p.id)}">${text}${p.editedAt ? '<span class="sed">（編集済み）</span>' : ""}</p>
-    <div class="sft"><span>${C.ago(secOf(p.createdAt))}</span>${p.area ? `<span>${C.esc(areaName(p.area))}</span>` : ""}<button class="slk" data-like="${C.esc(p.id)}">${HEART}<i>${p.likeCount || 0}</i></button>${full ? "" : `<span class="src">${BUB}${p.replyCount || 0}</span>`}<button class="smore" data-pmore="${C.esc(p.id)}" aria-label="その他">${DOTS}</button></div>
+    <div class="sft">${stateTag(p)}<span>${C.ago(secOf(p.createdAt))}</span>${p.area ? `<span>${C.esc(areaName(p.area))}</span>` : ""}<button class="slk" data-like="${C.esc(p.id)}">${HEART}<i>${p.likeCount || 0}</i></button>${full ? "" : `<span class="src">${BUB}${p.replyCount || 0}</span>`}<button class="smore" data-pmore="${C.esc(p.id)}" aria-label="その他">${DOTS}</button></div>
   </div></div>`;
 }
 
@@ -56,12 +65,12 @@ export async function renderSodan() {
   try { list = await load(); } catch (e) { console.error(e); box.innerHTML = '<p class="fol-empty">読み込めませんでした。時間をおいてもう一度開いてください。</p>'; return; }
   let shown = list.filter((p) => (!fKind || p.kind === fKind) && (!fArea || p.area === fArea));
   if (fSort === "pop") shown = shown.slice().sort((a, b) => ((b.likeCount || 0) + 2 * (b.replyCount || 0)) - ((a.likeCount || 0) + 2 * (a.replyCount || 0)));
-  if (fSort === "open") shown = shown.filter((p) => p.kind === "q" && !(p.replyCount > 0));
+  if (fSort === "open") shown = shown.filter((p) => p.kind === "q" && !p.solved);
   const liked = await likedSet(shown.map((p) => p.id));
   box.innerHTML = `
     <div class="schips">${[["", "すべて"], ...KINDS].map(([k, l]) => `<button class="${k === fKind ? "on" : ""}" data-k="${k}">${l}</button>`).join("")}</div>
     <div class="schips sa">${[["", "全エリア"], ...AREAS].map(([k, l]) => `<button class="${k === fArea ? "on" : ""}" data-a="${k}">${l}</button>`).join("")}</div>
-    <div class="ssort">${[["new", "新着"], ["pop", "人気"], ["open", "回答募集中"]].map(([k, l]) => `<button class="${k === fSort ? "on" : ""}" data-s="${k}">${l}</button>`).join("")}</div>
+    <div class="ssort">${[["new", "新着"], ["pop", "人気"], ["open", "未解決の相談"]].map(([k, l]) => `<button class="${k === fSort ? "on" : ""}" data-s="${k}">${l}</button>`).join("")}</div>
     <div class="slist">${shown.length ? shown.map((p) => postRow(p)).join("") : `<p class="fol-empty">${list.length ? "まだこの条件の投稿はありません。" : "まだ投稿がありません。最初の相談を書いてみませんか？"}</p>`}</div>
     <div style="height:110px"></div>`;
   box.querySelectorAll("[data-k]").forEach((b) => (b.onclick = () => { fKind = b.dataset.k; C.haptic(); renderSodan(); }));
@@ -103,6 +112,7 @@ function bindPostActions(root, liked, list) {
 async function moreMenu({ kind, p, r }) {
   const me = C.me(), M = await C.mod(), item = r || p, uid = item.uid;
   const items = [];
+  if (me && uid === me && kind === "post" && p.kind === "q") items.push({ label: p.solved ? "未解決に戻す" : "解決済みにする", onClick: async () => { await setSolved(p, !p.solved); if (location.hash.startsWith("#c-")) C.reopen(); else renderSodan(); } });
   if (me && uid === me) items.push({ label: "編集する", onClick: () => editText(kind, p, r) });
   if (me && uid === me) items.push({ label: "削除する", red: true, onClick: async () => {
     if (!confirm(kind === "post" ? "この投稿を削除しますか？" : "この回答を削除しますか？")) return;
@@ -165,7 +175,8 @@ export async function pageSodan(el, id) {
   const likedR = new Set();
   if (me) await Promise.all(reps.map(async (r) => { try { if ((await getDoc(doc(db, "sodan", id, "replies", r.id, "likes", me))).exists()) likedR.add(r.id); } catch (e) {} }));
 
-  ps.innerHTML = `${postRow(p, true)}
+  const own = me && p.uid === me && p.kind === "q";
+  ps.innerHTML = `${postRow(p, true)}${own ? `<div class="ssolve"><span>${p.solved ? "この相談は解決済みです" : "回答をもらって解決したら、解決済みにしてください"}</span><button class="${p.solved ? "" : "on"}" data-solve>${p.solved ? "未解決に戻す" : CHK + "解決済みにする"}</button></div>` : ""}
     <p class="srh">回答・コメント（${reps.length}）</p>
     <div class="sreps">${reps.length ? reps.map((r) => `<div class="srep">${avatar(r.uid, 34)}<div class="sb">
       <div class="shd">${who(r.uid)}</div>
@@ -175,6 +186,7 @@ export async function pageSodan(el, id) {
     </div></div>`).join("") : '<p class="fol-empty" style="padding:24px 20px">まだ回答はありません。最初に答えてみませんか？</p>'}</div>
     <div style="height:140px"></div>`;
   bindPostActions(ps, likedP, [p]);
+  const sb = ps.querySelector("[data-solve]"); if (sb) sb.onclick = async () => { sb.disabled = true; await setSolved(p, !p.solved); C.reopen(); };
   ps.querySelectorAll("[data-rlike]").forEach((b) => (b.onclick = async () => {
     if (!me) { C.toast("いいねするにはログインが必要です"); location.hash = "#x-login"; return; }
     const rid = b.dataset.rlike, on = !b.classList.contains("on"), n = b.querySelector("i");
@@ -257,4 +269,23 @@ export function pageSodanNew(el) {
       history.back(); setTimeout(() => { location.hash = "#c-" + r.id; }, 450);
     } catch (e) { console.error(e); C.toast("投稿できませんでした"); go.disabled = false; go.textContent = "投稿"; }
   };
+}
+
+// ---------- プロフィールの「たび相談」：その人の投稿。本人なら、未解決／解決済みをここで切り替えられる ----------
+export async function renderMine(box, uid, isOwner) {
+  box.innerHTML = '<p class="fol-empty">読み込み中…</p>';
+  let list = [];
+  try { (await getDocs(query(collection(db, "sodan"), where("uid", "==", uid), limit(100)))).forEach((d) => list.push({ id: d.id, ...d.data() })); }
+  catch (e) { console.error(e); box.innerHTML = '<p class="empty">読み込めませんでした</p>'; return; }
+  list = list.filter((p) => p.status !== "hidden").sort((a, b) => secOf(b.createdAt) - secOf(a.createdAt));
+  await C.loadProfiles([uid]);
+  if (!list.length) { box.innerHTML = `<p class="empty">${isOwner ? 'まだたび相談の投稿がありません<br><br><a class="btn-s" href="#c-new">相談を書く</a>' : "まだたび相談の投稿はありません"}</p>`; return; }
+  const open = list.filter((p) => p.kind === "q" && !p.solved).length;
+  box.innerHTML = `${isOwner && open ? `<p class="smine">未解決の相談 ${open}件</p>` : ""}<div class="slist">${list.map((p) => `<div class="mrow" data-open="${C.esc(p.id)}">
+      <div class="mtop"><span class="skind k-${C.esc(p.kind || "")}">${C.esc(kindName(p.kind))}</span>${stateTag(p)}<small>${C.ago(secOf(p.createdAt))}</small></div>
+      <p class="stx clamp">${C.esc(p.text)}</p>
+      <div class="sft"><span>${HEART}${p.likeCount || 0}</span><span>${BUB}${p.replyCount || 0}</span>${isOwner && p.kind === "q" ? `<button class="mtog${p.solved ? "" : " on"}" data-tog="${C.esc(p.id)}">${p.solved ? "未解決に戻す" : CHK + "解決済みにする"}</button>` : ""}</div>
+    </div>`).join("")}</div>`;
+  box.querySelectorAll("[data-open]").forEach((r) => (r.onclick = (e) => { if (e.target.closest("a,button")) return; location.hash = "#c-" + r.dataset.open; }));
+  box.querySelectorAll("[data-tog]").forEach((b) => (b.onclick = async (e) => { e.stopPropagation(); b.disabled = true; const p = list.find((x) => x.id === b.dataset.tog); await setSolved(p, !p.solved); renderMine(box, uid, isOwner); }));
 }
