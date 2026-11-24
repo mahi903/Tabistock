@@ -176,7 +176,7 @@ export async function pageSodan(el, id) {
   if (me) await Promise.all(reps.map(async (r) => { try { if ((await getDoc(doc(db, "sodan", id, "replies", r.id, "likes", me))).exists()) likedR.add(r.id); } catch (e) {} }));
 
   const own = me && p.uid === me && p.kind === "q";
-  ps.innerHTML = `${postRow(p, true)}${own ? `<div class="ssolve"><span>${p.solved ? "この相談は解決済みです" : "回答をもらって解決したら、解決済みにしてください"}</span><button class="${p.solved ? "" : "on"}" data-solve>${p.solved ? "未解決に戻す" : CHK + "解決済みにする"}</button></div>` : ""}
+  ps.innerHTML = `${postRow(p, true)}${own ? `<div class="ssolve"><span>${p.solved ? "この相談は解決済みです（もう一度押すと未解決に戻せます）" : "回答をもらって解決したら、解決済みにしてください"}</span><button class="mtog${p.solved ? " on" : ""}" data-solve>${p.solved ? CHK + "解決済み" : "解決済みにする"}</button></div>` : ""}
     <p class="srh">回答・コメント（${reps.length}）</p>
     <div class="sreps">${reps.length ? reps.map((r) => `<div class="srep">${avatar(r.uid, 34)}<div class="sb">
       <div class="shd">${who(r.uid)}</div>
@@ -287,7 +287,7 @@ export async function renderMine(box, uid, isOwner) {
   box.innerHTML = `${isOwner && open ? `<p class="smine">未解決の相談 ${open}件</p>` : ""}<div class="slist">${list.map((p) => `<div class="mrow" data-open="${C.esc(p.id)}">
       <div class="mtop"><span class="skind k-${C.esc(p.kind || "")}">${C.esc(kindName(p.kind))}</span>${stateTag(p)}<small>${C.ago(secOf(p.createdAt))}</small></div>
       <p class="stx clamp">${C.esc(p.text)}</p>
-      <div class="sft"><span>${HEART}${p.likeCount || 0}</span><span>${BUB}${p.replyCount || 0}</span>${isOwner && p.kind === "q" ? `<button class="mtog${p.solved ? "" : " on"}" data-tog="${C.esc(p.id)}">${p.solved ? "未解決に戻す" : CHK + "解決済みにする"}</button>` : ""}</div>
+      <div class="sft"><span>${HEART}${p.likeCount || 0}</span><span>${BUB}${p.replyCount || 0}</span>${isOwner && p.kind === "q" ? `<button class="mtog${p.solved ? " on" : ""}" data-tog="${C.esc(p.id)}">${p.solved ? CHK + "解決済み" : "解決済みにする"}</button>` : ""}</div>
     </div>`).join("")}</div>`;
   box.querySelectorAll("[data-open]").forEach((r) => (r.onclick = (e) => { if (e.target.closest("a,button")) return; location.hash = "#c-" + r.dataset.open; }));
   box.querySelectorAll("[data-tog]").forEach((b) => (b.onclick = async (e) => { e.stopPropagation(); b.disabled = true; const p = list.find((x) => x.id === b.dataset.tog); await setSolved(p, !p.solved); renderMine(box, uid, isOwner); }));
