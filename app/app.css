@@ -1436,3 +1436,4 @@ html.ntab .tab{display:none}
 #rmap .leaflet-popup-tip{border:1.5px solid #1b2330;box-shadow:none}
 #rmap .leaflet-bar{border:1.5px solid #1b2330;border-radius:3px;box-shadow:2px 2px 0 #1b2330}
 #rmap .leaflet-bar a{color:#1b2330;border-radius:0!important}
+.leaflet-control-attribution{font-size:9px!important;line-height:1.4;padding:0 4px!important;background:rgba(255,255,255,.55)!important;color:#6c7787!important}.leaflet-control-attribution a{color:inherit!important}

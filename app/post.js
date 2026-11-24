@@ -675,8 +675,9 @@ async function mapPage(places, label) {
   let center = [20, 0], zoom = 2;
   if (day.places.length) { center = [day.places[0].lat, day.places[0].lng]; zoom = 7; }
   else if (F.countries[0] && COUNTRY_LL[F.countries[0]]) { center = COUNTRY_LL[F.countries[0]]; zoom = 5; }
-  const m = L.map(ov.querySelector("#pmMap"), { worldCopyJump: true, minZoom: 2, zoomControl: false, attributionControl: false }).setView(center, zoom);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(m);
+  const m = L.map(ov.querySelector("#pmMap"), { worldCopyJump: true, minZoom: 2, zoomControl: false, attributionControl: true }).setView(center, zoom);
+  m.attributionControl.setPrefix(false);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap", maxZoom: 18 }).addTo(m);
   let mk = [];
   const draw = () => {
     mk.forEach((x) => m.removeLayer(x));
