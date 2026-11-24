@@ -257,7 +257,10 @@ export function pageSodanNew(el) {
     C.haptic();
   }));
   ta.oninput = () => (go.disabled = !ta.value.trim());
-  setTimeout(() => ta.focus(), 400);
+  // iPhoneはキーボードが出ると画面ごと上にずらすので、入力欄をタップしたら一番上に戻す（自動でキーボードは出さない）
+  const ps = el.querySelector(".ps");
+  const keepTop = () => { [0, 120, 350].forEach((t) => setTimeout(() => { window.scrollTo(0, 0); document.scrollingElement && (document.scrollingElement.scrollTop = 0); ps.scrollTop = 0; }, t)); };
+  ta.addEventListener("focus", keepTop);
   go.onclick = async () => {
     const text = ta.value.trim(); if (!text) return;
     const M = await C.mod();
