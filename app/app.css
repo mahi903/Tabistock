@@ -1187,3 +1187,7 @@ html.ntab .tab{display:none}
 .arefs{transition:opacity .4s,transform .4s}
 .arefs.wait{opacity:0;transform:translateY(8px)}
 @media (prefers-reduced-motion:reduce){.aisym *{animation:none!important}}
+/* 文章の中の地図の場所：タップで地図へ */
+.plk{display:inline;font:inherit;color:var(--green);font-weight:700;padding:0;background:none;border:0;border-bottom:1.5px dotted currentColor;line-height:inherit;cursor:pointer}
+/* 記事トップの写真は4:3で固定 */
+.page .gal{height:auto;aspect-ratio:4/3}

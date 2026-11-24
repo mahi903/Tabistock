@@ -504,8 +504,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611211415").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611211415").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611241708").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611241708").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -573,7 +573,7 @@ async function pageArticle(el, id, opt = {}) {
       ${total ? `<div class="cost"><div class="h"><span>この旅にかかった費用</span><b>${yen(total)}</b></div>
         <div class="bar">${crow.map((c, i) => `<span style="flex:0.0001;background:${COL[i % COL.length]}" data-f="${c[1]}"></span>`).join("")}</div>
         <div class="lg">${crow.map((c, i) => `<button data-hl="${i}"><i style="background:${COL[i % COL.length]}"></i>${esc(c[0])}<b>${yen(c[1])}</b></button>`).join("")}</div><div class="pct"></div></div>` : ""}
-      ${d.type === "transit" && d.body ? `<div class="dh"><h2>トランジットの記録</h2></div><p class="ph2">${para(d.body)}</p>` : ""}
+      ${d.type === "transit" && d.body ? `<div class="dh"><h2>トランジットの記録</h2></div><p class="ph2">${placeLinks(para(d.body), d.places, 0, hasRoute)}</p>` : ""}
       ${flights.length ? `<div class="dh"><h2>${mv ? "移動" : "航空券"}</h2></div><div class="rows2">${flights.map((f, i) => `<div class="r2"><small>${mv ? "区間" : "航路"}${i + 1}</small><div>${esc(f.route || "")}<span>${esc([f.airline].filter(Boolean).join("・"))}</span></div>${f.price ? `<b>${yen(f.price)}</b>` : ""}</div>`).join("")}
         ${d.flightWhen ? `<div class="r2"><small>予約時期</small><div>${esc(d.flightWhen)}</div></div>` : ""}${d.flightSite ? `<div class="r2"><small>予約サイト</small><div>${esc(d.flightSite)}</div></div>` : ""}</div>` : ""}
       ${services.length ? `<div class="dh"><h2>利用サービス</h2></div><div class="rows2">${services.map((x) => `<div class="r2"><small>${esc(x.label || "")}</small><div>${(x.items || []).map(esc).join("<br>")}</div></div>`).join("")}</div>` : ""}
@@ -583,7 +583,7 @@ async function pageArticle(el, id, opt = {}) {
         const ph = x.photoUrls || [];
         const has = String(x.text || "").trim() || ph.length;
         return `<div class="day"><button ${has ? "data-day" : ""}><div class="th ${ph[0] ? "" : "no"}" style="${ph[0] ? `background-image:url('${esc(ph[0])}')` : ""}">${ph[0] ? "" : i + 1}</div><div><small>DAY ${i + 1}${x.date ? "　" + esc(x.date) : ""}</small><p>${esc(x.summary || "")}</p></div>${has ? '<span class="pm">＋</span>' : ""}</button>
-          <div class="body"><div class="bin">${ph.length ? `<div class="dpw"><div class="dphotos">${ph.map((u, k) => `<img src="${esc(u)}" alt="" loading="lazy" data-dv="${i}" data-k="${k}">`).join("")}</div>${ph.length > 1 ? `<span class="dpc">1/${ph.length}</span>` : ""}</div>` : ""}${String(x.text || "").trim() ? `<p class="ph">${para(x.text)}</p>` : ""}</div></div></div>`;
+          <div class="body"><div class="bin">${ph.length ? `<div class="dpw"><div class="dphotos">${ph.map((u, k) => `<img src="${esc(u)}" alt="" loading="lazy" data-dv="${i}" data-k="${k}">`).join("")}</div>${ph.length > 1 ? `<span class="dpc">1/${ph.length}</span>` : ""}</div>` : ""}${String(x.text || "").trim() ? `<p class="ph">${placeLinks(para(x.text), x.places, i + 1, hasRoute)}</p>` : ""}</div></div></div>`;
       }).join("")}</div>` : ""}
       ${d.comment ? `<div class="dh"><h2>投稿者のコメント</h2></div><p class="ph2">${para(d.comment)}</p>` : ""}
       <div class="dh"><h2>投稿者</h2></div>
@@ -602,12 +602,13 @@ async function pageArticle(el, id, opt = {}) {
       <button class="ab" data-share2 aria-label="共有"><svg viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12"/></svg>共有</button></div>`;
   const ps = el.querySelector(".ps");
   ps.onscroll = () => { const on = ps.scrollTop > 360; el.querySelector(".topnav").classList.toggle("show", on); el.querySelectorAll(".pnav .fb").forEach((b) => b.classList.toggle("solid", on)); };
-  fitRatio(el.querySelector(".gal"), imgs[0]);
+  // トップの写真は4:3で固定（CSS）
   el.querySelectorAll(".dphotos").forEach(fitDayPhotos);
   const gal = el.querySelector(".gal");
   gal.onscroll = () => { const i = Math.round(gal.scrollLeft / gal.clientWidth); el.querySelectorAll(".dots i").forEach((x, j) => x.classList.toggle("on", i === j)); };
   gal.querySelectorAll("[data-hv]").forEach((x) => (x.onclick = () => openViewer(imgs, +x.dataset.hv)));
   el.querySelectorAll("[data-day]").forEach((b) => (b.onclick = () => { b.parentNode.classList.toggle("open"); haptic(); }));
+  el.querySelectorAll("[data-pl]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); goPlace(el, b.dataset.pl); }));
   el.querySelectorAll("[data-dv]").forEach((im) => (im.onclick = () => openViewer(days[+im.dataset.dv].photoUrls, +im.dataset.k)));
   el.querySelectorAll(".dphotos").forEach((g) => (g.onscroll = () => { const c = g.parentNode.querySelector(".dpc"); if (c) c.textContent = `${Math.round(g.scrollLeft / g.clientWidth) + 1}/${g.children.length}`; }));
   el.querySelectorAll("[data-hl]").forEach((b) => (b.onclick = () => {
@@ -694,7 +695,8 @@ async function drawRoute(box, d) {
   try { await loadLeaflet(); } catch (e) { box.innerHTML = '<p class="loading">地図を読み込めませんでした</p>'; return; }
   const map = L.map(box, { scrollWheelZoom: false, minZoom: 2, attributionControl: true });
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap", maxZoom: 18 }).addTo(map);
-  const ms = pts.map((p) => { const m = L.circleMarker([p.lat, p.lng], { radius: 7, color: "#fff", weight: 2, fillColor: "#e2683b", fillOpacity: 1 }).addTo(map).bindPopup((p.n ? `DAY ${p.n}` : "") + (p.name ? "　" + esc(p.name) : "")); m._c = p.c; return m; });
+  const ms = pts.map((p) => { const m = L.circleMarker([p.lat, p.lng], { radius: 7, color: "#fff", weight: 2, fillColor: "#e2683b", fillOpacity: 1 }).addTo(map).bindPopup((p.n ? `DAY ${p.n}` : "") + (p.name ? "　" + esc(p.name) : "")); m._c = p.c; m._k = p.n + "|" + p.name; return m; });
+  box._map = map; box._ms = ms;
   const fit = (c) => { const sub = c ? ms.filter((m) => m._c === c) : ms; if (sub.length) map.fitBounds(L.featureGroup(sub).getBounds().pad(0.3), { maxZoom: 10 }); };
   fit("");
   const used = [...new Set(pts.map((p) => p.c).filter(Boolean))];
@@ -703,6 +705,38 @@ async function drawRoute(box, d) {
     tabs.innerHTML = `<button class="on" data-rc="">すべて</button>` + used.map((c) => `<button data-rc="${esc(c)}">${esc((cinfo(c) || {}).jp || c)}</button>`).join("");
     tabs.querySelectorAll("button").forEach((b) => (b.onclick = () => { tabs.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); fit(b.dataset.rc); haptic(); }));
   } else if (tabs) tabs.remove();
+}
+// 記事の文章の中で、地図に登録した場所の名前をタップできるようにする（各場所につき最初の1か所だけ）
+function placeLinks(html, places, n, on) {
+  if (!on || !Array.isArray(places)) return html;
+  const names = [...new Set(places.filter((p) => p && typeof p.lat === "number" && String(p.name || "").trim().length >= 2).map((p) => String(p.name).trim()))].sort((a, b) => b.length - a.length);
+  if (!names.length) return html;
+  const done = new Set();
+  // タグの外（文章の部分）だけを置き換える
+  return html.split(/(<[^>]+>)/).map((seg) => {
+    if (seg.startsWith("<")) return seg;
+    names.forEach((nm) => {
+      if (done.has(nm)) return;
+      const e = esc(nm), at = seg.indexOf(e);
+      if (at < 0) return;
+      done.add(nm);
+      seg = seg.slice(0, at) + `\u0000${names.indexOf(nm)}\u0001` + seg.slice(at + e.length);
+    });
+    return seg.replace(/\u0000(\d+)\u0001/g, (_, k) => `<button class="plk" data-pl="${n}|${esc(names[k])}">${esc(names[k])}</button>`);
+  }).join("");
+}
+// タップした場所へ：地図までスクロールして、その場所に寄ってピンの吹き出しを開く
+function goPlace(el, key) {
+  const box = el.querySelector("#rmap"); if (!box) return;
+  box.scrollIntoView({ behavior: "smooth", block: "center" });
+  const open = (tries) => {
+    if (!box._map) { if (tries < 20) setTimeout(() => open(tries + 1), 200); return; }
+    const m = box._ms.find((x) => x._k === key) || box._ms.find((x) => x._k.split("|")[1] === key.split("|")[1]);
+    if (!m) return;
+    const tabs = el.querySelector("#rtabs"); if (tabs) tabs.querySelectorAll("button").forEach((b, i) => b.classList.toggle("on", i === 0));
+    setTimeout(() => { box._map.flyTo(m.getLatLng(), Math.max(box._map.getZoom(), 13), { duration: 0.8 }); setTimeout(() => m.openPopup(), 850); }, 350);
+  };
+  open(0); haptic();
 }
 const dist2 = (p, ll) => (p.lat - ll[0]) ** 2 + (p.lng - ll[1]) ** 2;
 
@@ -732,7 +766,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611211415"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611241708"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
