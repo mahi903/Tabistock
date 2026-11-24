@@ -113,8 +113,9 @@ const CSS = `
 .pp-stage{perspective:1400px}
 .pp-in{transform-style:flat}
 .pp .hint{transition:opacity .4s}.pp .hint.gone{opacity:0;animation:none}
-.pp-strip{position:relative;width:100%;height:78px;overflow:hidden;margin-top:2px}
-.pp-strip .th{position:absolute;left:50%;top:4px;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:0;transform:translateX(calc(-50% + var(--x,0px))) scale(var(--s,1));transform-origin:50% 30%;opacity:var(--o,1);transition:transform .55s cubic-bezier(.3,.7,.2,1),opacity .55s;pointer-events:var(--pe,auto)}
+.pp-strip{display:flex;gap:8px;width:100%;overflow-x:auto;scrollbar-width:none;padding:8px calc(50% - 25px) calc(10px + var(--sb));scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.pp-strip::-webkit-scrollbar{display:none}
+.pp-strip .th{flex:none;width:50px;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:0;scroll-snap-align:center;transform:scale(var(--s,1));transform-origin:50% 30%;opacity:var(--o,1);transition:transform .2s,opacity .2s}
 .pp-strip .th i{display:block;width:38px;height:54px;background:#f5f0e2;border:1px solid #d8cfbb;position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s}
 .pp-strip .th b{font:700 9.5px Manrope,sans-serif;color:var(--muted)}
 .pp-strip .th.on i{border-color:#1b2330;box-shadow:2px 2px 0 #1f6f5b}
@@ -289,8 +290,7 @@ export function pagePassport(el, ctx) {
     })).join("");
   el.innerHTML = bar("パスポート") + `<div class="ps under2 ppw">${DEFS}
     <div class="pp-stage"><div class="pp-in" id="ppIn"><div class="pp" id="ppBook" style="--ppgl:${GL.replace(/"/g, "&quot;")};--ppme:url('${esc(p.photoURL || "")}')"><div class="base"><div class="face leather endp">${wm}</div></div><div class="gut"></div>${leavesHtml}</div></div></div>
-    <div class="pp-strip" id="ppStrip">${THUMBS}</div>
-    <div class="pp-ctl"><button id="ppPrev" aria-label="前のページ">‹</button><span id="ppPos">表紙</span><button id="ppNext" aria-label="次のページ">›</button><button id="ppClose">閉じる</button></div></div>`;
+    <div class="pp-strip" id="ppStrip">${THUMBS}</div></div>`;
 
   const book = el.querySelector("#ppBook");
   const leaves = [...book.querySelectorAll(".leaf")];
@@ -315,6 +315,19 @@ export function pagePassport(el, ctx) {
     if (zoom) return side() === "L" ? L : R;
     return [L, R].filter(Boolean).join("–");
   };
+  // 一覧：横にスクロールでき、真ん中から離れるほど小さく薄く見える
+  let stripLock = 0;
+  function stripLook() {
+    const st = el.querySelector("#ppStrip"); if (!st) return;
+    const mid = st.scrollLeft + st.clientWidth / 2;
+    st.querySelectorAll(".th").forEach((b) => { const d = Math.abs(b.offsetLeft + b.offsetWidth / 2 - mid) / 58; b.style.setProperty("--s", Math.max(0.5, 1 - d * 0.17).toFixed(3)); b.style.setProperty("--o", Math.max(0.12, 1 - d * 0.3).toFixed(3)); });
+  }
+  function centerStrip(f) {
+    const st = el.querySelector("#ppStrip"); if (!st) return;
+    const b = st.querySelector(`.th[data-f="${f}"]`); if (!b) return;
+    stripLock = Date.now();
+    st.scrollTo({ left: b.offsetLeft + b.offsetWidth / 2 - st.clientWidth / 2, behavior: "smooth" });
+  }
   const render = () => {
     fit();
     // 次にめくる・見えてくるページを先にGPUへ載せておく（めくり始めの引っかかりを防ぐ）
@@ -323,19 +336,10 @@ export function pagePassport(el, ctx) {
     book.classList.toggle("open", idx > 0 && !zoom);
     book.classList.toggle("one", idx > 0 && zoom);
     book.classList.toggle("lft", idx > 0 && zoom && side() === "L");
-    el.querySelector("#ppPos").textContent = label();
-    // 下の一覧：今のページを真ん中に、左右3ページずつ。離れるほど小さく薄く
+    // 下の一覧：今のページを真ん中までスクロールして、印を付ける
     const cur = idx === 0 ? [] : zoom ? [side() === "L" ? 2 * idx - 1 : 2 * idx] : [2 * idx - 1, 2 * idx].filter((f) => f <= K);
-    const c = cur.length ? cur.reduce((a, b) => a + b, 0) / cur.length : 1;
-    const S = [1, 0.8, 0.64, 0.5], O = [1, 0.55, 0.3, 0.14], GAP = 52;
-    el.querySelectorAll("#ppStrip .th").forEach((b) => {
-      const f = +b.dataset.f, d = f - c, ad = Math.abs(d), k = Math.min(3, Math.round(ad));
-      const x = Math.sign(d) * (ad <= 1 ? ad * GAP : GAP + (ad - 1) * GAP * 0.78);
-      b.style.setProperty("--x", x.toFixed(1) + "px"); b.style.setProperty("--s", ad > 3.4 ? 0.4 : S[k]); b.style.setProperty("--o", ad > 3.4 ? 0 : O[k]); b.style.setProperty("--pe", ad > 3.4 ? "none" : "auto");
-      b.classList.toggle("on", cur.includes(f));
-    });
-    el.querySelector("#ppPrev").disabled = idx === 0;
-    el.querySelector("#ppNext").disabled = idx >= LAST && !(zoom && side() === "L" && rightContent());
+    el.querySelectorAll("#ppStrip .th").forEach((b) => b.classList.toggle("on", cur.includes(+b.dataset.f)));
+    centerStrip(cur.length ? cur[0] : 1);
   };
   // 寄ったページのスタンプを1つずつ押す
   const press = (f) => { let k = 0; if (f) f.querySelectorAll(".stamp.wait").forEach((s) => { const d = 250 + 320 * k++; setTimeout(() => { s.classList.remove("wait"); s.classList.add("press"); buzz(); }, d); }); return k; };
@@ -433,9 +437,9 @@ export function pagePassport(el, ctx) {
     setTimeout(done, total + 30);
   }
   // 閉じる：引きの見開きにしてから、パラパラっとページが戻って表紙が閉じる
-  function closeAll() {
+  function closeAll(after) {
     if (busy || idx === 0) return; busy = true;
-    zoomOut(() => flutter(0, () => { busy = false; hint.classList.remove("gone"); }));
+    zoomOut(() => flutter(0, () => { busy = false; hint.classList.remove("gone"); if (after) setTimeout(after, 250); }));
   }
   // 一覧からページへ：引いて、パラパラめくって、そのページに寄る
   function jumpTo(f) {
@@ -447,6 +451,14 @@ export function pagePassport(el, ctx) {
     zoomOut(() => flutter(t, () => setTimeout(() => zoomIn(sideT, () => press(sideT === "L" ? pageL() : pageR())), 300)));
   }
   el.querySelector("#ppStrip").addEventListener("click", (e) => { const b = e.target.closest(".th"); if (b) jumpTo(+b.dataset.f); });
+  { const st = el.querySelector("#ppStrip"); let raf = 0; st.addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; stripLook(); }); }, { passive: true }); requestAnimationFrame(stripLook); }
+  // 「‹ パスポート」で戻るときは、閉じるアニメーションのあとでマイページへ
+  el.addEventListener("click", (e) => {
+    if (!e.target.closest("[data-back]") || idx === 0) return;
+    e.preventDefault(); e.stopPropagation();
+    if (busy) return;
+    closeAll(() => history.back());
+  }, true);
   let sx = 0, sy = 0;
   book.addEventListener("pointerdown", (e) => { sx = e.clientX; sy = e.clientY; });
   book.addEventListener("pointerup", (e) => {
@@ -456,9 +468,6 @@ export function pagePassport(el, ctx) {
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { dx < 0 ? next() : prev(); return; }
     if (idx === 0) next(); else if (e.clientX < innerWidth / 2) prev(); else next();
   });
-  el.querySelector("#ppPrev").onclick = prev;
-  el.querySelector("#ppNext").onclick = next;
-  el.querySelector("#ppClose").onclick = closeAll;
   addEventListener("resize", render);
   render();
   return () => removeEventListener("resize", render);
