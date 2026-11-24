@@ -313,8 +313,8 @@ export function pagePassport(el, ctx) {
   book.querySelectorAll(".snap i").forEach((i) => { const m = /url\('?([^')]+)'?\)/.exec(i.style.backgroundImage); if (m) { const im = new Image(); im.src = m[1]; if (im.decode) im.decode().catch(() => {}); } });
   // 登場：フォントがそろってから、手前に傾いた状態でふわっと置かれる（読み込みが遅くても2秒で出す）
   inner.style.opacity = "0";
-  // ページが開ききってから（約0.5秒）、下からふわっと出す
-  Promise.all([Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2000))]), new Promise((r) => setTimeout(r, 480))]).then(() => {
+  // 緑の円が広がって消えていくところで、下からふわっと出す
+  Promise.all([Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2000))]), new Promise((r) => setTimeout(r, el.classList.contains("ppg") ? 1050 : 480))]).then(() => {
     inner.style.opacity = "";
     inner.animate([{ transform: "translateY(55vh) rotateX(16deg) scale(.94)", opacity: 0 }, { transform: "translateY(-10px) rotateX(-2deg) scale(1.01)", opacity: 1, offset: 0.72 }, { transform: "none", opacity: 1 }], { duration: 1400, easing: "cubic-bezier(.2,.75,.25,1)" });
   });
@@ -438,25 +438,36 @@ export function pagePassport(el, ctx) {
   // 閉じる：引きの見開きにしてから、パラパラっとページが戻って表紙が閉じる
   // パラパラめくる：from → to の見開きまで、ページを少しずつずらして一気にめくる
   function flutter(to, done) {
-    const dir = to > idx ? 1 : -1, list = [];
+    const dir = to > idx ? 1 : -1; let list = [];
     if (dir > 0) for (let i = idx; i < to; i++) list.push(i); else for (let i = idx - 1; i >= to; i--) list.push(i);
-    const gap = 95, d1 = 600;
     // パラパラ中は、ページの下準備（GPUへの載せ替え）を切り替えない。途中で切り替えると写真が残像のように残る
     fluttering = true;
-    list.forEach((i, k) => setTimeout(() => {
-      const l = leaves[i], cover = i === 0, dur = cover ? 950 : d1;
-      if (dir < 0) { l.classList.remove("flat"); l.classList.add("on"); }
-      // めくり始めは先にめくったページの下、半分を過ぎたら上に重ねる
-      l.style.zIndex = 400 - k; setTimeout(() => { l.style.zIndex = 500 + k; }, dur * 0.5);
-      const A = "rotateY(0deg)", B = "rotateY(-180deg)";
-      const an = l.animate([{ transform: dir > 0 ? A : B }, { transform: "rotateY(-90deg) translateZ(10px)" }, { transform: dir > 0 ? B : A }], { duration: dur, easing: "cubic-bezier(.4,.1,.3,1)", fill: "forwards" });
-      an.onfinish = () => { if (dir > 0) { l.classList.add("on", "flat"); l.style.zIndex = 200 + i; } else { l.classList.remove("on"); l.style.zIndex = 100 - i; } an.cancel(); };
-      if (k % 2 === 0) buzz();
-    }, k * gap));
-    const total = (list.length - 1) * gap + (list.includes(0) ? 950 : d1);
-    if (to === 0) setTimeout(() => { idx = 0; render(); }, Math.max(0, (list.length - 1) * gap)); else { idx = to; render(); }
-    setTimeout(() => { fluttering = false; render(); done(); }, total + 30);
+    // ページが多いときは、めくって見せるのは最後の8枚まで（ほかは先にそっと移しておく）
+    const MAXA = 8, skip = list.length > MAXA ? list.slice(0, list.length - MAXA) : [];
+    skip.forEach((i) => { const l = leaves[i]; if (dir > 0) { l.classList.add("on", "flat"); l.style.zIndex = 200 + i; } else { l.classList.remove("on", "flat"); l.style.zIndex = 100 - i; } });
+    list = list.slice(skip.length);
+    // 1枚がちょうど半分（真横）まで来たら次の1枚をめくり始める。重なって見えないので、ページがちゃんと1枚ずつ送られて見える
+    const D = 640, DC = 1300, ease = "cubic-bezier(.45,0,.55,1)";
+    let t = 0;
+    list.forEach((i, k) => {
+      const cover = i === 0, dur = cover ? DC : D;
+      setTimeout(() => {
+        const l = leaves[i];
+        if (dir < 0) { l.classList.remove("flat"); l.classList.add("on"); }
+        l.style.zIndex = 400 + k;
+        if (cover && to === 0) { idx = 0; render(); }
+        const A = "rotateY(0deg)", B = "rotateY(-180deg)";
+        const an = l.animate([{ transform: dir > 0 ? A : B }, { transform: `rotateY(-90deg) translateZ(${cover ? 26 : 12}px)` }, { transform: dir > 0 ? B : A }], { duration: dur, easing: ease, fill: "forwards" });
+        an.onfinish = () => { if (dir > 0) { l.classList.add("on", "flat"); l.style.zIndex = 200 + i; } else { l.classList.remove("on"); l.style.zIndex = 100 - i; } an.cancel(); };
+        buzz();
+      }, t);
+      if (k < list.length - 1) t += dur * 0.5;
+      else t += dur;
+    });
+    if (to !== 0) { idx = to; render(); }
+    setTimeout(() => { fluttering = false; render(); done(); }, t + 40);
   }
+
   // 閉じる：引きの見開きにしてから、パラパラっとページが戻って表紙が閉じる
   function closeAll(after) {
     if (busy || idx === 0) return; busy = true;

@@ -1441,6 +1441,6 @@ html.ntab .tab{display:none}
 .ppav{position:relative;flex:none;display:block;line-height:0}
 .ppav i{position:absolute;right:-4px;bottom:-2px;width:26px;height:34px;display:grid;place-items:center;background:radial-gradient(120% 90% at 30% 20%,#245344,#163a2f 60%,#0f2a22);border-radius:2px 4px 4px 2px;border:2px solid var(--bg);box-shadow:1px 2px 4px rgba(0,0,0,.2)}
 .ppav i svg{width:15px;height:auto}
-/* パスポートのページは、バッジの位置から円が広がるように開く */
-.page.ppg{transform:none;clip-path:circle(0px at var(--cx,50%) var(--cy,30%));transition:clip-path .55s cubic-bezier(.4,.1,.25,1)}
-.page.ppg.open{clip-path:circle(150vmax at var(--cx,50%) var(--cy,30%))}
+/* パスポートのページ：スライドせずに、バッジから広がる緑の円の下で切り替える */
+.page.ppg{transform:none;transition:none;box-shadow:none;visibility:hidden}.page.ppg.shown{visibility:visible}
+.ppcirc{position:fixed;z-index:9999;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#245344,#163a2f 60%,#0f2a22);pointer-events:none;will-change:transform,opacity}
