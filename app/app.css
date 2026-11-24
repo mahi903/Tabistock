@@ -1425,8 +1425,8 @@ html.ntab .tab{display:none}
 .csmenu button.on{color:var(--green);font-weight:700}
 .csmenu button.on:after{content:"✓";float:right;margin-left:10px}
 /* ホームの横並びの記事カード：濃紺の枠に、右下へずらした緑の影（Tabistockの世界観。探すの一覧などには付けない） */
-#home .hs .oc{border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green),8px 8px 0 #b9dccd;border-radius:6px}
-#home .hs{padding-bottom:12px}
+#home .hs .oc{border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green);border-radius:6px}
+#home .hs{padding-bottom:10px}
 /* 記事の地図：色味を抑えて、ピンとルートをTabistockのデザインに */
 #rmap .leaflet-container,#rmap{background:#efeae0}
 .tpin{background:none;border:0}
