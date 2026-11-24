@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242305";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242315";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -488,7 +488,7 @@ $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) 
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611242305");
+  const M = await import("./sodan.js?v=202611242315");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -586,8 +586,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242305").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242305").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242315").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242315").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -867,7 +867,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611242305"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611242315"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1029,9 +1029,7 @@ async function pageUser(el, uid) {
 // ---------- DM ----------
 const convIdOf = (a, b) => [a, b].sort().join("__");
 async function pageInbox(el) {
-  el.innerHTML = bar("メッセージ") + `<div class="ps under2 nb"><div class="htabs" style="position:static;margin-top:0;padding-top:4px"><button class="on" data-dt="0">DM</button><button data-dt="1">コミュニティ</button></div><div id="ilist"><p class="loading">読み込み中…</p></div><div id="clist2" hidden></div></div>`;
-  el.querySelectorAll("[data-dt]").forEach((b) => (b.onclick = () => { const i = +b.dataset.dt; el.querySelectorAll("[data-dt]").forEach((x, j) => x.classList.toggle("on", i === j)); el.querySelector("#ilist").hidden = !!i; el.querySelector("#clist2").hidden = !i; }));
-  el.querySelector("#clist2").innerHTML = '<p class="comhead">行き先ごとの部屋で、行った人・これから行く人が相談し合える場所です。<span class="soon">COMING SOON</span></p>';
+  el.innerHTML = bar("メッセージ") + `<div class="ps under2 nb"><div id="ilist"><p class="loading">読み込み中…</p></div></div>`;
   const box = el.querySelector("#ilist");
   if (!me) { box.innerHTML = '<p class="fol-empty">メッセージを使うには<a href="#x-login">ログイン</a>してください。</p>'; return; }
   const { onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -1070,13 +1068,16 @@ async function pageThread(el, other) {
   form.querySelector(".tart").onclick = () => pickArticle((d) => dmSend(other, { articleId: d.id }, "📄 " + titleOf(d).slice(0, 60)));
   ta.oninput = () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 120) + "px"; sb.disabled = !ta.value.trim(); };
   const unsub = F.onSnapshot(F.query(collection(convRef, "messages"), F.orderBy("createdAt", "asc")), (snap) => {
-    let h = "", last = "", prev = "";
+    let h = "", last = "", prev = "", prevAt = 0;
+    const avImg = esc(pr.photoURL || DEF_AV);
     snap.forEach((s) => {
       const m = s.data(), t = m.createdAt && m.createdAt.toDate ? m.createdAt.toDate() : null;
       const day = t ? `${t.getMonth() + 1}/${t.getDate()}` : "";
       if (day && day !== last) { h += `<div class="day-sep">${day}</div>`; last = day; prev = ""; }
-      const who = m.senderId === me ? "u" : "a", cont = prev === who ? " c" : "";
-      prev = who;
+      const who = m.senderId === me ? "u" : "a", at = t ? t.getTime() : 0;
+      const cont = prev === who && at - prevAt < 5 * 60 * 1000 ? " c" : "";   // 5分以内に続けて送ったものはまとめる
+      if (who === "a" && !cont) h += `<a class="dav" href="#u-${esc(other)}"><img src="${avImg}" alt=""></a>`;
+      prev = who; prevAt = at;
       // 写真のメッセージ（縦横比を保ったまま表示。タップで大きく）
       if (m.imageUrl) h += `<button class="msg img ${who}${cont}" data-dmimg="${esc(m.imageUrl)}" style="aspect-ratio:${Number(m.w) > 0 && Number(m.h) > 0 ? `${Number(m.w)}/${Number(m.h)}` : "4/3"}"><img src="${esc(m.imageUrl)}" alt="写真" loading="lazy"></button>`;
       if (m.articleId) h += dmArtCard(m.articleId, who, m.imageUrl ? " c" : cont);

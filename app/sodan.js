@@ -202,12 +202,12 @@ export async function pageSodan(el, id) {
   let replyTo = null, artId = "";
   const foot = document.createElement("div");
   foot.className = "scmp";
-  foot.innerHTML = me ? `<div class="sto2" hidden></div><div class="sart2" hidden></div><div class="srow"><textarea rows="1" maxlength="1000" placeholder="${p.kind === "q" ? "回答する…" : "コメントする…"}"></textarea><button class="sartb" type="button">＋自分の記事</button><button class="ssend" type="button" disabled>送信</button></div>`
+  foot.innerHTML = me ? `<div class="sto2" hidden></div><div class="sart2" hidden></div><div class="srow"><img class="sme" src="${C.esc(C.avatarOf(me))}" alt=""><div class="spill"><textarea rows="1" maxlength="1000" placeholder="${p.kind === "q" ? "回答を書く…" : "コメントを書く…"}"></textarea><button class="sartb" type="button" aria-label="自分の記事を付ける"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h9l3 3V20.5H6z"/><path d="M9 10h6M9 13.5h6M9 17h4"/></svg></button><button class="ssend" type="button" disabled aria-label="送信"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></div></div>`
     : '<p class="slog"><a href="#x-login">ログイン</a>すると回答・コメントできます</p>';
   el.appendChild(foot);
   if (!me) return;
   const ta = foot.querySelector("textarea"), send = foot.querySelector(".ssend"), toEl = foot.querySelector(".sto2"), artEl = foot.querySelector(".sart2");
-  const fit = () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 140) + "px"; send.disabled = !ta.value.trim(); };
+  const fit = () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 140) + "px"; send.disabled = !ta.value.trim(); foot.classList.toggle("hastx", !!ta.value.trim()); };
   ta.oninput = fit;
   ps.querySelectorAll("[data-rto]").forEach((b) => (b.onclick = () => {
     const uid = b.dataset.rto; replyTo = { uid, name: (C.PROF[uid] || {}).nickname || "旅人" };
@@ -227,7 +227,7 @@ export async function pageSodan(el, id) {
     const text = ta.value.trim(); if (!text) return;
     const M = await C.mod();
     if (M.checkText) { const ng = M.checkText(text); if (ng) { C.toast(ng); return; } }
-    send.disabled = true; send.textContent = "送信中…";
+    send.disabled = true;
     try {
       await addDoc(collection(db, "sodan", id, "replies"), { uid: me, text: text.slice(0, 1000), articleId: artId || "", replyToUid: replyTo ? replyTo.uid : "", replyToName: replyTo ? replyTo.name : "", likeCount: 0, createdAt: serverTimestamp() });
       await updateDoc(doc(db, "sodan", id), { replyCount: increment(1), lastReplyAt: serverTimestamp() }).catch(() => {});
@@ -235,7 +235,7 @@ export async function pageSodan(el, id) {
       C.notify({ toUid: p.uid, type: "sodan", articleId: id, articleTitle: ex });
       if (replyTo && replyTo.uid !== p.uid) C.notify({ toUid: replyTo.uid, type: "sodan", articleId: id, articleTitle: ex });
       invalidate(); C.haptic(); C.reopen();
-    } catch (e) { console.error(e); C.toast("送信できませんでした"); send.disabled = false; send.textContent = "送信"; }
+    } catch (e) { console.error(e); C.toast("送信できませんでした"); send.disabled = false; }
   };
 }
 

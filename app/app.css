@@ -1387,3 +1387,22 @@ html.ntab .tab{display:none}
 /* 探すの検索欄：角を少し丸く、枠を細く */
 #search .sfi{border-radius:10px;border-width:1px}
 .mymeta .pmn{margin-top:4px;margin-right:2px}
+/* DM：相手のメッセージの左にアイコン（続けて送られたものは最初だけ） */
+.thr .msgs .dav{display:block;height:0;position:relative}
+.thr .msgs .dav img{position:absolute;left:0;top:10px;width:32px;height:32px;border-radius:50%;object-fit:cover}
+.thr .msgs .msg.a{margin-left:40px}
+.thr .msgs .msg.a.c{margin-top:4px}
+/* 旅ひろば：回答欄（インスタ風）。左に自分のアイコン、丸い入力欄の右に記事のアイコン、書いたら送信ボタン */
+.scmp{border-top:1px solid var(--line);background:var(--bg)}
+.scmp .srow{align-items:center;gap:10px}
+.scmp .sme{width:36px;height:36px;border-radius:50%;object-fit:cover;flex:none;align-self:flex-end;margin-bottom:2px}
+.spill{flex:1;min-width:0;display:flex;align-items:flex-end;gap:2px;border:1px solid #d9d2c4;border-radius:22px;background:#fff;padding:3px 4px 3px 14px}
+.spill textarea{flex:1;min-width:0;border:0!important;border-radius:0!important;padding:8px 0!important;background:none!important;font-size:14.5px!important;max-height:140px;outline:0}
+.scmp .spill button{height:36px;flex:none;padding:0;border:0;display:grid;place-items:center;border-radius:18px}
+.scmp .sartb{width:36px;color:var(--ink);border:0!important}
+.scmp .sartb svg{width:22px;height:22px}
+.scmp .ssend{width:44px;background:var(--green)!important;display:none!important}
+.scmp .ssend svg{width:18px;height:18px}
+.scmp.hastx .ssend{display:grid!important}
+.spill textarea{flex:1 1 0;width:0}.scmp{overflow:hidden}.scmp .srow{width:100%}
+.sto2[hidden],.sart2[hidden]{display:none}
