@@ -2,12 +2,12 @@
 // 目的：Firebase Storage の画像には CORS ヘッダが無く、ブラウザの canvas に
 //       取り込めない（ストーリー画像生成が失敗する）。そこで同一オリジンの
 //       /api/img?u=<画像URL> 経由でサーバー側が取得し、CORS 付きで返す。
-// 安全策：Firebase Storage のURLのみ許可（オープンプロキシ化を防ぐ）。
+// 安全策：Firebase Storage と Google のプロフィール画像のURLのみ許可（オープンプロキシ化を防ぐ）。
 
 export default async function handler(req, res) {
   const u = req.query.u;
   if (!u || typeof u !== "string" ||
-      !/^https:\/\/firebasestorage\.googleapis\.com\//.test(u)) {
+      !/^https:\/\/(firebasestorage\.googleapis\.com|lh3\.googleusercontent\.com)\//.test(u)) {
     res.status(400).json({ error: "invalid url" });
     return;
   }
