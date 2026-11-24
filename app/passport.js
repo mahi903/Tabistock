@@ -7,7 +7,7 @@ const FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@
 
 const CSS = `
 .ppw{display:flex;flex-direction:column;align-items:center;min-height:100%;padding-bottom:calc(30px + var(--sb))!important;overflow-x:hidden}
-.pp-stage{flex:1;width:100%;display:grid;place-items:center;padding:34px 0 10px}
+.pp-stage{flex:1;width:100%;display:grid;place-items:center;padding:30px 0 12px}
 .pp{--W:min(320px,84vw);position:relative;width:var(--W);aspect-ratio:88/125;will-change:transform;transform:scale(1) translateX(0);transition:transform .95s cubic-bezier(.45,.05,.25,1);perspective:1800px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:pan-y;color:#1b2330}
 .pp.shift{transform:scale(var(--pps,1)) translateX(50%)}
 .pp.one{transform:scale(1) translateX(0)}.pp.one.lft{transform:scale(1) translateX(100%)}
@@ -113,7 +113,19 @@ const CSS = `
 .pp-stage{perspective:1400px}
 .pp-in{transform-style:flat}
 .pp .hint{transition:opacity .4s}.pp .hint.gone{opacity:0;animation:none}
-.pp-ctl{display:flex;gap:10px;align-items:center;justify-content:center;padding:22px 16px 10px}
+.pp-strip{position:relative;width:100%;height:78px;overflow:hidden;margin-top:2px}
+.pp-strip .th{position:absolute;left:50%;top:4px;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:0;transform:translateX(calc(-50% + var(--x,0px))) scale(var(--s,1));transform-origin:50% 30%;opacity:var(--o,1);transition:transform .55s cubic-bezier(.3,.7,.2,1),opacity .55s;pointer-events:var(--pe,auto)}
+.pp-strip .th i{display:block;width:38px;height:54px;background:#f5f0e2;border:1px solid #d8cfbb;position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s}
+.pp-strip .th b{font:700 9.5px Manrope,sans-serif;color:var(--muted)}
+.pp-strip .th.on i{border-color:#1b2330;box-shadow:2px 2px 0 #1f6f5b}
+.pp-strip .th.on b{color:#1f6f5b}
+.pp-strip .th-art u{position:absolute;left:5px;right:5px;top:12px;height:18px;background:center/cover #ddd}
+.pp-strip .th-art:before{content:"";position:absolute;left:5px;top:5px;width:16px;height:2px;background:#1b2330;opacity:.6}
+.pp-strip .th-art:after{content:"";position:absolute;right:5px;bottom:5px;width:10px;height:10px;border:1.5px solid var(--tc);border-radius:50%}
+.pp-strip .th-req{background:#f4f1e8}.pp-strip .th-req:after{content:"";position:absolute;inset:6px 5px;border:1.5px solid #1f6f5b;border-radius:2px 2px 40% 40%/2px 2px 12% 12%}
+.pp-strip .th-id u{position:absolute;left:5px;top:9px;width:11px;height:15px;background:#d6dcd8}.pp-strip .th-id:after{content:"";position:absolute;left:19px;right:5px;top:10px;height:9px;border-top:2px solid #b9c2bd;border-bottom:2px solid #b9c2bd}
+.pp-strip .th-nx{display:grid!important;place-items:center;font:700 14px sans-serif;color:#1f6f5b;border-style:dashed!important}
+.pp-ctl{display:flex;gap:10px;align-items:center;justify-content:center;padding:10px 16px 8px}
 .pp-ctl button{min-width:44px;min-height:44px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:3px;font:700 14px 'Noto Sans JP',sans-serif;padding:0 14px}
 .pp-ctl button:disabled{opacity:.3}
 .pp-ctl span{font:700 12px Manrope,sans-serif;color:var(--muted);min-width:56px;text-align:center}
@@ -223,7 +235,8 @@ export function pagePassport(el, ctx) {
     const imgs = (d.heroUrls && d.heroUrls.length ? d.heroUrls : [d.thumbUrl]).filter(Boolean).slice(0, 3);
     const P = PH[imgs.length] || [];
     const phs = imgs.map((u, i) => { const [x, y, w, r] = P[i]; return `<div class="snap" style="left:${x}%;top:${y}%;width:${w}%;transform:rotate(${r}deg)"><i style="background-image:url('${esc(u)}')"></i><span class="tp t1"></span><span class="tp t2"></span></div>`; }).join("");
-    return { pno, html: `<div class="pphd"><span>VISA<b>査証</b></span><i>No.${String(k + 1).padStart(2, "0")}</i></div>
+    const cs0 = (d.countries || []).find((v) => v !== "japan");
+    return { pno, kind: "art", img: imgs[0] || "", col: (cs0 && FLAG[cs0]) || "#1f6f5b", html: `<div class="pphd"><span>VISA<b>査証</b></span><i>No.${String(k + 1).padStart(2, "0")}</i></div>
       <div class="ttl"><h3>${esc(d.title || "")}</h3><p>${esc(period(d))}<a class="open-a" href="#a-${esc(d.id)}">記事を見る</a></p></div>${phs}<div class="stz">${stampLayer(stampsOf(d), d.id || String(k))}</div>${foot}` };
   }
 
@@ -238,7 +251,7 @@ export function pagePassport(el, ctx) {
 
   // 表紙（0）、表紙の裏（1）のあとは、ページを左右交互に並べる
   const PAGES = [];
-  PAGES.push({ pno: "1", html: `<div class="pphd"><span>PASSPORT<b>旅券</b></span><i>${esc(no)}</i></div><div class="row"><div class="pic"></div><div class="fs">
+  PAGES.push({ pno: "1", kind: "id", html: `<div class="pphd"><span>PASSPORT<b>旅券</b></span><i>${esc(no)}</i></div><div class="row"><div class="pic"></div><div class="fs">
       <div><div class="f">型 / Type　　発行 / Issuing</div><div class="v">P　　TABISTOCK</div></div>
       <div><div class="f">氏名 / Name</div><div class="v j">${esc(p.nickname || "旅人")}</div></div>
       ${tags ? `<div><div class="f">旅のスタイル / Style</div><div class="v j">${esc(tags)}</div></div>` : ""}
@@ -246,7 +259,7 @@ export function pagePassport(el, ctx) {
       <div class="ppst"><div><b>${countries.size}</b><span>行った国</span></div><div><b>${totalDays}</b><span>旅した日数</span></div><div><b>${arts.length}</b><span>旅の記録</span></div></div>
       <div class="mrz">${esc(mrz)}</div><div class="lam"></div>${foot}` });
   arts.forEach((d, k) => PAGES.push(artPage(d, k, String(2 + k))));
-  PAGES.push({ pno: String(2 + arts.length), html: `<div class="pphd"><span>VISA<b>査証</b></span><i>No.${String(arts.length + 1).padStart(2, "0")}</i></div>
+  PAGES.push({ pno: String(2 + arts.length), kind: "next", html: `<div class="pphd"><span>VISA<b>査証</b></span><i>No.${String(arts.length + 1).padStart(2, "0")}</i></div>
       <div class="slot"><div>次の旅は、ここに。<small>記事を投稿すると<br>新しいページが増えていきます</small><a href="#p">旅程を投稿する</a></div></div>${foot}` });
   const faces = [
     `<div class="face ppfr leather cover"><div class="cj" style="left:35%" aria-label="旅">${glyph(G_RYO)}</div><div class="cj" style="left:65%" aria-label="券">${glyph(G_KEN)}</div>${emblem}<div class="ct2" aria-label="TABISTOCK PASSPORT"><svg viewBox="0 0 168 66"><g fill="url(#ppgd)" font-family="Cinzel,'Cormorant Garamond',serif" font-weight="500"><text x="0" y="22" font-size="26" textLength="168" lengthAdjust="spacing">TABISTOCK</text><text x="0" y="62" font-size="23" textLength="168" lengthAdjust="spacing">PASSPORT</text></g></svg></div><div class="ppchip">${chip}</div><div class="hint">タップして開く</div></div>`,
@@ -266,8 +279,17 @@ export function pagePassport(el, ctx) {
   let leavesHtml = "";
   for (let i = 0; i < N; i++) leavesHtml += `<div class="leaf" style="z-index:${100 - i}">${faces[i * 2]}${faces[i * 2 + 1]}</div>`;
 
+  // 下に並べる全ページの小さな一覧（タップでそのページへ）
+  const THUMBS = [`<button class="th" data-f="1" aria-label="表紙の裏"><i class="th-req"></i><b>表紙裏</b></button>`]
+    .concat(PAGES.map((pg, i) => {
+      const f = 2 + i;
+      const inner = pg.kind === "art" ? `<i class="th-art" style="--tc:${pg.col}">${pg.img ? `<u style="background-image:url('${esc(pg.img)}')"></u>` : ""}</i>`
+        : pg.kind === "id" ? `<i class="th-id"><u></u></i>` : `<i class="th-nx">＋</i>`;
+      return `<button class="th" data-f="${f}" aria-label="${pg.pno}ページ">${inner}<b>${pg.kind === "next" ? "次の旅" : pg.pno}</b></button>`;
+    })).join("");
   el.innerHTML = bar("パスポート") + `<div class="ps under2 ppw">${DEFS}
     <div class="pp-stage"><div class="pp-in" id="ppIn"><div class="pp" id="ppBook" style="--ppgl:${GL.replace(/"/g, "&quot;")};--ppme:url('${esc(p.photoURL || "")}')"><div class="base"><div class="face leather endp">${wm}</div></div><div class="gut"></div>${leavesHtml}</div></div></div>
+    <div class="pp-strip" id="ppStrip">${THUMBS}</div>
     <div class="pp-ctl"><button id="ppPrev" aria-label="前のページ">‹</button><span id="ppPos">表紙</span><button id="ppNext" aria-label="次のページ">›</button><button id="ppClose">閉じる</button></div></div>`;
 
   const book = el.querySelector("#ppBook");
@@ -302,6 +324,16 @@ export function pagePassport(el, ctx) {
     book.classList.toggle("one", idx > 0 && zoom);
     book.classList.toggle("lft", idx > 0 && zoom && side() === "L");
     el.querySelector("#ppPos").textContent = label();
+    // 下の一覧：今のページを真ん中に、左右3ページずつ。離れるほど小さく薄く
+    const cur = idx === 0 ? [] : zoom ? [side() === "L" ? 2 * idx - 1 : 2 * idx] : [2 * idx - 1, 2 * idx].filter((f) => f <= K);
+    const c = cur.length ? cur.reduce((a, b) => a + b, 0) / cur.length : 1;
+    const S = [1, 0.8, 0.64, 0.5], O = [1, 0.55, 0.3, 0.14], GAP = 52;
+    el.querySelectorAll("#ppStrip .th").forEach((b) => {
+      const f = +b.dataset.f, d = f - c, ad = Math.abs(d), k = Math.min(3, Math.round(ad));
+      const x = Math.sign(d) * (ad <= 1 ? ad * GAP : GAP + (ad - 1) * GAP * 0.78);
+      b.style.setProperty("--x", x.toFixed(1) + "px"); b.style.setProperty("--s", ad > 3.4 ? 0.4 : S[k]); b.style.setProperty("--o", ad > 3.4 ? 0 : O[k]); b.style.setProperty("--pe", ad > 3.4 ? "none" : "auto");
+      b.classList.toggle("on", cur.includes(f));
+    });
     el.querySelector("#ppPrev").disabled = idx === 0;
     el.querySelector("#ppNext").disabled = idx >= LAST && !(zoom && side() === "L" && rightContent());
   };
@@ -381,22 +413,40 @@ export function pagePassport(el, ctx) {
     zoomOut(() => flip(-1, () => { if (idx === 0) { busy = false; hint.classList.remove("gone"); render(); } else setTimeout(() => zoomIn(rightContent() ? "R" : "L"), 380); }, idx === 1 ? FT_COVER : FT));
   }
   // 閉じる：引きの見開きにしてから、パラパラっとページが戻って表紙が閉じる
+  // パラパラめくる：from → to の見開きまで、ページを少しずつずらして一気にめくる
+  function flutter(to, done) {
+    const dir = to > idx ? 1 : -1, list = [];
+    if (dir > 0) for (let i = idx; i < to; i++) list.push(i); else for (let i = idx - 1; i >= to; i--) list.push(i);
+    const gap = 95, d1 = 600;
+    list.forEach((i, k) => setTimeout(() => {
+      const l = leaves[i], cover = i === 0, dur = cover ? 950 : d1;
+      if (dir < 0) { l.classList.remove("flat"); l.classList.add("on"); }
+      // めくり始めは先にめくったページの下、半分を過ぎたら上に重ねる
+      l.style.zIndex = 400 - k; setTimeout(() => { l.style.zIndex = 500 + k; }, dur * 0.5);
+      const A = "rotateY(0deg)", B = "rotateY(-180deg)";
+      const an = l.animate([{ transform: dir > 0 ? A : B }, { transform: "rotateY(-90deg) translateZ(10px)" }, { transform: dir > 0 ? B : A }], { duration: dur, easing: "cubic-bezier(.4,.1,.3,1)", fill: "forwards" });
+      an.onfinish = () => { if (dir > 0) { l.classList.add("on", "flat"); l.style.zIndex = 200 + i; } else { l.classList.remove("on"); l.style.zIndex = 100 - i; } an.cancel(); };
+      if (k % 2 === 0) buzz();
+    }, k * gap));
+    const total = (list.length - 1) * gap + (list.includes(0) ? 950 : d1);
+    if (to === 0) setTimeout(() => { idx = 0; render(); }, Math.max(0, (list.length - 1) * gap)); else { idx = to; render(); }
+    setTimeout(done, total + 30);
+  }
+  // 閉じる：引きの見開きにしてから、パラパラっとページが戻って表紙が閉じる
   function closeAll() {
     if (busy || idx === 0) return; busy = true;
-    zoomOut(() => {
-      const list = []; for (let i = idx - 1; i >= 0; i--) list.push(i);
-      const gap = 90, d1 = 560;
-      list.forEach((i, k) => setTimeout(() => {
-        const l = leaves[i]; l.classList.remove("flat"); l.classList.add("on"); l.style.zIndex = 400 + k;
-        const last = i === 0;
-        const an = l.animate([{ transform: "rotateY(-180deg)" }, { transform: "rotateY(-90deg) translateZ(10px)" }, { transform: "rotateY(0deg)" }], { duration: last ? 900 : d1, easing: "cubic-bezier(.4,.1,.3,1)", fill: "forwards" });
-        an.onfinish = () => { l.classList.remove("on"); l.style.zIndex = 100 - i; an.cancel(); };
-        if (k % 2 === 0) buzz();
-      }, k * gap));
-      setTimeout(() => { idx = 0; render(); }, Math.max(0, (list.length - 1) * gap));
-      setTimeout(() => { busy = false; hint.classList.remove("gone"); }, (list.length - 1) * gap + 950);
-    });
+    zoomOut(() => flutter(0, () => { busy = false; hint.classList.remove("gone"); }));
   }
+  // 一覧からページへ：引いて、パラパラめくって、そのページに寄る
+  function jumpTo(f) {
+    if (busy) return;
+    const t = Math.ceil(f / 2), sideT = f % 2 ? "L" : "R";
+    if (t === idx) { if (!(zoom && sd === sideT)) { busy = true; zoomIn(sideT, () => press(sideT === "L" ? pageL() : pageR())); } return; }
+    if (idx === 0 && sig === "" && !sigAsked) return openSign(() => jumpTo(f));
+    busy = true; hint.classList.add("gone");
+    zoomOut(() => flutter(t, () => setTimeout(() => zoomIn(sideT, () => press(sideT === "L" ? pageL() : pageR())), 300)));
+  }
+  el.querySelector("#ppStrip").addEventListener("click", (e) => { const b = e.target.closest(".th"); if (b) jumpTo(+b.dataset.f); });
   let sx = 0, sy = 0;
   book.addEventListener("pointerdown", (e) => { sx = e.clientX; sy = e.clientY; });
   book.addEventListener("pointerup", (e) => {
