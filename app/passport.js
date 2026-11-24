@@ -8,7 +8,7 @@ const FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@
 const CSS = `
 .ppw{display:flex;flex-direction:column;align-items:center;min-height:100%;padding-bottom:calc(30px + var(--sb))!important;overflow-x:hidden}
 .pp-stage{flex:1;width:100%;display:grid;place-items:center;padding:34px 0 10px}
-.pp{--W:min(320px,84vw);position:relative;width:var(--W);aspect-ratio:88/125;transition:transform .6s cubic-bezier(.3,.7,.2,1);perspective:1800px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:pan-y;color:#1b2330}
+.pp{--W:min(320px,84vw);position:relative;width:var(--W);aspect-ratio:88/125;transition:transform .95s cubic-bezier(.45,.05,.25,1);perspective:1800px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:pan-y;color:#1b2330}
 .pp.shift{transform:scale(var(--pps,1)) translateX(50%)}
 .pp.one{transform:none}.pp.one.lft{transform:translateX(100%)}
 .ppw{overflow-x:hidden}
@@ -76,18 +76,18 @@ const CSS = `
 .pp .mrz{position:absolute;left:6%;right:6%;bottom:9%;font:400 9.4px/1.55 'Space Mono',monospace;letter-spacing:.02em;white-space:pre;overflow:hidden;color:#26312b}
 .pp .lam{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.35) 42%,transparent 52%)}
 .pp .ttl{position:absolute;left:9%;right:9%;top:13%}
-.pp .ttl h3{margin:0;font:800 19px/1.4 'Shippori Mincho',serif;letter-spacing:.04em;color:#1b2330;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pp .ttl h3{margin:0;font:800 18px/1.4 'Shippori Mincho',serif;letter-spacing:.04em;color:#1b2330;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .pp .ttl p{margin:7px 0 0;font:800 11px/1 'Shippori Mincho',serif;letter-spacing:.08em;color:#4a5752}
 .pp .snap{position:absolute;box-shadow:0 1px 1px rgba(0,0,0,.12),1px 4px 10px rgba(0,0,0,.12);background:#ddd}
 .pp .snap i{display:block;aspect-ratio:1.3;background-size:cover;background-position:center}
 .pp .tp{position:absolute;width:34%;height:12%;background:rgba(206,226,210,.72);box-shadow:0 1px 1px rgba(0,0,0,.05)}
 .pp .tp.t1{top:-6%;left:-9%;transform:rotate(-34deg)}.pp .tp.t2{bottom:-6%;right:-9%;transform:rotate(-34deg)}
-.pp .open-a{position:absolute;right:8%;bottom:7%;font:800 10px 'Shippori Mincho',serif;letter-spacing:.1em;color:#1f6f5b;border-bottom:1px solid currentColor;padding:6px 0 1px}
-.pp .stz{position:absolute;inset:12% 4% 8%}
+.pp .open-a{margin-left:12px;font:800 10px 'Shippori Mincho',serif;letter-spacing:.1em;color:#1f6f5b;border-bottom:1px solid currentColor;padding:6px 0 1px}
+.pp .stz{position:absolute;inset:0 5%;pointer-events:none}
 .pp .stamp{position:absolute;filter:url(#ppink);opacity:.9}
 .pp .stamp svg{display:block;overflow:visible}
 .pp .stamp.wait{opacity:0}
-.pp .stamp.press{animation:pppress .55s cubic-bezier(.2,.8,.2,1) both}
+.pp .stamp.press{animation:pppress .7s cubic-bezier(.2,.8,.2,1) both}
 @keyframes pppress{0%{opacity:0;transform:var(--r) scale(1.7)}60%{opacity:1;transform:var(--r) scale(.94)}100%{opacity:.9;transform:var(--r) scale(1)}}
 .pp .slot{position:absolute;inset:26% 10% 30%;border:1.5px dashed rgba(31,111,91,.4);display:grid;place-items:center;text-align:center;font:800 13px/2 'Shippori Mincho',serif;letter-spacing:.06em;color:#1f6f5b;padding:10px}
 .pp .slot small{display:block;font:600 10px/1.9 'Shippori Mincho',serif;color:#5d6b63}
@@ -110,6 +110,11 @@ const CSS = `
 .ppsign .acts .go{margin-left:auto;background:#1f6f5b;color:#fff;border-color:#1b2330;box-shadow:2px 2px 0 #1b2330}
 .ppsign .acts .go:disabled{opacity:.4}
 .ppsign .skip{display:block;margin:12px auto 0;background:none;border:0;color:#6c7787;font:500 12px 'Noto Sans JP',sans-serif;text-decoration:underline}
+.pp-stage{perspective:1400px}
+.pp-in{transform-style:flat}
+.pp .hint{transition:opacity .4s}.pp .hint.gone{opacity:0;animation:none}
+.pp .sheen{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,236,180,.22) 47%,rgba(255,255,255,.08) 52%,transparent 62%);background-size:260% 100%;background-position:120% 0;animation:ppsheen 1.6s 1.1s cubic-bezier(.4,.1,.3,1) both}
+@keyframes ppsheen{to{background-position:-60% 0}}
 .pp-ctl{display:flex;gap:10px;align-items:center;justify-content:center;padding:22px 16px 10px}
 .pp-ctl button{min-width:44px;min-height:44px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:3px;font:700 14px 'Noto Sans JP',sans-serif;padding:0 14px}
 .pp-ctl button:disabled{opacity:.3}
@@ -191,36 +196,36 @@ export function pagePassport(el, ctx) {
   const chip = `<svg viewBox="0 0 60 40"><g fill="none" stroke="#d9bd73" stroke-width="2.4"><rect x="2" y="2" width="56" height="36" rx="3"/><circle cx="30" cy="20" r="9"/><path d="M2 20h19M39 20h19"/></g></svg>`;
 
   // 見開きの左：タイトル・期間・トップの写真（最大3枚、枠なしでテープ留め）
-  const PH = { 1: [[14, 40, 72, -3]], 2: [[4, 36, 60, -5], [38, 60, 58, 4]], 3: [[4, 34, 54, -5], [44, 44, 52, 5], [10, 64, 50, 2]] };
-  function leftPage(d, k, pno) {
-    const imgs = (d.heroUrls && d.heroUrls.length ? d.heroUrls : [d.thumbUrl]).filter(Boolean).slice(0, 3);
-    const P = PH[imgs.length] || [];
-    const phs = imgs.map((u, i) => { const [x, y, w, r] = P[i]; return `<div class="snap" style="left:${x}%;top:${y}%;width:${w}%;transform:rotate(${r}deg)"><i style="background-image:url('${esc(u)}')"></i><span class="tp t1"></span><span class="tp t2"></span></div>`; }).join("");
-    return `<div class="face ppbk paper"><div class="pno">${pno}</div><div class="pphd"><span>VISA<b>査証</b></span><i>No.${String(k + 1).padStart(2, "0")}</i></div>
-      <div class="ttl"><h3>${esc(d.title || "")}</h3><p>${esc(period(d))}</p></div>${phs}<a class="open-a" href="#a-${esc(d.id)}">記事を見る</a>${foot}</div>`;
-  }
-  // 見開きの右：スタンプ（国ごと。国内は都道府県ごとの駅スタンプ風）
-  // スタンプの配置：1〜4個は決まった位置、5個以上は2列に散らして少し小さく押す
-  const SP = [[[6, 4], [30, 50]], [[30, 2], [2, 40], [34, 66]], [[4, 0], [44, 18], [2, 46], [42, 64]]];
-  function spots(n, seed) {
-    if (n === 1) return [[6, 4]];
-    if (n <= 4) return SP[n - 2];
-    const rows = Math.ceil(n / 2), out = [];
-    for (let i = 0; i < n; i++) { const h = hash(seed + i); const col = i % 2, row = Math.floor(i / 2); out.push([col * 46 + (h % 7) - (col ? 4 : 1), row * (84 / rows) + ((h >>> 4) % 5) - 2]); }
-    return out;
-  }
-  function rightPage(d, k, pno) {
+  // 記事1本＝1ページ：タイトル・期間・トップの写真（最大3枚、テープ留め）・その旅のスタンプ
+  const PH = { 1: [[18, 32, 60, -3]], 2: [[3, 32, 50, -5], [47, 36, 48, 4]], 3: [[2, 31, 42, -5], [52, 32, 42, 5], [27, 43, 42, 2]] };
+  function stampsOf(d) {
     const date = dot(d.dateStart) || "";
     const n = daysOf(d);
     const cs = (d.countries || []).filter((v) => v !== "japan");
     const prefs = (d.prefectures || []);
     let items = cs.map((v) => { const c = cinfo(v) || {}; return stampHtml(v, String(c.en || v).toUpperCase(), n ? `${n} DAYS` : "", date); });
     if (!cs.length) items = (prefs.length ? prefs : ["日本"]).map((x) => stampHtml(x, x, "", date, true));
-    const pos = spots(items.length, d.id || "");
-    const z = items.length <= 4 ? 1.3 : Math.max(0.68, 1.3 * Math.sqrt(4 / items.length) * 0.92);
-    let html = items.map((s, i) => { const [x, y] = pos[i]; return `<div class="stamp" style="left:${x}%;top:${y}%;zoom:${z.toFixed(2)};--r:rotate(${s.r}deg);transform:rotate(${s.r}deg)">${s.html}</div>`; }).join("");
-    if (items.length === 1 && cs.length) html += `<div class="stamp" style="left:30%;top:40%;zoom:1.3;--r:rotate(-4deg);transform:rotate(-4deg)">${rect("#3a4a5c", "DEPARTED", "JAPAN", date)}</div>`;
-    return `<div class="face ppfr paper"><div class="pno">${pno}</div><div class="pphd"><span>VISAS<b>査証</b></span><i>No.${String(k + 1).padStart(2, "0")}</i></div><div class="stz">${html}</div>${foot}</div>`;
+    if (items.length === 1 && cs.length) items.push({ html: rect("#3a4a5c", "DEPARTED", "JAPAN", date), r: -4 });
+    return items;
+  }
+  // スタンプはページの下の方に、少し重なるくらいに散らして押す
+  function stampLayer(items, seed) {
+    const n = items.length, cols = n <= 2 ? 2 : 3, rows = Math.ceil(n / cols);
+    const z = n <= 2 ? 1.02 : n <= 3 ? 0.9 : Math.max(0.56, 0.9 - (rows - 1) * 0.18);
+    const top0 = 66, band = 26;
+    return items.map((it, i) => {
+      const h = hash(seed + i), row = Math.floor(i / cols), col = i % cols, inRow = Math.min(cols, n - row * cols);
+      const x = (100 / inRow) * col + (inRow === 1 ? 26 : 2) + (h % 7) - 3;
+      const y = top0 + (band / rows) * row + ((h >>> 4) % 6) - 3;
+      return `<div class="stamp" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;zoom:${z.toFixed(2)};--r:rotate(${it.r}deg);transform:rotate(${it.r}deg)">${it.html}</div>`;
+    }).join("");
+  }
+  function artPage(d, k, pno) {
+    const imgs = (d.heroUrls && d.heroUrls.length ? d.heroUrls : [d.thumbUrl]).filter(Boolean).slice(0, 3);
+    const P = PH[imgs.length] || [];
+    const phs = imgs.map((u, i) => { const [x, y, w, r] = P[i]; return `<div class="snap" style="left:${x}%;top:${y}%;width:${w}%;transform:rotate(${r}deg)"><i style="background-image:url('${esc(u)}')"></i><span class="tp t1"></span><span class="tp t2"></span></div>`; }).join("");
+    return { pno, html: `<div class="pphd"><span>VISA<b>査証</b></span><i>No.${String(k + 1).padStart(2, "0")}</i></div>
+      <div class="ttl"><h3>${esc(d.title || "")}</h3><p>${esc(period(d))}<a class="open-a" href="#a-${esc(d.id)}">記事を見る</a></p></div>${phs}<div class="stz">${stampLayer(stampsOf(d), d.id || String(k))}</div>${foot}` };
   }
 
   const ascii = (s) => String(s || "").toUpperCase().replace(/[^A-Z]/g, "");
@@ -232,8 +237,20 @@ export function pagePassport(el, ctx) {
   const totalDays = arts.reduce((s, d) => s + daysOf(d), 0);
   const tags = Array.isArray(p.tags) ? p.tags.slice(0, 3).join("・") : "";
 
+  // 表紙（0）、表紙の裏（1）のあとは、ページを左右交互に並べる
+  const PAGES = [];
+  PAGES.push({ pno: "1", html: `<div class="pphd"><span>PASSPORT<b>旅券</b></span><i>${esc(no)}</i></div><div class="row"><div class="pic"></div><div class="fs">
+      <div><div class="f">型 / Type　　発行 / Issuing</div><div class="v">P　　TABISTOCK</div></div>
+      <div><div class="f">氏名 / Name</div><div class="v j">${esc(p.nickname || "旅人")}</div></div>
+      ${tags ? `<div><div class="f">旅のスタイル / Style</div><div class="v j">${esc(tags)}</div></div>` : ""}
+      <div><div class="f">発行年月日 / Date of issue</div><div class="v">${esc(issued)}</div></div><div class="ppsig" data-sig><div class="f">所持人自署 / Signature</div><div class="ppsv"></div></div></div></div>
+      <div class="ppst"><div><b>${countries.size}</b><span>行った国</span></div><div><b>${totalDays}</b><span>旅した日数</span></div><div><b>${arts.length}</b><span>旅の記録</span></div></div>
+      <div class="mrz">${esc(mrz)}</div><div class="lam"></div>${foot}` });
+  arts.forEach((d, k) => PAGES.push(artPage(d, k, String(2 + k))));
+  PAGES.push({ pno: String(2 + arts.length), html: `<div class="pphd"><span>VISA<b>査証</b></span><i>No.${String(arts.length + 1).padStart(2, "0")}</i></div>
+      <div class="slot"><div>次の旅は、ここに。<small>記事を投稿すると<br>新しいページが増えていきます</small><a href="#p">旅程を投稿する</a></div></div>${foot}` });
   const faces = [
-    `<div class="face ppfr leather cover"><div class="cj" style="left:35%" aria-label="旅">${glyph(G_RYO)}</div><div class="cj" style="left:65%" aria-label="券">${glyph(G_KEN)}</div>${emblem}<div class="ct2" aria-label="TABISTOCK PASSPORT"><svg viewBox="0 0 168 66"><g fill="url(#ppgd)" font-family="Cinzel,'Cormorant Garamond',serif" font-weight="500"><text x="0" y="22" font-size="26" textLength="168" lengthAdjust="spacing">TABISTOCK</text><text x="0" y="62" font-size="23" textLength="168" lengthAdjust="spacing">PASSPORT</text></g></svg></div><div class="ppchip">${chip}</div><div class="hint">タップして開く</div></div>`,
+    `<div class="face ppfr leather cover"><div class="cj" style="left:35%" aria-label="旅">${glyph(G_RYO)}</div><div class="cj" style="left:65%" aria-label="券">${glyph(G_KEN)}</div>${emblem}<div class="ct2" aria-label="TABISTOCK PASSPORT"><svg viewBox="0 0 168 66"><g fill="url(#ppgd)" font-family="Cinzel,'Cormorant Garamond',serif" font-weight="500"><text x="0" y="22" font-size="26" textLength="168" lengthAdjust="spacing">TABISTOCK</text><text x="0" y="62" font-size="23" textLength="168" lengthAdjust="spacing">PASSPORT</text></g></svg></div><div class="ppchip">${chip}</div><i class="sheen"></i><div class="hint">タップして開く</div></div>`,
     `<div class="face ppbk paper req">${REQ_FRAME}
       <div class="rq-ban">${glyphC(G_RYO, G2)}${glyphC(G_KEN, G2)}</div>
       <p class="rq-jp"><span>旅を愛する本旅券の所持人を</span><span>通路故障なく旅行させ、かつ、</span><span>出会った景色と人を記録できる</span><span>よう、関係の諸君に要請する。</span></p>
@@ -241,43 +258,37 @@ export function pagePassport(el, ctx) {
       <div class="rq-by">Tabistock 旅券局</div>
       <p class="rq-en">Tabistock requests all those whom it may concern to allow the bearer, a curious traveler, to pass freely and without hindrance, and to keep every landscape and encounter.</p>
       <svg class="rq-med" viewBox="0 0 100 100">${MEDAL}</svg></div>`,
-    `<div class="face ppfr paper"><div class="pno">1</div><div class="pphd"><span>PASSPORT<b>旅券</b></span><i>${esc(no)}</i></div><div class="row"><div class="pic"></div><div class="fs">
-      <div><div class="f">型 / Type　　発行 / Issuing</div><div class="v">P　　TABISTOCK</div></div>
-      <div><div class="f">氏名 / Name</div><div class="v j">${esc(p.nickname || "旅人")}</div></div>
-      ${tags ? `<div><div class="f">旅のスタイル / Style</div><div class="v j">${esc(tags)}</div></div>` : ""}
-      <div><div class="f">発行年月日 / Date of issue</div><div class="v">${esc(issued)}</div></div><div class="ppsig" data-sig><div class="f">所持人自署 / Signature</div><div class="ppsv"></div></div></div></div>
-      <div class="ppst"><div><b>${countries.size}</b><span>行った国</span></div><div><b>${totalDays}</b><span>旅した日数</span></div><div><b>${arts.length}</b><span>旅の記録</span></div></div>
-      <div class="mrz">${esc(mrz)}</div><div class="lam"></div>${foot}</div>`
   ];
-  arts.forEach((d, k) => faces.push(leftPage(d, k, 2 + k * 2), rightPage(d, k, 3 + k * 2)));
-  const np = 2 + arts.length * 2;
-  // 最後は「次の旅」の1ページと、裏表紙の見返し
-  faces.push(`<div class="face ppbk paper"><div class="pno">${np}</div><div class="pphd"><span>VISA<b>査証</b></span><i>No.${String(arts.length + 1).padStart(2, "0")}</i></div>
-      <div class="slot"><div>次の旅は、ここに。<small>記事を投稿すると<br>新しい見開きが増えていきます</small><a href="#p">旅程を投稿する</a></div></div>${foot}</div>`,
-    `<div class="face ppfr leather endp">${wm}</div>`,
-    `<div class="face ppbk leather endp"></div>`);
-  const N = faces.length / 2, LAST = N - 1;
+  PAGES.forEach((pg, i) => { const side = faces.length % 2 ? "ppbk" : "ppfr"; faces.push(`<div class="face ${side} paper"><div class="pno">${pg.pno}</div>${pg.html}</div>`); });
+  const K = faces.length - 1; // 中身のある最後の面
+  faces.push(`<div class="face ${faces.length % 2 ? "ppbk" : "ppfr"} leather endp">${wm}</div>`);
+  if (faces.length % 2) faces.push(`<div class="face ppbk leather endp"></div>`);
+  const N = faces.length / 2, LAST = Math.floor((K + 1) / 2);
   let leavesHtml = "";
   for (let i = 0; i < N; i++) leavesHtml += `<div class="leaf" style="z-index:${100 - i}">${faces[i * 2]}${faces[i * 2 + 1]}</div>`;
 
   el.innerHTML = bar("パスポート") + `<div class="ps under2 ppw">${DEFS}
-    <div class="pp-stage"><div class="pp" id="ppBook" style="--ppgl:${GL.replace(/"/g, "&quot;")};--ppme:url('${esc(p.photoURL || "")}')"><div class="base"><div class="face leather endp">${wm}</div></div><div class="gut"></div>${leavesHtml}</div></div>
+    <div class="pp-stage"><div class="pp-in" id="ppIn"><div class="pp" id="ppBook" style="--ppgl:${GL.replace(/"/g, "&quot;")};--ppme:url('${esc(p.photoURL || "")}')"><div class="base"><div class="face leather endp">${wm}</div></div><div class="gut"></div>${leavesHtml}</div></div></div>
     <div class="pp-ctl"><button id="ppPrev" aria-label="前のページ">‹</button><span id="ppPos">表紙</span><button id="ppNext" aria-label="次のページ">›</button><button id="ppClose">閉じる</button></div></div>`;
 
   const book = el.querySelector("#ppBook");
   const leaves = [...book.querySelectorAll(".leaf")];
+  const inner = el.querySelector("#ppIn"), hint = book.querySelector(".hint");
+  // 登場：手前に傾いた状態から、ふわっと置かれる
+  inner.animate([{ transform: "translateY(70px) rotateX(28deg) scale(.9)", opacity: 0 }, { transform: "translateY(-6px) rotateX(-2deg) scale(1.01)", opacity: 1, offset: 0.7 }, { transform: "none", opacity: 1 }], { duration: 1300, easing: "cubic-bezier(.2,.7,.2,1)" });
   book.querySelectorAll(".paper .stamp").forEach((s) => s.classList.add("wait"));
   let idx = 0, zoom = false, sd = "L", busy = false;
   const buzz = () => { try { haptic && haptic(); } catch (e) {} };
   const fit = () => { const W = book.offsetWidth || 320; book.style.setProperty("--pps", Math.min(1, (innerWidth - 20) / (2 * W)).toFixed(3)); };
   const pnoOf = (f) => (f && f.querySelector(".pno") ? f.querySelector(".pno").textContent : "");
-  // 寄っているのは左ページか右ページか（最後は左の「次の旅は、ここに。」だけ）
-  const side = () => (idx === LAST ? "L" : sd);
+  const rightContent = () => 2 * idx <= K;
+  // 寄っているのは左ページか右ページか（最後に右が裏表紙なら左だけ）
+  const side = () => (idx === LAST && !rightContent() ? "L" : sd);
   const pageL = () => (idx > 0 ? leaves[idx - 1].children[1] : null);
   const pageR = () => (idx < N ? leaves[idx].children[0] : null);
   const label = () => {
     if (idx === 0) return "表紙";
-    const L = pnoOf(pageL()), R = idx < LAST ? pnoOf(pageR()) : "";
+    const L = pnoOf(pageL()), R = rightContent() ? pnoOf(pageR()) : "";
     if (zoom) return side() === "L" ? L : R;
     return [L, R].filter(Boolean).join("–");
   };
@@ -289,10 +300,10 @@ export function pagePassport(el, ctx) {
     book.classList.toggle("lft", idx > 0 && zoom && side() === "L");
     el.querySelector("#ppPos").textContent = label();
     el.querySelector("#ppPrev").disabled = idx === 0;
-    el.querySelector("#ppNext").disabled = idx >= LAST;
+    el.querySelector("#ppNext").disabled = idx >= LAST && !(zoom && side() === "L" && rightContent());
   };
-  // 見開きで見えているページのスタンプを順に押す。押した数を返す
-  const pressVisible = () => { let k = 0; [pageL(), pageR()].forEach((f) => f && f.querySelectorAll(".stamp.wait").forEach((s) => { const d = 150 + 230 * k++; setTimeout(() => { s.classList.remove("wait"); s.classList.add("press"); buzz(); }, d); })); return k; };
+  // 寄ったページのスタンプを1つずつ押す
+  const press = (f) => { let k = 0; if (f) f.querySelectorAll(".stamp.wait").forEach((s) => { const d = 250 + 320 * k++; setTimeout(() => { s.classList.remove("wait"); s.classList.add("press"); buzz(); }, d); }); return k; };
   // ---- 署名：初めて開くときに指で署名してもらい、身分事項ページに載せる ----
   let sig = null, sigAsked = false;
   const sigSvg = (d) => `<svg viewBox="0 0 300 110" preserveAspectRatio="xMinYMid meet"><path d="${esc(d)}" fill="none" stroke="#1b2330" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -322,48 +333,63 @@ export function pagePassport(el, ctx) {
     ov.querySelector(".skip").onclick = close;
     go.onclick = async () => { const d = toPath(); if (!d) return; go.disabled = true; sig = d; showSig(); buzz(); try { if (saveSig) await saveSig(d); } catch (e) {} close(); };
   }
-  // 1枚めくる（dir=1で次、-1で前）。めくり終わったら done
-  function flip(dir, done) {
+  // 1枚めくる（dir=1で次、-1で前）。ページが少し浮き上がりながら、ゆっくり回る
+  const FT = 1350, FT_COVER = 1800, ZT = 950;
+  function flip(dir, done, dur = FT, lift = 18) {
     const i = dir > 0 ? idx : idx - 1; const l = leaves[i];
-    if (dir < 0) { l.classList.remove("flat"); void l.offsetWidth; }
-    l.style.zIndex = 300; l.classList.add("anim", "turn");
-    requestAnimationFrame(() => l.classList.toggle("on", dir > 0));
+    if (dir < 0) { l.classList.remove("flat"); l.classList.add("on"); void l.offsetWidth; }
+    l.style.zIndex = 300; l.style.willChange = "transform"; l.classList.add("turn");
+    const A = "rotateY(0deg)", B = "rotateY(-180deg)";
+    const k = dir > 0
+      ? [{ transform: A }, { transform: `rotateY(-35deg) translateZ(${lift * 0.7}px)`, offset: 0.25 }, { transform: `rotateY(-95deg) translateZ(${lift}px)`, offset: 0.55 }, { transform: B }]
+      : [{ transform: B }, { transform: `rotateY(-145deg) translateZ(${lift * 0.7}px)`, offset: 0.25 }, { transform: `rotateY(-85deg) translateZ(${lift}px)`, offset: 0.55 }, { transform: A }];
+    const an = l.animate(k, { duration: dur, easing: "cubic-bezier(.45,.05,.3,1)" });
     idx += dir; render(); buzz();
-    setTimeout(() => { l.classList.remove("anim", "turn"); if (dir > 0) l.classList.add("flat"); l.style.zIndex = dir > 0 ? 200 + i : 100 - i; if (done) done(); }, 930);
+    an.onfinish = () => {
+      l.classList.toggle("on", dir > 0); if (dir > 0) l.classList.add("flat");
+      l.classList.remove("turn"); l.style.willChange = ""; l.style.zIndex = dir > 0 ? 200 + i : 100 - i;
+      if (done) done();
+    };
   }
-  const ZT = 640; // 寄る・引くの時間
   const zoomIn = (to, done) => { sd = to; zoom = true; render(); setTimeout(() => { busy = false; if (done) done(); }, ZT); };
   const zoomOut = (done) => { if (!zoom) return done(); zoom = false; render(); setTimeout(done, ZT); };
-  // 次へ：左に寄っている → 右に寄る／右に寄っている → 引いてめくる → 右にスタンプ → 左に寄る
+  // 次へ：左に寄っている → 右に寄る／右に寄っている → 引いて見開き → めくる → 左に寄る（寄ったらスタンプが押される）
   function next() {
     if (busy) return;
-    if (idx === 0 && sig === "" && !sigAsked) return openSign(() => next());
-    if (zoom && side() === "L" && idx > 0 && idx < LAST) { busy = true; buzz(); return zoomIn("R"); }
+    if (idx === 0) {
+      if (sig === "" && !sigAsked) return openSign(() => next());
+      busy = true; hint.classList.add("gone");
+      // 表紙を開く：少し持ち上げてから、ゆっくり開いて見開き → 左ページに寄る
+      inner.animate([{ transform: "none" }, { transform: "translateY(-6px) scale(1.02)" }, { transform: "none" }], { duration: 900, easing: "ease-in-out" });
+      return setTimeout(() => flip(1, () => setTimeout(() => zoomIn("L", () => press(pageL())), 650), FT_COVER, 34), 280);
+    }
+    if (zoom && side() === "L" && rightContent()) { busy = true; buzz(); return zoomIn("R", () => press(pageR())); }
     if (idx >= LAST) return;
     busy = true;
-    zoomOut(() => flip(1, () => { const n = pressVisible(); setTimeout(() => zoomIn("L"), n ? 380 + n * 230 : 450); }));
+    zoomOut(() => flip(1, () => setTimeout(() => zoomIn("L", () => press(pageL())), 380)));
   }
   // 前へ：右に寄っている → 左に寄る／左に寄っている → 引いてめくり戻す → 右に寄る（表紙なら閉じたまま）
   function prev() {
     if (busy || idx === 0) return;
     if (zoom && side() === "R") { busy = true; buzz(); return zoomIn("L"); }
     busy = true;
-    zoomOut(() => flip(-1, () => { if (idx === 0) { busy = false; render(); } else setTimeout(() => zoomIn("R"), 350); }));
+    zoomOut(() => flip(-1, () => { if (idx === 0) { busy = false; hint.classList.remove("gone"); render(); } else setTimeout(() => zoomIn(rightContent() ? "R" : "L"), 380); }, idx === 1 ? FT_COVER : FT));
   }
-  // 閉じる：引きの見開きにしてから、パラパラっと一気にめくり戻す
+  // 閉じる：引きの見開きにしてから、パラパラっとページが戻って表紙が閉じる
   function closeAll() {
     if (busy || idx === 0) return; busy = true;
     zoomOut(() => {
-      const from = idx, list = [];
-      for (let i = from - 1; i >= 0; i--) list.push(i);
+      const list = []; for (let i = idx - 1; i >= 0; i--) list.push(i);
+      const gap = 90, d1 = 560;
       list.forEach((i, k) => setTimeout(() => {
-        const l = leaves[i]; l.classList.remove("flat"); void l.offsetWidth;
-        l.style.transitionDuration = ".42s"; l.style.zIndex = 400 + k; l.classList.add("anim");
-        requestAnimationFrame(() => l.classList.remove("on"));
+        const l = leaves[i]; l.classList.remove("flat"); l.classList.add("on"); l.style.zIndex = 400 + k;
+        const last = i === 0;
+        const an = l.animate([{ transform: "rotateY(-180deg)" }, { transform: "rotateY(-90deg) translateZ(10px)" }, { transform: "rotateY(0deg)" }], { duration: last ? 900 : d1, easing: "cubic-bezier(.4,.1,.3,1)" });
+        an.onfinish = () => { l.classList.remove("on"); l.style.zIndex = 100 - i; };
         if (k % 2 === 0) buzz();
-      }, k * 55));
-      setTimeout(() => { idx = 0; render(); }, Math.max(0, list.length * 55 - 150));
-      setTimeout(() => { list.forEach((i) => { const l = leaves[i]; l.classList.remove("anim"); l.style.transitionDuration = ""; l.style.zIndex = 100 - i; }); busy = false; }, list.length * 55 + 480);
+      }, k * gap));
+      setTimeout(() => { idx = 0; render(); }, Math.max(0, (list.length - 1) * gap));
+      setTimeout(() => { busy = false; hint.classList.remove("gone"); }, (list.length - 1) * gap + 950);
     });
   }
   let sx = 0, sy = 0;
