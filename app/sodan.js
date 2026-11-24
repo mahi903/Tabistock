@@ -245,7 +245,7 @@ export function pageSodanNew(el) {
   if (!me) { el.innerHTML = C.bar("旅ひろばに投稿") + '<div class="ps under2"><p class="fol-empty"><a href="#x-login">ログイン</a>すると投稿できます。</p></div>'; return; }
   let kind = "q", area = "";
   el.innerHTML = C.bar("旅ひろばに投稿", '<button class="sgo" disabled>投稿</button>') + `<div class="ps under2 snew">
-    <textarea class="sbody" maxlength="1000" placeholder="例：2月にキルギスとカザフスタンを10日で回りたいです。冬でも行きやすいルートありますか？"></textarea>
+    <textarea class="sbody" maxlength="1000" placeholder="例：オーストラリアに1週間行くなら、どこがおすすめですか？"></textarea>
     <p class="slab">種類</p><div class="schips wrap" data-g="k">${KINDS.map(([k, l]) => `<button class="${k === kind ? "on" : ""}" data-v="${k}">${l}</button>`).join("")}</div>
     <p class="slab">エリア（任意）</p><div class="schips wrap" data-g="a">${AREAS.map(([k, l]) => `<button data-v="${k}">${l}</button>`).join("")}</div>
     <p class="snote">個人が特定できる情報（電話番号・住所など）は書かないでください。<a href="#c-rules">ルール</a>に沿わない投稿は削除することがあります。</p></div>`;
@@ -284,7 +284,7 @@ export async function renderMine(box, uid, isOwner) {
   await C.loadProfiles([uid]);
   if (!list.length) { box.innerHTML = `<p class="empty">${isOwner ? 'まだ旅ひろばの投稿がありません<br><br><a class="btn-s" href="#c-new">投稿する</a>' : "まだ旅ひろばの投稿はありません"}</p>`; return; }
   const open = list.filter((p) => p.kind === "q" && !p.solved).length;
-  box.innerHTML = `${isOwner && open ? `<p class="smine">未解決の相談 ${open}件</p>` : ""}<div class="slist">${list.map((p) => `<div class="mrow" data-open="${C.esc(p.id)}">
+  box.innerHTML = `<div class="slist">${list.map((p) => `<div class="mrow" data-open="${C.esc(p.id)}">
       <div class="mtop"><span class="skind k-${C.esc(p.kind || "")}">${C.esc(kindName(p.kind))}</span>${stateTag(p)}<small>${C.ago(secOf(p.createdAt))}</small></div>
       <p class="stx clamp">${C.esc(p.text)}</p>
       <div class="sft"><span>${HEART}${p.likeCount || 0}</span><span>${BUB}${p.replyCount || 0}</span>${isOwner && p.kind === "q" ? `<button class="mtog${p.solved ? " on" : ""}" data-tog="${C.esc(p.id)}">${p.solved ? CHK + "解決済み" : "解決済みにする"}</button>` : ""}</div>

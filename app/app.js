@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242249";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242305";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -359,6 +359,7 @@ function openSheet(key) {
   drawSheet();
   $("ov").classList.add("show"); $("bs").classList.add("show");
 }
+let prefOpen = false;
 function drawSheet() {
   const key = sheetKey;
   const base = ALL.filter((d) => match(d, key));
@@ -368,12 +369,17 @@ function drawSheet() {
   const has = (arr, v) => arr.some((x) => String(x) === String(v));
   const row = (k, v, label, n) => `<button class="frow ${has(sel[k], v) ? "on" : ""} ${n ? "" : "zero"}" data-k="${k}" data-v="${esc(v)}"><span class="bx"></span><span class="nm">${esc(label)}</span><small>${n || ""}</small></button>`;
   const all = (k, vals, label) => { const on = vals.length && vals.every((v) => has(sel[k], v)); return `<button class="fall ${on ? "on" : ""}" data-all="${k}" data-vals="${esc(vals.join("|"))}"><span class="bx"></span>${label}</button>`; };
+  // エリアの見出しそのものにチェックを付けて、まとめて選べるようにする
+  const head = (k, vals, label, cls = "") => { const on = vals.length && vals.every((v) => has(sel[k], v)); return `<button class="fall fh ${cls} ${on ? "on" : ""}" data-all="${k}" data-vals="${esc(vals.join("|"))}"><span class="bx"></span><b>${esc(label)}</b></button>`; };
   let body = "";
   if (key === "country") {
-    body += `<div class="fsec"><div class="fhead"><b>日本（都道府県）</b>${all("country", ["japan"], "日本すべて")}</div>`
-      + PREF_GROUPS.map((g) => `<p class="fsub">${esc(g.r)}　${all("pref", g.list, "まとめて")}</p><div class="fgrid">${g.list.map((p) => row("pref", p, p, cntP(p))).join("")}</div>`).join("") + "</div>";
+    // 日本：都道府県は最初は隠しておき、「都道府県で選ぶ」で開く（都道府県を選んでいるときは開いたまま）
+    const prefShow = prefOpen || sel.pref.length > 0;
+    body += `<div class="fsec"><div class="fhead">${head("country", ["japan"], "日本")}</div>`
+      + `<button class="fpref ${prefShow ? "open" : ""}" id="fPref">都道府県で選ぶ${sel.pref.length ? `<small>${sel.pref.length}</small>` : ""}${CH}</button>`
+      + (prefShow ? PREF_GROUPS.map((g) => `<p class="fsub">${head("pref", g.list, g.r, "sm")}</p><div class="fgrid">${g.list.map((p) => row("pref", p, p, cntP(p))).join("")}</div>`).join("") : "") + "</div>";
     const regions = [...new Set(COUNTRIES.filter((c) => c.v !== "japan").map((c) => c.r))];
-    body += regions.map((r) => { const cs = COUNTRIES.filter((c) => c.r === r && c.v !== "japan"); return `<div class="fsec"><div class="fhead"><b>${esc(REGION_JP[r] || r)}</b>${all("country", cs.map((c) => c.v), "エリアごと選ぶ")}</div><div class="fgrid">${cs.map((c) => row("country", c.v, c.jp, cntC(c.v))).join("")}</div></div>`; }).join("");
+    body += regions.map((r) => { const cs = COUNTRIES.filter((c) => c.r === r && c.v !== "japan"); return `<div class="fsec"><div class="fhead">${head("country", cs.map((c) => c.v), REGION_JP[r] || r)}</div><div class="fgrid">${cs.map((c) => row("country", c.v, c.jp, cntC(c.v))).join("")}</div></div>`; }).join("");
   } else {
     body = `<div class="fsec"><div class="fgrid ${key === "style" ? "" : "one"}">${optionsOf(key).map((o) => row(key, o[0], o[1], cntO(o[0]))).join("")}</div></div>`;
   }
@@ -396,6 +402,7 @@ function drawSheet() {
     sel[k] = on ? sel[k].filter((x) => !vals.some((v) => String(v) === String(x))) : [...new Set([...sel[k], ...vals])];
     haptic(); keep();
   }));
+  const fp = $("fPref"); if (fp) fp.onclick = () => { prefOpen = !(prefOpen || sel.pref.length > 0); if (!prefOpen) sel.pref = []; haptic(); keep(); };
   $("bsClr").onclick = () => { sel = { country: [], pref: [], [key]: [] }; Object.assign(state, sel); renderSearch(); drawSheet(); };
   $("bsOk").onclick = () => { Object.assign(state, sel); closeSheet(); renderSearch(); };
 }
@@ -481,7 +488,7 @@ $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) 
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611242249");
+  const M = await import("./sodan.js?v=202611242305");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -579,8 +586,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242249").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242249").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242305").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242305").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -860,7 +867,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611242249"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611242305"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1288,7 +1295,7 @@ async function loadMyPosts() {
 function myCard(d, editLink) {
   const st = STATUS_LABEL[d.status] ? d.status : "pending";
   return `<div class="mycard"><a class="oc" href="${editLink ? "#p-" : "#a-"}${esc(d.id)}" style="background-image:url('${esc(thumbOf(d))}')">${ovText({ ...d, title: d.title || "(無題)" })}</a>
-    <div class="mymeta">${st !== "published" ? `<span class="pst s-${st}">${STATUS_LABEL[st]}</span>` : ""}${d._collab || (d.coAuthorIds || []).length ? '<span class="pst">共同投稿</span>' : ""}<button class="pmn" data-pm="${esc(d.id)}" aria-label="メニュー">…</button></div></div>`;
+    <div class="mymeta">${st !== "published" ? `<span class="pst s-${st}">${STATUS_LABEL[st]}</span>` : ""}${d._collab || (d.coAuthorIds || []).length ? '<span class="pst">共同投稿</span>' : ""}<button class="pmn" data-pm="${esc(d.id)}" aria-label="メニュー"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div></div>`;
 }
 function drawMyPosts() {
   const box = $("myPosts"); if (!box) return;
@@ -1612,7 +1619,7 @@ async function pageProfileEdit(el) {
     <div class="tgadd"><input id="tgNew" maxlength="12" placeholder="自分で追加（12文字まで）"><button id="tgAdd" type="button">追加</button></div>
     <p class="pfh">次の旅（任意）</p>
     <p class="pfn">決まっている次の旅を、プロフィールに出せます。時期は月まで（日にちは出しません）</p>
-    <div class="ntrip"><input id="ntPlace" maxlength="30" placeholder="行き先（例：ナミビア、北欧周遊）" value="${esc((p.nextTrip || {}).place || "")}"><select id="ntYm"><option value="">時期は未定</option>${nextMonths().map((ym) => `<option value="${ym}" ${(p.nextTrip || {}).ym === ym ? "selected" : ""}>${ymLabel(ym)}</option>`).join("")}</select></div>
+    <div class="ntrip"><input id="ntPlace" maxlength="30" placeholder="行き先（例：バンコク）" value="${esc((p.nextTrip || {}).place || "")}"><select id="ntYm"><option value="">時期は未定</option>${nextMonths().map((ym) => `<option value="${ym}" ${(p.nextTrip || {}).ym === ym ? "selected" : ""}>${ymLabel(ym)}</option>`).join("")}</select></div>
     <p class="pfh">SNS（ユーザー名 または URL）</p>
     ${SNS.map(([k, l]) => `<label class="pfl">${l}<input data-sns="${k}" autocapitalize="off" autocorrect="off" placeholder="${k === "note" ? "noteのID" : "@なしのユーザー名"}" value="${esc(p[k] || "")}"></label>`).join("")}
     <p class="pfm" id="pfMsg"></p></div></div>`;
