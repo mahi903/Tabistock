@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242338";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242341";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -517,7 +517,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611242338");
+  const M = await import("./sodan.js?v=202611242341");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -615,8 +615,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242338").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242338").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242341").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242341").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -898,7 +898,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611242338"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611242341"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1608,10 +1608,16 @@ async function pageNotify(el) {
   const box = el.querySelector("#nlist");
   if (!me) { box.innerHTML = '<p class="fol-empty"><a href="#x-login">ログイン</a>すると通知が届きます。</p>'; return; }
   let items = [];
-  try { (await getDocs(collection(db, "users", me, "notifications"))).forEach((x) => items.push({ id: x.id, ...x.data() })); } catch (e) {}
-  items.sort((a, b) => ((b.createdAt || {}).seconds || 0) - ((a.createdAt || {}).seconds || 0));
-  const allUnread = items.filter((n) => !n.read);   // 表示しない古い通知も含めて、未読はすべて既読にする
-  items = items.slice(0, 80);
+  // 出すのは新しい順に20件だけ。未読は、出さない古いものも含めてすべて既読にする
+  let allUnread = [];
+  try {
+    const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const col = collection(db, "users", me, "notifications");
+    const [a, u] = await Promise.all([getDocs(F.query(col, F.orderBy("createdAt", "desc"), F.limit(20))), getDocs(query(col, where("read", "==", false))).catch(() => null)]);
+    a.forEach((x) => items.push({ id: x.id, ...x.data() }));
+    if (u) u.forEach((x) => allUnread.push({ id: x.id, ...x.data() }));
+  } catch (e) {}
+  if (!allUnread.length) allUnread = items.filter((n) => !n.read);
   await loadProfiles(items.map((n) => n.fromUid).filter(Boolean));
   box.innerHTML = items.length ? items.map((n) => {
     const name = `<b>${esc(n.fromNickname || (PROF[n.fromUid] || {}).nickname || "ある旅人")}</b>`, t = esc(n.articleTitle || "旅程");
