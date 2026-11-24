@@ -10,6 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611241821";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -244,8 +245,9 @@ document.querySelectorAll("#htabs button").forEach((b) => b.addEventListener("cl
 function homeTab(i) {
   haptic();
   [...$("htabs").children].forEach((b, j) => b.classList.toggle("on", i === j));
-  $("recPane").hidden = !!i; $("folPane").hidden = !i;
-  if (i) renderFeed();
+  $("recPane").hidden = i !== 0; $("folPane").hidden = i !== 1; $("boardPane").hidden = i !== 2;
+  if (i === 1) renderFeed();
+  if (i === 2) renderBoard();
 }
 $("home").addEventListener("scroll", () => {
   const h = $("htabs");
@@ -465,6 +467,49 @@ $("q").addEventListener("input", (e) => { state.q = e.target.value; renderSearch
 $("qx").addEventListener("click", (e) => { e.preventDefault(); $("q").value = ""; state.q = ""; renderSearch(); });
 $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) => `<i class="${h <= 12 ? "lo" : ""}" style="height:${h}px"></i>`).join("");
 
+// ---------- 旅の掲示板 ----------
+// Firestore の boards（公開中）を読む。1本もない・読めないときは board.js の最初の記事を出す。書いた人は今は出さない（データには残す）
+let BOARDS = null, boardCat = "";
+async function loadBoards() {
+  if (BOARDS) return BOARDS;
+  let list = [];
+  try { (await getDocs(query(collection(db, "boards"), where("status", "==", "published")))).forEach((s) => list.push({ id: s.id, ...s.data() })); } catch (e) {}
+  if (!list.length) list = BOARD_SEED.slice();
+  list.sort((a, b) => (a.order || 99) - (b.order || 99));
+  return (BOARDS = list);
+}
+const illOf = (k) => ILL[k] || ILL.suitcase;
+const catName = (c) => (BOARD_CATS.find((x) => x[0] === c) || [, ""])[1];
+async function renderBoard() {
+  const box = $("boardPane");
+  if (!BOARDS) box.innerHTML = '<p class="fol-empty">読み込み中…</p>';
+  const list = await loadBoards();
+  const cats = BOARD_CATS.filter(([k]) => !k || list.some((d) => d.cat === k));
+  const shown = list.filter((d) => !boardCat || d.cat === boardCat);
+  box.innerHTML = `<div class="bcats">${cats.map(([k, l]) => `<button class="${k === boardCat ? "on" : ""}" data-bc="${k}">${l}</button>`).join("")}</div>
+    <div class="blist">${shown.map((d) => `<a class="bit press" href="#g-${esc(d.id)}"><span class="bill">${illOf(d.ill)}</span><div><small>${esc(catName(d.cat))}</small><h3>${esc(d.title)}</h3>${d.lead ? `<p>${esc(d.lead)}</p>` : ""}${d.mins ? `<i>${d.mins}分で読める</i>` : ""}</div></a>`).join("")}</div>`;
+  box.querySelectorAll("[data-bc]").forEach((b) => (b.onclick = () => { boardCat = b.dataset.bc; haptic(); renderBoard(); }));
+}
+function boardBlock(b) {
+  if (b.t === "h") return `<h2>${esc(b.x)}</h2>`;
+  if (b.t === "p") return `<p class="bp">${para(b.x)}</p>`;
+  if (b.t === "note") return `<p class="bnote">${para(b.x)}</p>`;
+  if (b.t === "list") return `<ul class="bul">${(b.items || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  if (b.t === "steps") return `<ol class="bsteps">${(b.items || []).map((x, i) => `<li><i>${i + 1}</i><div><b>${esc(x[0])}</b>${esc(x[1] || "")}</div></li>`).join("")}</ol>`;
+  return "";
+}
+function fmtUpdated(u) { const m = String(u || "").match(/^(\d{4})-(\d{2})/); return m ? `${m[1]}年${+m[2]}月更新` : ""; }
+async function pageBoard(el, id) {
+  el.innerHTML = bar("旅の掲示板") + '<div class="ps under2"><p class="loading">読み込み中…</p></div>';
+  const d = (await loadBoards()).find((x) => x.id === id);
+  const ps = el.querySelector(".ps");
+  if (!d) { ps.innerHTML = '<p class="empty">記事が見つかりませんでした</p>'; return; }
+  ps.innerHTML = `<div class="bhero">${illOf(d.ill)}</div><div class="bart">
+    <small class="bc">${esc(catName(d.cat))}</small><h1>${esc(d.title)}</h1>${d.lead ? `<p class="blead">${esc(d.lead)}</p>` : ""}${fmtUpdated(d.updated) ? `<p class="bupd">${fmtUpdated(d.updated)}</p>` : ""}
+    ${(d.facts || []).length ? `<dl class="bfacts">${d.facts.map((f) => `<div><dt>${esc(f[0])}</dt><dd><b>${esc(f[1])}</b>${f[2] ? `<span>${esc(f[2])}</span>` : ""}</dd></div>`).join("")}</dl>` : ""}
+    ${(d.blocks || []).map(boardBlock).join("")}</div>`;
+}
+
 // ---------- 積み重ねページ ----------
 // 記事(#a-ID)・プロフィール(#u-UID)・DM一覧(#dm)・DM(#dm-UID)・埋め込みページ(#w-名前) を右から重ねて開く。
 // 戻るボタン／左端スワイプは history.back() で閉じる。
@@ -477,7 +522,7 @@ const TI = {
   photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="3.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M20.5 15.5l-4.5-4.5L5 20.3"/></svg>',
 };
 const BACK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
-function isPageHash(h) { return /^#(a-|u-|dm|w-|f-|x-|n$|p$|p-|fare$)/.test(h); }
+function isPageHash(h) { return /^#(a-|g-|u-|dm|w-|f-|x-|n$|p$|p-|fare$)/.test(h); }
 function route() {
   const h = location.hash;
   if (!isPageHash(h)) { while (STACK.length) popPage(); return; }
@@ -494,9 +539,10 @@ function pushPage(h) {
   $("tab").classList.add("hide"); $("aiCmp").hidden = true; syncNativeTab();
   swipeBack(el);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
-  const m = h.match(/^#(a|u|dm|w|fare|f|x|n|p)-?(.*)$/);
+  const m = h.match(/^#(a|g|u|dm|w|fare|f|x|n|p)-?(.*)$/);
   const kind = m[1], arg = decodeURIComponent(m[2] || "");
   if (kind === "a") pageArticle(el, arg);
+  else if (kind === "g") pageBoard(el, arg);
   else if (kind === "u") pageUser(el, arg);
   else if (kind === "dm" && !arg) pageInbox(el);
   else if (kind === "dm") pageThread(el, arg);
@@ -506,8 +552,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611241807").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611241807").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611241821").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611241821").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -787,7 +833,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611241807"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611241821"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {

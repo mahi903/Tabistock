@@ -80,6 +80,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---- 旅の掲示板（今は管理者だけが書ける。公開中の記事は誰でも読める）----
+    match /boards/{boardId} {
+      allow read:  if resource.data.status == "published" || isAdmin();
+      allow write: if isAdmin();
+    }
+
     // ---- 記事 ----
     // 共同投稿（Instagram のコラボ投稿と同じ仕組み）：
     //   coAuthorInvites … 招待中の uid（元の投稿者が追加・取り消し）

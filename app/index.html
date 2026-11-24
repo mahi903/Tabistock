@@ -19,7 +19,7 @@
 <meta name="apple-mobile-web-app-title" content="Tabistock β">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="./app.css?v=202611241807">
+<link rel="stylesheet" href="./app.css?v=202611241821">
 </head>
 <body>
 <div id="app">
@@ -36,7 +36,7 @@
       <button class="ti" id="dmBtn" aria-label="メッセージ"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><b id="dmBadge" hidden></b></button>
     </div>
   </div>
-  <div class="htabs" id="htabs"><button class="on" data-ht="0">おすすめ</button><button data-ht="1">フォロー中</button></div>
+  <div class="htabs" id="htabs"><button class="on" data-ht="0">おすすめ</button><button data-ht="1">フォロー中</button><button data-ht="2">旅の掲示板</button></div>
   <div id="recPane">
     <div id="feat"></div>
     <div class="sh"><button class="shl" data-go="search" data-reset="1"><h2>海外旅行</h2><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></div>
@@ -47,6 +47,7 @@
     <div style="height:10px"></div>
   </div>
   <div id="folPane" hidden></div>
+  <div id="boardPane" hidden></div>
 </section>
 
 <!-- 探す -->
@@ -101,6 +102,6 @@
 <div class="bs" id="bs"></div>
 <div class="toast" id="toast"></div>
 </div>
-<script type="module" src="./app.js?v=202611241807"></script>
+<script type="module" src="./app.js?v=202611241821"></script>
 </body>
 </html>
