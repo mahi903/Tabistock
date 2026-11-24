@@ -54,6 +54,10 @@ export async function sendNotification({ toUid, type, articleId = "", articleTit
       } else if (type === "follow") {
         title = nick + "さんにフォローされました";
         url = "/user.html?uid=" + encodeURIComponent(user.uid);
+      } else if (type === "sodan") {
+        title = nick + "さんが旅ひろばで回答しました";
+        text = articleTitle || "";
+        url = "/app/#c-" + encodeURIComponent(articleId);
       } else if (type === "dm") {
         title = nick + "さんからメッセージが届きました";
         url = "/dm.html?to=" + encodeURIComponent(user.uid);

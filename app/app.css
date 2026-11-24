@@ -1406,3 +1406,8 @@ html.ntab .tab{display:none}
 .scmp.hastx .ssend{display:grid!important}
 .spill textarea{flex:1 1 0;width:0}.scmp{overflow:hidden}.scmp .srow{width:100%}
 .sto2[hidden],.sart2[hidden]{display:none}
+/* 旅ひろばの投稿画面：種類は1段、エリアは2段に収める */
+.srow1{display:flex;gap:5px;margin-top:6px}
+.srow1 button{flex:1 1 auto;white-space:nowrap;font-size:11.5px;padding:7px 4px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink)}
+.srow1 button.on{border-color:var(--green);color:var(--green);font-weight:700;background:var(--green-t)}
+.snew .sbody{margin-top:18px}

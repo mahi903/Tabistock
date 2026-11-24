@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242315";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242329";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -484,11 +484,40 @@ $("q").addEventListener("input", (e) => { state.q = e.target.value; renderSearch
 $("qx").addEventListener("click", (e) => { e.preventDefault(); $("q").value = ""; state.q = ""; renderSearch(); });
 $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) => `<i class="${h <= 12 ? "lo" : ""}" style="height:${h}px"></i>`).join("");
 
+// ---------- iPhoneアプリのプッシュ通知（Capacitor の PushNotifications）----------
+// 許可をもらったら APNs の宛先（端末トークン）を users/{自分}/apnsTokens に保存する。
+// 通知をタップしたら、その DM・記事・旅ひろばの投稿を開く
+let pushReady = false;
+async function setupNativePush() {
+  const P = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+  if (!P || pushReady || !me) return;
+  pushReady = true;
+  try {
+    await P.addListener("registration", async (t) => {
+      try { await setDoc(doc(db, "users", me, "apnsTokens", t.value), { platform: "ios", createdAt: serverTimestamp() }); } catch (e) { console.warn(e); }
+    });
+    await P.addListener("registrationError", (e) => console.warn("push registration error", e));
+    await P.addListener("pushNotificationActionPerformed", (a) => openPushUrl(((a && a.notification && a.notification.data) || {}).url || ""));
+    let st = await P.checkPermissions();
+    if (st.receive === "prompt" || st.receive === "prompt-with-rationale") st = await P.requestPermissions();
+    if (st.receive === "granted") await P.register();
+  } catch (e) { console.warn("push setup failed", e); }
+}
+function openPushUrl(u) {
+  u = String(u || "");
+  let m;
+  if ((m = u.match(/#(c-[^&]+)$/))) location.hash = "#" + m[1];
+  else if ((m = u.match(/view\.html\?id=([^&#]+)/))) location.hash = "#a-" + m[1];
+  else if ((m = u.match(/dm\.html\?to=([^&#]+)/))) location.hash = "#dm-" + m[1];
+  else if ((m = u.match(/user\.html\?uid=([^&#]+)/))) location.hash = "#u-" + m[1];
+  else if (u.includes("collab")) go("me");
+}
+
 // ---------- 旅ひろば（app/sodan.js）----------
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611242315");
+  const M = await import("./sodan.js?v=202611242329");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -586,8 +615,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242315").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242315").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242329").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242329").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -596,6 +625,8 @@ function popPage() {
   top.el.classList.remove("open");
   setTimeout(() => top.el.remove(), 380);
   if (!STACK.length) { $("tab").classList.remove("hide"); $("aiCmp").hidden = curTab !== "ai"; }
+  // 旅ひろばの投稿から戻ったら、一覧を描き直す（回答した・いいねした・解決済みにした数をすぐ反映）
+  if (!STACK.length && curTab === "sodan" && SDM) SDM.renderSodan();
   syncNativeTab();
 }
 const back = () => (history.length > 1 ? history.back() : (location.hash = ""));
@@ -867,7 +898,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611242315"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611242329"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1823,6 +1854,7 @@ async function watchDmBadge() {
 }
 onAuthStateChanged(auth, async (u) => {
   me = u ? u.uid : null;
+  if (me) setTimeout(setupNativePush, 2500);   // iPhoneアプリ：通知の許可と宛先の登録（起動のロゴのあとに）
   if (!me) watchDmBadge();
   saved = new Set();
   if (me) {

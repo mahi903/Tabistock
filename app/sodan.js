@@ -10,7 +10,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 export const KINDS = [["q", "質問・相談"], ["info", "現地の情報"], ["flight", "航空券"], ["save", "節約"], ["chat", "雑談"]];
-export const AREAS = [["eastasia", "東アジア"], ["seasia", "東南アジア"], ["southasia", "南アジア"], ["centralasia", "中央アジア"], ["middleeast", "中東"], ["europe", "ヨーロッパ"], ["africa", "アフリカ"], ["namerica", "北米"], ["samerica", "中南米"], ["oceania", "オセアニア"], ["japan", "日本国内"]];
+export const AREAS = [["japan", "日本国内"], ["eastasia", "東アジア"], ["seasia", "東南アジア"], ["southasia", "南アジア"], ["centralasia", "中央アジア"], ["middleeast", "中東"], ["europe", "ヨーロッパ"], ["africa", "アフリカ"], ["namerica", "北米"], ["samerica", "中南米"], ["oceania", "オセアニア"]];
 const kindName = (k) => (KINDS.find((x) => x[0] === k) || [, ""])[1];
 const areaName = (a) => (AREAS.find((x) => x[0] === a) || [, ""])[1];
 const HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>';
@@ -60,7 +60,8 @@ function postRow(p, full) {
 // ---------- 一覧（下のタブ「旅ひろば」） ----------
 export async function renderSodan() {
   const box = document.getElementById("sodanBody");
-  if (!LIST) box.innerHTML = '<p class="fol-empty">読み込み中…</p>';
+  const sx = [...box.querySelectorAll(".schips")].map((r) => r.scrollLeft);   // 横にスクロールした位置を覚えておく
+  if (!LIST && !box.querySelector(".slist")) box.innerHTML = '<p class="fol-empty">読み込み中…</p>';   // 描き直しのときは、読み込むあいだ今の一覧を出したまま
   let list;
   try { list = await load(); } catch (e) { console.error(e); box.innerHTML = '<p class="fol-empty">読み込めませんでした。時間をおいてもう一度開いてください。</p>'; return; }
   let shown = list.filter((p) => (!fKind || p.kind === fKind) && (!fArea || p.area === fArea));
@@ -73,6 +74,7 @@ export async function renderSodan() {
     <div class="ssort">${[["new", "新着"], ["pop", "人気"], ["open", "未解決の相談"]].map(([k, l]) => `<button class="${k === fSort ? "on" : ""}" data-s="${k}">${l}</button>`).join("")}</div>
     <div class="slist">${shown.length ? shown.map((p) => postRow(p)).join("") : `<p class="fol-empty">${list.length ? "まだこの条件の投稿はありません。" : "まだ投稿がありません。最初の相談を書いてみませんか？"}</p>`}</div>
     <div style="height:110px"></div>`;
+  box.querySelectorAll(".schips").forEach((r, i) => { if (sx[i]) r.scrollLeft = sx[i]; });
   box.querySelectorAll("[data-k]").forEach((b) => (b.onclick = () => { fKind = b.dataset.k; C.haptic(); renderSodan(); }));
   box.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => { fArea = b.dataset.a; C.haptic(); renderSodan(); }));
   box.querySelectorAll("[data-s]").forEach((b) => (b.onclick = () => { fSort = b.dataset.s; C.haptic(); renderSodan(); }));
@@ -100,6 +102,7 @@ function bindPostActions(root, liked, list) {
         if (on) await setDoc(doc(db, "sodan", id, "likes", me), { at: serverTimestamp() }); else await deleteDoc(doc(db, "sodan", id, "likes", me));
         await updateDoc(doc(db, "sodan", id), { likeCount: increment(on ? 1 : -1) });
       } catch (err) { console.error(err); }
+      if (location.hash.startsWith("#c-")) invalidate();
     };
   });
   root.querySelectorAll("[data-pmore]").forEach((b) => (b.onclick = async (e) => {
@@ -245,15 +248,15 @@ export function pageSodanNew(el) {
   if (!me) { el.innerHTML = C.bar("旅ひろばに投稿") + '<div class="ps under2"><p class="fol-empty"><a href="#x-login">ログイン</a>すると投稿できます。</p></div>'; return; }
   let kind = "q", area = "";
   el.innerHTML = C.bar("旅ひろばに投稿", '<button class="sgo" disabled>投稿</button>') + `<div class="ps under2 snew">
+    <p class="slab">種類</p><div class="srow1" data-g="k">${KINDS.map(([k, l]) => `<button class="${k === kind ? "on" : ""}" data-v="${k}">${l}</button>`).join("")}</div>
+    <p class="slab">エリア（任意）</p><div class="srow1" data-g="a">${AREAS.slice(0, 5).map(([k, l]) => `<button data-v="${k}">${l}</button>`).join("")}</div><div class="srow1" data-g="a">${AREAS.slice(5).map(([k, l]) => `<button data-v="${k}">${l}</button>`).join("")}</div>
     <textarea class="sbody" maxlength="1000" placeholder="例：オーストラリアに1週間行くなら、どこがおすすめですか？"></textarea>
-    <p class="slab">種類</p><div class="schips wrap" data-g="k">${KINDS.map(([k, l]) => `<button class="${k === kind ? "on" : ""}" data-v="${k}">${l}</button>`).join("")}</div>
-    <p class="slab">エリア（任意）</p><div class="schips wrap" data-g="a">${AREAS.map(([k, l]) => `<button data-v="${k}">${l}</button>`).join("")}</div>
     <p class="snote">個人が特定できる情報（電話番号・住所など）は書かないでください。<a href="#c-rules">ルール</a>に沿わない投稿は削除することがあります。</p></div>`;
   const go = el.querySelector(".sgo"), ta = el.querySelector(".sbody");
   el.querySelectorAll("[data-g] button").forEach((b) => (b.onclick = () => {
     const g = b.parentNode.dataset.g, v = b.dataset.v;
     if (g === "k") kind = v; else area = area === v ? "" : v;
-    b.parentNode.querySelectorAll("button").forEach((x) => x.classList.toggle("on", g === "k" ? x.dataset.v === kind : x.dataset.v === area));
+    el.querySelectorAll(`[data-g="${g}"] button`).forEach((x) => x.classList.toggle("on", g === "k" ? x.dataset.v === kind : x.dataset.v === area));
     C.haptic();
   }));
   ta.oninput = () => (go.disabled = !ta.value.trim());

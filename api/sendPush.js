@@ -12,8 +12,58 @@
 //   FIREBASE_PROJECT_ID    … サービスアカウントJSONの project_id
 //   FIREBASE_CLIENT_EMAIL  … 同 client_email
 //   FIREBASE_PRIVATE_KEY   … 同 private_key（改行を含むのでそのまま貼り付けでOK）
+// iPhoneアプリ（APNs）にも送るときに必要な環境変数：
+//   APNS_KEY       … Apple Developer で作った .p8 の中身（-----BEGIN PRIVATE KEY----- から全部）
+//   APNS_KEY_ID    … その鍵の Key ID（10文字）
+//   APNS_TEAM_ID   … Apple Developer のチームID（10文字）
+//   APNS_BUNDLE_ID … アプリのバンドルID（省略時 jp.tabistock.app）
 
 import admin from "firebase-admin";
+import http2 from "node:http2";
+import crypto from "node:crypto";
+
+// ---- APNs（iPhoneアプリ）----
+// 認証は .p8 の鍵で作る JWT（ES256）。同じものを50分ほど使い回す
+let apnsJwt = null, apnsJwtAt = 0;
+function apnsToken() {
+  const key = (process.env.APNS_KEY || "").replace(/\\n/g, "\n");
+  const kid = process.env.APNS_KEY_ID, iss = process.env.APNS_TEAM_ID;
+  if (!key || !kid || !iss) return null;
+  const now = Math.floor(Date.now() / 1000);
+  if (apnsJwt && now - apnsJwtAt < 50 * 60) return apnsJwt;
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const head = b64({ alg: "ES256", kid }), body = b64({ iss, iat: now });
+  const sig = crypto.sign("sha256", Buffer.from(head + "." + body), { key, dsaEncoding: "ieee-p1363" }).toString("base64url");
+  apnsJwt = `${head}.${body}.${sig}`; apnsJwtAt = now;
+  return apnsJwt;
+}
+// 1台に送る。TestFlight・App Store は本番（api.push.apple.com）、Xcode から入れたものは開発用（sandbox）なので、
+// 本番で「この端末は知らない」と言われたら sandbox でもう一度送る
+function apnsSendOne(host, deviceToken, payload, jwt) {
+  return new Promise((resolve) => {
+    let client;
+    try { client = http2.connect("https://" + host); } catch (e) { resolve({ status: 0, reason: String(e) }); return; }
+    client.on("error", (e) => resolve({ status: 0, reason: String(e) }));
+    const req = client.request({
+      ":method": "POST", ":path": "/3/device/" + deviceToken,
+      authorization: "bearer " + jwt,
+      "apns-topic": process.env.APNS_BUNDLE_ID || "jp.tabistock.app",
+      "apns-push-type": "alert", "apns-priority": "10",
+      "content-type": "application/json",
+    });
+    let status = 0, data = "";
+    req.on("response", (h) => { status = h[":status"]; });
+    req.on("data", (c) => (data += c));
+    req.on("end", () => { client.close(); let reason = ""; try { reason = JSON.parse(data || "{}").reason || ""; } catch (e) {} resolve({ status, reason }); });
+    req.on("error", (e) => { client.close(); resolve({ status: 0, reason: String(e) }); });
+    req.end(JSON.stringify(payload));
+  });
+}
+async function apnsSend(deviceToken, payload, jwt) {
+  let r = await apnsSendOne("api.push.apple.com", deviceToken, payload, jwt);
+  if (r.status === 400 && r.reason === "BadDeviceToken") r = await apnsSendOne("api.sandbox.push.apple.com", deviceToken, payload, jwt);
+  return r;
+}
 
 function ensureApp() {
   if (admin.apps.length) return;
@@ -54,11 +104,30 @@ export default async function handler(req, res) {
     if (toUid === fromUid) { res.status(200).json({ skipped: "self" }); return; }
 
     const db = admin.firestore();
+
+    // iPhoneアプリ（APNs）
+    let apnsSent = 0;
+    try {
+      const jwt = apnsToken();
+      if (jwt) {
+        const acol = db.collection("users").doc(toUid).collection("apnsTokens");
+        const asnap = await acol.get();
+        const payload = { aps: { alert: { title, body: text }, sound: "default" }, url };
+        await Promise.all(asnap.docs.map(async (d) => {
+          const r = await apnsSend(d.id, payload, jwt);
+          if (r.status === 200) apnsSent++;
+          else if (r.status === 410 || r.reason === "BadDeviceToken" || r.reason === "Unregistered") await d.ref.delete().catch(() => {});
+          else console.warn("apns failed", r.status, r.reason);
+        }));
+      }
+    } catch (e) { console.error("apns error:", e); }
+
+    // ブラウザ（PWA）
     const col = db.collection("users").doc(toUid).collection("pushTokens");
     const snap = await col.get();
     const tokens = [];
     snap.forEach((d) => { const t = (d.data() && d.data().token) || d.id; if (t) tokens.push(t); });
-    if (!tokens.length) { res.status(200).json({ sent: 0 }); return; }
+    if (!tokens.length) { res.status(200).json({ sent: 0, apns: apnsSent }); return; }
 
     const resp = await admin.messaging().sendEachForMulticast({
       tokens,
@@ -79,7 +148,7 @@ export default async function handler(req, res) {
     });
     await Promise.all(dead.map((t) => col.doc(t).delete().catch(() => {})));
 
-    res.status(200).json({ sent: resp.successCount, failed: resp.failureCount });
+    res.status(200).json({ sent: resp.successCount, failed: resp.failureCount, apns: apnsSent });
   } catch (e) {
     console.error("sendPush error:", e);
     res.status(500).json({ error: String((e && e.message) || e) });

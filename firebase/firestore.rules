@@ -34,6 +34,10 @@ service cloud.firestore {
       match /pushTokens/{tokenId} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
+      // iPhoneアプリ（APNs）の通知の宛先。本人だけが登録・削除できる
+      match /apnsTokens/{tokenId} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid;
+      }
 
       // フォロー中リスト（自分がフォローしている相手）。数は誰でも閲覧、編集は本人のみ。
       match /following/{targetUid} {
