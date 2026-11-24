@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611250058";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611250101";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -561,7 +561,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611250058");
+  const M = await import("./sodan.js?v=202611250101");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -659,8 +659,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611250058").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611250058").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611250101").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611250101").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -836,7 +836,7 @@ function loadLeaflet() {
     const s = document.createElement("script"); s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; s.onload = ok; s.onerror = ng; document.head.appendChild(s);
   });
 }
-const PIN_SVG = `<svg width="30" height="42" viewBox="0 0 30 42"><defs><radialGradient id="tpg" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#3d9a80"/><stop offset=".6" stop-color="#1f6f5b"/><stop offset="1" stop-color="#134a3c"/></radialGradient></defs><ellipse cx="14" cy="38" rx="7" ry="2.4" fill="rgba(0,0,0,.28)"/><path d="M14 1C7.4 1 2 6.2 2 12.6 2 21 14 36 14 36S26 21 26 12.6C26 6.2 20.6 1 14 1Z" fill="url(#tpg)" stroke="#0f3b30" stroke-width="1"/><ellipse cx="9.5" cy="6.5" rx="3.5" ry="2" fill="rgba(255,255,255,.35)" transform="rotate(-30 9.5 6.5)"/><circle cx="14" cy="12.5" r="4.6" fill="#fff"/></svg>`;
+const PIN_SVG = `<svg width="22" height="29" viewBox="0 0 30 40"><path transform="translate(3,3)" d="M13 1C6.4 1 1 6.2 1 12.6 1 21 13 35 13 35S25 21 25 12.6C25 6.2 19.6 1 13 1Z" fill="#1b2330"/><path d="M13 1C6.4 1 1 6.2 1 12.6 1 21 13 35 13 35S25 21 25 12.6C25 6.2 19.6 1 13 1Z" fill="#1f6f5b" stroke="#1b2330" stroke-width="1.8"/><circle cx="13" cy="12.5" r="5" fill="#fff"/></svg>`;
 async function drawRoute(box, d) {
   const pts = [];
   if (d.type === "transit") (d.places || []).forEach((p) => p && typeof p.lat === "number" && pts.push({ n: 0, lat: p.lat, lng: p.lng, name: p.name || "", cc: p.cc || "" }));
@@ -854,8 +854,8 @@ async function drawRoute(box, d) {
   const map = L.map(box, { scrollWheelZoom: false, minZoom: 2, attributionControl: true, doubleClickZoom: false, touchZoom: true });
   dblTapZoom(map, box);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap", maxZoom: 18, className: "tstile" }).addTo(map);
-  // ピン（緑のしずく型。光と影＋地面の影で立体的に）
-  const pinIcon = L.divIcon({ className: "tpin", html: PIN_SVG, iconSize: [30, 42], iconAnchor: [14, 38], popupAnchor: [0, -36] });
+  // ピン（緑のしずく型＋黒いずらし影。カードと同じデザイン）
+  const pinIcon = L.divIcon({ className: "tpin", html: PIN_SVG, iconSize: [22, 29], iconAnchor: [10, 26], popupAnchor: [0, -24] });
   const ms = pts.map((p) => { const m = L.marker([p.lat, p.lng], { icon: pinIcon }).addTo(map).bindPopup((p.n ? `DAY ${p.n}` : "") + (p.name ? "　" + esc(p.name) : ""), { autoPanPaddingTopLeft: [64, 12] }); m._c = p.c; m._k = p.n + "|" + p.name; return m; });
   box._map = map; box._ms = ms;
   const fit = (c) => { const sub = c ? ms.filter((m) => m._c === c) : ms; if (sub.length) map.fitBounds(L.featureGroup(sub).getBounds().pad(0.3), { maxZoom: 10 }); };
@@ -945,7 +945,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611250058"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611250101"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
