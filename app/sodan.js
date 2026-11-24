@@ -43,7 +43,7 @@ function postRow(p, full) {
   const text = full ? C.para(p.text) : C.esc(p.text).replace(/\n/g, "<br>");
   return `<div class="spost${full ? " full" : ""}" ${full ? "" : `data-open="${C.esc(p.id)}"`}>${avatar(p.uid, full ? 32 : 38)}<div class="sb">
     <div class="shd">${who(p.uid)}${p.kind ? `<span class="skind k-${C.esc(p.kind)}">${C.esc(kindName(p.kind))}</span>` : ""}</div>
-    <p class="stx${full ? "" : " clamp"}">${text}</p>
+    <p class="stx${full ? "" : " clamp"}" data-ptx="${C.esc(p.id)}">${text}${p.editedAt ? '<span class="sed">（編集済み）</span>' : ""}</p>
     <div class="sft"><span>${C.ago(secOf(p.createdAt))}</span>${p.area ? `<span>${C.esc(areaName(p.area))}</span>` : ""}<button class="slk" data-like="${C.esc(p.id)}">${HEART}<i>${p.likeCount || 0}</i></button>${full ? "" : `<span class="src">${BUB}${p.replyCount || 0}</span>`}<button class="smore" data-pmore="${C.esc(p.id)}" aria-label="その他">${DOTS}</button></div>
   </div></div>`;
 }
@@ -103,6 +103,7 @@ function bindPostActions(root, liked, list) {
 async function moreMenu({ kind, p, r }) {
   const me = C.me(), M = await C.mod(), item = r || p, uid = item.uid;
   const items = [];
+  if (me && uid === me) items.push({ label: "編集する", onClick: () => editText(kind, p, r) });
   if (me && uid === me) items.push({ label: "削除する", red: true, onClick: async () => {
     if (!confirm(kind === "post" ? "この投稿を削除しますか？" : "この回答を削除しますか？")) return;
     try {
@@ -115,6 +116,33 @@ async function moreMenu({ kind, p, r }) {
     items.push({ label: `${C.esc((C.PROF[uid] || {}).nickname || "このユーザー")}さんをブロック`, onClick: async () => { if (!confirm("ブロックすると、この人の投稿や回答が表示されなくなります。")) return; await M.blockUser(uid, (C.PROF[uid] || {}).nickname || ""); invalidate(); C.toast("ブロックしました"); if (location.hash.startsWith("#c-")) history.back(); else renderSodan(); } });
   }
   M.openMenu(items);
+}
+
+// 自分の投稿・回答を、その場で書き直す
+function editText(kind, p, r) {
+  const item = r || p;
+  const el = document.querySelector(kind === "post" ? `[data-ptx="${CSS.escape(p.id)}"]` : `[data-rtx="${CSS.escape(r.id)}"]`);
+  if (!el) return;
+  const box = document.createElement("div");
+  box.className = "sedit";
+  box.innerHTML = `<textarea maxlength="1000"></textarea><div><button type="button" class="sc">キャンセル</button><button type="button" class="ss">保存</button></div>`;
+  const ta = box.querySelector("textarea"); ta.value = item.text || "";
+  el.replaceWith(box);
+  const fit = () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 260) + "px"; };
+  ta.oninput = fit; setTimeout(() => { fit(); ta.focus(); }, 30);
+  box.onclick = (e) => e.stopPropagation();
+  box.querySelector(".sc").onclick = () => box.replaceWith(el);
+  box.querySelector(".ss").onclick = async () => {
+    const text = ta.value.trim(); if (!text) { C.toast("本文を入れてください"); return; }
+    const b = box.querySelector(".ss"); b.disabled = true; b.textContent = "保存中…";
+    try {
+      const ref = kind === "post" ? doc(db, "sodan", p.id) : doc(db, "sodan", p.id, "replies", r.id);
+      await updateDoc(ref, { text: text.slice(0, 1000), editedAt: serverTimestamp() });
+      item.text = text; item.editedAt = { seconds: Date.now() / 1000 };
+      invalidate(); C.toast("保存しました");
+      if (location.hash.startsWith("#c-")) C.reopen(); else renderSodan();
+    } catch (e) { console.error(e); C.toast("保存できませんでした"); b.disabled = false; b.textContent = "保存"; }
+  };
 }
 
 // ---------- 投稿のページ（#c-ID） ----------
@@ -141,7 +169,7 @@ export async function pageSodan(el, id) {
     <p class="srh">回答・コメント（${reps.length}）</p>
     <div class="sreps">${reps.length ? reps.map((r) => `<div class="srep">${avatar(r.uid, 34)}<div class="sb">
       <div class="shd">${who(r.uid)}</div>
-      <p class="stx">${r.replyToName ? `<span class="sto">@${C.esc(r.replyToName)}</span> ` : ""}${C.para(r.text)}</p>
+      <p class="stx" data-rtx="${C.esc(r.id)}">${r.replyToName ? `<span class="sto">@${C.esc(r.replyToName)}</span> ` : ""}${C.para(r.text)}${r.editedAt ? '<span class="sed">（編集済み）</span>' : ""}</p>
       ${r.articleId && arts[r.articleId] ? C.artCard(arts[r.articleId]) : ""}
       <div class="sft"><span>${C.ago(secOf(r.createdAt))}</span><button class="slk${likedR.has(r.id) ? " on" : ""}" data-rlike="${C.esc(r.id)}">${HEART}<i>${r.likeCount || 0}</i></button><button class="srb" data-rto="${C.esc(r.uid)}">${BUB}返信</button><button class="smore" data-rmore="${C.esc(r.id)}" aria-label="その他">${DOTS}</button></div>
     </div></div>`).join("") : '<p class="fol-empty" style="padding:24px 20px">まだ回答はありません。最初に答えてみませんか？</p>'}</div>
@@ -205,9 +233,9 @@ export function pageSodanNew(el) {
   if (!me) { el.innerHTML = C.bar("たび相談に投稿") + '<div class="ps under2"><p class="fol-empty"><a href="#x-login">ログイン</a>すると投稿できます。</p></div>'; return; }
   let kind = "q", area = "";
   el.innerHTML = C.bar("たび相談に投稿", '<button class="sgo" disabled>投稿</button>') + `<div class="ps under2 snew">
+    <textarea class="sbody" maxlength="1000" placeholder="例：2月にキルギスとカザフスタンを10日で回りたいです。冬でも行きやすいルートありますか？"></textarea>
     <p class="slab">種類</p><div class="schips wrap" data-g="k">${KINDS.map(([k, l]) => `<button class="${k === kind ? "on" : ""}" data-v="${k}">${l}</button>`).join("")}</div>
     <p class="slab">エリア（任意）</p><div class="schips wrap" data-g="a">${AREAS.map(([k, l]) => `<button data-v="${k}">${l}</button>`).join("")}</div>
-    <textarea class="sbody" maxlength="1000" placeholder="例：2月にキルギスとカザフスタンを10日で回りたいです。冬でも行きやすいルートありますか？"></textarea>
     <p class="snote">個人が特定できる情報（電話番号・住所など）は書かないでください。<a href="#w-terms">ルール</a>に沿わない投稿は削除することがあります。</p></div>`;
   const go = el.querySelector(".sgo"), ta = el.querySelector(".sbody");
   el.querySelectorAll("[data-g] button").forEach((b) => (b.onclick = () => {

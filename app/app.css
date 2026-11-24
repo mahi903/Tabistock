@@ -1297,7 +1297,7 @@ html.ntab .tab{display:none}
 .slog{font-size:13px;text-align:center;padding:6px}.slog a{color:var(--green);font-weight:700}
 .snew{padding:6px 20px 40px}
 .slab{font-size:12.5px;font-weight:700;color:var(--muted);margin-top:16px}
-.sbody{width:100%;min-height:180px;margin-top:16px;border:1px solid var(--ink);border-radius:4px;padding:12px;font:inherit;font-size:15px;line-height:1.7;background:#fff;resize:vertical}
+.sbody{width:100%;min-height:150px;margin-top:12px;border:1px solid var(--ink);border-radius:4px;padding:12px;font:inherit;font-size:15px;line-height:1.7;background:#fff;resize:vertical}
 .snote{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6}.snote a{color:var(--green)}
 .sgo{margin-left:auto;font-size:14px;font-weight:700;color:#fff;background:var(--green);padding:6px 14px;border-radius:4px}.sgo:disabled{opacity:.35}
 .sft i{font-style:normal}
@@ -1309,3 +1309,13 @@ html.ntab .tab{display:none}
 /* たび相談の見出し：小さめ・左にアイコン */
 .shead .lt{font-size:22px;display:flex;align-items:center;gap:8px}
 .shead .lt svg{width:24px;height:24px;color:var(--green);flex:none}
+/* 投稿タブの見出し：たび相談と同じ大きさ・左にアイコン */
+.lt.lts{font-size:22px;display:flex;align-items:center;gap:8px}
+.lt.lts svg{width:24px;height:24px;color:var(--green);flex:none}
+/* たび相談：編集 */
+.sed{font-size:11px;color:var(--muted);margin-left:4px;font-weight:400}
+.sedit{margin-top:6px}
+.sedit textarea{width:100%;border:1px solid var(--ink);border-radius:4px;padding:9px 10px;font:inherit;font-size:14px;line-height:1.6;resize:none;background:#fff}
+.sedit div{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+.sedit button{font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:4px}
+.sedit .sc{color:var(--muted)}.sedit .ss{background:var(--ink);color:#fff}
