@@ -260,53 +260,39 @@ export function pagePassport(el, ctx) {
   let leavesHtml = "";
   for (let i = 0; i < N; i++) leavesHtml += `<div class="leaf" style="z-index:${100 - i}">${faces[i * 2]}${faces[i * 2 + 1]}</div>`;
 
-  let one = false; try { one = localStorage.getItem("ppOne") === "1"; } catch (e) {}
   el.innerHTML = bar("パスポート") + `<div class="ps under2 ppw">${DEFS}
     <div class="pp-stage"><div class="pp" id="ppBook" style="--ppgl:${GL.replace(/"/g, "&quot;")};--ppme:url('${esc(p.photoURL || "")}')"><div class="base"><div class="face leather endp">${wm}</div></div><div class="gut"></div>${leavesHtml}</div></div>
-    <div class="pp-ctl"><button id="ppPrev" aria-label="前のページ">‹</button><span id="ppPos">表紙</span><button id="ppNext" aria-label="次のページ">›</button><button id="ppMode" class="md"></button><button id="ppClose">閉じる</button></div></div>`;
+    <div class="pp-ctl"><button id="ppPrev" aria-label="前のページ">‹</button><span id="ppPos">表紙</span><button id="ppNext" aria-label="次のページ">›</button><button id="ppClose">閉じる</button></div></div>`;
 
   const book = el.querySelector("#ppBook");
   const leaves = [...book.querySelectorAll(".leaf")];
   book.querySelectorAll(".paper .stamp").forEach((s) => s.classList.add("wait"));
-  let idx = 0, sub = "R", busy = false;
+  let idx = 0, zoom = false, sd = "L", busy = false;
   const buzz = () => { try { haptic && haptic(); } catch (e) {} };
   const fit = () => { const W = book.offsetWidth || 320; book.style.setProperty("--pps", Math.min(1, (innerWidth - 20) / (2 * W)).toFixed(3)); };
   const pnoOf = (f) => (f && f.querySelector(".pno") ? f.querySelector(".pno").textContent : "");
+  // 寄っているのは左ページか右ページか（最後は左の「次の旅は、ここに。」だけ）
+  const side = () => (idx === LAST ? "L" : sd);
+  const pageL = () => (idx > 0 ? leaves[idx - 1].children[1] : null);
+  const pageR = () => (idx < N ? leaves[idx].children[0] : null);
   const label = () => {
     if (idx === 0) return "表紙";
-    const L = pnoOf(leaves[idx - 1].children[1]), R = idx < LAST ? pnoOf(leaves[idx].children[0]) : "";
-    if (one) return sub === "L" ? L : R;
+    const L = pnoOf(pageL()), R = idx < LAST ? pnoOf(pageR()) : "";
+    if (zoom) return side() === "L" ? L : R;
     return [L, R].filter(Boolean).join("–");
   };
-  const canNext = () => idx === 0 || idx < LAST;
-  const canPrev = () => idx > 0;
-  const visible = () => {
-    if (idx === 0) return [leaves[0].children[0]];
-    const L = leaves[idx - 1].children[1], R = leaves[idx].children[0];
-    return one ? [sub === "L" ? L : R] : [L, R];
-  };
-  const pressVisible = () => { let k = 0; visible().forEach((f) => f.querySelectorAll(".stamp.wait").forEach((s) => { const d = 150 + 200 * k++; setTimeout(() => { s.classList.remove("wait"); s.classList.add("press"); buzz(); }, d); })); };
   const render = () => {
     fit();
-    book.classList.toggle("shift", !one && idx > 0);
-    book.classList.toggle("one", one);
-    book.classList.toggle("lft", one && idx > 0 && sub === "L");
-    book.classList.toggle("open", !one && idx > 0);
+    book.classList.toggle("shift", idx > 0 && !zoom);
+    book.classList.toggle("open", idx > 0 && !zoom);
+    book.classList.toggle("one", idx > 0 && zoom);
+    book.classList.toggle("lft", idx > 0 && zoom && side() === "L");
     el.querySelector("#ppPos").textContent = label();
-    el.querySelector("#ppPrev").disabled = !canPrev();
-    el.querySelector("#ppNext").disabled = !canNext();
-    el.querySelector("#ppMode").textContent = one ? "見開き" : "1ページ";
+    el.querySelector("#ppPrev").disabled = idx === 0;
+    el.querySelector("#ppNext").disabled = idx >= LAST;
   };
-  // 1枚めくる（dir=1で次、-1で前）
-  function flip(dir, after) {
-    const i = dir > 0 ? idx : idx - 1; const l = leaves[i]; busy = true;
-    if (dir < 0) { l.classList.remove("flat"); void l.offsetWidth; }
-    l.style.zIndex = 300; l.classList.add("anim", "turn");
-    requestAnimationFrame(() => l.classList.toggle("on", dir > 0));
-    idx += dir; if (after) after(); render(); buzz();
-    setTimeout(() => { l.classList.remove("anim", "turn"); if (dir > 0) l.classList.add("flat"); l.style.zIndex = dir > 0 ? 200 + i : 100 - i; busy = false; pressVisible(); }, 930);
-  }
-  const slide = (to) => { sub = to; render(); buzz(); setTimeout(pressVisible, 380); };
+  // 見開きで見えているページのスタンプを順に押す。押した数を返す
+  const pressVisible = () => { let k = 0; [pageL(), pageR()].forEach((f) => f && f.querySelectorAll(".stamp.wait").forEach((s) => { const d = 150 + 230 * k++; setTimeout(() => { s.classList.remove("wait"); s.classList.add("press"); buzz(); }, d); })); return k; };
   // ---- 署名：初めて開くときに指で署名してもらい、身分事項ページに載せる ----
   let sig = null, sigAsked = false;
   const sigSvg = (d) => `<svg viewBox="0 0 300 110" preserveAspectRatio="xMinYMid meet"><path d="${esc(d)}" fill="none" stroke="#1b2330" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -336,38 +322,55 @@ export function pagePassport(el, ctx) {
     ov.querySelector(".skip").onclick = close;
     go.onclick = async () => { const d = toPath(); if (!d) return; go.disabled = true; sig = d; showSig(); buzz(); try { if (saveSig) await saveSig(d); } catch (e) {} close(); };
   }
+  // 1枚めくる（dir=1で次、-1で前）。めくり終わったら done
+  function flip(dir, done) {
+    const i = dir > 0 ? idx : idx - 1; const l = leaves[i];
+    if (dir < 0) { l.classList.remove("flat"); void l.offsetWidth; }
+    l.style.zIndex = 300; l.classList.add("anim", "turn");
+    requestAnimationFrame(() => l.classList.toggle("on", dir > 0));
+    idx += dir; render(); buzz();
+    setTimeout(() => { l.classList.remove("anim", "turn"); if (dir > 0) l.classList.add("flat"); l.style.zIndex = dir > 0 ? 200 + i : 100 - i; if (done) done(); }, 930);
+  }
+  const ZT = 640; // 寄る・引くの時間
+  const zoomIn = (to, done) => { sd = to; zoom = true; render(); setTimeout(() => { busy = false; if (done) done(); }, ZT); };
+  const zoomOut = (done) => { if (!zoom) return done(); zoom = false; render(); setTimeout(done, ZT); };
+  // 次へ：左に寄っている → 右に寄る／右に寄っている → 引いてめくる → 右にスタンプ → 左に寄る
   function next() {
-    if (busy || !canNext()) return;
+    if (busy) return;
     if (idx === 0 && sig === "" && !sigAsked) return openSign(() => next());
-    if (!one || idx === 0) return flip(1, () => { sub = "L"; });
-    if (sub === "L") return slide("R");
-    flip(1, () => { sub = "L"; });
+    if (zoom && side() === "L" && idx > 0 && idx < LAST) { busy = true; buzz(); return zoomIn("R"); }
+    if (idx >= LAST) return;
+    busy = true;
+    zoomOut(() => flip(1, () => { const n = pressVisible(); setTimeout(() => zoomIn("L"), n ? 380 + n * 230 : 450); }));
   }
+  // 前へ：右に寄っている → 左に寄る／左に寄っている → 引いてめくり戻す → 右に寄る（表紙なら閉じたまま）
   function prev() {
-    if (busy || !canPrev()) return;
-    if (!one) return flip(-1, () => { sub = "R"; });
-    if (sub === "R" && idx >= 1) return slide("L");
-    flip(-1, () => { sub = "R"; });
+    if (busy || idx === 0) return;
+    if (zoom && side() === "R") { busy = true; buzz(); return zoomIn("L"); }
+    busy = true;
+    zoomOut(() => flip(-1, () => { if (idx === 0) { busy = false; render(); } else setTimeout(() => zoomIn("R"), 350); }));
   }
-  // 閉じる：パラパラっと一気にめくり戻す
+  // 閉じる：引きの見開きにしてから、パラパラっと一気にめくり戻す
   function closeAll() {
     if (busy || idx === 0) return; busy = true;
-    const from = idx, list = [];
-    for (let i = from - 1; i >= 0; i--) list.push(i);
-    idx = 0; sub = "R"; render();
-    list.forEach((i, k) => setTimeout(() => {
-      const l = leaves[i]; l.classList.remove("flat"); void l.offsetWidth;
-      l.style.transitionDuration = ".42s"; l.style.zIndex = 400 + k; l.classList.add("anim");
-      requestAnimationFrame(() => l.classList.remove("on"));
-      if (k % 2 === 0) buzz();
-    }, k * 55));
-    setTimeout(() => { list.forEach((i) => { const l = leaves[i]; l.classList.remove("anim"); l.style.transitionDuration = ""; l.style.zIndex = 100 - i; }); busy = false; }, list.length * 55 + 480);
+    zoomOut(() => {
+      const from = idx, list = [];
+      for (let i = from - 1; i >= 0; i--) list.push(i);
+      list.forEach((i, k) => setTimeout(() => {
+        const l = leaves[i]; l.classList.remove("flat"); void l.offsetWidth;
+        l.style.transitionDuration = ".42s"; l.style.zIndex = 400 + k; l.classList.add("anim");
+        requestAnimationFrame(() => l.classList.remove("on"));
+        if (k % 2 === 0) buzz();
+      }, k * 55));
+      setTimeout(() => { idx = 0; render(); }, Math.max(0, list.length * 55 - 150));
+      setTimeout(() => { list.forEach((i) => { const l = leaves[i]; l.classList.remove("anim"); l.style.transitionDuration = ""; l.style.zIndex = 100 - i; }); busy = false; }, list.length * 55 + 480);
+    });
   }
   let sx = 0, sy = 0;
   book.addEventListener("pointerdown", (e) => { sx = e.clientX; sy = e.clientY; });
   book.addEventListener("pointerup", (e) => {
     if (e.target.closest("a,button")) return;
-    if (e.target.closest("[data-sig]") && idx > 0) { openSign(); return; }
+    if (e.target.closest("[data-sig]") && idx > 0 && !busy) { openSign(); return; }
     const dx = e.clientX - sx, dy = e.clientY - sy;
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { dx < 0 ? next() : prev(); return; }
     if (idx === 0) next(); else if (e.clientX < innerWidth / 2) prev(); else next();
@@ -375,7 +378,6 @@ export function pagePassport(el, ctx) {
   el.querySelector("#ppPrev").onclick = prev;
   el.querySelector("#ppNext").onclick = next;
   el.querySelector("#ppClose").onclick = closeAll;
-  el.querySelector("#ppMode").onclick = () => { if (busy) return; one = !one; try { localStorage.setItem("ppOne", one ? "1" : "0"); } catch (e) {} if (idx === LAST) sub = "L"; render(); setTimeout(pressVisible, 400); };
   addEventListener("resize", render);
   render();
   return () => removeEventListener("resize", render);
