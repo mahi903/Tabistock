@@ -341,11 +341,12 @@ export function pagePassport(el, ctx) {
     const k = dir > 0
       ? [{ transform: A }, { transform: `rotateY(-35deg) translateZ(${lift * 0.7}px)`, offset: 0.25 }, { transform: `rotateY(-95deg) translateZ(${lift}px)`, offset: 0.55 }, { transform: B }]
       : [{ transform: B }, { transform: `rotateY(-145deg) translateZ(${lift * 0.7}px)`, offset: 0.25 }, { transform: `rotateY(-85deg) translateZ(${lift}px)`, offset: 0.55 }, { transform: A }];
-    const an = l.animate(k, { duration: dur, easing: "cubic-bezier(.45,.05,.3,1)" });
+    const an = l.animate(k, { duration: dur, easing: "cubic-bezier(.45,.05,.3,1)", fill: "forwards" });
     idx += dir; render(); buzz();
     an.onfinish = () => {
       l.classList.toggle("on", dir > 0); if (dir > 0) l.classList.add("flat");
       l.classList.remove("turn"); l.style.willChange = ""; l.style.zIndex = dir > 0 ? 200 + i : 100 - i;
+      an.cancel(); // 最後の形をクラスに引き継いでから外す（1コマだけ元に戻るガタつきを防ぐ）
       if (done) done();
     };
   }
@@ -383,8 +384,8 @@ export function pagePassport(el, ctx) {
       list.forEach((i, k) => setTimeout(() => {
         const l = leaves[i]; l.classList.remove("flat"); l.classList.add("on"); l.style.zIndex = 400 + k;
         const last = i === 0;
-        const an = l.animate([{ transform: "rotateY(-180deg)" }, { transform: "rotateY(-90deg) translateZ(10px)" }, { transform: "rotateY(0deg)" }], { duration: last ? 900 : d1, easing: "cubic-bezier(.4,.1,.3,1)" });
-        an.onfinish = () => { l.classList.remove("on"); l.style.zIndex = 100 - i; };
+        const an = l.animate([{ transform: "rotateY(-180deg)" }, { transform: "rotateY(-90deg) translateZ(10px)" }, { transform: "rotateY(0deg)" }], { duration: last ? 900 : d1, easing: "cubic-bezier(.4,.1,.3,1)", fill: "forwards" });
+        an.onfinish = () => { l.classList.remove("on"); l.style.zIndex = 100 - i; an.cancel(); };
         if (k % 2 === 0) buzz();
       }, k * gap));
       setTimeout(() => { idx = 0; render(); }, Math.max(0, (list.length - 1) * gap));
