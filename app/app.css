@@ -1427,3 +1427,12 @@ html.ntab .tab{display:none}
 /* ホームの横並びの記事カード：濃紺の枠に、右下へずらした緑の影（Tabistockの世界観。探すの一覧などには付けない） */
 #home .hs .oc{border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green);border-radius:6px}
 #home .hs{padding-bottom:10px}
+/* 記事の地図：色味を抑えて、ピンとルートをTabistockのデザインに */
+#rmap .leaflet-container,#rmap{background:#efeae0}
+.tpin{background:none;border:0}
+.tpin svg{display:block;overflow:visible}
+#rmap .leaflet-popup-content-wrapper{border-radius:4px;border:1.5px solid #1b2330;box-shadow:3px 3px 0 #1f6f5b}
+#rmap .leaflet-popup-content{margin:8px 26px 8px 12px;font:700 12.5px/1.5 'Noto Sans JP',sans-serif}
+#rmap .leaflet-popup-tip{border:1.5px solid #1b2330;box-shadow:none}
+#rmap .leaflet-bar{border:1.5px solid #1b2330;border-radius:3px;box-shadow:2px 2px 0 #1b2330}
+#rmap .leaflet-bar a{color:#1b2330;border-radius:0!important}
