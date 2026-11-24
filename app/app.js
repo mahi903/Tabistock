@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242239";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242241";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -475,7 +475,7 @@ $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) 
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611242239");
+  const M = await import("./sodan.js?v=202611242241");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -573,8 +573,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242239").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242239").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242241").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242241").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -854,7 +854,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611242239"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611242241"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -956,6 +956,15 @@ const SNS = [["instagram", "Instagram", (h) => `https://www.instagram.com/${h}/`
 function snsUrl(key, v) { v = String(v || "").trim(); if (!v) return ""; if (/^https?:\/\//.test(v)) return v; const f = SNS.find((x) => x[0] === key); return f ? f[2](v.replace(/^@/, "")) : ""; }
 // 旅のスタイルのタグ（プロフィールに最大6つ）
 const TAG_MAX = 6;
+// 次の旅：行き先と時期（月まで）。過ぎた月は出さない
+function nextMonths() { const d = new Date(), out = []; for (let i = 0; i < 18; i++) { const x = new Date(d.getFullYear(), d.getMonth() + i, 1); out.push(`${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}`); } return out; }
+const ymLabel = (ym) => { const m = String(ym || "").match(/^(\d{4})-(\d{2})$/); return m ? `${m[1]}年${+m[2]}月` : ""; };
+function nextTripLine(p) {
+  const t = p.nextTrip; if (!t || !t.place) return "";
+  const now = new Date(), cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  if (t.ym && t.ym < cur) return "";
+  return `<p class="ntl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 15.5v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V8.5l-8 5v2l8-2.5V18l-2 1.5V21l3.5-1 3.5 1v-1.5L13 18v-5z"/></svg><b>次の旅</b>${esc(t.place)}${t.ym ? `<span>${ymLabel(t.ym)}</span>` : ""}</p>`;
+}
 const TAG_PRESET = ["一人旅", "バックパッカー", "低予算", "弾丸旅", "周遊", "長期旅", "登山", "自然", "世界遺産", "街歩き", "食べ歩き", "カフェ巡り", "ローカル体験", "ビーチ", "秘境", "鉄道旅", "写真", "ホステル派", "国内旅", "海外旅"];
 function tagChips(p, own) {
   const t = Array.isArray(p.tags) ? p.tags.slice(0, TAG_MAX) : [];
@@ -974,7 +983,7 @@ async function pageUser(el, uid) {
   const isMe = uid === me;
   el.innerHTML = bar(p.nickname || "旅人", isMe ? "" : '<button class="mo" data-umore>…</button>') + `<div class="ps under2">
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><a href="#f-followers-${esc(uid)}"><b data-fc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(uid)}"><b data-gc>—</b><span>フォロー中</span></a></div></div></div>
-      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${tagChips(p, false)}${snsLinks(p)}
+      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${nextTripLine(p)}${tagChips(p, false)}${snsLinks(p)}
       <div class="ub" data-ub></div></div>
     <div class="mtabs itabs" style="margin-top:26px"><button class="on" data-ut="posts" aria-label="投稿">${TI.grid}</button><button data-ut="sodan" aria-label="旅ひろば">${TI.sodan}</button><button data-ut="photos" aria-label="写真">${TI.photo}</button></div>
     <div data-upane="posts">${posts.length ? `<div class="ogrid">${posts.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません</p>'}</div>
@@ -1234,7 +1243,7 @@ function renderMe() {
   box.innerHTML = `<div class="mehead nm0"><b>マイページ</b><button class="hb" id="meMenu" aria-label="メニュー"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt="">
       <div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー中</span></a></div></div></div>
-      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${tagChips(p, true)}${snsLinks(p)}
+      ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${nextTripLine(p)}${tagChips(p, true)}${snsLinks(p)}
       <div class="ub mub"><a class="btn-g" href="#x-profile">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
     <div class="mtabs itabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips" aria-label="旅程">${TI.grid}</button><button class="${myTab === "collab" ? "on" : ""}" data-mt="collab" aria-label="共同投稿">${TI.collab}<i id="invDot" hidden></i></button><button class="${myTab === "sodan" ? "on" : ""}" data-mt="sodan" aria-label="旅ひろば">${TI.sodan}</button><button class="${myTab === "photos" ? "on" : ""}" data-mt="photos" aria-label="写真">${TI.photo}</button></div>
     <div id="myPosts"><p class="loading">読み込み中…</p></div>`;
@@ -1595,6 +1604,9 @@ async function pageProfileEdit(el) {
     <p class="pfn">あなたの旅を表すタグを${TAG_MAX}つまで選べます</p>
     <div class="tgpick" id="tgPick"></div>
     <div class="tgadd"><input id="tgNew" maxlength="12" placeholder="自分で追加（12文字まで）"><button id="tgAdd" type="button">追加</button></div>
+    <p class="pfh">次の旅（任意）</p>
+    <p class="pfn">決まっている次の旅を、プロフィールに出せます。時期は月まで（日にちは出しません）</p>
+    <div class="ntrip"><input id="ntPlace" maxlength="30" placeholder="行き先（例：ナミビア、北欧周遊）" value="${esc((p.nextTrip || {}).place || "")}"><select id="ntYm"><option value="">時期は未定</option>${nextMonths().map((ym) => `<option value="${ym}" ${(p.nextTrip || {}).ym === ym ? "selected" : ""}>${ymLabel(ym)}</option>`).join("")}</select></div>
     <p class="pfh">SNS（ユーザー名 または URL）</p>
     ${SNS.map(([k, l]) => `<label class="pfl">${l}<input data-sns="${k}" autocapitalize="off" autocorrect="off" placeholder="${k === "note" ? "noteのID" : "@なしのユーザー名"}" value="${esc(p[k] || "")}"></label>`).join("")}
     <p class="pfm" id="pfMsg"></p></div></div>`;
@@ -1648,6 +1660,8 @@ async function pageProfileEdit(el) {
     const nick = el.querySelector("#pfNick").value.trim(), bio = el.querySelector("#pfBio").value.trim();
     const sns = {}; el.querySelectorAll("[data-sns]").forEach((i) => (sns[i.dataset.sns] = i.value.trim()));
     const instagram = sns.instagram;
+    const ntPlace = el.querySelector("#ntPlace").value.trim().slice(0, 30), ntYm = el.querySelector("#ntYm").value;
+    const nextTrip = ntPlace ? { place: ntPlace, ym: ntYm } : null;
     if (!nick) { msg("ユーザーネームを入力してください"); return; }
     msg("保存中…", true);
     try {
@@ -1658,9 +1672,9 @@ async function pageProfileEdit(el) {
         const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
         await A.updateProfile(auth.currentUser, { displayName: nick });
       }
-      await setDoc(doc(db, "publicProfiles", me), { nickname: nick, bio, tags, ...sns, ...(p.photoURL ? { photoURL: p.photoURL } : {}) }, { merge: true });
+      await setDoc(doc(db, "publicProfiles", me), { nickname: nick, bio, tags, nextTrip, ...sns, ...(p.photoURL ? { photoURL: p.photoURL } : {}) }, { merge: true });
       await setDoc(doc(db, "users", me), { nickname: nick, bio, tags, ...sns }, { merge: true });
-      PROF[me] = { ...(PROF[me] || {}), nickname: nick, bio, tags, ...sns };
+      PROF[me] = { ...(PROF[me] || {}), nickname: nick, bio, tags, nextTrip, ...sns };
       toast("プロフィールを保存しました"); haptic();
       if (curTab === "me") renderMe();
       back();
