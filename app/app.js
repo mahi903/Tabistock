@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611250115";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611250305";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -561,7 +561,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611250115");
+  const M = await import("./sodan.js?v=202611250305");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -628,7 +628,7 @@ const TI = {
   photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="3.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M20.5 15.5l-4.5-4.5L5 20.3"/></svg>',
 };
 const BACK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
-function isPageHash(h) { return /^#(a-|g-|c-|u-|dm|w-|f-|x-|n$|p$|p-|fare$)/.test(h); }
+function isPageHash(h) { return /^#(a-|g-|c-|u-|dm|w-|f-|x-|n$|p$|p-|fare$|pass$)/.test(h); }
 function route() {
   const h = location.hash;
   if (!isPageHash(h)) { while (STACK.length) popPage(); return; }
@@ -645,7 +645,7 @@ function pushPage(h) {
   $("tab").classList.add("hide"); $("aiCmp").hidden = true; syncNativeTab();
   swipeBack(el);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
-  const m = h.match(/^#(a|g|c|u|dm|w|fare|f|x|n|p)-?(.*)$/);
+  const m = h.match(/^#(a|g|c|u|dm|w|fare|pass|f|x|n|p)-?(.*)$/);
   const kind = m[1], arg = decodeURIComponent(m[2] || "");
   if (kind === "a") pageArticle(el, arg);
   else if (kind === "g") pageBoard(el, arg);
@@ -655,12 +655,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; import("./passport.js?v=202611250305").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611250115").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611250115").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611250305").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611250305").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -946,7 +947,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611250115"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611250305"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1377,12 +1378,16 @@ function myCard(d, editLink) {
   return `<div class="mycard"><a class="oc" href="${editLink ? "#p-" : "#a-"}${esc(d.id)}" style="background-image:url('${esc(thumbOf(d))}')">${ovText({ ...d, title: d.title || "(無題)" })}</a>
     <div class="mymeta">${st !== "published" ? `<span class="pst s-${st}">${STATUS_LABEL[st]}</span>` : ""}${d._collab || (d.coAuthorIds || []).length ? '<span class="pst">共同投稿</span>' : ""}<button class="pmn" data-pm="${esc(d.id)}" aria-label="メニュー"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div></div>`;
 }
+let ADMIN_ME = null;
+const isAdminMe = async () => { if (ADMIN_ME === null) { try { ADMIN_ME = (await getDoc(doc(db, "admins", me))).exists(); } catch (e) { ADMIN_ME = false; } } return ADMIN_ME; };
 function drawMyPosts() {
   const box = $("myPosts"); if (!box) return;
   if (myTab === "sodan") { SD().then((M) => M.renderMine(box, me, true)); return; }
   if (myTab === "photos") {
     const mine = [...MY.trips, ...MY.transit].filter((d) => d.authorId === me);
     box.innerHTML = photoMosaic(mine) || '<p class="empty">まだ写真がありません。<br>旅程の DAY に写真を入れると、ここに並びます。</p>';
+    // パスポート（試作）：いまは管理者アカウントだけに入口を出す
+    isAdminMe().then((ok) => { if (ok && myTab === "photos" && $("myPosts") === box && !box.querySelector(".ppgo")) box.insertAdjacentHTML("afterbegin", '<a class="ppgo" href="#pass"><b>パスポートを開く</b><span>試作・管理者だけに表示中</span></a>'); });
     return;
   }
   const list = MY[myTab] || [];

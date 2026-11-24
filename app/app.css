@@ -1437,3 +1437,6 @@ html.ntab .tab{display:none}
 #rmap .leaflet-bar{border:1.5px solid #1b2330;border-radius:3px;box-shadow:2px 2px 0 #1b2330}
 #rmap .leaflet-bar a{color:#1b2330;border-radius:0!important}
 .leaflet-control-attribution{font-size:9px!important;line-height:1.4;padding:0 4px!important;background:rgba(255,255,255,.55)!important;color:#6c7787!important}.leaflet-control-attribution a{color:inherit!important}
+/* パスポートの入口（試作） */
+.ppgo{display:flex;justify-content:space-between;align-items:center;margin:14px 20px 4px;padding:14px 16px;background:#17392f;color:#e8cf8a;border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green);border-radius:6px}
+.ppgo b{font:800 15px/1.2 'Noto Sans JP';letter-spacing:.06em}.ppgo span{font-size:11px;opacity:.75}
