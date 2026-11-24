@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242341";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242344";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -471,13 +471,57 @@ async function renderMap(list) {
   }
   if (mapSel && by[mapSel]) pickCountry(mapSel);
 }
+// いいね数（記事ごとに数える。探すで「いいね順」を選んだときに1回だけ）とフォロー中の人
+let LIKES = null, FOLLOWS = null, likesLoading = false, followsLoading = false;
+async function loadLikes() {
+  if (likesLoading) return; likesLoading = true;
+  const m = {};
+  await Promise.all(ALL.map(async (d) => { try { m[d.id] = (await getCountFromServer(collection(db, "articles", d.id, "likes"))).data().count; } catch (e) { m[d.id] = 0; } }));
+  LIKES = m; likesLoading = false;
+  if (curTab === "search" && state.sort === "like") renderSearch();
+}
+async function loadFollows() {
+  if (followsLoading || !me) return; followsLoading = true;
+  const set = new Set();
+  try { (await getDocs(collection(db, "users", me, "following"))).forEach((x) => set.add(x.id)); } catch (e) {}
+  FOLLOWS = set; followsLoading = false;
+  if (curTab === "search" && state.sort === "follow") renderSearch();
+}
 function renderSearch() {
   $("qx").style.display = state.q ? "grid" : "none";
   renderFilters();
-  const list = ALL.filter((d) => match(d));
+  let list = ALL.filter((d) => match(d));
   if (state.map) { renderMap(list); return; }
-  $("results").innerHTML = `<div class="cnt"><span><b>${list.length}件</b>の旅</span><span>新しい順</span></div>` +
-    (list.length ? `<div class="ogrid">${list.map(gridCard).join("")}</div>` : `<div class="empty">条件に合う旅がありません<br><br><button class="chip" id="clr" style="margin:auto">条件をクリア</button></div>`);
+  // 並び順：新しい順（そのまま）／いいね順／フォロー中の人の旅だけ
+  const SORTS = { new: "新しい順", like: "いいね順", follow: "フォロー中" };
+  const sort = state.sort || "new";
+  if (sort === "like") {
+    if (!LIKES) { loadLikes(); }
+    else list = list.slice().sort((a, b) => (LIKES[b.id] || 0) - (LIKES[a.id] || 0));
+  }
+  if (sort === "follow") {
+    if (!FOLLOWS) { loadFollows(); list = []; }
+    else list = list.filter((d) => FOLLOWS.has(d.authorId) || (d.coAuthorIds || []).some((u) => FOLLOWS.has(u)));
+  }
+  const any = !!state.q || ["country", "pref", "budget", "days", "style"].some((k) => state[k].length);
+  $("results").innerHTML = `<div class="cnt"><span><b>${list.length}件</b>の旅${any ? '<button class="cclr" id="clr2">✕ 条件をクリア</button>' : ""}</span><button class="csort" id="csort">${SORTS[sort]}${CH}</button></div>` +
+    (list.length ? `<div class="ogrid">${list.map(gridCard).join("")}</div>` : sort === "follow" ? `<div class="empty">${FOLLOWS ? "フォローしている人の旅はまだありません" : "読み込み中…"}</div>` : `<div class="empty">条件に合う旅がありません<br><br><button class="chip" id="clr" style="margin:auto">条件をクリア</button></div>`);
+  // 並び順：その場で開く小さなプルダウン
+  $("csort").onclick = (e) => {
+    e.stopPropagation();
+    const old = document.querySelector(".csmenu"); if (old) { old.remove(); return; }
+    const m = document.createElement("div"); m.className = "csmenu";
+    m.innerHTML = Object.entries(SORTS).map(([k, l]) => `<button data-s="${k}" class="${k === sort ? "on" : ""}">${l}</button>`).join("");
+    $("csort").parentNode.appendChild(m);
+    m.onclick = (ev) => {
+      const b = ev.target.closest("[data-s]"); if (!b) return; ev.stopPropagation();
+      const k = b.dataset.s; m.remove();
+      if (k === "follow" && !me) { toast("フォロー中の旅を見るにはログインが必要です"); location.hash = "#x-login"; return; }
+      state.sort = k; haptic(); renderSearch();
+    };
+    setTimeout(() => document.addEventListener("click", function off() { m.remove(); document.removeEventListener("click", off); }), 0);
+  };
+  const clr2 = $("clr2"); if (clr2) clr2.onclick = () => { Object.assign(state, { q: "", country: [], pref: [], budget: [], days: [], style: [] }); $("q").value = ""; haptic(); renderSearch(); };
   const clr = $("clr"); if (clr) clr.onclick = () => { Object.assign(state, { q: "", country: [], pref: [], budget: [], days: [], style: [] }); $("q").value = ""; renderSearch(); };
 }
 $("q").addEventListener("input", (e) => { state.q = e.target.value; renderSearch(); });
@@ -517,7 +561,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611242341");
+  const M = await import("./sodan.js?v=202611242344");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -615,8 +659,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242341").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242341").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242344").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242344").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -898,7 +942,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611242341"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611242344"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -988,7 +1032,7 @@ async function wireFollow(btn, uid, onChange) {
     btn.disabled = true;
     try {
       if (on) { await deleteDoc(doc(db, "users", me, "following", uid)); await deleteDoc(doc(db, "users", uid, "followers", me)); on = false; }
-      else { await setDoc(doc(db, "users", me, "following", uid), { createdAt: serverTimestamp() }); await setDoc(doc(db, "users", uid, "followers", me), { createdAt: serverTimestamp() }); on = true; notify({ toUid: uid, type: "follow" }); }
+      else { await setDoc(doc(db, "users", me, "following", uid), { createdAt: serverTimestamp() }); await setDoc(doc(db, "users", uid, "followers", me), { createdAt: serverTimestamp() }); on = true; notify({ toUid: uid, type: "follow" }); } FOLLOWS = null;
       haptic(); paint(); onChange && onChange(on);
     } catch (e) { toast("フォローできませんでした"); }
     btn.disabled = false;
