@@ -1427,6 +1427,3 @@ html.ntab .tab{display:none}
 /* ホームの横並びの記事カード：濃紺の枠に、右下へずらした緑の影（Tabistockの世界観。探すの一覧などには付けない） */
 #home .hs .oc{border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green);border-radius:6px}
 #home .hs{padding-bottom:10px}
-/* 方眼の背景（記事ページは無地） */
-:root{--grid:linear-gradient(rgba(31,111,91,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(31,111,91,.07) 1px,transparent 1px)}
-.view,.hd,.htabs,.page:not([data-k="a"]) .ps{background-color:var(--bg);background-image:var(--grid);background-size:22px 22px;background-attachment:local}
