@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611250505";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611250514";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -561,7 +561,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611250505");
+  const M = await import("./sodan.js?v=202611250514");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -655,13 +655,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; import("./passport.js?v=202611250505").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; import("./passport.js?v=202611250514").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611250505").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611250505").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611250514").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611250514").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -947,7 +947,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611250505"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611250514"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1342,6 +1342,14 @@ function renderMe() {
     <div class="mtabs itabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips" aria-label="旅程">${TI.grid}<i id="invDot" hidden></i></button><button class="${myTab === "transit" ? "on" : ""}" data-mt="transit" aria-label="トランジット">${TI.transit}</button><button class="${myTab === "sodan" ? "on" : ""}" data-mt="sodan" aria-label="旅ひろば">${TI.sodan}</button><button class="${myTab === "photos" ? "on" : ""}" data-mt="photos" aria-label="写真">${TI.photo}</button></div>
     <div id="myPosts"><p class="loading">読み込み中…</p></div>`;
   box.querySelectorAll("[data-mt]").forEach((b) => (b.onclick = () => { myTab = b.dataset.mt; box.querySelectorAll("[data-mt]").forEach((x) => x.classList.toggle("on", x === b)); drawMyPosts(); haptic(); }));
+  // パスポート（試作・管理者のみ）：プロフィール画像の右下に小さなパスポート。タップで開く
+  isAdminMe().then((ok) => {
+    const im = box.querySelector(".uhead .row > img"); if (!ok || !im || im.closest(".ppav")) return;
+    import("./passport.js?v=202611250514").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
+    im.replaceWith(a); a.appendChild(im);
+    a.insertAdjacentHTML("beforeend", '<i><svg viewBox="120 240 792 618"><path d="M606 411H888Q908 411 908 431V532Q908 552 889 560L606 678Z" fill="rgba(226,196,120,.3)"/><path d="M606 370H835Q855 370 855 390V499Q855 519 836 527L606 612Z" fill="rgba(226,196,120,.5)"/><path d="M606 328H782Q802 328 802 348V458Q802 478 783 486L606 552Z" fill="rgba(226,196,120,.8)"/><path d="M364 488H606V784Q606 854 536 854H434Q364 854 364 784Z" fill="#d9bd73"/><path d="M244 244H680Q742 244 742 306V426Q742 488 680 488H244A122 122 0 0 1 244 244Z" fill="#e8cf8a"/><path d="M648 244H680Q742 244 742 306V426Q742 488 680 488H380Z" fill="#a8843a"/></svg></i>');
+  });
   loadMyPosts();
   getCountFromServer(collection(db, "users", me, "followers")).then((r) => { const e = box.querySelector("[data-mfc]"); if (e) e.textContent = r.data().count; }).catch(() => {});
   getCountFromServer(collection(db, "users", me, "following")).then((r) => { const e = box.querySelector("[data-mgc]"); if (e) e.textContent = r.data().count; }).catch(() => {});
@@ -1386,8 +1394,6 @@ function drawMyPosts() {
   if (myTab === "photos") {
     const mine = [...MY.trips, ...MY.transit].filter((d) => d.authorId === me);
     box.innerHTML = photoMosaic(mine) || '<p class="empty">まだ写真がありません。<br>旅程の DAY に写真を入れると、ここに並びます。</p>';
-    // パスポート（試作）：いまは管理者アカウントだけに入口を出す
-    isAdminMe().then((ok) => { if (ok && myTab === "photos" && $("myPosts") === box && !box.querySelector(".ppgo")) box.insertAdjacentHTML("afterbegin", '<a class="ppgo" href="#pass"><b>パスポートを開く</b><span>試作・管理者だけに表示中</span></a>'); });
     return;
   }
   const list = MY[myTab] || [];

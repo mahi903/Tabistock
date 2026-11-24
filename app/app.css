@@ -1437,6 +1437,7 @@ html.ntab .tab{display:none}
 #rmap .leaflet-bar{border:1.5px solid #1b2330;border-radius:3px;box-shadow:2px 2px 0 #1b2330}
 #rmap .leaflet-bar a{color:#1b2330;border-radius:0!important}
 .leaflet-control-attribution{font-size:9px!important;line-height:1.4;padding:0 4px!important;background:rgba(255,255,255,.55)!important;color:#6c7787!important}.leaflet-control-attribution a{color:inherit!important}
-/* パスポートの入口（試作） */
-.ppgo{display:flex;justify-content:space-between;align-items:center;margin:14px 20px 4px;padding:14px 16px;background:#17392f;color:#e8cf8a;border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green);border-radius:6px}
-.ppgo b{font:800 15px/1.2 'Noto Sans JP';letter-spacing:.06em}.ppgo span{font-size:11px;opacity:.75}
+/* パスポートの入口（試作）：プロフィール画像の右下のバッジ */
+.ppav{position:relative;flex:none;display:block;line-height:0}
+.ppav i{position:absolute;right:-4px;bottom:-2px;width:26px;height:34px;display:grid;place-items:center;background:radial-gradient(120% 90% at 30% 20%,#245344,#163a2f 60%,#0f2a22);border-radius:2px 4px 4px 2px;border:2px solid var(--bg);box-shadow:1px 2px 4px rgba(0,0,0,.2)}
+.ppav i svg{width:15px;height:auto}

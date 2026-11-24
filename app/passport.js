@@ -167,12 +167,26 @@ function stampHtml(key, label, sub, date, kanji) {
   return { html: fn(col, label, sub, date), r };
 }
 
+// パスポートで使うフォントを先に読み込む（開いた瞬間に文字がズレないように）
+let FONT_P = null;
+export function warmFonts() {
+  if (FONT_P) return FONT_P;
+  FONT_P = new Promise((ok) => {
+    const lk = document.createElement("link"); lk.rel = "stylesheet"; lk.href = FONTS;
+    lk.onload = () => {
+      const F = ["500 26px Cinzel", "600 12px 'Shippori Mincho'", "800 18px 'Shippori Mincho'", "500 30px 'Shippori Mincho'", "700 12px 'Cormorant Garamond'", "400 14px 'Pinyon Script'", "400 9px 'Space Mono'", "700 9px 'Space Mono'"];
+      Promise.all(F.map((f) => document.fonts.load(f, "TABISTOCK PASSPORT 旅券 査証 0123"))).then(ok, ok);
+    };
+    lk.onerror = ok;
+    document.head.appendChild(lk);
+  });
+  return FONT_P;
+}
+
 export function pagePassport(el, ctx) {
   const { esc, bar, haptic, cinfo, fmtPeriod, profile: p = {}, arts: all = [], created, loadSig, saveSig } = ctx;
-  if (!document.getElementById("ppcss")) {
-    const st = document.createElement("style"); st.id = "ppcss"; st.textContent = CSS; document.head.appendChild(st);
-    const lk = document.createElement("link"); lk.rel = "stylesheet"; lk.href = FONTS; document.head.appendChild(lk);
-  }
+  if (!document.getElementById("ppcss")) { const st = document.createElement("style"); st.id = "ppcss"; st.textContent = CSS; document.head.appendChild(st); }
+  const fontsReady = warmFonts();
   // 公開中の記事を、旅の日付の古い順に
   const tkey = (d) => d.dateStart || (d.createdAt && new Date(d.createdAt.seconds * 1000).toISOString().slice(0, 10)) || "";
   const arts = all.filter((d) => d.status === "published").sort((a, b) => tkey(a).localeCompare(tkey(b)));
@@ -297,8 +311,12 @@ export function pagePassport(el, ctx) {
   const inner = el.querySelector("#ppIn"), hint = book.querySelector(".hint");
   // 写真は最初にまとめて読み込んでデコードしておく（めくった瞬間に読み込みで止まらないように）
   book.querySelectorAll(".snap i").forEach((i) => { const m = /url\('?([^')]+)'?\)/.exec(i.style.backgroundImage); if (m) { const im = new Image(); im.src = m[1]; if (im.decode) im.decode().catch(() => {}); } });
-  // 登場：手前に傾いた状態から、ふわっと置かれる
-  inner.animate([{ transform: "translateY(70px) rotateX(28deg) scale(.9)", opacity: 0 }, { transform: "translateY(-6px) rotateX(-2deg) scale(1.01)", opacity: 1, offset: 0.7 }, { transform: "none", opacity: 1 }], { duration: 1300, easing: "cubic-bezier(.2,.7,.2,1)" });
+  // 登場：フォントがそろってから、手前に傾いた状態でふわっと置かれる（読み込みが遅くても2秒で出す）
+  inner.style.opacity = "0";
+  Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2000))]).then(() => {
+    inner.style.opacity = "";
+    inner.animate([{ transform: "translateY(70px) rotateX(28deg) scale(.9)", opacity: 0 }, { transform: "translateY(-6px) rotateX(-2deg) scale(1.01)", opacity: 1, offset: 0.7 }, { transform: "none", opacity: 1 }], { duration: 1300, easing: "cubic-bezier(.2,.7,.2,1)" });
+  });
   book.querySelectorAll(".paper .stamp").forEach((s) => s.classList.add("wait"));
   let idx = 0, zoom = false, sd = "L", busy = false;
   const buzz = () => { try { haptic && haptic(); } catch (e) {} };
