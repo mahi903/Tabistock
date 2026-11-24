@@ -8,9 +8,9 @@ const FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@
 const CSS = `
 .ppw{display:flex;flex-direction:column;align-items:center;min-height:100%;padding-bottom:calc(30px + var(--sb))!important;overflow-x:hidden}
 .pp-stage{flex:1;width:100%;display:grid;place-items:center;padding:34px 0 10px}
-.pp{--W:min(320px,84vw);position:relative;width:var(--W);aspect-ratio:88/125;transition:transform .95s cubic-bezier(.45,.05,.25,1);perspective:1800px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:pan-y;color:#1b2330}
+.pp{--W:min(320px,84vw);position:relative;width:var(--W);aspect-ratio:88/125;will-change:transform;transform:scale(1) translateX(0);transition:transform .95s cubic-bezier(.45,.05,.25,1);perspective:1800px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:pan-y;color:#1b2330}
 .pp.shift{transform:scale(var(--pps,1)) translateX(50%)}
-.pp.one{transform:none}.pp.one.lft{transform:translateX(100%)}
+.pp.one{transform:scale(1) translateX(0)}.pp.one.lft{transform:scale(1) translateX(100%)}
 .ppw{overflow-x:hidden}
 .pp .base{position:absolute;inset:0;border-radius:3px 10px 10px 3px;background:#17392f;box-shadow:1px 1px 0 #e9e2cf,2px 2px 0 #ddd4bf,3px 3px 0 #e9e2cf,4px 4px 0 #d6cdb7,5px 6px 0 #17392f,10px 18px 30px rgba(0,0,0,.28)}
 .pp .base .face{inset:0 4px 0 0}
