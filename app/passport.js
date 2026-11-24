@@ -302,7 +302,7 @@ export function pagePassport(el, ctx) {
         : pg.kind === "id" ? `<i class="th-id"><u></u></i>` : `<i class="th-nx">＋</i>`;
       return `<button class="th" data-f="${f}" aria-label="${pg.pno}ページ">${inner}<b>${pg.kind === "next" ? "次の旅" : pg.pno}</b></button>`;
     })).join("");
-  el.innerHTML = bar("パスポート") + `<div class="ps under2 ppw">${DEFS}
+  el.innerHTML = bar("Tabistock パスポート") + `<div class="ps under2 ppw">${DEFS}
     <div class="pp-stage"><div class="pp-in" id="ppIn"><div class="pp" id="ppBook" style="--ppgl:${GL.replace(/"/g, "&quot;")};--ppme:url('${esc(p.photoURL || "")}')"><div class="base"><div class="face leather endp">${wm}</div></div><div class="gut"></div>${leavesHtml}</div></div></div>
     <div class="pp-strip" id="ppStrip">${THUMBS}</div></div>`;
 
@@ -313,9 +313,10 @@ export function pagePassport(el, ctx) {
   book.querySelectorAll(".snap i").forEach((i) => { const m = /url\('?([^')]+)'?\)/.exec(i.style.backgroundImage); if (m) { const im = new Image(); im.src = m[1]; if (im.decode) im.decode().catch(() => {}); } });
   // 登場：フォントがそろってから、手前に傾いた状態でふわっと置かれる（読み込みが遅くても2秒で出す）
   inner.style.opacity = "0";
-  Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2000))]).then(() => {
+  // ページが開ききってから（約0.5秒）、下からふわっと出す
+  Promise.all([Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2000))]), new Promise((r) => setTimeout(r, 480))]).then(() => {
     inner.style.opacity = "";
-    inner.animate([{ transform: "translateY(70px) rotateX(28deg) scale(.9)", opacity: 0 }, { transform: "translateY(-6px) rotateX(-2deg) scale(1.01)", opacity: 1, offset: 0.7 }, { transform: "none", opacity: 1 }], { duration: 1300, easing: "cubic-bezier(.2,.7,.2,1)" });
+    inner.animate([{ transform: "translateY(55vh) rotateX(16deg) scale(.94)", opacity: 0 }, { transform: "translateY(-10px) rotateX(-2deg) scale(1.01)", opacity: 1, offset: 0.72 }, { transform: "none", opacity: 1 }], { duration: 1400, easing: "cubic-bezier(.2,.75,.25,1)" });
   });
   book.querySelectorAll(".paper .stamp").forEach((s) => s.classList.add("wait"));
   let idx = 0, zoom = false, sd = "L", busy = false;
@@ -334,7 +335,7 @@ export function pagePassport(el, ctx) {
     return [L, R].filter(Boolean).join("–");
   };
   // 一覧：横にスクロールでき、真ん中から離れるほど小さく薄く見える
-  let stripLock = 0;
+  let stripLock = 0, fluttering = false;
   function stripLook() {
     const st = el.querySelector("#ppStrip"); if (!st) return;
     const mid = st.scrollLeft + st.clientWidth / 2;
@@ -349,7 +350,7 @@ export function pagePassport(el, ctx) {
   const render = () => {
     fit();
     // 次にめくる・見えてくるページを先にGPUへ載せておく（めくり始めの引っかかりを防ぐ）
-    leaves.forEach((l, i) => { l.style.willChange = i >= idx - 1 && i <= idx + 1 ? "transform" : ""; });
+    if (!fluttering) leaves.forEach((l, i) => { l.style.willChange = i >= idx - 1 && i <= idx + 1 ? "transform" : ""; });
     book.classList.toggle("shift", idx > 0 && !zoom);
     book.classList.toggle("open", idx > 0 && !zoom);
     book.classList.toggle("one", idx > 0 && zoom);
@@ -440,6 +441,8 @@ export function pagePassport(el, ctx) {
     const dir = to > idx ? 1 : -1, list = [];
     if (dir > 0) for (let i = idx; i < to; i++) list.push(i); else for (let i = idx - 1; i >= to; i--) list.push(i);
     const gap = 95, d1 = 600;
+    // パラパラ中は、ページの下準備（GPUへの載せ替え）を切り替えない。途中で切り替えると写真が残像のように残る
+    fluttering = true;
     list.forEach((i, k) => setTimeout(() => {
       const l = leaves[i], cover = i === 0, dur = cover ? 950 : d1;
       if (dir < 0) { l.classList.remove("flat"); l.classList.add("on"); }
@@ -452,7 +455,7 @@ export function pagePassport(el, ctx) {
     }, k * gap));
     const total = (list.length - 1) * gap + (list.includes(0) ? 950 : d1);
     if (to === 0) setTimeout(() => { idx = 0; render(); }, Math.max(0, (list.length - 1) * gap)); else { idx = to; render(); }
-    setTimeout(done, total + 30);
+    setTimeout(() => { fluttering = false; render(); done(); }, total + 30);
   }
   // 閉じる：引きの見開きにしてから、パラパラっとページが戻って表紙が閉じる
   function closeAll(after) {
