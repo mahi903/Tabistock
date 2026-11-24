@@ -104,11 +104,11 @@ export const ILL = {
   </svg>`,
 };
 
-export const BOARD_CATS = [["", "すべて"], ["first", "はじめて"], ["prep", "準備"], ["flight", "航空券"], ["save", "節約"], ["money", "お金・通信"], ["geo", "旅と地理"]];
+export const BOARD_CATS = [["", "すべて"], ["prep", "準備"], ["flight", "航空券"], ["save", "節約"], ["money", "お金・通信"], ["geo", "旅と地理"]];
 
 export const BOARD_SEED = [
   {
-    id: "first-trip", cat: "first", ill: "suitcase", order: 1, mins: 7, updated: "2026-11-24",
+    id: "first-trip", cat: "prep", ill: "suitcase", order: 1, mins: 7, updated: "2026-11-24",
     title: "はじめての海外旅行ガイド",
     lead: "行ってみたいけど、何から決めればいいのかわからない。そんな人のために、出発までにやることと当日の流れを、順番にまとめました。",
     facts: [["始める目安", "出発の2〜3か月前", "パスポートがない人は、もう少し早めに"], ["最初にやること", "パスポートの確認"], ["そろえるもの", "航空券・宿・お金・通信・保険"]],
