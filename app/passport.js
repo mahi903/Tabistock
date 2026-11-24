@@ -249,16 +249,13 @@ async function makeStory(o) {
       c.save(); c.globalAlpha = 0.9; c.translate(cx, cy); c.rotate((items[i].r * Math.PI) / 180); c.drawImage(im, -w / 2, -hh / 2, w, hh); c.restore();
     });
   }
-  // 余白の飾りスタンプ（旅券らしい入国印を、薄めに）
-  const deco = [
-    [ring("#1f6f5b", "TABISTOCK", "PASSPORT", "SINCE 2025"), 118, 168, -14, 1.7, 0.7],
-    [rect("#c8492b", "ENTRY", "PERMITTED", o.issued), 948, 338, 11, 1.55, 0.62],
-    [oval("#2f5fa8", "DEPARTED", "JAPAN", "✈ TABISTOCK"), 150, 752, -8, 1.3, 0.55],
-    [oval("#6d4fa0", "TRAVELER", "TABISTOCK", "VISITOR"), 150, 1785, -9, 1.6, 0.65],
-    [hexa("#b8862a", "ARRIVAL", "TABISTOCK", "✈"), 932, 1765, 13, 1.65, 0.65]
-  ];
-  const dimg = await Promise.all(deco.map(([h]) => svgImg(h.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/^(<svg[^>]*>)/, `$1<defs><style>${css}</style>${INK}</defs><g filter="url(#ppink)">`).replace(/<\/svg>$/, "</g></svg>"))));
-  dimg.forEach((im, i) => { if (!im) return; const [, x, y, r, k, a] = deco[i]; const w = im.width * k, h = im.height * k; c.save(); c.globalAlpha = a; c.translate(x, y); c.rotate((r * Math.PI) / 180); c.drawImage(im, -w / 2, -h / 2, w, h); c.restore(); });
+  // 身分事項の右に、表紙裏と同じ朱色の「旅券」の印を1つ押す
+  if (o.seal) {
+    const si = await svgImg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 120" width="60" height="120"><defs>${INK}</defs>${o.seal}</svg>`);
+    if (si) [[868, 560, -4, 2.3, 0.88]].forEach(([x, y, r, k, a]) => {
+      const w = 60 * k, h = 120 * k; c.save(); c.globalAlpha = a; c.translate(x, y); c.rotate((r * Math.PI) / 180); c.drawImage(si, -w / 2, -h / 2, w, h); c.restore();
+    });
+  }
   // ロゴ（Tのマーク＋Tabistock）
   const [lg, wm] = await Promise.all([svgImg(LOGO_COLOR), loadImg("./img/wordmark.png")]);
   const lh = 74, lw = lh * (792 / 618), wh = 60, ww = wm ? wm.width * (wh / wm.height) : 0, gap = 20, tot = lw + gap + ww, x0 = (W - tot) / 2;
@@ -597,7 +594,7 @@ export function pagePassport(el, ctx) {
     try {
       const stamps = [...countries].map((v) => { const ci = cinfo(v) || {}; const first = arts.find((d) => (d.countries || []).includes(v)); return stampHtml(v, String(ci.en || v).toUpperCase(), "", dot(first && first.dateStart) || ""); });
       if (!stamps.length) { const prefs = [...new Set(arts.flatMap((d) => d.prefectures || []))]; prefs.forEach((x) => stamps.push(stampHtml(x, x, "", "", true))); }
-      const blob = await makeStory({ name: p.nickname || "旅人", photo: p.photoURL || "", issued, sig, countries: countries.size, days: totalDays, trips: arts.length, stamps, seed: ctx.me || "" });
+      const blob = await makeStory({ name: p.nickname || "旅人", photo: p.photoURL || "", issued, sig, countries: countries.size, days: totalDays, trips: arts.length, stamps, seed: ctx.me || "", seal: SEAL });
       toastEl.remove();
       const file = new File([blob], "tabistock-passport.png", { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); } catch (er) {} }
