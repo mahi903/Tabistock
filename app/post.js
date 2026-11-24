@@ -3,7 +3,7 @@
 import { auth, db } from "../firebase-config.js";
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
-  COUNTRIES, STYLES, COST_ITEMS, PREF_GROUPS, MOVE_MODES, REGION_JP, COUNTRY_LL, BUDGETS,
+  COUNTRIES, STYLES, COST_ITEMS, PREF_GROUPS, MOVE_MODES, REGION_JP, COUNTRY_LL, COUNTRY_ISO, BUDGETS,
   esc, yen, cinfo, budgetFromYen, derivePrefs
 } from "../tabistock-render.js";
 import {
@@ -660,7 +660,8 @@ async function mapPage(places, label) {
   const day = { places };
   const ov = document.createElement("div");
   ov.className = "pmap";
-  ov.innerHTML = `<div class="bar2"><b>${esc(label)}</b><button class="mo" id="pmDone" style="font-size:15px;font-weight:700;color:var(--green)">完了</button></div><div class="pmm" id="pmMap"></div><div class="pml"><p class="qhint" id="pmHint">地図をタップするとピンを置けます（複数OK）</p><div id="pmList"></div></div>`;
+  ov.innerHTML = `<div class="bar2"><b>${esc(label)}</b><button class="mo" id="pmDone" style="font-size:15px;font-weight:700;color:var(--green)">完了</button></div>
+    <div class="pms"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input id="pmQ" type="search" enterkeyhint="search" autocomplete="off" placeholder="場所を検索（例：ウユニ塩湖）"><div class="pmres" id="pmRes" hidden></div></div><div class="pmm" id="pmMap"></div><div class="pml"><p class="qhint" id="pmHint">地図をタップするとピンを置けます（複数OK）</p><div id="pmList"></div></div>`;
   root.appendChild(ov);
   requestAnimationFrame(() => ov.classList.add("open"));
   const close = () => { ov.classList.remove("open"); setTimeout(() => ov.remove(), 300); drawStep(); };
@@ -685,6 +686,36 @@ async function mapPage(places, label) {
     reverseCountry(p.lat, p.lng).then((cc) => { if (cc) p.cc = cc; });
     const inp = ov.querySelector(`[data-pn="${day.places.length - 1}"]`); if (inp) inp.focus({ preventScroll: true });
   });
+  // 場所の検索：候補をタップするとピンを置いて、その場所へ移動する
+  const q = ov.querySelector("#pmQ"), res = ov.querySelector("#pmRes");
+  let qt = 0, qn = 0, hits = [];
+  const ccs = (F.countries || []).map((c) => COUNTRY_ISO[c]).filter(Boolean);
+  const search = async (text, seq) => {
+    const run = async (cc) => {
+      const u = `https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ja&addressdetails=1&q=${encodeURIComponent(text)}${cc ? "&countrycodes=" + cc : ""}`;
+      try { const r = await fetch(u, { headers: { Accept: "application/json" } }); return r.ok ? await r.json() : []; } catch (e) { return []; }
+    };
+    let a = ccs.length ? await run(ccs.join(",")) : [];   // まず記事の国の中から探し、なければ世界中から
+    if (!a.length) a = await run("");
+    if (seq !== qn) return;
+    hits = a.map((x) => { const parts = String(x.display_name || "").split(",").map((t) => t.trim()); return { name: x.name || parts[0] || text, sub: parts.slice(1, 4).join("、"), lat: +(+x.lat).toFixed(5), lng: +(+x.lon).toFixed(5), cc: (x.address || {}).country_code || "" }; });
+    res.innerHTML = hits.length ? hits.map((h, k) => `<button data-hit="${k}"><b>${esc(h.name)}</b><small>${esc(h.sub)}</small></button>`).join("") : '<p class="none">見つかりませんでした。地図をタップしてピンを置くこともできます</p>';
+    res.hidden = false;
+  };
+  q.oninput = () => {
+    clearTimeout(qt); const text = q.value.trim(); const seq = ++qn;
+    if (text.length < 2) { res.hidden = true; return; }
+    res.hidden = false; res.innerHTML = '<p class="none">検索中…</p>';
+    qt = setTimeout(() => search(text, seq), 450);
+  };
+  q.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); clearTimeout(qt); const text = q.value.trim(); if (text.length >= 1) search(text, ++qn); } };
+  res.onclick = (e) => {
+    const b = e.target.closest("[data-hit]"); if (!b) return;
+    const h = hits[+b.dataset.hit];
+    day.places.push({ name: h.name, lat: h.lat, lng: h.lng, cc: h.cc }); draw(); dirty(); C.haptic();
+    m.flyTo([h.lat, h.lng], Math.max(m.getZoom(), 12), { duration: 0.7 });
+    q.value = ""; res.hidden = true; q.blur();
+  };
   ov.querySelector("#pmList").oninput = (e) => { const k = e.target.dataset.pn; if (k !== undefined) { day.places[+k].name = e.target.value; dirty(); } };
   ov.querySelector("#pmList").onclick = (e) => { const b = e.target.closest("[data-px]"); if (b) { day.places.splice(+b.dataset.px, 1); draw(); dirty(); } };
   draw();
