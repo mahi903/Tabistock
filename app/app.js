@@ -506,8 +506,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611241711").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611241711").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611241740").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611241740").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -695,7 +695,8 @@ async function drawRoute(box, d) {
     p.c = hit || cs.slice().sort((a, b) => dist2(p, COUNTRY_LL[a]) - dist2(p, COUNTRY_LL[b]))[0] || "";
   });
   try { await loadLeaflet(); } catch (e) { box.innerHTML = '<p class="loading">地図を読み込めませんでした</p>'; return; }
-  const map = L.map(box, { scrollWheelZoom: false, minZoom: 2, attributionControl: true });
+  const map = L.map(box, { scrollWheelZoom: false, minZoom: 2, attributionControl: true, doubleClickZoom: false, touchZoom: true });
+  dblTapZoom(map, box);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap", maxZoom: 18 }).addTo(map);
   const ms = pts.map((p) => { const m = L.circleMarker([p.lat, p.lng], { radius: 7, color: "#fff", weight: 2, fillColor: "#e2683b", fillOpacity: 1 }).addTo(map).bindPopup((p.n ? `DAY ${p.n}` : "") + (p.name ? "　" + esc(p.name) : "")); m._c = p.c; m._k = p.n + "|" + p.name; return m; });
   box._map = map; box._ms = ms;
@@ -707,6 +708,24 @@ async function drawRoute(box, d) {
     tabs.innerHTML = `<button class="on" data-rc="">すべて</button>` + used.map((c) => `<button data-rc="${esc(c)}">${esc((cinfo(c) || {}).jp || c)}</button>`).join("");
     tabs.querySelectorAll("button").forEach((b) => (b.onclick = () => { tabs.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); fit(b.dataset.rc); haptic(); }));
   } else if (tabs) tabs.remove();
+}
+// 地図をダブルタップで拡大（iPhoneではダブルタップのイベントが来ないことがあるので、タップの間隔から自分で判定する）
+// 1本指のタップを0.3秒以内・30px以内で2回 → タップした場所を中心に1段拡大。2本指で広げる拡大はLeafletのまま
+function dblTapZoom(map, box) {
+  let last = 0, lx = 0, ly = 0, moved = false, sx = 0, sy = 0;
+  box.addEventListener("touchstart", (e) => { if (e.touches.length !== 1) { last = 0; return; } moved = false; sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  box.addEventListener("touchmove", (e) => { const t = e.touches[0]; if (t && Math.hypot(t.clientX - sx, t.clientY - sy) > 10) moved = true; }, { passive: true });
+  box.addEventListener("touchend", (e) => {
+    if (moved || e.touches.length || e.changedTouches.length !== 1) { last = 0; return; }
+    const t = e.changedTouches[0], now = Date.now();
+    if (now - last < 300 && Math.hypot(t.clientX - lx, t.clientY - ly) < 30) {
+      e.preventDefault(); last = 0;
+      const r = box.getBoundingClientRect();
+      map.setZoomAround(L.point(t.clientX - r.left, t.clientY - r.top), Math.min(map.getZoom() + 1, map.getMaxZoom() || 18));
+      haptic();
+    } else { last = now; lx = t.clientX; ly = t.clientY; }
+  }, { passive: false });
+  box.addEventListener("dblclick", (e) => { const r = box.getBoundingClientRect(); map.setZoomAround(L.point(e.clientX - r.left, e.clientY - r.top), map.getZoom() + 1); });
 }
 // 記事の文章の中で、地図に登録した場所の名前をタップできるようにする（各場所につき最初の1か所だけ）
 function placeLinks(html, places, n, on) {
@@ -768,7 +787,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611241711"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611241740"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
