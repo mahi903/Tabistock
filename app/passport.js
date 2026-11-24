@@ -113,6 +113,13 @@ const CSS = `
 .pp-stage{perspective:1400px}
 .pp-in{transform-style:flat}
 .pp .hint{transition:opacity .4s}.pp .hint.gone{opacity:0;animation:none}
+.ppsh{margin-left:auto;background:none;border:0;color:var(--ink);padding:6px;display:grid;place-items:center}
+.ppmk{position:absolute;left:50%;top:70px;transform:translateX(-50%);z-index:60;background:#1b2330;color:#fff;font:700 12.5px 'Noto Sans JP',sans-serif;padding:9px 14px;border-radius:3px;white-space:nowrap}
+.ppsv2{position:absolute;inset:0;z-index:60;background:rgba(20,25,22,.6);display:grid;place-items:center;padding:20px;animation:ppfade .25s ease}
+.ppsv2>div{display:flex;flex-direction:column;align-items:center;gap:12px;max-height:100%}
+.ppsv2 img{max-height:70vh;max-width:100%;box-shadow:0 10px 30px rgba(0,0,0,.35);-webkit-touch-callout:default}
+.ppsv2 p{margin:0;color:#fff;font:700 13px 'Noto Sans JP',sans-serif}
+.ppsv2 button{min-height:42px;padding:0 22px;background:#f5f0e2;border:1.5px solid #1b2330;font:700 13px 'Noto Sans JP',sans-serif;border-radius:3px}
 .pp-strip{display:flex;gap:8px;width:100%;overflow-x:auto;scrollbar-width:none;padding:8px calc(50% - 25px) calc(10px + var(--sb));scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .pp-strip::-webkit-scrollbar{display:none}
 .pp-strip .th{flex:none;width:50px;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:0;scroll-snap-align:center;transform:scale(var(--s,1));transform-origin:50% 30%;opacity:var(--o,1);transition:transform .2s,opacity .2s}
@@ -165,6 +172,87 @@ function stampHtml(key, label, sub, date, kanji) {
   const h = hash(key), col = FLAG[key] || INKS[(h >>> 3) % INKS.length], r = ((h >>> 6) % 26) - 13;
   const fn = kanji ? eki : SHAPES[h % 4];
   return { html: fn(col, label, sub, date), r };
+}
+
+
+// ---- シェア用の画像（インスタのストーリーと同じ 1080×1920）----
+const STORY_FONTS = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Space+Mono:wght@400;700&display=swap";
+let STAMP_CSS = null;
+// スタンプの絵は画像として描くので、中の英字フォント（latin のみ）を埋め込んでおく
+async function stampFontCss() {
+  if (STAMP_CSS !== null) return STAMP_CSS;
+  try {
+    const css = await (await fetch(STORY_FONTS)).text();
+    const blocks = css.split("/* ").filter((b) => b.startsWith("latin */"));
+    const out = [];
+    for (const b of blocks) {
+      const m = /url\((https:[^)]+)\)/.exec(b); if (!m) continue;
+      const buf = await (await fetch(m[1])).arrayBuffer();
+      let bin = ""; const u = new Uint8Array(buf); for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+      out.push(b.slice(b.indexOf("@font-face")).replace(m[1], "data:font/woff2;base64," + btoa(bin)));
+    }
+    STAMP_CSS = out.join("");
+  } catch (e) { STAMP_CSS = ""; }
+  return STAMP_CSS;
+}
+const loadImg = (src, cors) => new Promise((ok) => { const im = new Image(); if (cors) im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = () => ok(null); im.src = src; });
+const svgImg = (svg) => loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
+const INK = DEFS.slice(DEFS.indexOf("<filter"), DEFS.indexOf("</filter>") + 9);
+const LOGO_COLOR = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="120 240 792 618"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#244a3b"/><stop offset="1" stop-color="#44916f"/></linearGradient></defs><path d="M606 411H888Q908 411 908 431V532Q908 552 889 560L606 678Z" fill="#c0e6d4"/><path d="M606 370H835Q855 370 855 390V499Q855 519 836 527L606 612Z" fill="#92d3b2"/><path d="M606 328H782Q802 328 802 348V458Q802 478 783 486L606 552Z" fill="#5bbd8a"/><path d="M364 488H606V784Q606 854 536 854H434Q364 854 364 784Z" fill="url(#s)"/><path d="M244 244H680Q742 244 742 306V426Q742 488 680 488H244A122 122 0 0 1 244 244Z" fill="#49976f"/><path d="M648 244H680Q742 244 742 306V426Q742 488 680 488H380Z" fill="#1f3b2e"/></svg>`;
+// 字間をあけて1文字ずつ描く（canvas の letterSpacing は iPhone で効かないことがある）
+function spaced(c, text, cx, y, sp) {
+  const ch = [...text], w = ch.reduce((a, t) => a + c.measureText(t).width, 0) + sp * (ch.length - 1);
+  let x = cx - w / 2; ch.forEach((t) => { c.fillText(t, x, y); x += c.measureText(t).width + sp; });
+}
+async function makeStory(o) {
+  await document.fonts.ready;
+  const W = 1080, H = 1920, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const c = cv.getContext("2d"); c.textBaseline = "alphabetic";
+  c.fillStyle = "#f5f0e2"; c.fillRect(0, 0, W, H);
+  const bg = await svgImg(decodeURIComponent(GL.slice(GL.indexOf(",") + 1, -2)));
+  if (bg) c.drawImage(bg, 0, 0, W, H);
+  // 見出し
+  c.fillStyle = "#1f6f5b"; c.font = "500 39px Cinzel, serif"; spaced(c, "TABISTOCK PASSPORT", W / 2, 150, 12);
+  c.fillStyle = "#1b2330"; c.font = "800 80px 'Shippori Mincho', serif"; c.textAlign = "center";
+  const ttl = `${o.name}の旅券`; let fs = 80; while (c.measureText(ttl).width > 900 && fs > 44) { fs -= 4; c.font = `800 ${fs}px 'Shippori Mincho', serif`; }
+  c.fillText(ttl, W / 2, 278); c.textAlign = "left";
+  // 身分事項
+  c.fillStyle = "#fbf8ee"; c.fillRect(84, 354, 912, 396); c.strokeStyle = "#d8cfbb"; c.lineWidth = 3; c.strokeRect(84, 354, 912, 396);
+  const ph = o.photo ? await loadImg(o.photo, true) : null;
+  c.fillStyle = "#cfd6d2"; c.fillRect(132, 402, 222, 296);
+  if (ph) { const r = Math.max(222 / ph.width, 296 / ph.height), w = ph.width * r, h = ph.height * r; c.save(); c.beginPath(); c.rect(132, 402, 222, 296); c.clip(); c.drawImage(ph, 132 + (222 - w) / 2, 402 + (296 - h) / 2, w, h); c.restore(); }
+  const lab = (t, y) => { c.fillStyle = "#5d6b63"; c.font = "500 20px 'Noto Sans JP', sans-serif"; c.fillText(t, 402, y); };
+  lab("氏名 / Name", 438); c.fillStyle = "#1b2330"; c.font = "800 42px 'Shippori Mincho', serif"; c.fillText(o.name, 402, 488);
+  lab("発行年月日 / Date of issue", 542); c.font = "700 44px 'Cormorant Garamond', serif"; c.fillText(o.issued, 402, 590);
+  lab("所持人自署 / Signature", 640);
+  if (o.sig) { c.save(); c.translate(396, 636); c.scale(1.2, 1.2); c.strokeStyle = "#1b2330"; c.lineWidth = 3.2; c.lineCap = c.lineJoin = "round"; c.stroke(new Path2D(o.sig)); c.restore(); }
+  // 数字
+  c.strokeStyle = "rgba(31,111,91,.35)"; c.lineWidth = 3; [786, 1044].forEach((y) => { c.beginPath(); c.moveTo(84, y); c.lineTo(996, y); c.stroke(); });
+  [[o.countries, "COUNTRIES"], [o.days, "DAYS"], [o.trips, "TRIPS"]].forEach(([n, l], i) => {
+    const cx = 84 + 152 + i * 304;
+    c.textAlign = "center"; c.fillStyle = "#1f6f5b"; c.font = "700 104px 'Cormorant Garamond', serif"; c.fillText(String(n), cx, 930);
+    c.textAlign = "left"; c.fillStyle = "#5d6b63"; c.font = "600 27px Cinzel, serif"; spaced(c, l, cx, 992, 5);
+  });
+  // スタンプ（国ごとに1つ。多いときは小さく、たくさん並べる）
+  const css = await stampFontCss();
+  const items = o.stamps, n = items.length;
+  if (n) {
+    const cols = n <= 4 ? 2 : n <= 9 ? 3 : n <= 16 ? 4 : 5, rows = Math.ceil(n / cols);
+    const top = 1080, areaH = 600, cw = 1000 / cols, rh = areaH / rows, sc = Math.min(2.5, (cw / 125) * 1.05, (rh / 100) * 1.1);
+    const imgs = await Promise.all(items.map((it) => svgImg(it.html.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/^(<svg[^>]*>)/, `$1<defs><style>${css}</style>${INK}</defs><g filter="url(#ppink)">`).replace(/<\/svg>$/, "</g></svg>"))));
+    imgs.forEach((im, i) => {
+      if (!im) return; const h = hash(o.seed + i), col = i % cols, row = Math.floor(i / cols), inRow = Math.min(cols, n - row * cols);
+      const cx = 40 + (1000 / inRow) * (col + 0.5) + ((h % 40) - 20), cy = top + rh * (row + 0.5) + (((h >>> 5) % 30) - 15);
+      const w = im.width * sc, hh = im.height * sc;
+      c.save(); c.globalAlpha = 0.9; c.translate(cx, cy); c.rotate((items[i].r * Math.PI) / 180); c.drawImage(im, -w / 2, -hh / 2, w, hh); c.restore();
+    });
+  }
+  // ロゴ（Tのマーク＋Tabistock）
+  const [lg, wm] = await Promise.all([svgImg(LOGO_COLOR), loadImg("./img/wordmark.png")]);
+  const lh = 74, lw = lh * (792 / 618), wh = 60, ww = wm ? wm.width * (wh / wm.height) : 0, gap = 20, tot = lw + gap + ww, x0 = (W - tot) / 2;
+  if (lg) c.drawImage(lg, x0, 1790 - lh, lw, lh);
+  if (wm) c.drawImage(wm, x0 + lw + gap, 1790 - wh - 2, ww, wh);
+  return await new Promise((ok) => cv.toBlob(ok, "image/png"));
 }
 
 // パスポートで使うフォントを先に読み込む（開いた瞬間に文字がズレないように）
@@ -302,7 +390,7 @@ export function pagePassport(el, ctx) {
         : pg.kind === "id" ? `<i class="th-id"><u></u></i>` : `<i class="th-nx">＋</i>`;
       return `<button class="th" data-f="${f}" aria-label="${pg.pno}ページ">${inner}<b>${pg.kind === "next" ? "次の旅" : pg.pno}</b></button>`;
     })).join("");
-  el.innerHTML = bar("Tabistock パスポート") + `<div class="ps under2 ppw">${DEFS}
+  el.innerHTML = bar("Tabistock パスポート", `<button class="ppsh" id="ppShare" aria-label="シェア"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5v6.5a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-6.5"/></svg></button>`) + `<div class="ps under2 ppw">${DEFS}
     <div class="pp-stage"><div class="pp-in" id="ppIn"><div class="pp" id="ppBook" style="--ppgl:${GL.replace(/"/g, "&quot;")};--ppme:url('${esc(p.photoURL || "")}')"><div class="base"><div class="face leather endp">${wm}</div></div><div class="gut"></div>${leavesHtml}</div></div></div>
     <div class="pp-strip" id="ppStrip">${THUMBS}</div></div>`;
 
@@ -490,6 +578,26 @@ export function pagePassport(el, ctx) {
     busy = true; hint.classList.add("gone");
     zoomOut(() => flutter(t, () => setTimeout(() => zoomIn(sideT, () => press(sideT === "L" ? pageL() : pageR())), 300)));
   }
+  // シェア：ストーリー用の画像を作って、共有シート（使えないときは保存用の画面）を出す
+  el.querySelector("#ppShare").onclick = async (e) => {
+    const b = e.currentTarget; if (b.disabled) return; b.disabled = true; buzz();
+    const toastEl = document.createElement("div"); toastEl.className = "ppmk"; toastEl.textContent = "シェア用の画像を作っています…"; el.appendChild(toastEl);
+    try {
+      const stamps = [...countries].map((v) => { const ci = cinfo(v) || {}; const first = arts.find((d) => (d.countries || []).includes(v)); return stampHtml(v, String(ci.en || v).toUpperCase(), "", dot(first && first.dateStart) || ""); });
+      if (!stamps.length) { const prefs = [...new Set(arts.flatMap((d) => d.prefectures || []))]; prefs.forEach((x) => stamps.push(stampHtml(x, x, "", "", true))); }
+      const blob = await makeStory({ name: p.nickname || "旅人", photo: p.photoURL || "", issued, sig, countries: countries.size, days: totalDays, trips: arts.length, stamps, seed: ctx.me || "" });
+      toastEl.remove();
+      const file = new File([blob], "tabistock-passport.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); } catch (er) {} }
+      else {
+        const url = URL.createObjectURL(blob), ov = document.createElement("div"); ov.className = "ppsv2";
+        ov.innerHTML = `<div><img src="${url}" alt="シェア用の画像"><p>画像を長押しして保存してください</p><button type="button">閉じる</button></div>`;
+        ov.querySelector("button").onclick = () => { ov.remove(); URL.revokeObjectURL(url); };
+        el.querySelector(".ppw").appendChild(ov);
+      }
+    } catch (er) { toastEl.textContent = "画像を作れませんでした"; setTimeout(() => toastEl.remove(), 1800); }
+    b.disabled = false;
+  };
   el.querySelector("#ppStrip").addEventListener("click", (e) => { const b = e.target.closest(".th"); if (b) jumpTo(+b.dataset.f); });
   { const st = el.querySelector("#ppStrip"); let raf = 0; st.addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; stripLook(); }); }, { passive: true }); requestAnimationFrame(stripLook); }
   // 「‹ パスポート」で戻るときは、閉じるアニメーションのあとでマイページへ
