@@ -80,6 +80,53 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---- たび相談（コミュニティ）----
+    // sodan/{id}：誰でも閲覧。投稿はログインユーザー（自分を投稿者に、本文1〜1000文字）。
+    // 他の人が変えられるのは、いいね数（±1）と回答数（±1）・最終回答日時だけ。削除は本人か管理者。
+    match /sodan/{postId} {
+      function delta(k) { return request.resource.data.get(k, 0) - resource.data.get(k, 0); }
+      allow read: if true;
+      allow create: if isSignedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 1000
+                    && request.resource.data.likeCount == 0
+                    && request.resource.data.replyCount == 0;
+      allow update: if isAdmin()
+                    || (isSignedIn()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount'])
+                        && (delta('likeCount') == 1 || delta('likeCount') == -1))
+                    || (isSignedIn()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replyCount', 'lastReplyAt'])
+                        && (delta('replyCount') == 1 || delta('replyCount') == -1));
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+
+      match /likes/{likeUid} {
+        allow read: if true;
+        allow create, delete: if isSignedIn() && request.auth.uid == likeUid;
+      }
+      match /replies/{replyId} {
+        function rdelta() { return request.resource.data.get('likeCount', 0) - resource.data.get('likeCount', 0); }
+        allow read: if true;
+        allow create: if isSignedIn()
+                      && request.resource.data.uid == request.auth.uid
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() > 0
+                      && request.resource.data.text.size() <= 1000
+                      && request.resource.data.likeCount == 0;
+        allow update: if isAdmin()
+                      || (isSignedIn()
+                          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount'])
+                          && (rdelta() == 1 || rdelta() == -1));
+        allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+        match /likes/{likeUid} {
+          allow read: if true;
+          allow create, delete: if isSignedIn() && request.auth.uid == likeUid;
+        }
+      }
+    }
+
     // ---- 旅の掲示板（今は管理者だけが書ける。公開中の記事は誰でも読める）----
     match /boards/{boardId} {
       allow read:  if resource.data.status == "published" || isAdmin();

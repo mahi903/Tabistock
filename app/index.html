@@ -19,7 +19,7 @@
 <meta name="apple-mobile-web-app-title" content="Tabistock β">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="./app.css?v=202611242029">
+<link rel="stylesheet" href="./app.css?v=202611242132">
 </head>
 <body>
 <div id="app">
@@ -52,7 +52,7 @@
 
 <!-- 探す -->
 <section class="view pt" id="search" hidden>
-  <label class="sfi"><svg width="17" height="17" viewBox="0 0 24 24" data-i="search"></svg><input id="q" placeholder="国・都市・キーワード" autocomplete="off"><button class="x" id="qx" type="button">✕</button></label>
+  <div class="sfrow"><label class="sfi"><svg width="17" height="17" viewBox="0 0 24 24" data-i="search"></svg><input id="q" placeholder="国・都市・キーワード" autocomplete="off"><button class="x" id="qx" type="button">✕</button></label><button class="aigo" data-go="ai" aria-label="AI相談" id="aiGo"></button></div>
   <p class="snum" id="snum"></p>
   <div class="seg" id="seg"><span class="knob"></span><button class="on" data-seg="0">リスト</button><button data-seg="1">地図</button></div>
   <div class="fl" id="filters"></div>
@@ -72,8 +72,16 @@
   <ol class="flow"><li><b>書く</b><small>旅程・費用・写真を入力</small></li><li><b>運営が確認</b><small>運営が内容をチェック</small></li><li><b>公開</b><small>ホームと検索に載ります</small></li></ol>
 </section>
 
+<!-- たび相談 -->
+<section class="view pt" id="sodan" hidden>
+  <div class="shead"><div class="lt">たび相談</div><a class="srule" href="#w-terms"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/></svg>ルール</a></div>
+  <div id="sodanBody"></div>
+  <a class="sfab" href="#c-new"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>投稿する</a>
+</section>
+
 <!-- AI -->
 <section class="view pt" id="ai" hidden>
+  <button class="back" data-go="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>探す</button>
   <div class="aihead"><div class="lt"><span id="aiSymH" class="aish"></span>AI相談</div><button id="aiNew" class="btn-g" hidden>新しい相談</button></div>
   <p class="sub" style="padding-top:4px">Tabistockの旅程記事と航空券の相場から答えます</p>
   <div id="aiIntro"><div class="aichips">
@@ -102,6 +110,6 @@
 <div class="bs" id="bs"></div>
 <div class="toast" id="toast"></div>
 </div>
-<script type="module" src="./app.js?v=202611242029"></script>
+<script type="module" src="./app.js?v=202611242132"></script>
 </body>
 </html>

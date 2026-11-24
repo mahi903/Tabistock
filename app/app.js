@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242029";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242132";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -18,6 +18,7 @@ const I = {
   search: '<circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
   post: '<path d="M12 5.5v13M5.5 12h13" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
   ai: '<path d="M12 3.5l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z" fill="currentColor"/>',
+  sodan: '<path d="M3.5 4.5h12v9H8.5l-3.5 3v-3H3.5z" fill="currentColor"/><path d="M17.5 8.5h3v9h-2v3l-3.5-3H10v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
   me: '<circle cx="12" cy="8.5" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4.5 20.5c1-3.8 4-5.8 7.5-5.8s6.5 2 7.5 5.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'
 };
 const CH = '<svg viewBox="0 0 10 10"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
@@ -70,8 +71,8 @@ async function loadProfiles(uids) {
 }
 
 // ---------- タブ ----------
-const TABS = [["home", "ホーム"], ["search", "探す"], ["post", "投稿"], ["ai", "AI"], ["me", "マイページ"]];
-const VIEWS = ["home", "search", "post", "ai", "me", "saved"];
+const TABS = [["home", "ホーム"], ["search", "探す"], ["post", "投稿"], ["sodan", "たび相談"], ["me", "マイページ"]];
+const VIEWS = ["home", "search", "post", "sodan", "ai", "me", "saved"];
 let curTab = "home";
 // 下のタブ。選んでいる丸い背景（.ind）は1つだけ置いて、選んだタブまで横にすべらせる（インスタの Liquid Glass 風）
 function renderTab() {
@@ -97,11 +98,11 @@ function syncNativeTab() {
   document.documentElement.classList.add("ntab");
   const sp = $("splash");
   const hidden = STACK.length > 0 || $("app").classList.contains("typing") || $("bs").classList.contains("show") || !!(sp && !sp.hidden && !sp.classList.contains("out"));   // 起動のロゴアニメーション中も隠す
-  try { window.webkit.messageHandlers.tabbar.postMessage({ tab: curTab === "saved" ? "me" : curTab, hidden }); } catch (e) {}
+  try { window.webkit.messageHandlers.tabbar.postMessage({ tab: ({ saved: "me", sodan: "ai", ai: "search" })[curTab] || curTab, hidden }); } catch (e) {}
 }
 // 下シート（マイページのメニューなど）を開いているあいだは、ネイティブのタブを隠す（シートの下の項目に被らないように）
 new MutationObserver(() => syncNativeTab()).observe($("bs"), { attributes: true, attributeFilter: ["class"] });
-window.tbGo = (k) => { if (k === "post" || TABS.some((t) => t[0] === k)) go(k); };
+window.tbGo = (k) => { if (k === "ai") k = "sodan"; if (k === "post" || TABS.some((t) => t[0] === k)) go(k); };
 let indAt = null;
 function moveInd(target) {
   const ind = $("tab").querySelector(".ind");
@@ -139,6 +140,7 @@ function go(k, opt = {}) {
   if (k === "post") renderDrafts();
   if (k === "saved") renderSaved();
   if (k === "ai") { aiLoad(); aiRender(); }
+  if (k === "sodan") SD().then((M) => M.renderSodan());
 }
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-go]");
@@ -467,6 +469,21 @@ $("q").addEventListener("input", (e) => { state.q = e.target.value; renderSearch
 $("qx").addEventListener("click", (e) => { e.preventDefault(); $("q").value = ""; state.q = ""; renderSearch(); });
 $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) => `<i class="${h <= 12 ? "lo" : ""}" style="height:${h}px"></i>`).join("");
 
+// ---------- たび相談（app/sodan.js）----------
+let SDM = null;
+const SD = async () => {
+  if (SDM) return SDM;
+  const M = await import("./sodan.js?v=202611242132");
+  M.initSodan({
+    me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
+    notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
+    artCard: (d) => `<a class="sart" href="#a-${esc(d.id)}"><i style="background-image:url('${esc(thumbOf(d))}')"></i><div><b>${esc(d.title || "")}</b><small>${esc(authorName(d))}${nDays(d) ? "・" + nDays(d) + "日間" : ""}</small></div></a>`,
+    myArticles: async () => (ALL || []).filter((d) => d.authorId === me || (d.coAuthorIds || []).includes(me)),
+    reopen: () => { const t = STACK[STACK.length - 1]; const m = t && t.hash.match(/^#c-(.+)$/); if (m && m[1] !== "new") M.pageSodan(t.el, decodeURIComponent(m[1])); },
+  });
+  return (SDM = M);
+};
+
 // ---------- 旅の掲示板 ----------
 // Firestore の boards（公開中）を読む。1本もない・読めないときは board.js の最初の記事を出す。書いた人は今は出さない（データには残す）
 let BOARDS = null, boardCat = "";
@@ -522,7 +539,7 @@ const TI = {
   photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="3.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M20.5 15.5l-4.5-4.5L5 20.3"/></svg>',
 };
 const BACK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
-function isPageHash(h) { return /^#(a-|g-|u-|dm|w-|f-|x-|n$|p$|p-|fare$)/.test(h); }
+function isPageHash(h) { return /^#(a-|g-|c-|u-|dm|w-|f-|x-|n$|p$|p-|fare$)/.test(h); }
 function route() {
   const h = location.hash;
   if (!isPageHash(h)) { while (STACK.length) popPage(); return; }
@@ -539,10 +556,11 @@ function pushPage(h) {
   $("tab").classList.add("hide"); $("aiCmp").hidden = true; syncNativeTab();
   swipeBack(el);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
-  const m = h.match(/^#(a|g|u|dm|w|fare|f|x|n|p)-?(.*)$/);
+  const m = h.match(/^#(a|g|c|u|dm|w|fare|f|x|n|p)-?(.*)$/);
   const kind = m[1], arg = decodeURIComponent(m[2] || "");
   if (kind === "a") pageArticle(el, arg);
   else if (kind === "g") pageBoard(el, arg);
+  else if (kind === "c") SD().then((M) => (arg === "new" ? M.pageSodanNew(el) : M.pageSodan(el, arg)));
   else if (kind === "u") pageUser(el, arg);
   else if (kind === "dm" && !arg) pageInbox(el);
   else if (kind === "dm") pageThread(el, arg);
@@ -552,8 +570,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242029").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242029").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242132").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242132").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -833,7 +851,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611242029"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611242132"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1542,6 +1560,7 @@ async function pageNotify(el) {
     else if (n.type === "dm") { txt = `${name}さんからメッセージが届きました`; href = "#dm-" + esc(n.fromUid || ""); }
     else if (n.type === "handover") { txt = `${name}さんから「${t}」の投稿者を引き継ぎました`; href = "#a-" + esc(n.articleId || ""); }
     else if (n.type === "collab") { txt = `${name}さんから「${t}」の共同投稿に招待されました`; href = "#a-" + esc(n.articleId || ""); }
+    else if (n.type === "sodan") { txt = `${name}さんがあなたのたび相談に回答しました${t ? `「${t}」` : ""}`; href = "#c-" + esc(n.articleId || ""); }
     else if (n.type === "comment") { txt = `${name}さんが「${t}」にコメントしました`; href = "#a-" + esc(n.articleId || ""); }
     else { txt = `${name}さんがあなたの旅程「${t}」にいいねしました`; href = "#a-" + esc(n.articleId || ""); }
     return `<a class="nrow ${n.read ? "" : "un"}" href="${href}"><img src="${esc(avatarOf(n.fromUid))}" alt=""><span class="nt">${txt}<small>${esc(ago((n.createdAt || {}).seconds))}</small></span></a>`;
@@ -1669,6 +1688,7 @@ function aiSymPlay() {
   h.classList.remove("in"); void h.getBoundingClientRect(); h.classList.add("in");
 }
 $("aiSymH").innerHTML = aiSym();
+$("aiGo").innerHTML = aiSym();   // 探すの検索欄の右横：AI相談の入口（シンボルだけ）
 function aiBody(m) {
   const arts = (m.articles || []).map((a) => `<a class="aref" href="#a-${esc(a.id)}">${a.country ? `<em>${esc(a.country)}</em>` : ""}<span>${esc(a.title)}</span><b>→</b></a>`).join("");
   const fare = m.fares ? '<a class="aref" href="#fare"><em>航空券</em><span>相場カレンダーで月ごとの値段を見る</span><b>→</b></a>' : "";

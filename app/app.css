@@ -1240,3 +1240,66 @@ html.ntab .tab{display:none}
 .bit p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .bfacts dt{width:96px}
 .bfacts dt{width:104px}
+/* ---------- 探す：検索欄の右横にAI相談の入口 ---------- */
+.sfrow{display:flex;align-items:center;gap:10px;margin:6px 14px 0 0}
+.sfrow .sfi{flex:1;margin-right:0}
+#search .sfrow .sfi{margin-top:0}
+.aigo{width:30px;height:46px;flex:none;display:grid;place-items:center;padding:0}
+.aigo .aisym{width:24px;height:41px}
+
+/* ---------- たび相談 ---------- */
+.shead{display:flex;align-items:center;justify-content:space-between;padding-right:20px}
+.srule{font-size:12px;color:var(--muted);display:flex;gap:4px;align-items:center}
+.schips{display:flex;gap:16px;padding:12px 20px 0;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+.schips::-webkit-scrollbar{display:none}
+.schips button{flex:none;font-size:13px;font-weight:700;color:#8a929d;padding:2px 0}
+.schips button.on{color:var(--green)}
+.schips.sa{padding-top:8px}.schips.sa button{font-weight:400;font-size:12.5px}.schips.sa button.on{font-weight:700}
+.schips.wrap{flex-wrap:wrap;gap:8px;padding:6px 0 0;white-space:normal;overflow:visible}
+.schips.wrap button{border:1px solid var(--line);padding:6px 11px;border-radius:4px;color:var(--ink);font-weight:400;background:#fff}
+.schips.wrap button.on{border-color:var(--green);color:var(--green);font-weight:700;background:var(--green-t)}
+.ssort{display:flex;gap:18px;padding:12px 20px 0;border-bottom:1px solid var(--line)}
+.ssort button{font-size:13px;font-weight:700;color:#a1a8b2;padding:0 0 8px}
+.ssort button.on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
+.spost,.srep{display:flex;gap:11px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.spost{cursor:pointer}.spost.full{cursor:default;border-bottom:6px solid #f1ece2;padding-top:16px}
+.sav{flex:none;border-radius:50%;overflow:hidden;display:block;background:#ddd}.sav img{width:100%;height:100%;object-fit:cover;display:block}
+.spost .sb,.srep .sb{flex:1;min-width:0}
+.shd{display:flex;align-items:center;gap:6px}
+.snm{display:flex;align-items:center;gap:6px;min-width:0;color:inherit}
+.snm b{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.snm small{flex:none;font-size:10.5px;color:var(--green);background:var(--green-t);padding:1px 6px;border-radius:3px;font-weight:700}
+.skind{margin-left:auto;flex:none;font-size:10.5px;font-weight:700;color:var(--green);border:1px solid var(--green);padding:1px 6px;border-radius:3px}
+.skind.k-q{color:#e2683b;border-color:#e2683b}
+.stx{font-size:14px;line-height:1.65;margin-top:4px;word-break:break-word}
+.stx.clamp{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.spost.full .stx{font-size:16px;font-weight:700;line-height:1.6}
+.sto{color:var(--green);font-weight:700}
+.sft{display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--muted);align-items:center}
+.sft span,.sft button{display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted);padding:0}
+.sft svg{width:16px;height:16px}
+.slk.on{color:#e2683b}.slk.on svg{fill:#e2683b;stroke:#e2683b}
+.smore{margin-left:auto}.smore svg{width:18px;height:18px}
+.srh{font-size:12.5px;font-weight:700;color:var(--muted);padding:14px 20px 0}
+.sart{display:flex;gap:10px;margin-top:8px;border:1px solid var(--line);padding:8px;background:#fff;border-radius:4px;color:inherit}
+.sart i{width:64px;height:48px;flex:none;background:#ccc center/cover;border-radius:3px}
+.sart b{font-size:12.5px;display:block;line-height:1.4}.sart small{font-size:11px;color:var(--muted)}
+.sfab{position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 96px);z-index:20;height:46px;padding:0 18px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;border-radius:23px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+#sodan[hidden] .sfab{display:none}
+.scmp{position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--bg);border-top:1px solid var(--line);padding:8px 12px calc(env(safe-area-inset-bottom) + 8px)}
+.scmp .srow{display:flex;gap:6px;align-items:flex-end}
+.scmp textarea{flex:1;min-width:0;border:1px solid var(--ink);border-radius:4px;padding:9px 10px;font:inherit;font-size:14px;resize:none;background:#fff;max-height:140px}
+.scmp button{flex:none;height:38px;font-size:12px;font-weight:700;padding:0 9px;border-radius:4px}
+.sartb{color:var(--green);border:1px solid var(--green)}
+.ssend{background:var(--ink);color:#fff}.ssend:disabled{opacity:.35}
+.sto2,.sart2{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--green);font-weight:700;padding:0 4px 6px}
+.sto2 button,.sart2 button{height:auto;padding:0 4px;color:var(--muted)}
+.slog{font-size:13px;text-align:center;padding:6px}.slog a{color:var(--green);font-weight:700}
+.snew{padding:6px 20px 40px}
+.slab{font-size:12.5px;font-weight:700;color:var(--muted);margin-top:16px}
+.sbody{width:100%;min-height:180px;margin-top:16px;border:1px solid var(--ink);border-radius:4px;padding:12px;font:inherit;font-size:15px;line-height:1.7;background:#fff;resize:vertical}
+.snote{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.6}.snote a{color:var(--green)}
+.sgo{margin-left:auto;font-size:14px;font-weight:700;color:#fff;background:var(--green);padding:6px 14px;border-radius:4px}.sgo:disabled{opacity:.35}
+.sft i{font-style:normal}
+/* 探すの検索欄：白い中身に黒の枠 */
+#search .sfi{background:#fff;border:1.5px solid var(--ink);border-radius:4px}
