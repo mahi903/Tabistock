@@ -312,12 +312,17 @@ export function pagePassport(el, ctx) {
   // 写真は最初にまとめて読み込んでデコードしておく（めくった瞬間に読み込みで止まらないように）
   book.querySelectorAll(".snap i").forEach((i) => { const m = /url\('?([^')]+)'?\)/.exec(i.style.backgroundImage); if (m) { const im = new Image(); im.src = m[1]; if (im.decode) im.decode().catch(() => {}); } });
   // 登場：フォントがそろってから、手前に傾いた状態でふわっと置かれる（読み込みが遅くても2秒で出す）
-  inner.style.opacity = "0";
-  // 緑の円が広がって消えていくところで、下からふわっと出す
+  const START = "translateY(55vh) rotateX(16deg) scale(.94)";
+  inner.style.opacity = "0"; inner.style.transform = START;
   Promise.all([Promise.race([fontsReady, new Promise((r) => setTimeout(r, 2000))]), new Promise((r) => setTimeout(r, el.classList.contains("ppg") ? 1050 : 480))]).then(() => {
-    inner.style.opacity = "";
-    inner.animate([{ transform: "translateY(55vh) rotateX(16deg) scale(.94)", opacity: 0 }, { transform: "translateY(-10px) rotateX(-2deg) scale(1.01)", opacity: 1, offset: 0.72 }, { transform: "none", opacity: 1 }], { duration: 1400, easing: "cubic-bezier(.2,.75,.25,1)" });
+    // 1度だけ見えない位置で描かせてから動かす（最初のコマで描画が詰まってカクつくのを防ぐ）
+    inner.style.opacity = "0.01";
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const an = inner.animate([{ transform: START, opacity: 0 }, { transform: "translateY(-10px) rotateX(-2deg) scale(1.01)", opacity: 1, offset: 0.72 }, { transform: "none", opacity: 1 }], { duration: 1400, easing: "cubic-bezier(.2,.75,.25,1)", fill: "forwards" });
+      an.onfinish = () => { inner.style.opacity = ""; inner.style.transform = ""; an.cancel(); };
+    }));
   });
+
   book.querySelectorAll(".paper .stamp").forEach((s) => s.classList.add("wait"));
   let idx = 0, zoom = false, sd = "L", busy = false;
   const buzz = () => { try { haptic && haptic(); } catch (e) {} };
@@ -350,7 +355,8 @@ export function pagePassport(el, ctx) {
   const render = () => {
     fit();
     // 次にめくる・見えてくるページを先にGPUへ載せておく（めくり始めの引っかかりを防ぐ）
-    if (!fluttering) leaves.forEach((l, i) => { l.style.willChange = i >= idx - 1 && i <= idx + 1 ? "transform" : ""; });
+    // 前後のページだけGPUに載せ、離れたページは描かない（重なって見えないので、描くだけ無駄）
+    if (!fluttering) leaves.forEach((l, i) => { l.style.willChange = i >= idx - 1 && i <= idx + 1 ? "transform" : ""; l.style.visibility = i >= idx - 2 && i <= idx + 2 ? "" : "hidden"; });
     book.classList.toggle("shift", idx > 0 && !zoom);
     book.classList.toggle("open", idx > 0 && !zoom);
     book.classList.toggle("one", idx > 0 && zoom);
@@ -442,6 +448,7 @@ export function pagePassport(el, ctx) {
     if (dir > 0) for (let i = idx; i < to; i++) list.push(i); else for (let i = idx - 1; i >= to; i--) list.push(i);
     // パラパラ中は、ページの下準備（GPUへの載せ替え）を切り替えない。途中で切り替えると写真が残像のように残る
     fluttering = true;
+    list.forEach((i) => { leaves[i].style.visibility = ""; }); if (to < N) leaves[Math.min(N - 1, to)].style.visibility = "";
     // ページが多いときは、めくって見せるのは最後の8枚まで（ほかは先にそっと移しておく）
     const MAXA = 8, skip = list.length > MAXA ? list.slice(0, list.length - MAXA) : [];
     skip.forEach((i) => { const l = leaves[i]; if (dir > 0) { l.classList.add("on", "flat"); l.style.zIndex = 200 + i; } else { l.classList.remove("on", "flat"); l.style.zIndex = 100 - i; } });
