@@ -342,6 +342,7 @@ function drawStep() {
   const st = STEPS[S.step];
   root.querySelector("#pHead").innerHTML = `<small class="num">STEP ${S.step + 1}</small><h2>${esc(st.t())}</h2><p>${esc(st.h())}</p>`;
   root.querySelector("#pBody").innerHTML = BODY[st.k]();
+  requestAnimationFrame(() => root.querySelectorAll(".pfauto").forEach(fitAuto));
   const last = S.step === STEPS.length - 1;
   const nx = root.querySelector("#pNext");
   nx.textContent = last ? (!S.edit ? "投稿する" : ["published", "hidden"].includes(S.edit.status) ? "この内容で更新する" : "更新して申請する") : "次へ";
@@ -392,7 +393,7 @@ const BODY = {
   top() {
     return fld("トップ写真", `<div class="pph" data-ph="hero"></div><p class="qhint">1枚目が表紙（サムネ）になります。タップで並べ替え・削除。</p>`)
       + fld("タイトル", `<input class="pfi" data-f="title" value="${esc(F.title)}" placeholder="${esc(ex("title"))}">`)
-      + fld("リード文", `<textarea class="pfi" data-f="lead" rows="2" placeholder="${esc(ex("lead"))}">${esc(F.lead)}</textarea>`, "短い一言")
+      + fld("リード文", `<textarea class="pfi pfauto" data-f="lead" rows="1" placeholder="${esc(ex("lead"))}">${esc(F.lead)}</textarea>`, "短い一言")
       + (!isDom() ? fld("治安", `<div class="prad">${SAFETY.map((v) => `<button class="frow ${F.safety === v ? "on" : ""}" data-safety="${esc(v)}"><span class="bx rd"></span><span class="nm">${v}</span></button>`).join("")}</div>`) : "")
       + fld("旅の難易度", `<div class="pstar">${[1, 2, 3, 4, 5].map((v) => `<button data-star="${v}" class="${v <= F.difficulty ? "on" : ""}" aria-label="${v}">★</button>`).join("")}<small>${["", "かんたん", "やや易しい", "ふつう", "やや難しい", "難しい"][F.difficulty]}</small></div>`);
   },
@@ -445,7 +446,7 @@ function dayHtml(d, i) {
   return `<div class="pday" data-day="${i}">
     <div class="pdh"><b class="num">DAY ${i + 1}</b><small>${dayDate(i)}</small><button class="pdm" data-daymenu="${i}" aria-label="並べ替え・追加・削除">⋯</button></div>
     <input class="pfi" data-df="summary" value="${esc(d.summary)}" placeholder="${i === 0 ? esc(ex("sum")) : "この日を一言で"}">
-    <button class="pdx ${d.open ? "on" : ""}" data-dayopen="${i}">${d.open ? "閉じる" : "文章・写真・場所を追加"}<span>${d.open ? "−" : "＋"}</span></button>
+    <button class="pdx ${d.open ? "on" : ""}" data-dayopen="${i}" aria-label="${d.open ? "閉じる" : "文章・写真・場所を追加"}"><span>${d.open ? "−" : "＋"}</span></button>
     <div class="pdmore" ${d.open ? "" : "hidden"}>
       ${fld("その日の文章", `<textarea class="pfi" data-df="text" rows="5" placeholder="観光地を挙げるだけでもOK">${esc(d.text)}</textarea>`, "任意")}
       ${fld("写真", `<div class="pph" data-ph="d${i}"></div>`, "任意")}
@@ -454,7 +455,10 @@ function dayHtml(d, i) {
 }
 
 // ---------- 入力 ----------
+// 1行の入力欄を、書いた長さに合わせてのばす
+function fitAuto(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }
 function onInput(e) {
+  if (e.target.classList && e.target.classList.contains("pfauto")) fitAuto(e.target);   // 書いた分だけ縦にのびる
   const t = e.target;
   if (t.dataset.f) { F[t.dataset.f] = t.type === "checkbox" ? t.checked : t.value; dirty(); return; }
   if (t.dataset.cost) {

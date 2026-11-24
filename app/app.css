@@ -1411,3 +1411,6 @@ html.ntab .tab{display:none}
 .srow1 button{flex:1 1 auto;white-space:nowrap;font-size:11.5px;padding:7px 4px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink)}
 .srow1 button.on{border-color:var(--green);color:var(--green);font-weight:700;background:var(--green-t)}
 .snew .sbody{margin-top:18px}
+/* DAYの「＋」：説明の文字はなくして、右に＋だけ（日程の上の説明に「＋から」とあるため） */
+.pdx{justify-content:flex-end;padding:8px 0}
+.pdx span{font-size:20px;width:32px;height:28px;display:grid;place-items:center}
