@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242241";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611242247";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -128,7 +128,13 @@ document.addEventListener("focusout", () => setTimeout(() => { const a = documen
 function go(k, opt = {}) {
   if (STACK.length) { location.hash = ""; }
   if (k === curTab && !Object.keys(opt).length) { $(k).scrollTo({ top: 0, behavior: "smooth" }); return; }
+  const from = curTab;
   curTab = k; haptic();
+  // 下のタブで別のページから来たときは、中のタブを最初（ホームは「おすすめ」、マイページは「旅程」）に戻す
+  if (from !== k) {
+    if (k === "home" && $("htabs") && !$("htabs").children[0].classList.contains("on")) homeTab(0);
+    if (k === "me") myTab = "trips";
+  }
   VIEWS.forEach((t) => ($(t).hidden = t !== k));
   $("aiCmp").hidden = k !== "ai";
   renderTab();
@@ -475,7 +481,7 @@ $("fbars").innerHTML = [22, 18, 26, 30, 24, 16, 12, 20, 28, 34, 26, 19].map((h) 
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611242241");
+  const M = await import("./sodan.js?v=202611242247");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
@@ -573,8 +579,8 @@ function pushPage(h) {
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242241").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242241").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611242247").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611242247").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 function popPage() {
@@ -854,7 +860,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611242241"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611242247"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1239,13 +1245,13 @@ function renderMe() {
   const mine = ALL.filter((d) => d.authorId === me || (d.coAuthorIds || []).includes(me));
   const ig = String(p.instagram || "").trim();
   const igUrl = ig ? (/^https?:\/\//.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/") : "";
-  myTab = myTab && myTab !== "transit" ? myTab : "trips";
+  myTab = myTab && myTab !== "collab" ? myTab : "trips";
   box.innerHTML = `<div class="mehead nm0"><b>マイページ</b><button class="hb" id="meMenu" aria-label="メニュー"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt="">
       <div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー中</span></a></div></div></div>
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${nextTripLine(p)}${tagChips(p, true)}${snsLinks(p)}
       <div class="ub mub"><a class="btn-g" href="#x-profile">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
-    <div class="mtabs itabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips" aria-label="旅程">${TI.grid}</button><button class="${myTab === "collab" ? "on" : ""}" data-mt="collab" aria-label="共同投稿">${TI.collab}<i id="invDot" hidden></i></button><button class="${myTab === "sodan" ? "on" : ""}" data-mt="sodan" aria-label="旅ひろば">${TI.sodan}</button><button class="${myTab === "photos" ? "on" : ""}" data-mt="photos" aria-label="写真">${TI.photo}</button></div>
+    <div class="mtabs itabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips" aria-label="旅程">${TI.grid}<i id="invDot" hidden></i></button><button class="${myTab === "transit" ? "on" : ""}" data-mt="transit" aria-label="トランジット">${TI.transit}</button><button class="${myTab === "sodan" ? "on" : ""}" data-mt="sodan" aria-label="旅ひろば">${TI.sodan}</button><button class="${myTab === "photos" ? "on" : ""}" data-mt="photos" aria-label="写真">${TI.photo}</button></div>
     <div id="myPosts"><p class="loading">読み込み中…</p></div>`;
   box.querySelectorAll("[data-mt]").forEach((b) => (b.onclick = () => { myTab = b.dataset.mt; box.querySelectorAll("[data-mt]").forEach((x) => x.classList.toggle("on", x === b)); drawMyPosts(); haptic(); }));
   loadMyPosts();
@@ -1272,8 +1278,8 @@ async function loadMyPosts() {
   docs.forEach((d) => (BY[d.id] = BY[d.id] || d));
   docs.sort((x, y) => ((y.createdAt || {}).seconds || 0) - ((x.createdAt || {}).seconds || 0));
   const owned = docs.filter((d) => !d._collab);
-  MY = { trips: owned,   // トランジット記事も旅程タブにまとめて並べる
-     transit: owned.filter((d) => d.type === "transit"), collab: docs.filter((d) => d._collab || (d.coAuthorIds || []).length || (d.coAuthorInvites || []).length), invites };
+  // 旅程とトランジットに分ける。共同投稿の記事もそれぞれに混ぜて、カードに「共同投稿」のラベルを出す
+  MY = { trips: docs.filter((d) => d.type !== "transit"), transit: docs.filter((d) => d.type === "transit"), collab: docs.filter((d) => d._collab || (d.coAuthorIds || []).length || (d.coAuthorInvites || []).length), invites };
   await loadProfiles(invites.map((d) => d.authorId));
   ["trips", "transit", "collab"].forEach((k) => { const n = document.querySelector(`[data-mn="${k}"]`); if (n) n.textContent = MY[k].length || ""; });
   const dot = $("invDot"); if (dot) dot.hidden = !invites.length;
@@ -1282,7 +1288,7 @@ async function loadMyPosts() {
 function myCard(d, editLink) {
   const st = STATUS_LABEL[d.status] ? d.status : "pending";
   return `<div class="mycard"><a class="oc" href="${editLink ? "#p-" : "#a-"}${esc(d.id)}" style="background-image:url('${esc(thumbOf(d))}')">${ovText({ ...d, title: d.title || "(無題)" })}</a>
-    <div class="mymeta">${st !== "published" ? `<span class="pst s-${st}">${STATUS_LABEL[st]}</span>` : ""}${d._collab ? '<span class="pst">共同投稿</span>' : ""}<button class="pmn" data-pm="${esc(d.id)}" aria-label="メニュー">…</button></div></div>`;
+    <div class="mymeta">${st !== "published" ? `<span class="pst s-${st}">${STATUS_LABEL[st]}</span>` : ""}${d._collab || (d.coAuthorIds || []).length ? '<span class="pst">共同投稿</span>' : ""}<button class="pmn" data-pm="${esc(d.id)}" aria-label="メニュー">…</button></div></div>`;
 }
 function drawMyPosts() {
   const box = $("myPosts"); if (!box) return;
@@ -1295,7 +1301,7 @@ function drawMyPosts() {
   const list = MY[myTab] || [];
   const empty = { trips: '<p class="empty">まだ旅程がありません<br><br><a class="btn-s" href="#p">旅程を投稿する</a></p>', transit: '<p class="empty">まだトランジット記事がありません<br><br><a class="btn-s" href="#p-transit">トランジットを投稿する</a></p>', collab: '<p class="empty">共同投稿はまだありません。<br>投稿の編集画面から、一緒に旅した友達を招待できます。</p>' };
   let inv = "";
-  if (myTab === "collab" && MY.invites.length) {
+  if (myTab === "trips" && MY.invites.length) {   // 共同投稿の招待は旅程タブの上に
     inv = `<p class="fsub" style="margin:14px 20px 6px">招待 ${MY.invites.length}件</p>` + MY.invites.map((d) => `<div class="cv2"><a href="#a-${esc(d.id)}"><img src="${esc(thumbOf(d))}" alt="" style="border-radius:2px"></a><span class="m"><b>${esc(d.title || "(無題)")}</b><p>${esc(authorName(d))}さんから共同投稿の招待</p></span><button class="btn-s" data-inv="accept" data-id="${esc(d.id)}">承認</button><button class="btn-g" data-inv="decline" data-id="${esc(d.id)}">辞退</button></div>`).join("");
   }
   box.innerHTML = inv + (list.length ? `<div class="ogrid">${list.map((d) => myCard(d)).join("")}</div>` : (inv ? "" : empty[myTab]));
