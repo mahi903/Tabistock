@@ -84,7 +84,7 @@ const CSS = `
 .pp .tp.t1{top:-6%;left:-9%;transform:rotate(-34deg)}.pp .tp.t2{bottom:-6%;right:-9%;transform:rotate(-34deg)}
 .pp .open-a{margin-left:12px;font:800 10px 'Shippori Mincho',serif;letter-spacing:.1em;color:#1f6f5b;border-bottom:1px solid currentColor;padding:6px 0 1px}
 .pp .stz{position:absolute;inset:0 5%;pointer-events:none}
-.pp .stamp{position:absolute;filter:url(#ppink);opacity:.9}
+.pp .stamp{position:absolute;opacity:.9}
 .pp .stamp svg{display:block;overflow:visible}
 .pp .stamp.wait{opacity:0}
 .pp .stamp.press{animation:pppress .7s cubic-bezier(.2,.8,.2,1) both}
@@ -147,6 +147,7 @@ const eki = (c, a, b, d) => `<svg width="92" height="104" viewBox="0 0 96 110"><
 const FLAG = {korea:"#23408f",china:"#c8261e",taiwan:"#1f3a8a",hongkong:"#c8261e",macau:"#1d7a4f",mongolia:"#c4272f",thai:"#2d2a6e",cambodia:"#1f3f9a",vietnam:"#c8261e",laos:"#1f3f8a",myanmar:"#b8901a",malaysia:"#1a2f7a",singapore:"#c8261e",indonesia:"#c8261e",philippines:"#1c3f9a",brunei:"#b8901a",india:"#d06a16",nepal:"#b0203a",srilanka:"#8d153a",bhutan:"#d4651b",maldives:"#1d7a45",pakistan:"#1d5a2e",bangladesh:"#1d6a4e",kazakhstan:"#1b8fae",kyrgyzstan:"#c8102e",uzbekistan:"#1a8fb3",tajikistan:"#1d7a3f",turkmenistan:"#1d7a3f",georgia:"#c8102e",armenia:"#d2461a",azerbaijan:"#1b8fae",turkey:"#c8102e",qatar:"#8a1538",oman:"#c8102e",saudi:"#1d6a3a",bahrain:"#b0203a",kuwait:"#1d7a3f",iran:"#1d7a3f",iraq:"#c8102e",jordan:"#1d7a3f",israel:"#1f4fa0",lebanon:"#1d7a3f",palestine:"#1d7a3f",egypt:"#c8102e",morocco:"#c1272d",tunisia:"#c8102e",algeria:"#1d7a3f",finland:"#1f4f8f",sweden:"#1f68a7",norway:"#ba0c2f",denmark:"#c8102e",iceland:"#1f52a0",estonia:"#1f6fc0",latvia:"#9e3039",lithuania:"#1d6a44",uk:"#1a2a6c",ireland:"#1d8a52",france:"#1f4fa0",germany:"#2b2b2b",netherlands:"#c8541a",belgium:"#b58c10",luxembourg:"#1f8fc0",switzerland:"#d52b1e",austria:"#c8102e",italy:"#1d7a45",vatican:"#b8901a","san-marino":"#3f8fc0",spain:"#aa151b",portugal:"#1d6a38",andorra:"#1f3f9a",monaco:"#c8102e",greece:"#1f5eaf",cyprus:"#c4701a",malta:"#c8102e",czech:"#1f457e",slovakia:"#1f4ea2",poland:"#dc143c",hungary:"#477050",slovenia:"#1f4fa0",croatia:"#c8102e",bosnia:"#1f3f9a",serbia:"#c6363c",montenegro:"#c8102e",albania:"#c8102e","north-macedonia":"#c8102e",kosovo:"#244aa5",bulgaria:"#1d8a5a",romania:"#1f3f8f",moldova:"#1f3f8f",ukraine:"#1f5bb5",russia:"#1f3f9a",liechtenstein:"#1f3f8f",usa:"#3c3b6e",canada:"#d52b1e",mexico:"#1d6847",cuba:"#1f3f9a",guatemala:"#3f8fc0",belize:"#1f3f8f",honduras:"#1f6fb0","el-salvador":"#1f4fa0",nicaragua:"#1f5fb0",costarica:"#1f2f7a",panama:"#c8102e",jamaica:"#1d8a3f",bahamas:"#1f8fa0","dominican-republic":"#1f2f6a","puerto-rico":"#c8102e",colombia:"#c4950a",ecuador:"#c4950a",peru:"#d91023",bolivia:"#1d7934",chile:"#1f39a6",argentina:"#4a90c8",uruguay:"#1f3f9a",paraguay:"#c8102e",brazil:"#1d8c3b",kenya:"#1d6600",tanzania:"#1d8a3f",ethiopia:"#1d8a3f",uganda:"#2b2b2b",rwanda:"#1f8fc0",ghana:"#1d6a3f",senegal:"#1d8a3f",namibia:"#1f3f9a",botswana:"#4f8fc0",zambia:"#1d7a3f",zimbabwe:"#1d7a3f",madagascar:"#1d7a3f",mauritius:"#c8102e","south-africa":"#1d7749",mozambique:"#1d7a5f",malawi:"#c8102e","cape-verde":"#1f3f9a",seychelles:"#1f3f9a",australia:"#1a2a6c","new-zealand":"#1a2a6c",fiji:"#4f9fc8",samoa:"#c8102e",tonga:"#c8102e",vanuatu:"#1d7a3f",palau:"#2f8fd0","papua-new-guinea":"#c8102e","new-caledonia":"#1f3f9a",tahiti:"#c8102e","cook-islands":"#1a2a6c",hawaii:"#1a3f8a",guam:"#1f3f8a",saipan:"#1f5fb0","timor-leste":"#c8102e",greenland:"#c8102e",antarctica:"#1f6fa0"};
 const SHAPES = [ring, rect, oval, hexa], INKS = ["#1f6f5b", "#c8492b", "#2f5fa8", "#6d4fa0", "#b8862a", "#2b6f7a"];
 const hash = (s) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); return (h ^ (h >>> 15)) >>> 0; };
+const inkify = (h) => h.replace(/^<svg([^>]*)>/, '<svg$1><g filter="url(#ppink)">').replace(/<\/svg>$/, "</g></svg>");
 function stampHtml(key, label, sub, date, kanji) {
   const h = hash(key), col = FLAG[key] || INKS[(h >>> 3) % INKS.length], r = ((h >>> 6) % 26) - 13;
   const fn = kanji ? eki : SHAPES[h % 4];
@@ -215,7 +216,7 @@ export function pagePassport(el, ctx) {
       const h = hash(seed + i), row = Math.floor(i / cols), col = i % cols, inRow = Math.min(cols, n - row * cols);
       const x = (100 / inRow) * col + (inRow === 1 ? 26 : 2) + (h % 7) - 3;
       const y = top0 + (band / rows) * row + ((h >>> 4) % 6) - 3;
-      return `<div class="stamp" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;zoom:${z.toFixed(2)};--r:rotate(${it.r}deg);transform:rotate(${it.r}deg)">${it.html}</div>`;
+      return `<div class="stamp" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;zoom:${z.toFixed(2)};--r:rotate(${it.r}deg);transform:rotate(${it.r}deg)">${inkify(it.html)}</div>`;
     }).join("");
   }
   function artPage(d, k, pno) {
@@ -272,6 +273,8 @@ export function pagePassport(el, ctx) {
   const book = el.querySelector("#ppBook");
   const leaves = [...book.querySelectorAll(".leaf")];
   const inner = el.querySelector("#ppIn"), hint = book.querySelector(".hint");
+  // 写真は最初にまとめて読み込んでデコードしておく（めくった瞬間に読み込みで止まらないように）
+  book.querySelectorAll(".snap i").forEach((i) => { const m = /url\('?([^')]+)'?\)/.exec(i.style.backgroundImage); if (m) { const im = new Image(); im.src = m[1]; if (im.decode) im.decode().catch(() => {}); } });
   // 登場：手前に傾いた状態から、ふわっと置かれる
   inner.animate([{ transform: "translateY(70px) rotateX(28deg) scale(.9)", opacity: 0 }, { transform: "translateY(-6px) rotateX(-2deg) scale(1.01)", opacity: 1, offset: 0.7 }, { transform: "none", opacity: 1 }], { duration: 1300, easing: "cubic-bezier(.2,.7,.2,1)" });
   book.querySelectorAll(".paper .stamp").forEach((s) => s.classList.add("wait"));
@@ -292,6 +295,8 @@ export function pagePassport(el, ctx) {
   };
   const render = () => {
     fit();
+    // 次にめくる・見えてくるページを先にGPUへ載せておく（めくり始めの引っかかりを防ぐ）
+    leaves.forEach((l, i) => { l.style.willChange = i >= idx - 1 && i <= idx + 1 ? "transform" : ""; });
     book.classList.toggle("shift", idx > 0 && !zoom);
     book.classList.toggle("open", idx > 0 && !zoom);
     book.classList.toggle("one", idx > 0 && zoom);
@@ -336,7 +341,7 @@ export function pagePassport(el, ctx) {
   function flip(dir, done, dur = FT, lift = 18) {
     const i = dir > 0 ? idx : idx - 1; const l = leaves[i];
     if (dir < 0) { l.classList.remove("flat"); l.classList.add("on"); void l.offsetWidth; }
-    l.style.zIndex = 300; l.style.willChange = "transform"; l.classList.add("turn");
+    l.style.zIndex = 300; l.classList.add("turn");
     const A = "rotateY(0deg)", B = "rotateY(-180deg)";
     const k = dir > 0
       ? [{ transform: A }, { transform: `rotateY(-35deg) translateZ(${lift * 0.7}px)`, offset: 0.25 }, { transform: `rotateY(-95deg) translateZ(${lift}px)`, offset: 0.55 }, { transform: B }]
@@ -345,7 +350,7 @@ export function pagePassport(el, ctx) {
     idx += dir; render(); buzz();
     an.onfinish = () => {
       l.classList.toggle("on", dir > 0); if (dir > 0) l.classList.add("flat");
-      l.classList.remove("turn"); l.style.willChange = ""; l.style.zIndex = dir > 0 ? 200 + i : 100 - i;
+      l.classList.remove("turn"); l.style.zIndex = dir > 0 ? 200 + i : 100 - i;
       an.cancel(); // 最後の形をクラスに引き継いでから外す（1コマだけ元に戻るガタつきを防ぐ）
       if (done) done();
     };
