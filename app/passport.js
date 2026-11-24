@@ -211,6 +211,8 @@ async function makeStory(o) {
   c.fillStyle = "#f5f0e2"; c.fillRect(0, 0, W, H);
   const bg = await svgImg(decodeURIComponent(GL.slice(GL.indexOf(",") + 1, -2)));
   if (bg) c.drawImage(bg, 0, 0, W, H);
+  // 中身は少し引きで（周りに余白）。ロゴだけはいちばん下に置く
+  const S = 0.82; c.save(); c.translate((W * (1 - S)) / 2, 170); c.scale(S, S);
   // 見出し
   c.fillStyle = "#1f6f5b"; c.font = "500 39px Cinzel, serif"; spaced(c, "TABISTOCK PASSPORT", W / 2, 150, 12);
   c.fillStyle = "#1b2330"; c.font = "800 80px 'Shippori Mincho', serif"; c.textAlign = "center";
@@ -256,11 +258,12 @@ async function makeStory(o) {
       const w = 60 * k, h = 120 * k; c.save(); c.globalAlpha = a; c.translate(x, y); c.rotate((r * Math.PI) / 180); c.drawImage(si, -w / 2, -h / 2, w, h); c.restore();
     });
   }
+  c.restore();
   // ロゴ（Tのマーク＋Tabistock）
   const [lg, wm] = await Promise.all([svgImg(LOGO_COLOR), loadImg("./img/wordmark.png")]);
-  const lh = 74, lw = lh * (792 / 618), wh = 60, ww = wm ? wm.width * (wh / wm.height) : 0, gap = 20, tot = lw + gap + ww, x0 = (W - tot) / 2;
-  if (lg) c.drawImage(lg, x0, 1790 - lh, lw, lh);
-  if (wm) c.drawImage(wm, x0 + lw + gap, 1790 - wh - 2, ww, wh);
+  const lh = 66, lw = lh * (792 / 618), wh = 54, ww = wm ? wm.width * (wh / wm.height) : 0, gap = 20, tot = lw + gap + ww, x0 = (W - tot) / 2;
+  if (lg) c.drawImage(lg, x0, 1830 - lh, lw, lh);
+  if (wm) c.drawImage(wm, x0 + lw + gap, 1830 - wh - 2, ww, wh);
   return await new Promise((ok) => cv.toBlob(ok, "image/png"));
 }
 
