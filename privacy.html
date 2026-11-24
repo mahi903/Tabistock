@@ -22,7 +22,11 @@ th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-ali
 th{background:#f4efe5;font-weight:700;white-space:nowrap}
 a{color:var(--green)}
 .foot{margin-top:40px;font-size:12.5px;color:var(--mut);display:flex;gap:16px;flex-wrap:wrap}
+/* アプリの中（枠の中）で開いたとき：上のロゴと「トップへ」を出さず、上の余白も詰める */
+html.emb .top,html.emb .foot a[href="/"]{display:none}
+html.emb .wrap{padding-top:16px}
 </style>
+<script>try{if(window.self!==window.top)document.documentElement.classList.add("emb")}catch(e){document.documentElement.classList.add("emb")}</script>
 </head>
 <body><div class="wrap">
 <div class="top"><a class="logo" href="/">Tabistock</a><a class="totop" href="/">← トップへ</a></div>
