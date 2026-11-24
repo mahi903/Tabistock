@@ -1424,3 +1424,6 @@ html.ntab .tab{display:none}
 .csmenu button{display:block;width:100%;text-align:left;padding:9px 14px;font-size:13px;color:var(--ink)}
 .csmenu button.on{color:var(--green);font-weight:700}
 .csmenu button.on:after{content:"✓";float:right;margin-left:10px}
+/* ホームの横並びの記事カード：濃紺の枠に、右下へずらした緑の影（Tabistockの世界観。探すの一覧などには付けない） */
+#home .hs .oc{border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green);border-radius:6px}
+#home .hs{padding-bottom:10px}
