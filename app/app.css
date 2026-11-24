@@ -1303,3 +1303,9 @@ html.ntab .tab{display:none}
 .sft i{font-style:normal}
 /* 探すの検索欄：白い中身に黒の枠 */
 #search .sfi{background:#fff;border:1.5px solid var(--ink);border-radius:4px}
+/* 検索欄が縮めるように（iPhoneでは入力欄の幅のせいで、右のAIの入口がはみ出していた） */
+.sfrow .sfi{min-width:0}
+.sfrow .sfi input{min-width:0;width:100%;flex:1}
+/* たび相談の見出し：小さめ・左にアイコン */
+.shead .lt{font-size:22px;display:flex;align-items:center;gap:8px}
+.shead .lt svg{width:24px;height:24px;color:var(--green);flex:none}
