@@ -1247,7 +1247,7 @@ html.ntab .tab{display:none}
 .aigo{width:30px;height:46px;flex:none;display:grid;place-items:center;padding:0}
 .aigo .aisym{width:24px;height:41px}
 
-/* ---------- たび相談 ---------- */
+/* ---------- 旅ひろば ---------- */
 .shead{display:flex;align-items:center;justify-content:space-between;padding-right:20px}
 .srule{font-size:12px;color:var(--muted);display:flex;gap:4px;align-items:center}
 .schips{display:flex;gap:16px;padding:12px 20px 0;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
@@ -1307,25 +1307,25 @@ html.ntab .tab{display:none}
 /* 検索欄が縮めるように（iPhoneでは入力欄の幅のせいで、右のAIの入口がはみ出していた） */
 .sfrow .sfi{min-width:0}
 .sfrow .sfi input{min-width:0;width:100%;flex:1}
-/* たび相談の見出し：小さめ・左にアイコン */
+/* 旅ひろばの見出し：小さめ・左にアイコン */
 .shead .lt{font-size:22px;display:flex;align-items:center;gap:8px}
 .shead .lt svg{width:24px;height:24px;color:var(--green);flex:none}
-/* 投稿タブの見出し：たび相談と同じ大きさ・左にアイコン */
+/* 投稿タブの見出し：旅ひろばと同じ大きさ・左にアイコン */
 .lt.lts{font-size:22px;display:flex;align-items:center;gap:8px}
 .lt.lts svg{width:24px;height:24px;color:var(--green);flex:none}
-/* たび相談：編集 */
+/* 旅ひろば：編集 */
 .sed{font-size:11px;color:var(--muted);margin-left:4px;font-weight:400}
 .sedit{margin-top:6px}
 .sedit textarea{width:100%;border:1px solid var(--ink);border-radius:4px;padding:9px 10px;font:inherit;font-size:14px;line-height:1.6;resize:none;background:#fff}
 .sedit div{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
 .sedit button{font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:4px}
 .sedit .sc{color:var(--muted)}.sedit .ss{background:var(--ink);color:#fff}
-/* たび相談：種類のラベルを色分け（質問=オレンジ、現地の情報=緑、航空券=青、節約=黄土、雑談=グレー） */
+/* 旅ひろば：種類のラベルを色分け（質問=オレンジ、現地の情報=緑、航空券=青、節約=黄土、雑談=グレー） */
 .skind.k-info{color:#1f6f5b;border-color:#1f6f5b}
 .skind.k-flight{color:#2f6fa3;border-color:#2f6fa3}
 .skind.k-save{color:#a8741f;border-color:#a8741f}
 .skind.k-chat{color:#6c7787;border-color:#9aa1ab}
-/* たび相談：解決済み／未解決 */
+/* 旅ひろば：解決済み／未解決 */
 .sst{display:inline-flex!important;align-items:center;gap:3px;font-size:11px!important;font-weight:700;color:#e2683b!important}
 .sst.ok{color:var(--green)!important}.sst svg{width:12px!important;height:12px!important}
 .ssolve{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 20px;background:var(--green-t);border-bottom:1px solid var(--line);font-size:12px;color:var(--ink)}
@@ -1339,11 +1339,23 @@ html.ntab .tab{display:none}
 .sft>span,.sft>button{white-space:nowrap}.sft{gap:12px}
 /* マイページのボタンを少し小さく */
 .uhead .ub.mub>*{font-size:12px;padding:5px 0}
-/* マイページの「たび相談」：解決済みボタンにゆとり */
+/* マイページの「旅ひろば」：解決済みボタンにゆとり */
 .mrow .sft{margin-top:10px}
 .mtog{padding:4px 10px!important;font-size:11.5px!important;gap:3px!important;background:#fff!important;color:var(--green)!important;border:1px solid var(--green)!important}
 .mtog.on{background:var(--green)!important;color:#fff!important}
 .mtog svg{width:11px!important;height:11px!important}
 /* マイページ：左上の名前はアイコンの横と重複するので出さない。メニューだけ右に */
-.mehead.nm0{height:0;padding:0;position:relative;z-index:2;display:block}
-.mehead.nm0 .hb{position:absolute;right:14px;top:-5px}
+.mehead.nm0{display:flex;justify-content:center;align-items:center;position:relative;height:44px;padding:0 16px;margin-bottom:6px}
+.mehead.nm0 b{font-size:16px;font-weight:700}
+.mehead.nm0 .hb{position:absolute;right:14px;top:50%;transform:translateY(-50%)}
+/* 旅ひろばのルール */
+.srules{padding-left:20px;padding-right:20px;padding-bottom:60px}
+.srules .slead{font-size:14px;line-height:1.75;margin-top:6px}
+.srules ol{list-style:none;margin-top:14px;border-top:1.5px solid var(--ink)}
+.srules li{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.srules li i{font:800 12px/22px Manrope,sans-serif;font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;text-align:center;flex:none;margin-top:1px}
+.srules li b{display:block;font-size:14.5px}
+.srules li p{font-size:13px;line-height:1.7;color:#4a5361;margin-top:3px}
+.srules h3{font-size:15px;font-weight:900;margin-top:24px}
+.srules>p{font-size:13px;line-height:1.75;color:#4a5361;margin-top:8px}
+.srules .sfoot a{color:var(--green);font-weight:700}

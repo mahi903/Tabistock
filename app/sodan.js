@@ -1,4 +1,4 @@
-// たび相談（コミュニティ）
+// 旅ひろば（コミュニティ）
 // sodan/{id}                       投稿：uid, kind, area, text, likeCount, replyCount, createdAt, lastReplyAt
 // sodan/{id}/likes/{uid}           投稿へのいいね
 // sodan/{id}/replies/{rid}         回答・コメント：uid, text, articleId, replyToUid, replyToName, likeCount, createdAt
@@ -57,7 +57,7 @@ function postRow(p, full) {
   </div></div>`;
 }
 
-// ---------- 一覧（下のタブ「たび相談」） ----------
+// ---------- 一覧（下のタブ「旅ひろば」） ----------
 export async function renderSodan() {
   const box = document.getElementById("sodanBody");
   if (!LIST) box.innerHTML = '<p class="fol-empty">読み込み中…</p>';
@@ -242,13 +242,13 @@ export async function pageSodan(el, id) {
 // ---------- 新しく投稿する（#c-new） ----------
 export function pageSodanNew(el) {
   const me = C.me();
-  if (!me) { el.innerHTML = C.bar("たび相談に投稿") + '<div class="ps under2"><p class="fol-empty"><a href="#x-login">ログイン</a>すると投稿できます。</p></div>'; return; }
+  if (!me) { el.innerHTML = C.bar("旅ひろばに投稿") + '<div class="ps under2"><p class="fol-empty"><a href="#x-login">ログイン</a>すると投稿できます。</p></div>'; return; }
   let kind = "q", area = "";
-  el.innerHTML = C.bar("たび相談に投稿", '<button class="sgo" disabled>投稿</button>') + `<div class="ps under2 snew">
+  el.innerHTML = C.bar("旅ひろばに投稿", '<button class="sgo" disabled>投稿</button>') + `<div class="ps under2 snew">
     <textarea class="sbody" maxlength="1000" placeholder="例：2月にキルギスとカザフスタンを10日で回りたいです。冬でも行きやすいルートありますか？"></textarea>
     <p class="slab">種類</p><div class="schips wrap" data-g="k">${KINDS.map(([k, l]) => `<button class="${k === kind ? "on" : ""}" data-v="${k}">${l}</button>`).join("")}</div>
     <p class="slab">エリア（任意）</p><div class="schips wrap" data-g="a">${AREAS.map(([k, l]) => `<button data-v="${k}">${l}</button>`).join("")}</div>
-    <p class="snote">個人が特定できる情報（電話番号・住所など）は書かないでください。<a href="#w-terms">ルール</a>に沿わない投稿は削除することがあります。</p></div>`;
+    <p class="snote">個人が特定できる情報（電話番号・住所など）は書かないでください。<a href="#c-rules">ルール</a>に沿わない投稿は削除することがあります。</p></div>`;
   const go = el.querySelector(".sgo"), ta = el.querySelector(".sbody");
   el.querySelectorAll("[data-g] button").forEach((b) => (b.onclick = () => {
     const g = b.parentNode.dataset.g, v = b.dataset.v;
@@ -274,7 +274,7 @@ export function pageSodanNew(el) {
   };
 }
 
-// ---------- プロフィールの「たび相談」：その人の投稿。本人なら、未解決／解決済みをここで切り替えられる ----------
+// ---------- プロフィールの「旅ひろば」：その人の投稿。本人なら、未解決／解決済みをここで切り替えられる ----------
 export async function renderMine(box, uid, isOwner) {
   box.innerHTML = '<p class="fol-empty">読み込み中…</p>';
   let list = [];
@@ -282,7 +282,7 @@ export async function renderMine(box, uid, isOwner) {
   catch (e) { console.error(e); box.innerHTML = '<p class="empty">読み込めませんでした</p>'; return; }
   list = list.filter((p) => p.status !== "hidden").sort((a, b) => secOf(b.createdAt) - secOf(a.createdAt));
   await C.loadProfiles([uid]);
-  if (!list.length) { box.innerHTML = `<p class="empty">${isOwner ? 'まだたび相談の投稿がありません<br><br><a class="btn-s" href="#c-new">相談を書く</a>' : "まだたび相談の投稿はありません"}</p>`; return; }
+  if (!list.length) { box.innerHTML = `<p class="empty">${isOwner ? 'まだ旅ひろばの投稿がありません<br><br><a class="btn-s" href="#c-new">投稿する</a>' : "まだ旅ひろばの投稿はありません"}</p>`; return; }
   const open = list.filter((p) => p.kind === "q" && !p.solved).length;
   box.innerHTML = `${isOwner && open ? `<p class="smine">未解決の相談 ${open}件</p>` : ""}<div class="slist">${list.map((p) => `<div class="mrow" data-open="${C.esc(p.id)}">
       <div class="mtop"><span class="skind k-${C.esc(p.kind || "")}">${C.esc(kindName(p.kind))}</span>${stateTag(p)}<small>${C.ago(secOf(p.createdAt))}</small></div>
@@ -291,4 +291,23 @@ export async function renderMine(box, uid, isOwner) {
     </div>`).join("")}</div>`;
   box.querySelectorAll("[data-open]").forEach((r) => (r.onclick = (e) => { if (e.target.closest("a,button")) return; location.hash = "#c-" + r.dataset.open; }));
   box.querySelectorAll("[data-tog]").forEach((b) => (b.onclick = async (e) => { e.stopPropagation(); b.disabled = true; const p = list.find((x) => x.id === b.dataset.tog); await setSolved(p, !p.solved); renderMine(box, uid, isOwner); }));
+}
+
+// ---------- 旅ひろばのルール（#c-rules） ----------
+export function pageRules(el) {
+  const R = [
+    ["経験にもとづいた情報を", "旅ひろばの価値は、実際に旅をした人の声にあります。人から聞いた話や、時間がたった情報を書くときは、その旨を添えてください。"],
+    ["相手への敬意を忘れずに", "誹謗中傷、差別的な表現、執拗な書き込みは控えてください。旅のスタイルは人それぞれです。意見が違うときも、落ち着いたやり取りをお願いします。"],
+    ["個人情報は書かない", "電話番号、住所、メールアドレス、宿泊先の部屋番号など、個人が特定できる情報は、ご自身のものも他の方のものも投稿しないでください。"],
+    ["宣伝・勧誘・出会い目的はお断り", "商品やサービスの宣伝、副業などの勧誘、出会いを目的とした投稿や回答は削除します。"],
+    ["危険・違法な行為をすすめない", "法律や現地のルールに反する行為、身の危険につながる行為をすすめる投稿は削除します。"],
+    ["最終確認は公式情報で", "ビザや入国条件、料金などは変わることがあります。旅ひろばの情報は参考にしつつ、出発前には必ず公式の情報を確認してください。"],
+  ];
+  el.innerHTML = C.bar("旅ひろばのルール") + `<div class="ps under2 srules">
+    <p class="slead">旅ひろばは、旅の相談や現地の情報を旅行好き同士で共有するための場所です。投稿や回答の前に、ひととおり目を通してください。</p>
+    <ol>${R.map((r, i) => `<li><i>${i + 1}</i><div><b>${r[0]}</b><p>${r[1]}</p></div></li>`).join("")}</ol>
+    <h3>ルールに沿わない投稿を見かけたら</h3>
+    <p>投稿や回答の「…」から通報してください。運営が内容を確認し、ルールに沿わないものは削除します。違反がくり返される場合は、アカウントの利用を制限することがあります。通報したことが相手に伝わることはありません。</p>
+    <p class="sfoot">そのほかの取り決めは、<a href="#w-terms">利用規約</a>をご確認ください。</p>
+  </div>`;
 }
