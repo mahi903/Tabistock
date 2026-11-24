@@ -113,8 +113,6 @@ const CSS = `
 .pp-stage{perspective:1400px}
 .pp-in{transform-style:flat}
 .pp .hint{transition:opacity .4s}.pp .hint.gone{opacity:0;animation:none}
-.pp .sheen{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,rgba(255,236,180,.22) 47%,rgba(255,255,255,.08) 52%,transparent 62%);background-size:260% 100%;background-position:120% 0;animation:ppsheen 1.6s 1.1s cubic-bezier(.4,.1,.3,1) both}
-@keyframes ppsheen{to{background-position:-60% 0}}
 .pp-ctl{display:flex;gap:10px;align-items:center;justify-content:center;padding:22px 16px 10px}
 .pp-ctl button{min-width:44px;min-height:44px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:3px;font:700 14px 'Noto Sans JP',sans-serif;padding:0 14px}
 .pp-ctl button:disabled{opacity:.3}
@@ -197,7 +195,7 @@ export function pagePassport(el, ctx) {
 
   // 見開きの左：タイトル・期間・トップの写真（最大3枚、枠なしでテープ留め）
   // 記事1本＝1ページ：タイトル・期間・トップの写真（最大3枚、テープ留め）・その旅のスタンプ
-  const PH = { 1: [[18, 32, 60, -3]], 2: [[3, 32, 50, -5], [47, 36, 48, 4]], 3: [[2, 31, 42, -5], [52, 32, 42, 5], [27, 43, 42, 2]] };
+  const PH = { 1: [[18, 32, 60, -3]], 2: [[7, 32, 46, -5], [48, 36, 45, 4]], 3: [[8, 31, 40, -5], [52, 32, 40, 5], [29, 43, 40, 2]] };
   function stampsOf(d) {
     const date = dot(d.dateStart) || "";
     const n = daysOf(d);
@@ -250,7 +248,7 @@ export function pagePassport(el, ctx) {
   PAGES.push({ pno: String(2 + arts.length), html: `<div class="pphd"><span>VISA<b>査証</b></span><i>No.${String(arts.length + 1).padStart(2, "0")}</i></div>
       <div class="slot"><div>次の旅は、ここに。<small>記事を投稿すると<br>新しいページが増えていきます</small><a href="#p">旅程を投稿する</a></div></div>${foot}` });
   const faces = [
-    `<div class="face ppfr leather cover"><div class="cj" style="left:35%" aria-label="旅">${glyph(G_RYO)}</div><div class="cj" style="left:65%" aria-label="券">${glyph(G_KEN)}</div>${emblem}<div class="ct2" aria-label="TABISTOCK PASSPORT"><svg viewBox="0 0 168 66"><g fill="url(#ppgd)" font-family="Cinzel,'Cormorant Garamond',serif" font-weight="500"><text x="0" y="22" font-size="26" textLength="168" lengthAdjust="spacing">TABISTOCK</text><text x="0" y="62" font-size="23" textLength="168" lengthAdjust="spacing">PASSPORT</text></g></svg></div><div class="ppchip">${chip}</div><i class="sheen"></i><div class="hint">タップして開く</div></div>`,
+    `<div class="face ppfr leather cover"><div class="cj" style="left:35%" aria-label="旅">${glyph(G_RYO)}</div><div class="cj" style="left:65%" aria-label="券">${glyph(G_KEN)}</div>${emblem}<div class="ct2" aria-label="TABISTOCK PASSPORT"><svg viewBox="0 0 168 66"><g fill="url(#ppgd)" font-family="Cinzel,'Cormorant Garamond',serif" font-weight="500"><text x="0" y="22" font-size="26" textLength="168" lengthAdjust="spacing">TABISTOCK</text><text x="0" y="62" font-size="23" textLength="168" lengthAdjust="spacing">PASSPORT</text></g></svg></div><div class="ppchip">${chip}</div><div class="hint">タップして開く</div></div>`,
     `<div class="face ppbk paper req">${REQ_FRAME}
       <div class="rq-ban">${glyphC(G_RYO, G2)}${glyphC(G_KEN, G2)}</div>
       <p class="rq-jp"><span>旅を愛する本旅券の所持人を</span><span>通路故障なく旅行させ、かつ、</span><span>出会った景色と人を記録できる</span><span>よう、関係の諸君に要請する。</span></p>
@@ -352,7 +350,8 @@ export function pagePassport(el, ctx) {
     };
   }
   const zoomIn = (to, done) => { sd = to; zoom = true; render(); setTimeout(() => { busy = false; if (done) done(); }, ZT); };
-  const zoomOut = (done) => { if (!zoom) return done(); zoom = false; render(); setTimeout(done, ZT); };
+  const ZT_OUT = 1500; // 引くときは、ゆっくり
+  const zoomOut = (done) => { if (!zoom) return done(); book.style.transitionDuration = ZT_OUT + "ms"; zoom = false; render(); setTimeout(() => { book.style.transitionDuration = ""; done(); }, ZT_OUT); };
   // 次へ：左に寄っている → 右に寄る／右に寄っている → 引いて見開き → めくる → 左に寄る（寄ったらスタンプが押される）
   function next() {
     if (busy) return;
