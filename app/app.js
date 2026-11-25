@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611260140";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611260200";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -36,28 +36,8 @@ const haptic = () => { try { navigator.vibrate && navigator.vibrate(8); } catch 
 let tt;
 function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => el.classList.remove("show"), 1900); }
 
-// ---------- 写真の遅延読み込み ----------
-// 一覧のカードは style ではなく data-bg に写真の URL を入れておき、画面に近づいてから読む（全部いっぺんに読まない）
-const bgAttr = (u) => (u ? `data-bg="${esc(u)}"` : "");
-const bgIO = "IntersectionObserver" in window ? new IntersectionObserver((es) => es.forEach((e) => {
-  if (!e.isIntersecting) return;
-  const el = e.target; bgIO.unobserve(el);
-  if (el.dataset.bg) { el.style.backgroundImage = `url("${el.dataset.bg}")`; el.removeAttribute("data-bg"); }
-}), { rootMargin: "900px 500px" }) : null;
-let bgScan = 0;
-function watchBg() {
-  bgScan = 0;
-  document.querySelectorAll("[data-bg]").forEach((el) => {
-    if (el._bg) return; el._bg = 1;
-    if (bgIO) bgIO.observe(el); else { el.style.backgroundImage = `url("${el.dataset.bg}")`; el.removeAttribute("data-bg"); }
-  });
-}
-new MutationObserver(() => { if (!bgScan) bgScan = requestAnimationFrame(watchBg); }).observe(document.body, { childList: true, subtree: true });
-
 // ---------- 記事の見せ方 ----------
-// thumbOf：一覧のカード用の小さい写真（なければトップの写真）。heroOf：大きく出すとき用のトップの写真
 const thumbOf = (d) => d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
-const heroOf = (d) => (d.heroUrls && d.heroUrls[0]) || d.thumbUrl || "";
 const titleOf = (d) => d.title || (d.type === "transit" ? `${(cinfo((d.countries || [])[0]) || {}).jp || ""}でのトランジット` : "");
 function placeEn(d) {
   if (d.type === "transit") return "Transit" + (d.airport ? " · " + d.airport : "");
@@ -84,9 +64,8 @@ const vmark = (uid) => (OFFICIAL.has(uid) ? VMARK : "");
 const authorName = (d) => d.authorNickname || (PROF[d.authorId] || {}).nickname || "旅人";
 const avatarOf = (uid) => (PROF[uid] || {}).photoURL || DEF_AV;
 const ovText = (d) => `<span class="ovt"><em>${esc(placeEn(d))}</em><b>${esc(titleOf(d))}</b><small><img src="${esc(avatarOf(d.authorId))}" alt="">${esc(authorName(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</small></span>`;
-// 横にスクロールするカードは、遅延読み込みにすると横にずらしたときに一瞬灰色になるので、すぐ読む（小さいサムネなので軽い）
 const cardH = (d) => `<a class="oc mcard press" href="#a-${esc(d.id)}" style="background-image:url('${esc(thumbOf(d))}')">${ovText(d)}</a>`;
-const gridCard = (d) => `<a class="oc" href="#a-${esc(d.id)}" ${bgAttr(thumbOf(d))}>${ovText(d)}</a>`;
+const gridCard = (d) => `<a class="oc" href="#a-${esc(d.id)}" style="background-image:url('${esc(thumbOf(d))}')">${ovText(d)}</a>`;
 
 async function loadProfiles(uids) {
   const need = [...new Set(uids)].filter((u) => u && !(u in PROF));
@@ -249,7 +228,7 @@ function photoMosaic(arts) {
   return `<div class="mos">${items.map((p, i) => `<a class="mt ${cls[i] || ""}" href="#a-${esc(p.d.id)}"><img src="${esc(p.u)}" alt="" loading="lazy" decoding="async"></a>`).join("")}</div>`;
 }
 function renderHome() {
-  ALL.slice(0, 40).forEach((d) => { const u = thumbOf(d), h = heroOf(d); if (u) ratioOf(u, (r) => { if (h && !RATIO.has(h)) RATIO.set(h, r); }); });   // 記事を開いたときにトップ写真が上下に動かないよう、先に縦横比を調べておく
+  ALL.slice(0, 40).forEach((d) => { const u = thumbOf(d); if (u) ratioOf(u, () => {}); });   // 記事を開いたときにトップ写真が上下に動かないよう、先に縦横比を調べておく
   const trips = ALL.filter((d) => d.type !== "transit" && !isDomestic(d));
   const jp = ALL.filter((d) => d.type !== "transit" && isDomestic(d));
   const tr = ALL.filter((d) => d.type === "transit");
@@ -266,7 +245,7 @@ function renderHome() {
   for (const d of pool) { if (picks.length >= 3) break; if (!picks.includes(d)) picks.push(d); }
   const pick = picks[0];
   if (picks.length) {
-    $("feat").innerHTML = `<div class="fcar" id="fcar">${picks.map((p) => `<a class="feat" href="#a-${esc(p.id)}" style="background-image:url('${esc(heroOf(p))}')"><span class="tag">PICK UP</span>
+    $("feat").innerHTML = `<div class="fcar" id="fcar">${picks.map((p) => `<a class="feat" href="#a-${esc(p.id)}" style="background-image:url('${esc(thumbOf(p))}')"><span class="tag">PICK UP</span>
       <div class="in"><div class="pl">${PIN} ${esc(placeJp(p))}</div><div class="tt">${esc(titleOf(p))}</div>
       <div class="row"><div class="au"><img src="${esc(avatarOf(p.authorId))}" alt="">${esc(authorName(p))}${p.dateStart ? "・" + esc(p.dateStart.slice(0, 4) + "年" + Number(p.dateStart.slice(5, 7)) + "月") : ""}</div></div></div></a>`).join("")}</div>`
       + (picks.length > 1 ? `<div class="fdots" id="fdots">${picks.map(() => "<i><b></b></i>").join("")}</div>` : "");
@@ -586,13 +565,13 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611260140");
+  const M = await import("./sodan.js?v=202611260200");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
     vmark,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
-    artCard: (d) => `<a class="sart" href="#a-${esc(d.id)}"><i ${bgAttr(thumbOf(d))}></i><div><b>${esc(d.title || "")}</b><small>${esc(authorName(d))}${nDays(d) ? "・" + nDays(d) + "日間" : ""}</small></div></a>`,
+    artCard: (d) => `<a class="sart" href="#a-${esc(d.id)}"><i style="background-image:url('${esc(thumbOf(d))}')"></i><div><b>${esc(d.title || "")}</b><small>${esc(authorName(d))}${nDays(d) ? "・" + nDays(d) + "日間" : ""}</small></div></a>`,
     myArticles: async () => (ALL || []).filter((d) => d.authorId === me || (d.coAuthorIds || []).includes(me)),
     reopen: () => { const t = STACK[STACK.length - 1]; const m = t && t.hash.match(/^#c-(.+)$/); if (m && m[1] !== "new") M.pageSodan(t.el, decodeURIComponent(m[1])); },
   });
@@ -618,7 +597,7 @@ async function loadBoards() {
   };
   let list = await read();
   if (admin && list && !list.length) {
-    try { const M = await import("./board-edit.js?v=202611260140"); if (await M.importSeed(me)) list = (await read()) || []; } catch (e) { console.error(e); }
+    try { const M = await import("./board-edit.js?v=202611260200"); if (await M.importSeed(me)) list = (await read()) || []; } catch (e) { console.error(e); }
   }
   list = list || [];
   const have = new Set(list.map((d) => d.id));
@@ -682,7 +661,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611260140"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611260200"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -692,7 +671,7 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611260140").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611260200").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
     nextOrder: Math.max(0, ...(BOARDS || []).filter((d) => !d.jiken && d.cat === boardCat).map((d) => Number(d.order) || 0)) + 1,
     afterSave: (sid, o) => {
@@ -748,13 +727,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611260140").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611260200").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611260140").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611260140").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611260200").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611260200").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -852,7 +831,7 @@ async function pageArticle(el, id, opt = {}) {
       <div class="days">${days.map((x, i) => {
         const ph = x.photoUrls || [];
         const has = String(x.text || "").trim() || ph.length;
-        return `<div class="day"><button ${has ? "data-day" : ""}><div class="th ${ph[0] ? "" : "no"}" style="${ph[0] ? `background-image:url('${esc(x.thumbSrc === ph[0] && x.thumbUrl ? x.thumbUrl : ph[0])}')` : ""}">${ph[0] ? "" : i + 1}</div><div><small>DAY ${i + 1}${x.date ? "　" + esc(x.date) : ""}</small><p>${esc(x.summary || "")}</p></div>${has ? '<span class="pm">＋</span>' : ""}</button>
+        return `<div class="day"><button ${has ? "data-day" : ""}><div class="th ${ph[0] ? "" : "no"}" style="${ph[0] ? `background-image:url('${esc(ph[0])}')` : ""}">${ph[0] ? "" : i + 1}</div><div><small>DAY ${i + 1}${x.date ? "　" + esc(x.date) : ""}</small><p>${esc(x.summary || "")}</p></div>${has ? '<span class="pm">＋</span>' : ""}</button>
           <div class="body"><div class="bin">${ph.length ? `<div class="dpw"><div class="dphotos">${ph.map((u, k) => `<img src="${esc(u)}" alt="" loading="lazy" data-dv="${i}" data-k="${k}">`).join("")}</div>${ph.length > 1 ? `<span class="dpc">1/${ph.length}</span>` : ""}</div>` : ""}${String(x.text || "").trim() ? `<p class="ph">${placeLinks(para(x.text), x.places, i + 1, hasRoute)}</p>` : ""}</div></div></div>`;
       }).join("")}</div>` : ""}
       ${d.comment ? `<div class="dh"><h2>投稿者のコメント</h2></div><p class="ph2">${para(d.comment)}</p>` : ""}
@@ -1059,7 +1038,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611260140"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611260200"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1296,7 +1275,7 @@ async function pageThread(el, other) {
         const blob = await resizeImage(f, 1600, 0.82);
         const bmp = await createImageBitmap(blob); const w = bmp.width, hh = bmp.height; bmp.close(); p.r = `${w}/${hh}`;
         const r = S.ref(storage, `dm/${cid}/${me}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`);
-        step = "アップロード"; await S.uploadBytes(r, blob, { contentType: "image/jpeg", cacheControl: "public, max-age=31536000, immutable" });
+        step = "アップロード"; await S.uploadBytes(r, blob, { contentType: "image/jpeg" });
         step = "URL取得"; const url = await S.getDownloadURL(r);
         step = "保存"; await F.addDoc(collection(convRef, "messages"), { senderId: me, text: "", imageUrl: url, w, h: hh, createdAt: serverTimestamp() });
         await F.updateDoc(convRef, { lastMessage: "📷 写真", lastSenderId: me, updatedAt: serverTimestamp(), ["unread." + other]: F.increment(1), ["unread." + me]: 0 });
@@ -1333,7 +1312,7 @@ async function dmSend(other, data, preview) {
 }
 function dmArtCard(id, who, cont) {
   const d = BY[id];
-  const inner = d ? `<span class="ai" ${bgAttr(thumbOf(d))}></span><span class="at"><small>${esc(placeJp(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</small><b>${esc(titleOf(d) || "(無題)")}</b><em>旅程を見る →</em></span>`
+  const inner = d ? `<span class="ai" style="background-image:url('${esc(thumbOf(d))}')"></span><span class="at"><small>${esc(placeJp(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</small><b>${esc(titleOf(d) || "(無題)")}</b><em>旅程を見る →</em></span>`
     : `<span class="ai"></span><span class="at"><small>Tabistock</small><b>記事を読み込み中…</b></span>`;
   return `<a class="msg art ${who}${cont}" href="#a-${esc(id)}" data-art="${esc(id)}">${inner}</a>`;
 }
@@ -1353,7 +1332,7 @@ async function fillArtCards(box) {
 function pickArticle(onPick) {
   const mine = ALL.filter((d) => d.authorId === me || (d.coAuthorIds || []).includes(me));
   const sv = ALL.filter((d) => saved.has(d.id) && !mine.includes(d));
-  const row = (d) => `<button class="srow aprow" data-ap="${esc(d.id)}"><span class="ai" ${bgAttr(thumbOf(d))}></span><span class="at"><b>${esc(titleOf(d) || "(無題)")}</b><small>${esc(placeJp(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</small></span></button>`;
+  const row = (d) => `<button class="srow aprow" data-ap="${esc(d.id)}"><span class="ai" style="background-image:url('${esc(thumbOf(d))}')"></span><span class="at"><b>${esc(titleOf(d) || "(無題)")}</b><small>${esc(placeJp(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</small></span></button>`;
   const body = (mine.length ? `<p class="fsub">自分の記事</p>${mine.map(row).join("")}` : "") + (sv.length ? `<p class="fsub" style="margin-top:14px">保存した旅</p>${sv.map(row).join("")}` : "");
   openBS(`<div class="shs"><h3>記事を送る</h3><div class="apl">${body || '<p class="fol-empty">送れる記事がまだありません。公開した記事か、保存した旅から選べます。</p>'}</div></div>`, (bs) =>
     bs.querySelectorAll("[data-ap]").forEach((b) => (b.onclick = () => { closeSheet(); onPick(BY[b.dataset.ap]); })));
@@ -1457,7 +1436,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611260140").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611260200").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);
@@ -1496,7 +1475,7 @@ async function loadMyPosts() {
 }
 function myCard(d, editLink) {
   const st = STATUS_LABEL[d.status] ? d.status : "pending";
-  return `<div class="mycard"><a class="oc" href="${editLink ? "#p-" : "#a-"}${esc(d.id)}" ${bgAttr(thumbOf(d))}>${ovText({ ...d, title: d.title || "(無題)" })}</a>
+  return `<div class="mycard"><a class="oc" href="${editLink ? "#p-" : "#a-"}${esc(d.id)}" style="background-image:url('${esc(thumbOf(d))}')">${ovText({ ...d, title: d.title || "(無題)" })}</a>
     <div class="mymeta">${st !== "published" ? `<span class="pst s-${st}">${STATUS_LABEL[st]}</span>` : ""}${d._collab || (d.coAuthorIds || []).length ? '<span class="pst">共同投稿</span>' : ""}<button class="pmn" data-pm="${esc(d.id)}" aria-label="メニュー"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div></div>`;
 }
 let ADMIN_ME = null;
@@ -2054,8 +2033,8 @@ loadAll().then(route).finally(hideSplash);
 async function hideSplash() {
   const sp = $("splash"); if (!sp || sp.hidden || sp.dataset.closing) return;
   sp.dataset.closing = "1";
-  const urls = [...document.querySelectorAll("#feat .feat, #newList .oc, #newList [style*='background-image'], #newList [data-bg]")].slice(0, 5)
-    .map((e) => e.dataset.bg || (e.style.backgroundImage.match(/url\(["']?(.*?)["']?\)/) || [])[1]).filter(Boolean);
+  const urls = [...document.querySelectorAll("#feat .feat, #newList .oc, #newList [style*='background-image']")].slice(0, 5)
+    .map((e) => (e.style.backgroundImage.match(/url\(["']?(.*?)["']?\)/) || [])[1]).filter(Boolean);
   const load = (u) => new Promise((ok) => { const im = new Image(); im.onload = im.onerror = ok; im.src = u; if (im.complete) ok(); });
   const left = Math.max(0, 4500 - (Date.now() - (window.__splashAt || 0)));
   await Promise.race([Promise.all(urls.map(load)), new Promise((ok) => setTimeout(ok, left))]);

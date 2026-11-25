@@ -79,7 +79,7 @@ export default async function handler(req, res) {
         meta = {
           title: `${title}｜Tabistock`,
           desc: cut([head, d.lead || ""].filter(Boolean).join("　"), 110),
-          image: (d.heroUrls && d.heroUrls[0]) || d.thumbUrl || DEF_IMG,   // SNSのプレビューは大きい写真で
+          image: d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || DEF_IMG,
           url,
         };
       }
