@@ -1,6 +1,7 @@
 // 旅の掲示板：イラストと、最初の記事
-// 記事は Firestore の boards（status: "published"）から読む。まだ1本もないとき・読めないときは、ここの BOARD_SEED を出す。
-// 本文は blocks の並び：{ t: "h" 見出し | "p" 文章 | "steps" 番号つき手順 | "list" 箇条書き | "note" 注意書き }
+// 記事は Firestore の boards（status: "published"）から読む。公開中が1本もないとき・読めないときは、ここの BOARD_SEED を出す。
+// 管理者がアプリで掲示板を開いたとき、boards が空なら BOARD_SEED を自動で Firestore にコピーし、そのあとはアプリ内で編集する（app/board-edit.js）。
+// 本文は blocks の並び：{ t: "h" 見出し | "p" 文章 | "steps" 番号つき手順 | "list" 箇条書き | "note" 注意書き | "photo" 写真 | "ill" イラスト }
 
 const INK = "#1b2330", G = "#1f6f5b", C = "#fbf9f4", T = "#e2683b", BG = "#efe7d6";
 
@@ -419,6 +420,25 @@ export const BOARD_SEED = [
     ],
   }
 ];
+
+// ---- Firestore との形の変換 ----
+// Firestore は「配列の中に配列」を保存できないので、facts と手順は {…} の形で保存する。
+//   facts: [{ k: 項目, v: 内容, s: 補足 }]   手順: items: [{ h: 見出し, x: 説明 }]
+// toFs：BOARD_SEED（配列の形）→ 保存用の形。normBoard：どちらの形でも、表示用（配列の形）にそろえる
+export function toFs(d) {
+  return {
+    ...d,
+    facts: (d.facts || []).map((f) => (Array.isArray(f) ? { k: f[0] || "", v: f[1] || "", s: f[2] || "" } : f)),
+    blocks: (d.blocks || []).map((b) => (b.t === "steps" ? { ...b, items: (b.items || []).map((s) => (Array.isArray(s) ? { h: s[0] || "", x: s[1] || "" } : s)) } : b)),
+  };
+}
+export function normBoard(d) {
+  return {
+    ...d,
+    facts: (d.facts || []).map((f) => (Array.isArray(f) ? f : [f.k || "", f.v || "", f.s || ""])),
+    blocks: (d.blocks || []).map((b) => (b.t === "steps" ? { ...b, items: (b.items || []).map((s) => (Array.isArray(s) ? s : [s.h || "", s.x || ""])) } : b)),
+  };
+}
 
 // ---- 事件簿：みんなの旅の記事から、トラブルや事件をピックアップ（タップで元の記事へ） ----
 // art = 元の記事のID。書いてあることだけを短くまとめる

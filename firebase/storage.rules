@@ -37,6 +37,18 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
+    // 旅の掲示板の写真： boards/{記事ID}/{fileName}
+    // 誰でも見られる。アップロード・削除は管理者（Firestore の admins/{uid} がある人）だけ
+    match /boards/{boardId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isSignedIn()
+                    && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid))
+                    && request.resource.size < 10 * 1024 * 1024
+                    && request.resource.contentType.matches('image/.*');
+      allow delete: if isSignedIn()
+                    && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
+    }
+
     // DMの写真： dm/{会話ID}/{送った人のuid}/{fileName}
     // 会話IDは参加者2人のuidを「__」でつないだもの。参加者だけが見られる・本人だけが送れる
     match /dm/{convId}/{uid}/{fileName} {

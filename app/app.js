@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN } from "./board.js?v=202611260025";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611260130";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -565,7 +565,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611260025");
+  const M = await import("./sodan.js?v=202611260130");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -579,31 +579,53 @@ const SD = async () => {
 };
 
 // ---------- 旅の掲示板 ----------
-// Firestore の boards（公開中）を読む。1本もない・読めないときは board.js の最初の記事を出す。書いた人は今は出さない（データには残す）
+// Firestore の boards を読む。公開中が1本もない・読めないときは board.js の最初の記事（BOARD_SEED）を出す。書いた人は今は出さない（データには残す）
+// 管理者は下書きも読む（一覧に「下書き」と出る）。
+// 管理者が開いたとき boards が空っぽなら、board.js の記事（BOARD_SEED）を自動で Firestore にコピーする（最初の1回だけ）。
+// 空のときだけなので、あとで記事を消しても勝手に戻ってくることはない
 let BOARDS = null, boardCat = "";
 async function loadBoards() {
   if (BOARDS) return BOARDS;
-  let list = [];
-  try { (await getDocs(query(collection(db, "boards"), where("status", "==", "published")))).forEach((s) => list.push({ id: s.id, ...s.data() })); } catch (e) {}
-  if (!list.length) list = BOARD_SEED.slice();
-  list.sort((a, b) => (a.order || 99) - (b.order || 99));
+  const admin = await isAdminMe();
+  const read = async () => {
+    const list = [];
+    try {
+      const q = admin ? collection(db, "boards") : query(collection(db, "boards"), where("status", "==", "published"));
+      (await getDocs(q)).forEach((s) => list.push({ id: s.id, ...normBoard(s.data()) }));
+      return list;
+    } catch (e) { return null; }   // 読めなかった（通信など）
+  };
+  let list = await read();
+  if (admin && list && !list.length) {
+    try { const M = await import("./board-edit.js?v=202611260130"); if (await M.importSeed(me)) list = (await read()) || []; } catch (e) { console.error(e); }
+  }
+  list = list || [];
+  const have = new Set(list.map((d) => d.id));
+  if (!list.some((d) => d.status === "published")) list.push(...BOARD_SEED.filter((d) => !have.has(d.id)).map((d) => ({ ...d, _seed: true })));
+  list.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
   // 事件簿は、みんなの記事からのピックアップ（いつも最後に並べる）
   JIKEN.forEach((j) => list.push({ ...j, cat: "trouble", jiken: true }));
   return (BOARDS = list);
 }
 const illOf = (k) => ILL[k] || ILL.suitcase;
+// 一覧の小さな画像：写真の記事は写真、それ以外はイラスト
+const boardThumb = (d) => (d.heroType === "photo" && d.heroUrl ? `<span class="bill ph" style="background-image:url('${esc(d.heroUrl)}')"></span>` : `<span class="bill">${illOf(d.ill)}</span>`);
 const catName = (c) => (BOARD_CATS.find((x) => x[0] === c) || [, ""])[1];
 async function renderBoard() {
   const box = $("boardPane");
   if (!BOARDS) box.innerHTML = '<p class="fol-empty">読み込み中…</p>';
   const list = await loadBoards();
+  const admin = await isAdminMe();
   const cats = BOARD_CATS.filter(([k]) => list.some((d) => d.cat === k));
   // 「すべて」はなし。最初は先頭のカテゴリーを開く
   if (!cats.some(([k]) => k === boardCat)) boardCat = (cats[0] || [""])[0];
   const shown = list.filter((d) => !boardCat || d.cat === boardCat);
+  // 管理者だけ：新しい記事（事件簿のタブでは出さない）
+  const adm = admin && boardCat !== "trouble" ? `<div class="badm"><a class="btn-s" href="#ge-new">＋ 新しい記事</a></div>` : "";
   box.innerHTML = `<div class="bcats">${cats.map(([k, l]) => `<button class="${k === boardCat ? "on" : ""}" data-bc="${k}">${l}</button>`).join("")}</div>
     ${boardCat === "trouble" ? `<div class="bjhd"><span class="bill">${illOf("alert")}</span><p>みんなの旅の記事から、旅先で起きたトラブルや事件をまとめました。タップすると、元の旅の記事が読めます。</p></div>` : ""}
-    <div class="blist">${shown.map((d) => d.jiken ? jikenCard(d) : `<a class="bit press" href="#g-${esc(d.id)}"><span class="bill">${illOf(d.ill)}</span><div><small>${esc(catName(d.cat))}</small><h3>${esc(d.title)}</h3>${d.lead ? `<p>${esc(d.lead)}</p>` : ""}</div></a>`).join("")}</div>`;
+    ${adm}
+    <div class="blist">${shown.map((d) => d.jiken ? jikenCard(d) : `<a class="bit press" href="#g-${esc(d.id)}">${boardThumb(d)}<div><small>${esc(catName(d.cat))}${admin && d.status === "draft" ? '<em class="bdraft">下書き</em>' : ""}</small><h3>${esc(d.title)}</h3>${d.lead ? `<p>${esc(d.lead)}</p>` : ""}</div></a>`).join("")}</div>`;
   box.querySelectorAll("[data-bc]").forEach((b) => (b.onclick = () => { boardCat = b.dataset.bc; haptic(); renderBoard(); }));
 }
 // 事件簿の1件：どこで・何が起きたか・手口・被害・その後。タップで元の記事へ
@@ -619,6 +641,8 @@ function boardBlock(b) {
   if (b.t === "note") return `<p class="bnote">${para(b.x)}</p>`;
   if (b.t === "list") return `<ul class="bul">${(b.items || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
   if (b.t === "steps") return `<ol class="bsteps">${(b.items || []).map((x, i) => `<li><i>${i + 1}</i><div><b>${esc(x[0])}</b>${esc(x[1] || "")}</div></li>`).join("")}</ol>`;
+  if (b.t === "photo" && b.url) return `<figure class="bfig"><img src="${esc(b.url)}" alt="${esc(b.cap || "")}" loading="lazy">${b.cap ? `<figcaption>${esc(b.cap)}</figcaption>` : ""}</figure>`;
+  if (b.t === "ill" && ILL[b.k]) return `<figure class="bfig"><div class="bfill">${ILL[b.k]}</div>${b.cap ? `<figcaption>${esc(b.cap)}</figcaption>` : ""}</figure>`;
   return "";
 }
 function fmtUpdated(u) { const m = String(u || "").match(/^(\d{4})-(\d{2})/); return m ? `${m[1]}年${+m[2]}月更新` : ""; }
@@ -627,10 +651,39 @@ async function pageBoard(el, id) {
   const d = (await loadBoards()).find((x) => x.id === id);
   const ps = el.querySelector(".ps");
   if (!d) { ps.innerHTML = '<p class="empty">記事が見つかりませんでした</p>'; return; }
-  ps.innerHTML = `<div class="bhero">${illOf(d.ill)}</div><div class="bart">
+  const hero = d.heroType === "photo" && d.heroUrl ? `<div class="bhero ph"><img src="${esc(d.heroUrl)}" alt=""></div>` : `<div class="bhero">${illOf(d.ill)}</div>`;
+  ps.innerHTML = `${hero}<div class="bart">${d.status === "draft" ? '<p class="bdraftbar">下書き（管理者にだけ見えています）</p>' : ""}
     <small class="bc">${esc(catName(d.cat))}</small><h1>${esc(d.title)}</h1>${d.lead ? `<p class="blead">${esc(d.lead)}</p>` : ""}${fmtUpdated(d.updated) ? `<p class="bupd">${fmtUpdated(d.updated)}</p>` : ""}
     ${(d.facts || []).length ? `<dl class="bfacts">${d.facts.map((f) => `<div><dt>${esc(f[0])}</dt><dd><b>${esc(f[1])}</b>${f[2] ? `<span>${esc(f[2])}</span>` : ""}</dd></div>`).join("")}</dl>` : ""}
     ${(d.blocks || []).map(boardBlock).join("")}</div>`;
+  if (!d.jiken && (await isAdminMe()) && !el.querySelector("[data-gedit]")) {
+    el.querySelector(".bar2").insertAdjacentHTML("beforeend", '<button class="btn-s on" data-gedit>編集</button>');
+    el.querySelector("[data-gedit]").onclick = async () => {
+      // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
+      if (d._seed) {
+        try { const M = await import("./board-edit.js?v=202611260130"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
+      }
+      location.hash = "#ge-" + encodeURIComponent(id);
+    };
+  }
+}
+// 管理者の記事エディタ（app/board-edit.js）
+function pageBoardEditor(el, id) {
+  const entry = STACK[STACK.length - 1];
+  import("./board-edit.js?v=202611260130").then((M) => M.pageBoardEdit(el, id, {
+    me: () => me, esc, toast, haptic, cat: boardCat,
+    nextOrder: Math.max(0, ...(BOARDS || []).filter((d) => !d.jiken && d.cat === boardCat).map((d) => Number(d.order) || 0)) + 1,
+    afterSave: (sid, o) => {
+      BOARDS = null;
+      renderBoard();
+      // 下に開いている記事ページも描き直す（削除したときは、その記事ページも閉じる）
+      const below = STACK.find((x) => x.hash === "#g-" + sid);
+      if (o.deleted && below) { history.go(-2); return; }
+      if (below) pageBoard(below.el, sid);
+      if (STACK[STACK.length - 1] === entry) history.back();
+    },
+  })).catch((e) => { console.error(e); el.innerHTML = bar("記事を編集") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; });
 }
 
 // ---------- 積み重ねページ ----------
@@ -646,7 +699,7 @@ const TI = {
   photo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="3.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M20.5 15.5l-4.5-4.5L5 20.3"/></svg>',
 };
 const BACK = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
-function isPageHash(h) { return /^#(a-|g-|c-|u-|dm|w-|f-|x-|n$|p$|p-|fare$|pass$)/.test(h); }
+function isPageHash(h) { return /^#(a-|g-|ge-|c-|u-|dm|w-|f-|x-|n$|p$|p-|fare$|pass$)/.test(h); }
 function route() {
   const h = location.hash;
   if (!isPageHash(h)) { while (STACK.length) popPage(); return; }
@@ -663,23 +716,24 @@ function pushPage(h) {
   $("tab").classList.add("hide"); $("aiCmp").hidden = true; syncNativeTab();
   swipeBack(el);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("open")));
-  const m = h.match(/^#(a|g|c|u|dm|w|fare|pass|f|x|n|p)-?(.*)$/);
+  const m = h.match(/^#(a|ge|g|c|u|dm|w|fare|pass|f|x|n|p)-?(.*)$/);
   const kind = m[1], arg = decodeURIComponent(m[2] || "");
   if (kind === "a") pageArticle(el, arg);
   else if (kind === "g") pageBoard(el, arg);
+  else if (kind === "ge") pageBoardEditor(el, arg);
   else if (kind === "c") SD().then((M) => (arg === "new" ? M.pageSodanNew(el) : arg === "rules" ? M.pageRules(el) : M.pageSodan(el, arg)));
   else if (kind === "u") pageUser(el, arg);
   else if (kind === "dm" && !arg) pageInbox(el);
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611260025").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611260130").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611260025").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611260025").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611260130").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611260130").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -984,7 +1038,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611260025"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611260130"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1382,7 +1436,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611260025").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611260130").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);
@@ -1425,7 +1479,7 @@ function myCard(d, editLink) {
     <div class="mymeta">${st !== "published" ? `<span class="pst s-${st}">${STATUS_LABEL[st]}</span>` : ""}${d._collab || (d.coAuthorIds || []).length ? '<span class="pst">共同投稿</span>' : ""}<button class="pmn" data-pm="${esc(d.id)}" aria-label="メニュー"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div></div>`;
 }
 let ADMIN_ME = null;
-const isAdminMe = async () => { if (ADMIN_ME === null) { try { ADMIN_ME = (await getDoc(doc(db, "admins", me))).exists(); } catch (e) { ADMIN_ME = false; } } return ADMIN_ME; };
+const isAdminMe = async () => { if (!me) return false; if (ADMIN_ME === null) { try { ADMIN_ME = (await getDoc(doc(db, "admins", me))).exists(); } catch (e) { ADMIN_ME = false; } } return ADMIN_ME; };
 function drawMyPosts() {
   const box = $("myPosts"); if (!box) return;
   if (myTab === "sodan") { SD().then((M) => M.renderMine(box, me, true)); return; }
@@ -1957,6 +2011,8 @@ async function watchDmBadge() {
 }
 onAuthStateChanged(auth, async (u) => {
   me = u ? u.uid : null;
+  ADMIN_ME = null; BOARDS = null;          // ログインし直したら、管理者かどうか・掲示板の記事を読み直す
+  if (!$("boardPane").hidden) renderBoard();
   if (me) setTimeout(setupNativePush, 2500);   // iPhoneアプリ：通知の許可と宛先の登録（起動のロゴのあとに）
   if (!me) watchDmBadge();
   saved = new Set();
