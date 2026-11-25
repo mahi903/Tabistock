@@ -195,6 +195,8 @@ async function stampFontCss() {
   } catch (e) { STAMP_CSS = ""; }
   return STAMP_CSS;
 }
+// 写真がない人の代わりの人影（パスポート写真の欄に入れる）
+const NOPHOTO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 40"><rect width="30" height="40" fill="#dfe3df"/><circle cx="15" cy="15" r="6.6" fill="#b9c2bd"/><path d="M3 40c0-8 5.4-13 12-13s12 5 12 13z" fill="#b9c2bd"/></svg>`;
 const loadImg = (src, cors) => new Promise((ok) => { const im = new Image(); if (cors) im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = () => ok(null); im.src = src; });
 const svgImg = (svg) => loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
 const INK = DEFS.slice(DEFS.indexOf("<filter"), DEFS.indexOf("</filter>") + 9);
@@ -222,11 +224,11 @@ async function makeStory(o) {
   c.fillStyle = "#fbf8ee"; c.fillRect(84, 354, 912, 396); c.strokeStyle = "#d8cfbb"; c.lineWidth = 3; c.strokeRect(84, 354, 912, 396);
   // Firebase Storage の画像はそのままだと描き込めないので、同じドメインの /api/img を通して読み込む
   const src = /^https:\/\/(firebasestorage\.googleapis\.com|lh3\.googleusercontent\.com)\//.test(o.photo || "") ? "/api/img?u=" + encodeURIComponent(o.photo) : o.photo;
-  const ph = src ? await loadImg(src, true) : null;
+  const ph = src ? await loadImg(src, true) : await svgImg(NOPHOTO);
   c.fillStyle = "#cfd6d2"; c.fillRect(132, 402, 222, 296);
   if (ph) { const r = Math.max(222 / ph.width, 296 / ph.height), w = ph.width * r, h = ph.height * r; c.save(); c.beginPath(); c.rect(132, 402, 222, 296); c.clip(); c.drawImage(ph, 132 + (222 - w) / 2, 402 + (296 - h) / 2, w, h); c.restore(); }
   const lab = (t, y) => { c.fillStyle = "#5d6b63"; c.font = "500 20px 'Noto Sans JP', sans-serif"; c.fillText(t, 402, y); };
-  lab("氏名 / Name", 438); c.fillStyle = "#1b2330"; c.font = "800 42px 'Shippori Mincho', serif"; c.fillText(o.name, 402, 488);
+  lab("氏名 / Name", 438); c.fillStyle = "#1b2330"; { let f = 42; c.font = `800 ${f}px 'Shippori Mincho', serif`; while (c.measureText(o.name).width > 380 && f > 24) { f -= 2; c.font = `800 ${f}px 'Shippori Mincho', serif`; } c.fillText(o.name, 402, 488); }
   lab("発行年月日 / Date of issue", 542); c.font = "700 44px 'Cormorant Garamond', serif"; c.fillText(o.issued, 402, 590);
   lab("所持人自署 / Signature", 640);
   if (o.sig) { c.save(); c.translate(396, 636); c.scale(1.2, 1.2); c.strokeStyle = "#1b2330"; c.lineWidth = 3.2; c.lineCap = c.lineJoin = "round"; c.stroke(new Path2D(o.sig)); c.restore(); }
@@ -335,10 +337,12 @@ export function pagePassport(el, ctx) {
     return items;
   }
   // スタンプはページの下の方に、少し重なるくらいに散らして押す
+  // 国が多いときは列を増やして小さく押す
   function stampLayer(items, seed) {
-    const n = items.length, cols = n <= 2 ? 2 : 3, rows = Math.ceil(n / cols);
-    const z = n <= 2 ? 1.02 : n <= 3 ? 0.9 : Math.max(0.56, 0.9 - (rows - 1) * 0.18);
-    const top0 = 66, band = 26;
+    const n = items.length, cols = n <= 4 ? 2 : n <= 9 ? 3 : 4, rows = Math.ceil(n / cols);
+    const top0 = n > 6 ? 62 : 66, band = n > 6 ? 30 : 26;
+    const colW = 288 / cols, rowH = (450 * band / 100) / rows;
+    const z = Math.max(0.42, Math.min(1.02, (colW / 122) * 1.08, (rowH / 88) * 1.35));
     return items.map((it, i) => {
       const h = hash(seed + i), row = Math.floor(i / cols), col = i % cols, inRow = Math.min(cols, n - row * cols);
       const x = (100 / inRow) * col + (inRow === 1 ? 26 : 2) + (h % 7) - 3;
@@ -348,7 +352,9 @@ export function pagePassport(el, ctx) {
   }
   function artPage(d, k, pno) {
     const imgs = (d.heroUrls && d.heroUrls.length ? d.heroUrls : [d.thumbUrl]).filter(Boolean).slice(0, 3);
-    const P = PH[imgs.length] || [];
+    // スタンプが多い記事は、写真を少し小さくしてスタンプの場所を空ける
+    const many = stampsOf(d).length > 6;
+    const P = (PH[imgs.length] || []).map(([x, y, w, r]) => (many ? [x + w * 0.14, y - 1, w * 0.72, r] : [x, y, w, r]));
     const phs = imgs.map((u, i) => { const [x, y, w, r] = P[i]; return `<div class="snap" style="left:${x}%;top:${y}%;width:${w}%;transform:rotate(${r}deg)"><i style="background-image:url('${esc(u)}')"></i><span class="tp t1"></span><span class="tp t2"></span></div>`; }).join("");
     const cs0 = (d.countries || []).find((v) => v !== "japan");
     return { pno, kind: "art", img: imgs[0] || "", col: (cs0 && FLAG[cs0]) || "#1f6f5b", html: `<div class="pphd"><span>VISA<b>査証</b></span><i>No.${String(k + 1).padStart(2, "0")}</i></div>
@@ -403,7 +409,7 @@ export function pagePassport(el, ctx) {
       return `<button class="th" data-f="${f}" aria-label="${pg.pno}ページ">${inner}<b>${pg.kind === "next" ? "次の旅" : pg.pno}</b></button>`;
     })).join("");
   el.innerHTML = bar("Tabistock パスポート", `<button class="ppsh" id="ppShare" aria-label="シェア"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5v6.5a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-6.5"/></svg></button>`) + `<div class="ps under2 ppw">${DEFS}
-    <div class="pp-stage"><div class="pp-in" id="ppIn"><div class="pp" id="ppBook" style="--ppgl:${GL.replace(/"/g, "&quot;")};--ppme:url('${esc(p.photoURL || "")}')"><div class="base"><div class="face leather endp">${wm}</div></div><div class="gut"></div>${leavesHtml}</div></div></div>
+    <div class="pp-stage"><div class="pp-in" id="ppIn"><div class="pp" id="ppBook" style="--ppgl:${GL.replace(/"/g, "&quot;")};--ppme:url('${p.photoURL ? esc(p.photoURL) : "data:image/svg+xml," + encodeURIComponent(NOPHOTO).replace(/'/g, "%27")}')"><div class="base"><div class="face leather endp">${wm}</div></div><div class="gut"></div>${leavesHtml}</div></div></div>
     <div class="pp-strip" id="ppStrip">${THUMBS}</div></div>`;
 
   const book = el.querySelector("#ppBook");
