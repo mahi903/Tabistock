@@ -3,6 +3,7 @@
 // sodan/{id}/likes/{uid}           投稿へのいいね
 // sodan/{id}/replies/{rid}         回答・コメント：uid, text, articleId, replyToUid, replyToName, likeCount, createdAt
 // sodan/{id}/replies/{rid}/likes/{uid}
+// sodanPins/{種類_エリア}          ルームの固定コメント（管理者だけが書ける）：text, updatedAt。ルーム＝種類×エリア（「すべて」「全エリア」も1つの値）
 // 一覧は新しい順に最大200件を読み、種類・エリア・並び順は手元で絞り込む（複合インデックスを使わない）
 import { db } from "../firebase-config.js";
 import {
@@ -23,10 +24,48 @@ let LIST = null, fKind = "", fArea = "", fSort = "new";
 export function initSodan(ctx) { C = ctx; }
 export function invalidate() { LIST = null; }
 
+// ---- ルームの固定コメント ----
+let PINS = null, ADMIN = false;
+const roomKey = () => (fKind || "all") + "_" + (fArea || "all");
+async function loadPins() {
+  if (PINS) return PINS;
+  PINS = {};
+  try { (await getDocs(collection(db, "sodanPins"))).forEach((d) => { PINS[d.id] = d.data(); }); } catch (e) { console.error(e); }
+  try { ADMIN = !!(C.isAdmin && (await C.isAdmin())); } catch (e) { ADMIN = false; }
+  return PINS;
+}
+const PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M9 3h6l-1 6 4 4H6l4-4z"/><path d="M12 13v8"/></svg>';
+function pinHtml() {
+  const pin = (PINS || {})[roomKey()];
+  // ふだんは1行だけ。タップで開いて全文を読める
+  if (pin && pin.text) return `<details class="spin"><summary>${PIN}<b>このルームについて</b><i class="spin-ar"></i></summary><div class="spin-bd"><p>${C.para(pin.text)}</p>${ADMIN ? '<button class="spin-ed" data-pin-ed>編集</button>' : ""}</div></details>`;
+  return ADMIN ? '<button class="spin-add" data-pin-ed>＋ このルームに固定コメントを書く（管理者のみ）</button>' : "";
+}
+function editPin() {
+  const key = roomKey(), cur = ((PINS || {})[key] || {}).text || "";
+  const room = `${fKind ? kindName(fKind) : "すべて"} × ${fArea ? areaName(fArea) : "全エリア"}`;
+  const ov = document.createElement("div"); ov.className = "spin-ov";
+  ov.innerHTML = `<div><h3>固定コメント</h3><small>${C.esc(room)}</small><textarea maxlength="400" placeholder="例：このルームでは、旅先で見つけたことを気軽に話してね！">${C.esc(cur)}</textarea><div class="acts">${cur ? '<button class="del">外す</button>' : ""}<button class="cn">キャンセル</button><button class="ok">固定する</button></div></div>`;
+  document.body.appendChild(ov);
+  const ta = ov.querySelector("textarea"); setTimeout(() => ta.focus(), 50);
+  const close = () => ov.remove();
+  ov.querySelector(".cn").onclick = close;
+  ov.onclick = (e) => { if (e.target === ov) close(); };
+  const save = async (text) => {
+    try {
+      if (text) { await setDoc(doc(db, "sodanPins", key), { text, updatedAt: serverTimestamp() }); PINS[key] = { text }; }
+      else { await deleteDoc(doc(db, "sodanPins", key)); delete PINS[key]; }
+      C.haptic(); C.toast(text ? "固定しました" : "固定コメントを外しました"); close(); renderSodan();
+    } catch (e) { console.error(e); C.toast("保存できませんでした"); }
+  };
+  ov.querySelector(".ok").onclick = () => save(ta.value.trim());
+  const d = ov.querySelector(".del"); if (d) d.onclick = () => save("");
+}
+
 const secOf = (t) => (t && t.seconds) || (t && t.toMillis ? t.toMillis() / 1000 : 0) || Date.now() / 1000;
 // 名前の横：スタイルタグを最大2つ
 const tagsOf = (uid) => { const t = (C.PROF[uid] || {}).tags; return Array.isArray(t) ? t.slice(0, 2) : []; };
-const who = (uid) => `<a class="snm" href="#u-${C.esc(uid)}"><b>${C.esc((C.PROF[uid] || {}).nickname || "旅人")}</b>${tagsOf(uid).map((t) => `<small>${C.esc(t)}</small>`).join("")}</a>`;
+const who = (uid) => `<a class="snm" href="#u-${C.esc(uid)}"><b>${C.esc((C.PROF[uid] || {}).nickname || "旅人")}${C.vmark ? C.vmark(uid) : ""}</b>${tagsOf(uid).map((t) => `<small>${C.esc(t)}</small>`).join("")}</a>`;
 const avatar = (uid, s = 36) => `<a href="#u-${C.esc(uid)}" class="sav" style="width:${s}px;height:${s}px"><img src="${C.esc(C.avatarOf(uid))}" alt=""></a>`;
 
 async function load(force) {
@@ -63,7 +102,7 @@ export async function renderSodan() {
   const sx = [...box.querySelectorAll(".schips")].map((r) => r.scrollLeft);   // 横にスクロールした位置を覚えておく
   if (!LIST && !box.querySelector(".slist")) box.innerHTML = '<p class="fol-empty">読み込み中…</p>';   // 描き直しのときは、読み込むあいだ今の一覧を出したまま
   let list;
-  try { list = await load(); } catch (e) { console.error(e); box.innerHTML = '<p class="fol-empty">読み込めませんでした。時間をおいてもう一度開いてください。</p>'; return; }
+  try { [list] = await Promise.all([load(), loadPins()]); } catch (e) { console.error(e); box.innerHTML = '<p class="fol-empty">読み込めませんでした。時間をおいてもう一度開いてください。</p>'; return; }
   let shown = list.filter((p) => (!fKind || p.kind === fKind) && (!fArea || p.area === fArea));
   if (fSort === "pop") shown = shown.slice().sort((a, b) => ((b.likeCount || 0) + 2 * (b.replyCount || 0)) - ((a.likeCount || 0) + 2 * (a.replyCount || 0)));
   if (fSort === "open") shown = shown.filter((p) => p.kind === "q" && !p.solved);
@@ -72,6 +111,7 @@ export async function renderSodan() {
     <div class="schips">${[["", "すべて"], ...KINDS].map(([k, l]) => `<button class="${k === fKind ? "on" : ""}" data-k="${k}">${l}</button>`).join("")}</div>
     <div class="schips sa">${[["", "全エリア"], ...AREAS].map(([k, l]) => `<button class="${k === fArea ? "on" : ""}" data-a="${k}">${l}</button>`).join("")}</div>
     <div class="ssort">${[["new", "新着"], ["pop", "人気"], ["open", "未解決の相談"]].map(([k, l]) => `<button class="${k === fSort ? "on" : ""}" data-s="${k}">${l}</button>`).join("")}</div>
+    ${pinHtml()}
     <div class="slist">${shown.length ? shown.map((p) => postRow(p)).join("") : `<p class="fol-empty">${list.length ? "まだこの条件の投稿はありません。" : "まだ投稿がありません。最初の相談を書いてみませんか？"}</p>`}</div>
     <div style="height:110px"></div>`;
   box.querySelectorAll(".schips").forEach((r, i) => { if (sx[i]) r.scrollLeft = sx[i]; });
@@ -79,6 +119,7 @@ export async function renderSodan() {
   box.querySelectorAll("[data-a]").forEach((b) => (b.onclick = () => { fArea = b.dataset.a; C.haptic(); renderSodan(); }));
   box.querySelectorAll("[data-s]").forEach((b) => (b.onclick = () => { fSort = b.dataset.s; C.haptic(); renderSodan(); }));
   box.querySelectorAll("[data-open]").forEach((r) => (r.onclick = (e) => { if (e.target.closest("a,button")) return; location.hash = "#c-" + r.dataset.open; }));
+  box.querySelectorAll("[data-pin-ed]").forEach((b) => (b.onclick = editPin));
   bindPostActions(box, liked, list);
 }
 export async function refreshSodan() { await load(true).catch(() => {}); renderSodan(); }

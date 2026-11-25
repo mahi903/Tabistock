@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611251438";
+import { ILL, BOARD_CATS, BOARD_SEED } from "./board.js?v=202611251541";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -57,6 +57,10 @@ function daysLabel(d) {
   }
   return (DAYS_OPT.find((x) => x.v === d.days_v) || {}).l || "";
 }
+// 公式（管理人）アカウントの認証マーク
+const OFFICIAL = new Set(["aete3scQbPQMlYtKaKDNf4nUKk23"]);
+const VMARK = '<svg class="vmk" viewBox="0 0 24 24" aria-label="公式"><path d="M12 1.6l2.4 1.9 3-.4 1.1 2.8 2.8 1.1-.4 3 1.9 2.4-1.9 2.4.4 3-2.8 1.1-1.1 2.8-3-.4L12 22.4l-2.4-1.9-3 .4-1.1-2.8-2.8-1.1.4-3L1.2 12l1.9-2.4-.4-3 2.8-1.1L6.6 2.7l3 .4z" fill="#1f6f5b"/><path d="M7.6 12.3l3 3 5.8-6.1" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const vmark = (uid) => (OFFICIAL.has(uid) ? VMARK : "");
 const authorName = (d) => d.authorNickname || (PROF[d.authorId] || {}).nickname || "旅人";
 const avatarOf = (uid) => (PROF[uid] || {}).photoURL || DEF_AV;
 const ovText = (d) => `<span class="ovt"><em>${esc(placeEn(d))}</em><b>${esc(titleOf(d))}</b><small><img src="${esc(avatarOf(d.authorId))}" alt="">${esc(authorName(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</small></span>`;
@@ -280,7 +284,7 @@ async function renderFeed() {
   box.innerHTML = list.slice(0, 30).map((d) => {
     const imgs = (d.heroUrls && d.heroUrls.length ? d.heroUrls : [thumbOf(d)]).filter(Boolean);
     return `<article class="post">
-      <div class="ph"><a href="#u-${esc(d.authorId)}"><img src="${esc(avatarOf(d.authorId))}" alt=""></a><div><b>${esc(authorName(d))}</b><small>${esc(ago(pubSec(d)))}・${esc(placeJp(d))}</small></div></div>
+      <div class="ph"><a href="#u-${esc(d.authorId)}"><img src="${esc(avatarOf(d.authorId))}" alt=""></a><div><b>${esc(authorName(d))}${vmark(d.authorId)}</b><small>${esc(ago(pubSec(d)))}・${esc(placeJp(d))}</small></div></div>
       <div class="pgn"><a class="pg" href="#a-${esc(d.id)}">${imgs.map((u) => `<div style="background-image:url('${esc(u)}')"></div>`).join("")}</a>${imgs.length > 1 ? `<span>1/${imgs.length}</span>` : ""}</div>
       <div class="acts"><button class="lk" data-flike="${esc(d.id)}" aria-label="いいね">${HEART}<b></b></button><button class="sv ${saved.has(d.id) ? "on" : ""}" data-save="${esc(d.id)}">${SAVE}</button></div>
       <div class="pc"><div class="pl">${esc(placeJp(d))}${daysLabel(d) ? "・" + esc(daysLabel(d)) : ""}</div><h3>${esc(titleOf(d))}</h3>${d.lead ? `<p>${esc(String(d.lead).replace(/\n+/g, " "))}</p>` : ""}<a class="more" href="#a-${esc(d.id)}">旅程を見る →</a></div>
@@ -561,9 +565,11 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611251438");
+  const M = await import("./sodan.js?v=202611251541");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
+    isAdmin: () => isAdminMe(),
+    vmark,
     notify: (o) => import("../notify.js").then((N) => N.sendNotification(o)).catch(() => {}),
     artCard: (d) => `<a class="sart" href="#a-${esc(d.id)}"><i style="background-image:url('${esc(thumbOf(d))}')"></i><div><b>${esc(d.title || "")}</b><small>${esc(authorName(d))}${nDays(d) ? "・" + nDays(d) + "日間" : ""}</small></div></a>`,
     myArticles: async () => (ALL || []).filter((d) => d.authorId === me || (d.coAuthorIds || []).includes(me)),
@@ -655,13 +661,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611251438").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611251541").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611251438").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611251438").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611251541").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611251541").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -745,7 +751,7 @@ async function pageArticle(el, id, opt = {}) {
     <div class="sheet">
       <div class="meta">${tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
       <h1>${esc(titleOf(d))}</h1>${d.lead ? `<p class="lead">${esc(d.lead)}</p>` : ""}
-      <div class="sau">${authors.map((u) => `<a href="#u-${esc(u)}" style="display:flex;align-items:center;gap:8px"><img src="${esc(avatarOf(u))}" alt=""><b>${esc((PROF[u] || {}).nickname || (u === d.authorId ? authorName(d) : "旅人"))}</b></a>`).join("")}<span>${esc(isDomestic(d) ? "" : fmtPeriod(d.dateStart, d.dateEnd))}</span></div>
+      <div class="sau">${authors.map((u) => `<a href="#u-${esc(u)}" style="display:flex;align-items:center;gap:8px"><img src="${esc(avatarOf(u))}" alt=""><b>${esc((PROF[u] || {}).nickname || (u === d.authorId ? authorName(d) : "旅人"))}${vmark(u)}</b></a>`).join("")}<span>${esc(isDomestic(d) ? "" : fmtPeriod(d.dateStart, d.dateEnd))}</span></div>
       ${facts.some((f) => f[1]) ? `<div class="facts" style="grid-template-columns:repeat(${facts.length},1fr)">${facts.map((f) => `<div><small>${f[0]}</small>${esc(f[1] || "—")}</div>`).join("")}</div>` : ""}
       ${total ? `<div class="cost"><div class="h"><span>この旅にかかった費用</span><b>${yen(total)}</b></div>
         <div class="bar">${crow.map((c, i) => `<span style="flex:0.0001;background:${COL[i % COL.length]}" data-f="${c[1]}"></span>`).join("")}</div>
@@ -764,7 +770,7 @@ async function pageArticle(el, id, opt = {}) {
       }).join("")}</div>` : ""}
       ${d.comment ? `<div class="dh"><h2>投稿者のコメント</h2></div><p class="ph2">${para(d.comment)}</p>` : ""}
       <div class="dh"><h2>投稿者</h2></div>
-      ${authors.map((u) => { const p = PROF[u] || {}; return `<div class="acard"><a href="#u-${esc(u)}"><img src="${esc(avatarOf(u))}" alt=""></a><div><a href="#u-${esc(u)}"><b>${esc(p.nickname || authorName(d))}</b></a>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}</div>${u !== me ? `<button class="btn-s" data-follow="${esc(u)}">フォロー</button>` : ""}</div>`; }).join("")}
+      ${authors.map((u) => { const p = PROF[u] || {}; return `<div class="acard"><a href="#u-${esc(u)}"><img src="${esc(avatarOf(u))}" alt=""></a><div><a href="#u-${esc(u)}"><b>${esc(p.nickname || authorName(d))}${vmark(u)}</b></a>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}</div>${u !== me ? `<button class="btn-s" data-follow="${esc(u)}">フォロー</button>` : ""}</div>`; }).join("")}
       <div class="dh"><h2>コメント <small id="ccount" style="font-family:Manrope;color:var(--muted)"></small></h2></div>
       <div id="clist"><p class="loading">読み込み中…</p></div>
       <div id="cform"></div>
@@ -966,7 +972,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611251438"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611251541"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1094,7 +1100,7 @@ async function pageUser(el, uid) {
   const igUrl = ig ? (/^https?:\/\//.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/") : "";
   const isMe = uid === me;
   el.innerHTML = bar(p.nickname || "旅人", isMe ? "" : '<button class="mo" data-umore>…</button>') + `<div class="ps under2">
-    <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><a href="#f-followers-${esc(uid)}"><b data-fc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(uid)}"><b data-gc>—</b><span>フォロー中</span></a></div></div></div>
+    <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt=""><div class="side"><h1>${esc(p.nickname || "旅人")}${vmark(uid)}</h1><div class="st"><div><b>${posts.length}</b><span>投稿</span></div><a href="#f-followers-${esc(uid)}"><b data-fc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(uid)}"><b data-gc>—</b><span>フォロー中</span></a></div></div></div>
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${nextTripLine(p)}${tagChips(p, false)}${snsLinks(p)}
       <div class="ub" data-ub></div></div>
     <div class="mtabs itabs" style="margin-top:26px"><button class="on" data-ut="posts" aria-label="投稿">${TI.grid}</button><button data-ut="sodan" aria-label="旅ひろば">${TI.sodan}</button><button data-ut="photos" aria-label="写真">${TI.photo}</button></div>
@@ -1355,7 +1361,7 @@ function renderMe() {
   myTab = myTab && myTab !== "collab" ? myTab : "trips";
   box.innerHTML = `<div class="mehead nm0"><b>マイページ</b><button class="hb" id="meMenu" aria-label="メニュー"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div>
     <div class="uhead"><div class="row"><img src="${esc(p.photoURL || DEF_AV)}" alt="">
-      <div class="side"><h1>${esc(p.nickname || "旅人")}</h1><div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー中</span></a></div></div></div>
+      <div class="side"><h1>${esc(p.nickname || "旅人")}${vmark(me)}</h1><div class="st"><div><b>${mine.length}</b><span>投稿</span></div><a href="#f-followers-${esc(me)}"><b data-mfc>—</b><span>フォロワー</span></a><a href="#f-following-${esc(me)}"><b data-mgc>—</b><span>フォロー中</span></a></div></div></div>
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${nextTripLine(p)}${tagChips(p, true)}${snsLinks(p)}
       <div class="ub mub"><a class="btn-g" href="#x-profile">プロフィールを編集</a><button class="btn-g" data-go="saved">保存した旅</button></div></div>
     <div class="mtabs itabs" id="mtabs"><button class="${myTab === "trips" ? "on" : ""}" data-mt="trips" aria-label="旅程">${TI.grid}<i id="invDot" hidden></i></button><button class="${myTab === "transit" ? "on" : ""}" data-mt="transit" aria-label="トランジット">${TI.transit}</button><button class="${myTab === "sodan" ? "on" : ""}" data-mt="sodan" aria-label="旅ひろば">${TI.sodan}</button><button class="${myTab === "photos" ? "on" : ""}" data-mt="photos" aria-label="写真">${TI.photo}</button></div>
@@ -1364,7 +1370,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611251438").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611251541").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);

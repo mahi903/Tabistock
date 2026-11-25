@@ -146,6 +146,12 @@ service cloud.firestore {
       }
     }
 
+    // ---- 旅ひろばのルームの固定コメント（管理者だけが書ける。誰でも読める）----
+    match /sodanPins/{roomId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     // ---- 旅の掲示板（今は管理者だけが書ける。公開中の記事は誰でも読める）----
     match /boards/{boardId} {
       allow read:  if resource.data.status == "published" || isAdmin();
