@@ -101,6 +101,7 @@ const CSS = `
 .ppsign>div{width:min(360px,100%);background:#f5f0e2;border:1.5px solid #1b2330;box-shadow:5px 5px 0 #1f6f5b;padding:20px 18px 16px;color:#1b2330}
 .ppsign h3{margin:0;font:800 17px/1.4 'Shippori Mincho',serif;letter-spacing:.06em}
 .ppsign p{margin:6px 0 14px;font:500 12px/1.7 'Noto Sans JP',sans-serif;color:#5d6b63}
+.ppsign,.ppsign *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .ppsign .pad{position:relative;background:#fffdf6;border:1px solid #d8cfbb;touch-action:none}
 .ppsign canvas{display:block;width:100%;height:130px;touch-action:none}
 .ppsign .pad i{position:absolute;left:12px;right:12px;bottom:30px;border-bottom:1px dashed #b9b1a0;pointer-events:none}
@@ -588,6 +589,8 @@ export function pagePassport(el, ctx) {
     const widthOf = (v, e) => (e.pointerType === "pen" && e.pressure > 0 ? 1 + 6 * e.pressure : 1.1 + 4.2 * Math.exp(-v * 1.4));
     const redraw = () => { cx.clearRect(0, 0, R.width, R.height); cx.save(); cx.scale(1 / SX, 1 / SY); strokes.forEach((st) => brushCanvas(cx, "B:" + st.map((q) => q.join(",")).join(" "), "#1b2330")); cx.restore(); };
     cv.addEventListener("pointerdown", (e) => { e.preventDefault(); cv.setPointerCapture(e.pointerId); const [x, y] = pt(e); vs = 0; ws = widthOf(0, e); lt = e.timeStamp; cur = [[x, y, ws * 0.45]]; strokes.push(cur); });
+    // 長押しで文字選択やコピーのメニューが出ないように（iPhone）
+    ["touchstart", "touchmove"].forEach((t) => cv.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
     cv.addEventListener("pointermove", (e) => {
       if (!cur) return; const [x, y] = pt(e), l = cur[cur.length - 1], dist = Math.hypot(x - l[0], y - l[1]); if (dist < 1.4) return;
       const dt = Math.max(4, e.timeStamp - lt); lt = e.timeStamp; vs = vs * 0.6 + (dist / dt) * 0.4; ws = ws * 0.7 + widthOf(vs, e) * 0.3;
