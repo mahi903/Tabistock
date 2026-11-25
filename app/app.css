@@ -1550,3 +1550,5 @@ html.ntab .tab{display:none}
 .bcasew .bcase .bct{padding-right:70px}
 .bjhd.adm{position:relative;padding-right:76px}
 .bjhd .bced{position:absolute;top:14px;right:20px;font-size:11px;font-weight:700;color:var(--green);border:1px solid var(--green);background:var(--bg);padding:2px 8px;border-radius:3px;text-decoration:none}
+/* アプリ内リンク（旅カードなど）を長押ししても、リンクのメニュー／プレビューを出さない */
+a[href^="#"],a[href^="#"] *{-webkit-touch-callout:none;-webkit-user-drag:none}
