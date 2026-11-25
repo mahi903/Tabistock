@@ -104,13 +104,16 @@ export async function renderSodan() {
   let list;
   try { [list] = await Promise.all([load(), loadPins()]); } catch (e) { console.error(e); box.innerHTML = '<p class="fol-empty">読み込めませんでした。時間をおいてもう一度開いてください。</p>'; return; }
   let shown = list.filter((p) => (!fKind || p.kind === fKind) && (!fArea || p.area === fArea));
+  // 「未解決の相談」は、すべて・質問・相談のときだけ
+  const canOpen = !fKind || fKind === "q";
+  if (!canOpen && fSort === "open") fSort = "new";
   if (fSort === "pop") shown = shown.slice().sort((a, b) => ((b.likeCount || 0) + 2 * (b.replyCount || 0)) - ((a.likeCount || 0) + 2 * (a.replyCount || 0)));
   if (fSort === "open") shown = shown.filter((p) => p.kind === "q" && !p.solved);
   const liked = await likedSet(shown.map((p) => p.id));
   box.innerHTML = `
     <div class="schips">${[["", "すべて"], ...KINDS].map(([k, l]) => `<button class="${k === fKind ? "on" : ""}" data-k="${k}">${l}</button>`).join("")}</div>
     <div class="schips sa">${[["", "全エリア"], ...AREAS].map(([k, l]) => `<button class="${k === fArea ? "on" : ""}" data-a="${k}">${l}</button>`).join("")}</div>
-    <div class="ssort">${[["new", "新着"], ["pop", "人気"], ["open", "未解決の相談"]].map(([k, l]) => `<button class="${k === fSort ? "on" : ""}" data-s="${k}">${l}</button>`).join("")}</div>
+    <div class="ssort">${[["new", "新着"], ["pop", "人気"]].concat(canOpen ? [["open", "未解決の相談"]] : []).map(([k, l]) => `<button class="${k === fSort ? "on" : ""}" data-s="${k}">${l}</button>`).join("")}</div>
     ${pinHtml()}
     <div class="slist">${shown.length ? shown.map((p) => postRow(p)).join("") : `<p class="fol-empty">${list.length ? "まだこの条件の投稿はありません。" : "まだ投稿がありません。最初の相談を書いてみませんか？"}</p>`}</div>
     <div style="height:110px"></div>`;
