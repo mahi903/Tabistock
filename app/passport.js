@@ -210,6 +210,27 @@ function spaced(c, text, cx, y, sp) {
   const ch = [...text], w = ch.reduce((a, t) => a + c.measureText(t).width, 0) + sp * (ch.length - 1);
   let x = cx - w / 2; ch.forEach((t) => { c.fillText(t, x, y); x += c.measureText(t).width + sp; });
 }
+// ---- 筆ペンの署名 ----
+// 保存形式：「B:」のあとに、ひと筆ごとに「x,y,太さ」を空白区切りで並べ、筆の区切りは「|」
+// （古い署名は SVG の線のデータのまま。そちらは同じ太さの線で描く）
+const isBrush = (d) => typeof d === "string" && d.startsWith("B:");
+function brushSegs(d) {
+  const out = [];
+  d.slice(2).split("|").forEach((st) => {
+    const P = st.trim().split(" ").map((q) => q.split(",").map(Number)).filter((q) => q.length === 3 && q.every((v) => !isNaN(v)));
+    if (P.length === 1) out.push([P[0][0], P[0][1], P[0][0] + 0.1, P[0][1], P[0][2]]);
+    // 点と点のあいだを細かく割って、太さがなめらかに変わるようにする
+    for (let i = 1; i < P.length; i++) { const [a, b] = [P[i - 1], P[i]], n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 1.2)); for (let k = 0; k < n; k++) { const t0 = k / n, t1 = (k + 1) / n; out.push([a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0, a[0] + (b[0] - a[0]) * t1, a[1] + (b[1] - a[1]) * t1, a[2] + (b[2] - a[2]) * (t0 + t1) / 2]); } }
+  });
+  return out;
+}
+// 太さごとにまとめて SVG の線にする
+function brushSvgPaths(d, col) {
+  const g = {}; brushSegs(d).forEach(([x1, y1, x2, y2, w]) => { const k = (Math.round(w * 5) / 5).toFixed(1); (g[k] = g[k] || []).push(`M${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}`); });
+  return Object.entries(g).map(([w, a]) => `<path d="${a.join("")}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`).join("");
+}
+function brushCanvas(c, d, col) { c.strokeStyle = col; c.lineCap = "round"; brushSegs(d).forEach(([x1, y1, x2, y2, w]) => { c.lineWidth = w; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); }); }
+
 // 紙や革のざらつき用のノイズ（小さいタイルを敷きつめる）
 function grain(c, a, dark) {
   const t = document.createElement("canvas"); t.width = t.height = 160; const x = t.getContext("2d"), d = x.createImageData(160, 160);
@@ -266,7 +287,7 @@ async function makeStory(o) {
   lab("氏名 / Name", 160); c.fillStyle = "#1b2330"; { let f = 40; c.font = `800 ${f}px 'Shippori Mincho', serif`; while (c.measureText(o.name).width > 300 && f > 22) { f -= 2; c.font = `800 ${f}px 'Shippori Mincho', serif`; } c.fillText(o.name, 326, 206); }
   lab("発行年月日 / Date of issue", 262); c.font = "700 40px 'Cormorant Garamond', serif"; c.fillText(o.issued, 326, 306);
   lab("所持人自署 / Signature", 362);
-  if (o.sig) { c.save(); c.translate(320, 356); c.scale(1.1, 1.1); c.strokeStyle = "#1b2330"; c.lineWidth = 3.2; c.lineCap = c.lineJoin = "round"; c.stroke(new Path2D(o.sig)); c.restore(); }
+  if (o.sig) { c.save(); c.translate(320, 356); c.scale(1.1, 1.1); if (isBrush(o.sig)) brushCanvas(c, o.sig, "#1b2330"); else { c.strokeStyle = "#1b2330"; c.lineWidth = 3.2; c.lineCap = c.lineJoin = "round"; c.stroke(new Path2D(o.sig)); } c.restore(); }
   if (o.seal) {
     const si = await svgImg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 120" width="60" height="120"><defs>${INK}</defs>${o.seal}</svg>`);
     if (si) { const k = 1.9, w = 60 * k, h = 120 * k; c.save(); c.globalAlpha = 0.88; c.translate(738, 300); c.rotate((-4 * Math.PI) / 180); c.drawImage(si, -w / 2, -h / 2, w, h); c.restore(); }
@@ -547,7 +568,7 @@ export function pagePassport(el, ctx) {
   const press = (f) => { let k = 0; if (f) f.querySelectorAll(".stamp.wait").forEach((s) => { const d = 250 + 320 * k++; setTimeout(() => { s.classList.remove("wait"); s.classList.add("press"); buzz(); }, d); }); return k; };
   // ---- 署名：初めて開くときに指で署名してもらい、身分事項ページに載せる ----
   let sig = null, sigAsked = false;
-  const sigSvg = (d) => `<svg viewBox="0 0 300 110" preserveAspectRatio="xMinYMid meet"><path d="${esc(d)}" fill="none" stroke="#1b2330" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const sigSvg = (d) => `<svg viewBox="0 0 300 110" preserveAspectRatio="xMinYMid meet">${isBrush(d) ? brushSvgPaths(d, "#1b2330") : `<path d="${esc(d)}" fill="none" stroke="#1b2330" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>`}</svg>`;
   const showSig = () => { const v = el.querySelector(".ppsv"); if (v) v.innerHTML = sig ? sigSvg(sig) : "<em>タップして署名する</em>"; };
   Promise.resolve(loadSig ? loadSig() : "").then((d) => { sig = d || ""; showSig(); }).catch(() => { sig = ""; showSig(); });
   function openSign(after) {
@@ -561,16 +582,26 @@ export function pagePassport(el, ctx) {
     const cv = ov.querySelector("canvas"), cx = cv.getContext("2d"), go = ov.querySelector(".go");
     const dpr = Math.min(3, devicePixelRatio || 1); const R = cv.getBoundingClientRect();
     cv.width = R.width * dpr; cv.height = R.height * dpr; cx.scale(dpr, dpr);
-    cx.lineCap = cx.lineJoin = "round"; cx.strokeStyle = "#1b2330"; cx.lineWidth = 2.6;
-    const SX = 300 / R.width, SY = 110 / R.height; let strokes = [], cur = null;
-    const pt = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-    cv.addEventListener("pointerdown", (e) => { e.preventDefault(); cv.setPointerCapture(e.pointerId); cur = [pt(e)]; strokes.push(cur); });
-    cv.addEventListener("pointermove", (e) => { if (!cur) return; const q = pt(e), l = cur[cur.length - 1]; if (Math.hypot(q[0] - l[0], q[1] - l[1]) < 1.5) return; cur.push(q); cx.beginPath(); cx.moveTo(l[0], l[1]); cx.lineTo(q[0], q[1]); cx.stroke(); go.disabled = false; });
-    const end = () => { if (cur && cur.length === 1) { const [x, y] = cur[0]; cx.beginPath(); cx.arc(x, y, 1.3, 0, 7); cx.fillStyle = "#1b2330"; cx.fill(); go.disabled = false; } cur = null; };
+    const SX = 300 / R.width, SY = 110 / R.height; let strokes = [], cur = null, vs = 0, ws = 0, lt = 0;
+    // 筆ペン：ゆっくり書くと太く、速く払うと細く。書き始めは少し細く入り、終わりはすっと抜く
+    const pt = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * SX, (e.clientY - r.top) * SY]; };
+    const widthOf = (v, e) => (e.pointerType === "pen" && e.pressure > 0 ? 1 + 6 * e.pressure : 1.1 + 4.2 * Math.exp(-v * 1.4));
+    const redraw = () => { cx.clearRect(0, 0, R.width, R.height); cx.save(); cx.scale(1 / SX, 1 / SY); strokes.forEach((st) => brushCanvas(cx, "B:" + st.map((q) => q.join(",")).join(" "), "#1b2330")); cx.restore(); };
+    cv.addEventListener("pointerdown", (e) => { e.preventDefault(); cv.setPointerCapture(e.pointerId); const [x, y] = pt(e); vs = 0; ws = widthOf(0, e); lt = e.timeStamp; cur = [[x, y, ws * 0.45]]; strokes.push(cur); });
+    cv.addEventListener("pointermove", (e) => {
+      if (!cur) return; const [x, y] = pt(e), l = cur[cur.length - 1], dist = Math.hypot(x - l[0], y - l[1]); if (dist < 1.4) return;
+      const dt = Math.max(4, e.timeStamp - lt); lt = e.timeStamp; vs = vs * 0.6 + (dist / dt) * 0.4; ws = ws * 0.7 + widthOf(vs, e) * 0.3;
+      const k = cur.length; cur.push([x, y, ws * (k < 4 ? 0.45 + 0.14 * k : 1)]); redraw(); go.disabled = false;
+    });
+    const end = () => {
+      if (!cur) return;
+      if (cur.length === 1) cur[0][2] = 4.2; else { const n = Math.min(5, cur.length - 1); for (let i = 1; i <= n; i++) cur[cur.length - i][2] *= 0.25 + 0.75 * ((i - 1) / n); }
+      redraw(); go.disabled = false; cur = null;
+    };
     cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
-    const toPath = () => strokes.map((s) => { const P = s.map(([x, y]) => [+(x * SX).toFixed(1), +(y * SY).toFixed(1)]); if (P.length === 1) return `M${P[0][0]} ${P[0][1]}l.1 0`; let d = `M${P[0][0]} ${P[0][1]}`; for (let i = 1; i < P.length - 1; i++) { const m = [((P[i][0] + P[i + 1][0]) / 2).toFixed(1), ((P[i][1] + P[i + 1][1]) / 2).toFixed(1)]; d += `Q${P[i][0]} ${P[i][1]} ${m[0]} ${m[1]}`; } const L = P[P.length - 1]; return d + `L${L[0]} ${L[1]}`; }).join("");
+    const toPath = () => (strokes.length ? "B:" + strokes.map((st) => st.map(([x, y, w]) => `${x.toFixed(1)},${y.toFixed(1)},${w.toFixed(2)}`).join(" ")).join("|") : "");
     const close = () => { ov.remove(); if (after) after(); };
-    ov.querySelector(".re").onclick = () => { strokes = []; cx.clearRect(0, 0, R.width, R.height); go.disabled = true; };
+    ov.querySelector(".re").onclick = () => { strokes = []; redraw(); go.disabled = true; };
     ov.querySelector(".skip").onclick = close;
     go.onclick = async () => { const d = toPath(); if (!d) return; go.disabled = true; sig = d; showSig(); buzz(); try { if (saveSig) await saveSig(d); } catch (e) {} close(); };
   }
