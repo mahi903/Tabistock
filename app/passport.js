@@ -262,8 +262,8 @@ async function makeStory(o) {
   // ロゴ（Tのマーク＋Tabistock）
   const [lg, wm] = await Promise.all([svgImg(LOGO_COLOR), loadImg("./img/wordmark.png")]);
   const lh = 66, lw = lh * (792 / 618), wh = 54, ww = wm ? wm.width * (wh / wm.height) : 0, gap = 20, tot = lw + gap + ww, x0 = (W - tot) / 2;
-  if (lg) c.drawImage(lg, x0, 1830 - lh, lw, lh);
-  if (wm) c.drawImage(wm, x0 + lw + gap, 1830 - wh - 2, ww, wh);
+  if (lg) c.drawImage(lg, x0, 1740 - lh, lw, lh);
+  if (wm) c.drawImage(wm, x0 + lw + gap, 1740 - wh - 2, ww, wh);
   return await new Promise((ok) => cv.toBlob(ok, "image/png"));
 }
 
