@@ -105,7 +105,7 @@ export const ILL = {
   alert: `<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="300" fill="#f3e6dc"/><circle cx="330" cy="60" r="70" fill="#f8d9c4"/><g transform="translate(118 58)"><path d="M82 8 L160 150 H4 Z" fill="#e2683b" stroke="#1b2330" stroke-width="5" stroke-linejoin="round"/><rect x="74" y="52" width="16" height="56" rx="8" fill="#fff"/><circle cx="82" cy="128" r="9" fill="#fff"/></g><g transform="translate(232 150) rotate(-18)"><rect x="0" y="0" width="92" height="62" rx="8" fill="#1f6f5b" stroke="#1b2330" stroke-width="5"/><rect x="58" y="20" width="40" height="24" rx="6" fill="#2f8a68" stroke="#1b2330" stroke-width="4"/><circle cx="74" cy="32" r="4" fill="#fff"/></g><g transform="translate(48 170)"><circle cx="40" cy="40" r="34" fill="#fff" stroke="#1b2330" stroke-width="6"/><path d="M64 64 L96 96" stroke="#1b2330" stroke-width="10" stroke-linecap="round"/><path d="M26 40h28M40 26v28" stroke="#e2683b" stroke-width="6" stroke-linecap="round" opacity="0"/></g></svg>`,
 };
 
-export const BOARD_CATS = [["", "すべて"], ["prep", "準備"], ["flight", "航空券"], ["save", "節約"], ["money", "お金・通信"], ["geo", "旅と地理"], ["trouble", "事件簿"]];
+export const BOARD_CATS = [["prep", "準備"], ["flight", "航空券"], ["save", "節約"], ["money", "お金・通信"], ["geo", "旅と地理"], ["trouble", "事件簿"]];
 
 export const BOARD_SEED = [
   {
