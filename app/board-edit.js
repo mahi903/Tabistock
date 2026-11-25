@@ -4,7 +4,7 @@
 import { db, storage } from "../firebase-config.js";
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { ILL, BOARD_CATS, BOARD_SEED, toFs } from "./board.js?v=202611260200";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611260225";
 
 // ブロックの種類（追加ボタンの並び順）
 const KINDS = [
@@ -30,6 +30,18 @@ export async function importSeed(me) {
   return todo.length;
 }
 
+// ---- 事件簿（board.js の JIKEN）を Firestore にコピー。boards に jiken: true で入れる。すでにあるものは上書きしない ----
+export async function importJiken(me) {
+  const have = new Set();
+  (await getDocs(collection(db, "boards"))).forEach((s) => have.add(s.id));
+  const todo = JIKEN.map((j, i) => ({ ...j, order: i + 1 })).filter((j) => !have.has(j.id));
+  if (!todo.length) return 0;
+  const batch = writeBatch(db);
+  todo.forEach(({ id, ...j }) => batch.set(doc(db, "boards", id), { ...j, jiken: true, cat: "trouble", status: "published", authorId: me, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }));
+  await batch.commit();
+  return todo.length;
+}
+
 // ---- エディタ ----
 // C = { me, esc, toast, haptic, cat（新規のときのカテゴリー）, nextOrder, afterSave(id, {deleted}) }
 export async function pageBoardEdit(el, id, C) {
@@ -40,12 +52,17 @@ export async function pageBoardEdit(el, id, C) {
   const root = el.querySelector(".bed");
   let S, dirty = false, saving = false;
 
+  // 事件簿は別の入力画面。事件簿のタブの一番上（イラストと説明文）も別
+  if (id === "newj") return pageJikenEdit(el, root, null, C);
+  if (id === "jhead") return pageJikenHeadEdit(el, root, C);
+
   if (isNew) {
     S = { id: doc(collection(db, "boards")).id, title: "", lead: "", cat: C.cat && C.cat !== "trouble" ? C.cat : "prep", order: C.nextOrder || 1, status: "draft", heroType: "ill", ill: "suitcase", heroUrl: "", facts: [], blocks: [newBlock("p")] };
   } else {
     let d = null;
     try { const s = await getDoc(doc(db, "boards", id)); if (s.exists()) d = s.data(); } catch (e) {}
     if (!d) { root.innerHTML = '<p class="empty">この記事はまだ Firestore にありません。<br>掲示板の一覧を開き直してから、もう一度お試しください。</p>'; bindBack(); return; }
+    if (d.jiken) return pageJikenEdit(el, root, { id, ...d }, C);
     const f = toFs(d);   // 古い形（配列）が混ざっていても編集用の形にそろえる
     S = { id, title: f.title || "", lead: f.lead || "", cat: f.cat || "prep", order: f.order ?? 99, status: f.status === "published" ? "published" : "draft", heroType: f.heroType === "photo" ? "photo" : "ill", ill: f.ill || "suitcase", heroUrl: f.heroUrl || "", facts: f.facts.map((x) => ({ k: x.k || "", v: x.v || "", s: x.s || "" })), blocks: f.blocks.map((b) => ({ ...b })) };
   }
@@ -213,5 +230,172 @@ export async function pageBoardEdit(el, id, C) {
     };
   }
   bindBack();
+  draw();
+}
+
+// ---- 事件簿の入力画面（#ge-newj ／ 事件簿の ID）----
+// カードに出るもの：場所・種類・タイトル・手口・被害・その後、下に「〇〇さんの『△△』より」。タップで元の記事（art）へ
+const KIND_HINTS = ["詐欺", "スリ", "盗難", "ぼったくり", "強盗", "詐欺サイト", "ロストバゲージ", "欠航・遅延", "病気・けが"];
+function pageJikenEdit(el, root, d, C) {
+  const { esc } = C;
+  const isNew = !d;
+  el.querySelector(".bar2 b").textContent = isNew ? "新しい事件" : "事件を編集";
+  const arts = (C.articles && C.articles()) || [];
+  const S = d
+    ? { id: d.id, status: d.status === "draft" ? "draft" : "published", order: d.order ?? 99, art: d.art || "", by: d.by || "", from: d.from || "", where: d.where || "", kind: d.kind || "", title: d.title || "", how: d.how || "", loss: d.loss || "", after: d.after || "" }
+    : { id: doc(collection(db, "boards")).id, status: "draft", order: C.nextJikenOrder || 1, art: "", by: "", from: "", where: "", kind: "", title: "", how: "", loss: "", after: "" };
+  let dirty = false, saving = false;
+  const inp = (k, ph, list = "") => `<input data-f="${k}" value="${esc(S[k])}" placeholder="${esc(ph)}" ${list}>`;
+  const ta = (k, ph, rows = 3) => `<textarea data-f="${k}" rows="${rows}" placeholder="${esc(ph)}">${esc(S[k])}</textarea>`;
+  const grow = (t) => { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; };
+
+  function draw() {
+    const known = arts.some((a) => a.id === S.art);
+    root.innerHTML = `
+      <div class="bed-sec">
+        <div class="bed-seg"><button class="${S.status === "draft" ? "on" : ""}" data-act="status" data-v="draft">下書き</button><button class="${S.status === "published" ? "on" : ""}" data-act="status" data-v="published">公開</button></div>
+        <p class="bed-hint">${S.status === "published" ? "保存すると、すぐにみんなのアプリに表示されます" : "下書きは、管理者にだけ見えます"}</p>
+      </div>
+      <div class="bed-sec"><h4>元の旅の記事</h4>
+        <select data-f="art"><option value="">選んでください</option>${!known && S.art ? `<option value="${esc(S.art)}" selected>（今は公開されていない記事）</option>` : ""}${arts.map((a) => `<option value="${esc(a.id)}" ${a.id === S.art ? "selected" : ""}>${esc(a.title)}（${esc(a.by)}）</option>`).join("")}</select>
+        <p class="bed-hint">カードをタップすると、この記事が開きます。選ぶと、下の「書いた人」と「記事のタイトル」が入ります</p>
+      </div>
+      <div class="bed-sec bed-row2"><label>書いた人${inp("by", "名前")}</label><label style="flex:2">記事のタイトル${inp("from", "旅のタイトル")}</label></div>
+      <p class="bed-hint bed-pad">カードの下に「${esc(S.by || "〇〇")}さんの「${esc(S.from || "△△")}」より」と出ます</p>
+      <div class="bed-sec bed-row2"><label style="flex:2">場所${inp("where", "例：イタリア・ローマ")}</label><label>種類${inp("kind", "例：スリ", 'list="bed-kinds"')}</label></div>
+      <datalist id="bed-kinds">${KIND_HINTS.map((k) => `<option value="${k}">`).join("")}</datalist>
+      <div class="bed-sec"><h4>タイトル</h4>${inp("title", "何が起きたか、ひとことで")}</div>
+      <div class="bed-sec"><h4>手口</h4>${ta("how", "どんな流れで起きたか（記事に書いてあることだけ）")}</div>
+      <div class="bed-sec"><h4>被害</h4>${inp("loss", "例：現金 約15,000円／なし")}</div>
+      <div class="bed-sec"><h4>その後</h4>${ta("after", "どうしたか、次の人へのひとこと", 2)}</div>
+      <div class="bed-sec bed-row2"><label>並び順<input data-f="order" type="number" inputmode="numeric" value="${esc(String(S.order))}"></label><span style="flex:3"></span></div>
+      <p class="bed-hint bed-pad">並び順は、数字が小さいほど上に出ます</p>
+      ${isNew ? "" : '<div class="bed-sec"><button class="bed-delart" data-act="delete">この事件を削除する</button></div>'}`;
+    root.querySelectorAll("textarea").forEach(grow);
+  }
+
+  root.addEventListener("input", (e) => {
+    const t = e.target, k = t.dataset.f; if (!k) return;
+    if (t.tagName === "TEXTAREA") grow(t);
+    if (k === "art") {
+      // 記事を選んだら、書いた人とタイトルを入れる（自分で書き換えていたら、そのまま）
+      const prev = arts.find((a) => a.id === S.art), a = arts.find((x) => x.id === t.value);
+      if (a) { if (!S.by || (prev && S.by === prev.by)) S.by = a.by; if (!S.from || (prev && S.from === prev.title)) S.from = a.title; }
+      S.art = t.value; dirty = true; draw(); return;
+    }
+    S[k] = k === "order" ? Number(t.value) || 0 : t.value;
+    dirty = true;
+  });
+  el.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-act]"); if (!btn) return;
+    const a = btn.dataset.act;
+    if (a === "status") { S.status = btn.dataset.v; dirty = true; C.haptic(); draw(); }
+    else if (a === "save") save();
+    else if (a === "delete") {
+      if (!confirm("この事件を削除しますか？この操作は取り消せません。\n（いったん非表示にしたいだけなら「下書き」にして保存してください）")) return;
+      try { await deleteDoc(doc(db, "boards", S.id)); C.toast("削除しました"); C.afterSave(S.id, { deleted: true }); }
+      catch (err) { console.error(err); C.toast("削除できませんでした"); }
+    }
+  });
+  async function save() {
+    if (saving) return;
+    if (!S.title.trim()) { C.toast("タイトルを入れてください"); return; }
+    if (!S.art) { C.toast("元の旅の記事を選んでください"); return; }
+    saving = true;
+    const btn = el.querySelector('[data-act="save"]'); btn.textContent = "保存中…";
+    const t = (k) => String(S[k] || "").trim();
+    const data = {
+      jiken: true, cat: "trouble", status: S.status, order: Number(S.order) || 0,
+      art: S.art, by: t("by"), from: t("from"), where: t("where"), kind: t("kind"), title: t("title"), how: t("how"), loss: t("loss"), after: t("after"),
+      updated: today(), updatedAt: serverTimestamp(), updatedBy: C.me(),
+      ...(isNew ? { createdAt: serverTimestamp(), authorId: C.me() } : {}),
+    };
+    try {
+      await setDoc(doc(db, "boards", S.id), data, { merge: true });
+      dirty = false;
+      C.toast(S.status === "published" ? "保存して公開しました" : "下書きを保存しました");
+      C.afterSave(S.id, { isNew });
+    } catch (err) { console.error(err); C.toast("保存できませんでした"); btn.textContent = "保存"; }
+    saving = false;
+  }
+  el.querySelector("[data-eback]").onclick = () => {
+    if (dirty && !confirm("保存していない変更があります。破棄して戻りますか？")) return;
+    history.back();
+  };
+  draw();
+}
+
+// ---- 事件簿のタブの一番上（イラスト or 写真と、説明文）：boards/jhead に保存 ----
+export const JHEAD_TEXT = "みんなの旅の記事から、旅先で起きたトラブルや事件をまとめました。タップすると、元の旅の記事が読めます。";
+async function pageJikenHeadEdit(el, root, C) {
+  const { esc } = C;
+  el.querySelector(".bar2 b").textContent = "事件簿の上の部分";
+  let d = {};
+  try { const s = await getDoc(doc(db, "boards", "jhead")); if (s.exists()) d = s.data(); } catch (e) {}
+  const S = { heroType: d.heroType === "photo" ? "photo" : "ill", ill: d.ill || "alert", heroUrl: d.heroUrl || "", text: d.text || JHEAD_TEXT, _up: false };
+  let dirty = false, saving = false;
+  const grow = (t) => { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; };
+  function draw() {
+    const img = S.heroType === "photo"
+      ? (S._up ? '<span class="bed-up">アップロード中…</span>' : S.heroUrl ? `<img src="${esc(S.heroUrl)}" alt="">` : '<span class="bed-up">写真が選ばれていません</span>')
+      : ILL[S.ill] || "";
+    root.innerHTML = `
+      <div class="bed-sec"><h4>プレビュー</h4>
+        <div class="bjhd" style="padding:4px 0"><span class="bill ${S.heroType === "photo" && S.heroUrl ? "ph" : ""}" style="${S.heroType === "photo" && S.heroUrl ? `background-image:url('${esc(S.heroUrl)}')` : ""}">${S.heroType === "photo" ? "" : ILL[S.ill] || ""}</span><p>${esc(S.text)}</p></div>
+      </div>
+      <div class="bed-sec"><h4>画像</h4>
+        <div class="bed-seg"><button class="${S.heroType === "ill" ? "on" : ""}" data-act="hero" data-v="ill">イラスト</button><button class="${S.heroType === "photo" ? "on" : ""}" data-act="hero" data-v="photo">写真</button></div>
+        <div class="bed-ph ${S.heroType === "ill" ? "ill" : ""} hero">${img}</div>
+        ${S.heroType === "photo"
+          ? `<button class="bed-add1" data-act="photo">${S.heroUrl ? "写真を変える" : "写真を選ぶ"}</button>`
+          : `<div class="bed-ills">${ILL_KEYS.map((k) => `<button class="${k === S.ill ? "on" : ""}" data-act="pick" data-k="${k}" aria-label="${k}">${ILL[k]}</button>`).join("")}</div>`}
+      </div>
+      <div class="bed-sec"><h4>説明文</h4><textarea data-f="text" rows="3">${esc(S.text)}</textarea>
+        <button class="bed-add1" data-act="reset">最初の文に戻す</button></div>`;
+    root.querySelectorAll("textarea").forEach(grow);
+  }
+  root.addEventListener("input", (e) => {
+    const t = e.target; if (t.dataset.f !== "text") return;
+    grow(t); S.text = t.value; dirty = true;
+    const p = root.querySelector(".bjhd p"); if (p) p.textContent = t.value;   // プレビューにもすぐ反映
+  });
+  el.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-act]"); if (!btn) return;
+    const a = btn.dataset.act;
+    if (a === "save") return save();
+    if (a === "hero") S.heroType = btn.dataset.v;
+    else if (a === "pick") S.ill = btn.dataset.k;
+    else if (a === "reset") S.text = JHEAD_TEXT;
+    else if (a === "photo") {
+      const f = document.createElement("input"); f.type = "file"; f.accept = "image/*";
+      const file = await new Promise((ok) => { f.onchange = () => ok(f.files[0] || null); f.click(); });
+      if (!file) return;
+      S._up = true; draw();
+      try {
+        const { resizeImage } = await import("../post-core.js");
+        const r = ref(storage, `boards/jhead/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`);
+        await uploadBytes(r, await resizeImage(file, 1600, 0.82), { contentType: "image/jpeg" });
+        S.heroUrl = await getDownloadURL(r);
+      } catch (err) { console.error(err); C.toast("写真をアップロードできませんでした"); }
+      S._up = false;
+    } else return;
+    dirty = true; C.haptic(); draw();
+  });
+  async function save() {
+    if (saving) return;
+    if (S._up) { C.toast("写真のアップロードが終わるまで待ってください"); return; }
+    if (S.heroType === "photo" && !S.heroUrl) { C.toast("写真を選ぶか、イラストにしてください"); return; }
+    saving = true;
+    const btn = el.querySelector('[data-act="save"]'); btn.textContent = "保存中…";
+    try {
+      await setDoc(doc(db, "boards", "jhead"), { jikenHead: true, status: "published", heroType: S.heroType, ill: S.ill, heroUrl: S.heroUrl, text: S.text.trim() || JHEAD_TEXT, updatedAt: serverTimestamp(), updatedBy: C.me() }, { merge: true });
+      dirty = false; C.toast("保存しました"); C.afterSave("jhead", {});
+    } catch (err) { console.error(err); C.toast("保存できませんでした"); btn.textContent = "保存"; }
+    saving = false;
+  }
+  el.querySelector("[data-eback]").onclick = () => {
+    if (dirty && !confirm("保存していない変更があります。破棄して戻りますか？")) return;
+    history.back();
+  };
   draw();
 }

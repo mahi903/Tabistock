@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611260206";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611260225";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -573,7 +573,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611260206");
+  const M = await import("./sodan.js?v=202611260225");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -591,7 +591,7 @@ const SD = async () => {
 // 管理者は下書きも読む（一覧に「下書き」と出る）。
 // 管理者が開いたとき boards が空っぽなら、board.js の記事（BOARD_SEED）を自動で Firestore にコピーする（最初の1回だけ）。
 // 空のときだけなので、あとで記事を消しても勝手に戻ってくることはない
-let BOARDS = null, boardCat = "";
+let BOARDS = null, boardCat = "", JHEAD = null;   // JHEAD = 事件簿のタブの一番上（boards/jhead）
 async function loadBoards() {
   if (BOARDS) return BOARDS;
   const admin = await isAdminMe();
@@ -604,16 +604,28 @@ async function loadBoards() {
     } catch (e) { return null; }   // 読めなかった（通信など）
   };
   let list = await read();
-  if (admin && list && !list.length) {
-    try { const M = await import("./board-edit.js?v=202611260206"); if (await M.importSeed(me)) list = (await read()) || []; } catch (e) { console.error(e); }
+  // 管理者が開いたとき：記事・事件簿がまだ Firestore に1本もなければ、board.js の分を自動でコピーする（それぞれ最初の1回だけ）
+  if (admin && list) {
+    try {
+      const M = await import("./board-edit.js?v=202611260225");
+      let n = 0;
+      if (!list.some((d) => !d.jiken && !d.jikenHead)) n += await M.importSeed(me);
+      if (!list.some((d) => d.jiken)) n += await M.importJiken(me);
+      if (n) list = (await read()) || list;
+    } catch (e) { console.error(e); }
   }
   list = list || [];
+  JHEAD = list.find((d) => d.jikenHead) || null;
+  list = list.filter((d) => !d.jikenHead);
   const have = new Set(list.map((d) => d.id));
-  if (!list.some((d) => d.status === "published")) list.push(...BOARD_SEED.filter((d) => !have.has(d.id)).map((d) => ({ ...d, _seed: true })));
-  list.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
-  // 事件簿は、みんなの記事からのピックアップ（いつも最後に並べる）
-  JIKEN.forEach((j) => list.push({ ...j, cat: "trouble", jiken: true }));
-  return (BOARDS = list);
+  const ord = (a, b) => (a.order ?? 99) - (b.order ?? 99);
+  const boards = list.filter((d) => !d.jiken);
+  if (!boards.some((d) => d.status === "published")) boards.push(...BOARD_SEED.filter((d) => !have.has(d.id)).map((d) => ({ ...d, _seed: true })));
+  // 事件簿は、みんなの記事からのピックアップ（いつも最後に並べる）。Firestore に公開中が1件もなければ board.js の分を出す
+  const cases = list.filter((d) => d.jiken);
+  if (!cases.some((d) => d.status === "published")) cases.push(...JIKEN.map((j, i) => ({ ...j, order: i + 1, _seed: true })).filter((j) => !have.has(j.id)));
+  cases.forEach((c) => { c.cat = "trouble"; c.jiken = true; });
+  return (BOARDS = [...boards.sort(ord), ...cases.sort(ord)]);
 }
 const illOf = (k) => ILL[k] || ILL.suitcase;
 // 一覧の小さな画像：写真の記事は写真、それ以外はイラスト
@@ -629,19 +641,28 @@ async function renderBoard() {
   if (!cats.some(([k]) => k === boardCat)) boardCat = (cats[0] || [""])[0];
   const shown = list.filter((d) => !boardCat || d.cat === boardCat);
   // 管理者だけ：新しい記事（事件簿のタブでは出さない）
-  const adm = admin && boardCat !== "trouble" ? `<div class="badm"><a class="btn-s" href="#ge-new">＋ 新しい記事</a></div>` : "";
+  const adm = admin ? `<div class="badm"><a class="btn-s" href="#ge-${boardCat === "trouble" ? "newj" : "new"}">＋ ${boardCat === "trouble" ? "新しい事件" : "新しい記事"}</a></div>` : "";
   box.innerHTML = `<div class="bcats">${cats.map(([k, l]) => `<button class="${k === boardCat ? "on" : ""}" data-bc="${k}">${l}</button>`).join("")}</div>
-    ${boardCat === "trouble" ? `<div class="bjhd"><span class="bill">${illOf("alert")}</span><p>みんなの旅の記事から、旅先で起きたトラブルや事件をまとめました。タップすると、元の旅の記事が読めます。</p></div>` : ""}
+    ${boardCat === "trouble" ? jikenHead(admin) : ""}
     ${adm}
-    <div class="blist">${shown.map((d) => d.jiken ? jikenCard(d) : `<a class="bit press" href="#g-${esc(d.id)}">${boardThumb(d)}<div><small>${esc(catName(d.cat))}${admin && d.status === "draft" ? '<em class="bdraft">下書き</em>' : ""}</small><h3>${esc(d.title)}</h3>${d.lead ? `<p>${esc(d.lead)}</p>` : ""}</div></a>`).join("")}</div>`;
+    <div class="blist">${shown.map((d) => d.jiken ? jikenCard(d, admin) : `<a class="bit press" href="#g-${esc(d.id)}">${boardThumb(d)}<div><small>${esc(catName(d.cat))}${admin && d.status === "draft" ? '<em class="bdraft">下書き</em>' : ""}</small><h3>${esc(d.title)}</h3>${d.lead ? `<p>${esc(d.lead)}</p>` : ""}</div></a>`).join("")}</div>`;
   box.querySelectorAll("[data-bc]").forEach((b) => (b.onclick = () => { boardCat = b.dataset.bc; haptic(); renderBoard(); }));
 }
 // 事件簿の1件：どこで・何が起きたか・手口・被害・その後。タップで元の記事へ
-function jikenCard(d) {
+// 事件簿のタブの一番上：イラスト（または写真）と説明文。管理者には右上に「編集」
+function jikenHead(admin) {
+  const h = JHEAD || {};
+  const img = h.heroType === "photo" && h.heroUrl ? `<span class="bill ph" style="background-image:url('${esc(h.heroUrl)}')"></span>` : `<span class="bill">${illOf(h.ill || "alert")}</span>`;
+  const text = h.text || "みんなの旅の記事から、旅先で起きたトラブルや事件をまとめました。タップすると、元の旅の記事が読めます。";
+  return `<div class="bjhd${admin ? " adm" : ""}">${img}<p>${esc(text)}</p>${admin ? '<a class="bced" href="#ge-jhead">編集</a>' : ""}</div>`;
+}
+// 管理者には、カードの右上に「編集」（下書きは「下書き・編集」）
+function jikenCard(d, admin) {
   const row = (k, v) => (v ? `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>` : "");
-  return `<a class="bcase press" href="#a-${esc(d.art)}"><div class="bct"><b>${esc(d.where)}</b><span>${esc(d.kind)}</span></div>
+  const card = `<a class="bcase press" href="#a-${esc(d.art)}"><div class="bct"><b>${esc(d.where)}</b><span>${esc(d.kind)}</span></div>
     <h3>${esc(d.title)}</h3><dl>${row("手口", d.how)}${row("被害", d.loss)}${row("その後", d.after)}</dl>
     <p class="bcf">${esc(d.by)}さんの「${esc(d.from)}」より<em>記事を読む</em></p></a>`;
+  return admin ? `<div class="bcasew">${card}<a class="bced" href="#ge-${esc(d.id)}">${d.status === "draft" ? "下書き・" : ""}編集</a></div>` : card;
 }
 function boardBlock(b) {
   if (b.t === "h") return `<h2>${esc(b.x)}</h2>`;
@@ -669,7 +690,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611260206"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611260225"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -679,8 +700,11 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611260206").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611260225").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
+    // 事件簿の「元の旅の記事」の候補（公開中の記事）
+    articles: () => ALL.map((d) => ({ id: d.id, title: titleOf(d) || "(無題)", by: authorName(d) })),
+    nextJikenOrder: Math.max(0, ...(BOARDS || []).filter((d) => d.jiken).map((d) => Number(d.order) || 0)) + 1,
     nextOrder: Math.max(0, ...(BOARDS || []).filter((d) => !d.jiken && d.cat === boardCat).map((d) => Number(d.order) || 0)) + 1,
     afterSave: (sid, o) => {
       BOARDS = null;
@@ -735,13 +759,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611260206").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611260225").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611260206").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611260206").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611260225").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611260225").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -1048,7 +1072,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611260206"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611260225"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1446,7 +1470,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611260206").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611260225").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);

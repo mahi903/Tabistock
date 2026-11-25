@@ -1544,3 +1544,9 @@ html.ntab .tab{display:none}
 .bed-addrow button{font-size:12.5px;font-weight:700;color:var(--green);border:1.5px solid var(--green);border-radius:999px;padding:6px 12px;background:#fff}
 .bed-delart{margin-top:22px;font-size:12.5px;font-weight:700;color:var(--terra);padding:6px 0}
 .bed select{padding-right:30px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5 5 6.5 8 3.5' fill='none' stroke='%231f6f5b' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center/12px}
+/* 事件簿：管理者の「編集」 */
+.bcasew{position:relative}
+.bcasew .bced{position:absolute;top:13px;right:0;font-size:11px;font-weight:700;color:var(--green);border:1px solid var(--green);background:var(--bg);padding:2px 8px;border-radius:3px;text-decoration:none}
+.bcasew .bcase .bct{padding-right:70px}
+.bjhd.adm{position:relative;padding-right:76px}
+.bjhd .bced{position:absolute;top:14px;right:20px;font-size:11px;font-weight:700;color:var(--green);border:1px solid var(--green);background:var(--bg);padding:2px 8px;border-radius:3px;text-decoration:none}
