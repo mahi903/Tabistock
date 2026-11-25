@@ -662,7 +662,7 @@ $("avatarInput").onchange = async () => {
   try{
     const blob = await resizeSquare(f, 256);
     const r = sRef(storage, `avatars/${user.uid}/avatar.jpg`);
-    await uploadBytes(r, blob, { contentType: "image/jpeg" });
+    await uploadBytes(r, blob, { contentType: "image/jpeg", cacheControl: "public, max-age=3600" });
     const url = await getDownloadURL(r);
     await updateProfile(user, { photoURL: url });
     await setDoc(doc(db, "users", user.uid), { photoURL: url }, { merge: true });

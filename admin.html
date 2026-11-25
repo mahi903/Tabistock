@@ -68,6 +68,11 @@
         <button id="tab-users" type="button">ユーザー</button>
       </div>
       <div id="msg"></div>
+      <div id="thumbBox" style="margin:10px 0;padding:10px 12px;border:1.5px solid #1b2330;background:#fff;font-size:13px;line-height:1.6">
+        <b>写真を軽くする（1回だけ）</b><br>サムネイルがまだない公開中の記事に、一覧用の小さい写真（長辺720px）を作ります。
+        <button id="thumbGo" type="button" style="margin-left:8px;padding:4px 10px;border:1.5px solid #1b2330;background:#1f6f5b;color:#fff;font-weight:700">作る</button>
+        <span id="thumbMsg" style="margin-left:8px;color:#5d6b63"></span>
+      </div>
       <div id="list"><div class="empty">読み込み中…</div></div>
     </div>
   </div>
@@ -290,6 +295,31 @@ onAuthStateChanged(auth, async (user) => {
   }
   $("gate").innerHTML = "";
   $("panel").style.display = "block";
+  // 既存の記事にサムネイル（小さい写真）を作る：トップ写真の1枚目を /api/img 経由で読み、縮小してアップロード
+  $("thumbGo").onclick = async () => {
+    const b = $("thumbGo"), m = $("thumbMsg"); b.disabled = true;
+    try{
+      const { resizeImage, IMG_META } = await import("./post-core.js");
+      const { storage } = await import("./firebase-config.js");
+      const S = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
+      const snap = await getDocs(query(collection(db,"articles"), where("status","==","published")));
+      const todo = []; snap.forEach((x) => { const a = x.data(), h = (a.heroUrls || [])[0]; if(h && (!a.thumbUrl || a.thumbUrl === h)) todo.push({ id: x.id, h }); });
+      let ok = 0, ng = 0;
+      for(const t of todo){
+        m.textContent = `${ok + ng + 1} / ${todo.length} を処理中…`;
+        try{
+          const src = await (await fetch("/api/img?u=" + encodeURIComponent(t.h))).blob();
+          const blob = await resizeImage(src, 720, 0.78);
+          const r = S.ref(storage, `articles/${t.id}/thumb_${Date.now()}.jpg`);
+          await S.uploadBytes(r, blob, IMG_META);
+          await updateDoc(doc(db,"articles",t.id), { thumbUrl: await S.getDownloadURL(r) });
+          ok++;
+        }catch(e){ ng++; console.warn(t.id, e); }
+      }
+      m.textContent = todo.length ? `完了：${ok}件${ng ? `（失敗 ${ng}件）` : ""}` : "すべての記事にサムネイルがあります";
+    }catch(e){ m.textContent = "エラー：" + (e.message || e); }
+    b.disabled = false;
+  };
   loadList();
   countOpenReports();
 });

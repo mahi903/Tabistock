@@ -233,10 +233,24 @@ export async function resizeImage(file, maxEdge = 1280, q = 0.82){
   }
 }
 
+// 写真のファイル名は毎回ユニークで中身は変わらないので、ブラウザに1年間保存してもらう（2回目からは読み込みなしで出る）
+export const IMG_META = { contentType: "image/jpeg", cacheControl: "public, max-age=31536000, immutable" };
 async function uploadAndGetUrl(path, blob){
   const r = ref(storage, path);
-  await uploadBytes(r, blob, { contentType: "image/jpeg" });
+  await uploadBytes(r, blob, IMG_META);
   return await getDownloadURL(r);
+}
+// 一覧のカード用の小さい写真（長辺720px）。トップ写真の1枚目から作る
+const THUMB_EDGE = 720;
+async function saveThumb(id, first, heroUrls, edit){
+  if(!heroUrls.length) return "";
+  // 1枚目が前と同じなら、前に作ったサムネをそのまま使う
+  if(!(first && first.file)){
+    const old = edit && edit.thumbUrl;
+    return (old && old !== edit.heroUrls?.[0] && edit.heroUrls?.[0] === heroUrls[0]) ? old : heroUrls[0];
+  }
+  try{ return await uploadAndGetUrl(`articles/${id}/thumb_${Date.now()}.jpg`, await resizeImage(first.file, THUMB_EDGE, 0.78)); }
+  catch(e){ return heroUrls[0]; }
 }
 
 // 自分が投稿者・共同投稿者のトランジット記事（新しい順）
@@ -314,7 +328,7 @@ export async function saveTransit({ d, edit = null, mode = "publish", nickname =
     styles: ["transit"],
     airport: d.airport, layover: Number(d.layover) || null,
     title: d.title || "", body: d.body || "",
-    places, heroUrls, thumbUrl: heroUrls[0] || "",
+    places, heroUrls, thumbUrl: await saveThumb(id, (d.photos || [])[0], heroUrls, edit),
     parentId: d.parentId || null
   });
   notifyNewInvites(id, d.title || "トランジット記事");
@@ -372,7 +386,7 @@ export async function saveArticle({ d, edit = null, mode = "publish", nickname =
     costs: d.costs, flights: d.flights, flightWhen: d.flightWhen, flightSite: d.flightSite,
     services: d.services, comment: d.comment,
     agodaUrl: d.agodaUrl || "",
-    days, heroUrls, thumbUrl: heroUrls[0] || ""
+    days, heroUrls, thumbUrl: await saveThumb(id, (d.heroPhotos || [])[0], heroUrls, edit)
   });
 
   notifyNewInvites(id, d.title);

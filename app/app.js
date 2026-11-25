@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611260200";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611260206";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -38,6 +38,13 @@ function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add(
 
 // ---------- 記事の見せ方 ----------
 const thumbOf = (d) => d.thumbUrl || (d.heroUrls && d.heroUrls[0]) || "";
+// 記事のトップ写真を先に読み込む（カードに指が触れた瞬間など）
+const PREF = new Set();
+function prefetchHero(id) {
+  const d = (typeof BY !== "undefined" && BY[id]) || ALL.find((x) => x.id === id); const u = d && d.heroUrls && d.heroUrls[0];
+  if (!u || PREF.has(u)) return; PREF.add(u); const im = new Image(); im.decoding = "async"; im.src = u;
+}
+document.addEventListener("pointerdown", (e) => { const a = e.target.closest && e.target.closest('a[href^="#a-"]'); if (a) prefetchHero(a.getAttribute("href").slice(3)); }, { passive: true, capture: true });
 const titleOf = (d) => d.title || (d.type === "transit" ? `${(cinfo((d.countries || [])[0]) || {}).jp || ""}でのトランジット` : "");
 function placeEn(d) {
   if (d.type === "transit") return "Transit" + (d.airport ? " · " + d.airport : "");
@@ -228,7 +235,8 @@ function photoMosaic(arts) {
   return `<div class="mos">${items.map((p, i) => `<a class="mt ${cls[i] || ""}" href="#a-${esc(p.d.id)}"><img src="${esc(p.u)}" alt="" loading="lazy" decoding="async"></a>`).join("")}</div>`;
 }
 function renderHome() {
-  ALL.slice(0, 40).forEach((d) => { const u = thumbOf(d); if (u) ratioOf(u, () => {}); });   // 記事を開いたときにトップ写真が上下に動かないよう、先に縦横比を調べておく
+  // 画面に見えている記事のトップ写真を、手が空いたときに先に読み込んでおく（開いた瞬間に出るように）
+  setTimeout(() => { const ids = [...document.querySelectorAll('#home a[href^="#a-"]')].filter((a) => { const r = a.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; }).map((a) => a.getAttribute("href").slice(3)); ids.slice(0, 6).forEach(prefetchHero); }, 2500);
   const trips = ALL.filter((d) => d.type !== "transit" && !isDomestic(d));
   const jp = ALL.filter((d) => d.type !== "transit" && isDomestic(d));
   const tr = ALL.filter((d) => d.type === "transit");
@@ -565,7 +573,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611260200");
+  const M = await import("./sodan.js?v=202611260206");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -597,7 +605,7 @@ async function loadBoards() {
   };
   let list = await read();
   if (admin && list && !list.length) {
-    try { const M = await import("./board-edit.js?v=202611260200"); if (await M.importSeed(me)) list = (await read()) || []; } catch (e) { console.error(e); }
+    try { const M = await import("./board-edit.js?v=202611260206"); if (await M.importSeed(me)) list = (await read()) || []; } catch (e) { console.error(e); }
   }
   list = list || [];
   const have = new Set(list.map((d) => d.id));
@@ -661,7 +669,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611260200"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611260206"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -671,7 +679,7 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611260200").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611260206").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
     nextOrder: Math.max(0, ...(BOARDS || []).filter((d) => !d.jiken && d.cat === boardCat).map((d) => Number(d.order) || 0)) + 1,
     afterSave: (sid, o) => {
@@ -727,13 +735,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611260200").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611260206").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611260200").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611260200").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611260206").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611260206").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -812,7 +820,7 @@ async function pageArticle(el, id, opt = {}) {
   const flights = d.flights || [], services = d.services || [];
   const hasRoute = d.type === "transit" ? (d.places || []).some((p) => p && typeof p.lat === "number") : days.some((x) => (x.places || []).some((p) => p && typeof p.lat === "number") || typeof x.lat === "number");
   el.innerHTML = `<div class="ps" id="aps">
-    <div style="position:relative"><div class="gal">${imgs.map((u, i) => `<div data-hv="${i}" style="background-image:url('${esc(u)}')"></div>`).join("")}</div><div class="gtop"></div>
+    <div style="position:relative"><div class="gal">${imgs.map((u, i) => i ? `<div data-hv="${i}" data-bg="${esc(u)}"></div>` : `<div data-hv="0" style="background-image:url('${esc(u)}')${thumbOf(d) && thumbOf(d) !== u ? `,url('${esc(thumbOf(d))}')` : ""}"></div>`).join("")}</div><div class="gtop"></div>
     ${imgs.length > 1 ? `<div class="dots">${imgs.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>` : ""}</div>
     <div class="sheet">
       <div class="meta">${tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
@@ -856,6 +864,8 @@ async function pageArticle(el, id, opt = {}) {
   const gal = el.querySelector(".gal");
   gal.onscroll = () => { const i = Math.round(gal.scrollLeft / gal.clientWidth); el.querySelectorAll(".dots i").forEach((x, j) => x.classList.toggle("on", i === j)); };
   gal.querySelectorAll("[data-hv]").forEach((x) => (x.onclick = () => openViewer(imgs, +x.dataset.hv)));
+  { const rest = () => gal.querySelectorAll("[data-bg]").forEach((x) => { x.style.backgroundImage = `url('${x.dataset.bg}')`; x.removeAttribute("data-bg"); });
+    const im = new Image(); im.onload = im.onerror = () => setTimeout(rest, 150); im.src = imgs[0] || ""; if (!imgs[0]) rest(); gal.addEventListener("scroll", rest, { once: true, passive: true }); }
   el.querySelectorAll("[data-day]").forEach((b) => (b.onclick = () => { b.parentNode.classList.toggle("open"); haptic(); }));
   el.querySelectorAll("[data-pl]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); goPlace(el, b.dataset.pl); }));
   el.querySelectorAll("[data-dv]").forEach((im) => (im.onclick = () => openViewer(days[+im.dataset.dv].photoUrls, +im.dataset.k)));
@@ -1038,7 +1048,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611260200"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611260206"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1275,7 +1285,7 @@ async function pageThread(el, other) {
         const blob = await resizeImage(f, 1600, 0.82);
         const bmp = await createImageBitmap(blob); const w = bmp.width, hh = bmp.height; bmp.close(); p.r = `${w}/${hh}`;
         const r = S.ref(storage, `dm/${cid}/${me}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`);
-        step = "アップロード"; await S.uploadBytes(r, blob, { contentType: "image/jpeg" });
+        step = "アップロード"; await S.uploadBytes(r, blob, { contentType: "image/jpeg", cacheControl: "private, max-age=31536000, immutable" });
         step = "URL取得"; const url = await S.getDownloadURL(r);
         step = "保存"; await F.addDoc(collection(convRef, "messages"), { senderId: me, text: "", imageUrl: url, w, h: hh, createdAt: serverTimestamp() });
         await F.updateDoc(convRef, { lastMessage: "📷 写真", lastSenderId: me, updatedAt: serverTimestamp(), ["unread." + other]: F.increment(1), ["unread." + me]: 0 });
@@ -1436,7 +1446,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611260200").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611260206").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);
@@ -1848,7 +1858,7 @@ async function pageProfileEdit(el) {
       const A = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
       const { storage } = await import("../firebase-config.js");
       const r = S.ref(storage, `avatars/${me}/avatar.jpg`);
-      await S.uploadBytes(r, blob, { contentType: "image/jpeg" });
+      await S.uploadBytes(r, blob, { contentType: "image/jpeg", cacheControl: "public, max-age=3600" });
       const url = await S.getDownloadURL(r);
       await A.updateProfile(auth.currentUser, { photoURL: url });
       await setDoc(doc(db, "users", me), { photoURL: url }, { merge: true });
