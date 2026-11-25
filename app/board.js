@@ -102,9 +102,10 @@ export const ILL = {
     <rect x="-20" y="-108" width="40" height="7" rx="3.5" fill="${INK}"/>
   </g>
   </svg>`,
+  alert: `<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="300" fill="#f3e6dc"/><circle cx="330" cy="60" r="70" fill="#f8d9c4"/><g transform="translate(118 58)"><path d="M82 8 L160 150 H4 Z" fill="#e2683b" stroke="#1b2330" stroke-width="5" stroke-linejoin="round"/><rect x="74" y="52" width="16" height="56" rx="8" fill="#fff"/><circle cx="82" cy="128" r="9" fill="#fff"/></g><g transform="translate(232 150) rotate(-18)"><rect x="0" y="0" width="92" height="62" rx="8" fill="#1f6f5b" stroke="#1b2330" stroke-width="5"/><rect x="58" y="20" width="40" height="24" rx="6" fill="#2f8a68" stroke="#1b2330" stroke-width="4"/><circle cx="74" cy="32" r="4" fill="#fff"/></g><g transform="translate(48 170)"><circle cx="40" cy="40" r="34" fill="#fff" stroke="#1b2330" stroke-width="6"/><path d="M64 64 L96 96" stroke="#1b2330" stroke-width="10" stroke-linecap="round"/><path d="M26 40h28M40 26v28" stroke="#e2683b" stroke-width="6" stroke-linecap="round" opacity="0"/></g></svg>`,
 };
 
-export const BOARD_CATS = [["", "すべて"], ["prep", "準備"], ["flight", "航空券"], ["save", "節約"], ["money", "お金・通信"], ["geo", "旅と地理"]];
+export const BOARD_CATS = [["", "すべて"], ["prep", "準備"], ["flight", "航空券"], ["save", "節約"], ["money", "お金・通信"], ["geo", "旅と地理"], ["trouble", "事件簿"]];
 
 export const BOARD_SEED = [
   {
@@ -417,4 +418,33 @@ export const BOARD_SEED = [
       { t: "note", x: "スマホの電池が切れると、地図も搭乗券も見られなくなります。モバイルバッテリーは必ず持ち歩きましょう。" },
     ],
   }
+];
+
+// ---- 事件簿：みんなの旅の記事から、トラブルや事件をピックアップ（タップで元の記事へ） ----
+// art = 元の記事のID。書いてあることだけを短くまとめる
+export const JIKEN = [
+  { id: "j-istanbul", art: "cXLMIjK373JMwMY1o4io", by: "KENTO", from: "トルコ・ギリシャ周遊8日間", where: "トルコ・イスタンブール", kind: "詐欺",
+    title: "親しげに声をかけられて、2回お金を払うことに",
+    how: "駅の券売機の前で声をかけてきた人に、交通カードを高く売りつけられた。別の日には、街で親しげに声をかけられてついて行った店で、断りきれずに支払った",
+    loss: "現金", after: "警察署へ。「交通カードは自分で券売機から買う」「親しげに話しかけてくる人にはついて行かない」" },
+  { id: "j-yangon", art: "4vKxs3DiyhRpTNk26i81", by: "ばなな", from: "ミャンマー1泊5日", where: "ミャンマー・ヤンゴン", kind: "ぼったくり・強盗",
+    title: "街で会った人について行った先で、ぼったくりと強盗に",
+    how: "ヤンゴン市内で会った人について行き、ダラ地区へ。そこでぼったくりと強盗に遭った",
+    loss: "現金 約15,000円", after: "「ダラ地区は細心の注意が必要。いざというときは命を最優先にお金を渡す」" },
+  { id: "j-rome", art: "LVurGcGTX959veWzs1K0", by: "おチビ", from: "フランスイタリア周遊の13日間", where: "イタリア・ローマ", kind: "スリ",
+    title: "ATMで下ろした現金を出した瞬間に、スられた",
+    how: "トラステヴェレで路上の賭博に参加しようと、ATMで下ろしてきた現金を出したところをスられた",
+    loss: "現金", after: "スリには撒かれて、見つからなかった。「皆さんも気をつけて」" },
+  { id: "j-napoli", art: "cuUm1ixqH7ddN3gm2Bin", by: "ie23y", from: "イタリア8泊9日大学生旅行", where: "イタリア・ナポリ", kind: "盗難",
+    title: "海で泳いでいるあいだに、友達のスマホが盗まれた",
+    how: "ナポリの海岸で泳いでいるあいだに、友達の携帯がなくなっていた",
+    loss: "スマホ1台", after: "探しても見つからず、警察署で遺失物届を出した。「AirTagを付けるなど、自分で管理するのが大事」" },
+  { id: "j-delhi", art: "mHDTqwArRfnSpKsmbiGh", by: "Kosuke", from: "インド4泊5日弾丸一人旅", where: "インド・ニューデリー", kind: "詐欺（未遂）",
+    title: "日本語で話しかけてくる詐欺グループに、個室まで連れていかれた",
+    how: "夜の電車に乗る前、ニューデリーの詐欺グループに個室まで連れていかれた。流ちょうな日本語で話しかけてくる",
+    loss: "なし", after: "途中で気づき、強く怒ったら個室から出してくれた。電車にもぎりぎり間に合った" },
+  { id: "j-eta", art: "gR6OF9rUIq6oGzP6NDnN", by: "こぎゅちゃむ", from: "ダブリンからロンドン・ブライトン｜大1ひとり旅", where: "イギリス（出発前）", kind: "詐欺サイト",
+    title: "入国に必要なETAを、詐欺サイトで申請してしまった",
+    how: "ETA（イギリスの電子渡航認証）を調べて出てきたサイトで、よく読まずに申請・支払いをした",
+    loss: "約16,000円", after: "友達に教えてもらった正しい方法（公式アプリ）で、約3,300円で申請し直した" },
 ];
