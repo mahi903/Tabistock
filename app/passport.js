@@ -161,15 +161,19 @@ const ring = (c, a, b, d) => { const id = "ppr" + uid++; return `<svg width="100
 const rect = (c, a, b, d) => `<svg width="118" height="72" viewBox="0 0 122 74"><g fill="none" stroke="${c}"><rect x="2" y="2" width="118" height="70" rx="7" stroke-width="2.6"/><rect x="7" y="7" width="108" height="60" rx="4" stroke-width="1"/></g><path d="M14 22 l10 -4 l-3 4 l3 4z M18 22h-8" fill="${c}" stroke="${c}"/><text x="64" y="27" text-anchor="middle" font-family="Cormorant Garamond,serif" font-weight="700" font-size="${a.length > 9 ? 13 : 17}" letter-spacing="1.5" fill="${c}">${a}</text><text x="61" y="44" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="9" fill="${c}">${b}</text><text x="61" y="58" text-anchor="middle" font-family="Space Mono,monospace" font-size="7.5" fill="${c}">${d}</text></svg>`;
 const oval = (c, a, b, d) => `<svg width="120" height="82" viewBox="0 0 124 84"><g fill="none" stroke="${c}"><ellipse cx="62" cy="42" rx="59" ry="39" stroke-width="2.4"/><ellipse cx="62" cy="42" rx="53" ry="33" stroke-width="1"/></g><text x="62" y="38" text-anchor="middle" font-family="Cormorant Garamond,serif" font-weight="700" font-size="${a.length > 9 ? 12 : 16}" letter-spacing="1.5" fill="${c}">${a}</text><text x="62" y="52" text-anchor="middle" font-family="Space Mono,monospace" font-size="7.5" fill="${c}">${b}</text><text x="62" y="63" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="8" fill="${c}">${d}</text></svg>`;
 const hexa = (c, a, b, d) => `<svg width="100" height="92" viewBox="0 0 104 96"><g fill="none" stroke="${c}"><path d="M28 3h48l25 45-25 45H28L3 48z" stroke-width="2.4"/><path d="M31 9h42l21 39-21 39H31L10 48z" stroke-width="1"/></g><text x="52" y="44" text-anchor="middle" font-family="Cormorant Garamond,serif" font-weight="700" font-size="${a.length > 9 ? 10.5 : 14}" letter-spacing="1" fill="${c}">${a}</text><text x="52" y="58" text-anchor="middle" font-family="Space Mono,monospace" font-size="7" fill="${c}">${b}</text><text x="52" y="70" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="7.5" fill="${c}">${d}</text></svg>`;
-// 国内（都道府県）は駅スタンプ風
-const eki = (c, a, b, d) => `<svg width="92" height="104" viewBox="0 0 96 110"><g fill="none" stroke="${c}"><rect x="3" y="3" width="90" height="104" rx="4" stroke-width="2.4"/><path d="M8 26h80M8 84h80" stroke-width="1"/></g><text x="48" y="19" text-anchor="middle" font-family="Cormorant Garamond,serif" font-weight="700" font-size="9" letter-spacing="2" fill="${c}">TABISTOCK</text><text x="48" y="${a.length > 2 ? 63 : 66}" text-anchor="middle" font-family="Shippori Mincho,serif" font-weight="800" font-size="${a.length > 3 ? 17 : a.length > 2 ? 22 : 28}" fill="${c}">${a}</text><text x="48" y="98" text-anchor="middle" font-family="Space Mono,monospace" font-size="7.5" fill="${c}">${d}</text></svg>`;
+// 都道府県はローマ字で（「北海道」→ Hokkaido）
+const ROMA = {北海道:"Hokkaido",青森:"Aomori",岩手:"Iwate",宮城:"Miyagi",秋田:"Akita",山形:"Yamagata",福島:"Fukushima",茨城:"Ibaraki",栃木:"Tochigi",群馬:"Gunma",埼玉:"Saitama",千葉:"Chiba",東京:"Tokyo",神奈川:"Kanagawa",新潟:"Niigata",富山:"Toyama",石川:"Ishikawa",福井:"Fukui",山梨:"Yamanashi",長野:"Nagano",岐阜:"Gifu",静岡:"Shizuoka",愛知:"Aichi",三重:"Mie",滋賀:"Shiga",京都:"Kyoto",大阪:"Osaka",兵庫:"Hyogo",奈良:"Nara",和歌山:"Wakayama",鳥取:"Tottori",島根:"Shimane",岡山:"Okayama",広島:"Hiroshima",山口:"Yamaguchi",徳島:"Tokushima",香川:"Kagawa",愛媛:"Ehime",高知:"Kochi",福岡:"Fukuoka",佐賀:"Saga",長崎:"Nagasaki",熊本:"Kumamoto",大分:"Oita",宮崎:"Miyazaki",鹿児島:"Kagoshima",沖縄:"Okinawa",日本:"Japan"};
+const roma = (x) => ROMA[String(x).replace(/[都府県]$/, "")] || x;
+// 国内（都道府県）は駅スタンプ風。名前がローマ字なら英字の書体で
+const eki = (c, a, b, d) => /^[ -~]+$/.test(a) ? `<svg width="92" height="104" viewBox="0 0 96 110"><g fill="none" stroke="${c}"><rect x="3" y="3" width="90" height="104" rx="4" stroke-width="2.4"/><path d="M8 26h80M8 84h80" stroke-width="1"/></g><text x="48" y="19" text-anchor="middle" font-family="Cormorant Garamond,serif" font-weight="700" font-size="9" letter-spacing="2" fill="${c}">TABISTOCK</text><text x="48" y="54" text-anchor="middle" font-family="Cormorant Garamond,serif" font-weight="700" font-size="${Math.min(18, 112 / a.length)}" letter-spacing=".5" fill="${c}">${a.toUpperCase()}</text><text x="48" y="72" text-anchor="middle" font-family="Space Mono,monospace" font-weight="700" font-size="7.5" letter-spacing="1" fill="${c}">JAPAN</text><text x="48" y="98" text-anchor="middle" font-family="Space Mono,monospace" font-size="7.5" fill="${c}">${d}</text></svg>` : `<svg width="92" height="104" viewBox="0 0 96 110"><g fill="none" stroke="${c}"><rect x="3" y="3" width="90" height="104" rx="4" stroke-width="2.4"/><path d="M8 26h80M8 84h80" stroke-width="1"/></g><text x="48" y="19" text-anchor="middle" font-family="Cormorant Garamond,serif" font-weight="700" font-size="9" letter-spacing="2" fill="${c}">TABISTOCK</text><text x="48" y="${a.length > 2 ? 63 : 66}" text-anchor="middle" font-family="Shippori Mincho,serif" font-weight="800" font-size="${a.length > 3 ? 17 : a.length > 2 ? 22 : 28}" fill="${c}">${a}</text><text x="48" y="98" text-anchor="middle" font-family="Space Mono,monospace" font-size="7.5" fill="${c}">${d}</text></svg>`;
 // スタンプのインクは国旗の色（その国らしい1色を、インクらしく少し沈めて）
 const FLAG = {japan:"#bc002d",korea:"#23408f",china:"#c8261e",taiwan:"#1f3a8a",hongkong:"#c8261e",macau:"#1d7a4f",mongolia:"#c4272f",thai:"#2d2a6e",cambodia:"#1f3f9a",vietnam:"#c8261e",laos:"#1f3f8a",myanmar:"#b8901a",malaysia:"#1a2f7a",singapore:"#c8261e",indonesia:"#c8261e",philippines:"#1c3f9a",brunei:"#b8901a",india:"#d06a16",nepal:"#b0203a",srilanka:"#8d153a",bhutan:"#d4651b",maldives:"#1d7a45",pakistan:"#1d5a2e",bangladesh:"#1d6a4e",kazakhstan:"#1b8fae",kyrgyzstan:"#c8102e",uzbekistan:"#1a8fb3",tajikistan:"#1d7a3f",turkmenistan:"#1d7a3f",georgia:"#c8102e",armenia:"#d2461a",azerbaijan:"#1b8fae",turkey:"#c8102e",qatar:"#8a1538",oman:"#c8102e",saudi:"#1d6a3a",bahrain:"#b0203a",kuwait:"#1d7a3f",iran:"#1d7a3f",iraq:"#c8102e",jordan:"#1d7a3f",israel:"#1f4fa0",lebanon:"#1d7a3f",palestine:"#1d7a3f",egypt:"#c8102e",morocco:"#c1272d",tunisia:"#c8102e",algeria:"#1d7a3f",finland:"#1f4f8f",sweden:"#1f68a7",norway:"#ba0c2f",denmark:"#c8102e",iceland:"#1f52a0",estonia:"#1f6fc0",latvia:"#9e3039",lithuania:"#1d6a44",uk:"#1a2a6c",ireland:"#1d8a52",france:"#1f4fa0",germany:"#2b2b2b",netherlands:"#c8541a",belgium:"#b58c10",luxembourg:"#1f8fc0",switzerland:"#d52b1e",austria:"#c8102e",italy:"#1d7a45",vatican:"#b8901a","san-marino":"#3f8fc0",spain:"#aa151b",portugal:"#1d6a38",andorra:"#1f3f9a",monaco:"#c8102e",greece:"#1f5eaf",cyprus:"#c4701a",malta:"#c8102e",czech:"#1f457e",slovakia:"#1f4ea2",poland:"#dc143c",hungary:"#477050",slovenia:"#1f4fa0",croatia:"#c8102e",bosnia:"#1f3f9a",serbia:"#c6363c",montenegro:"#c8102e",albania:"#c8102e","north-macedonia":"#c8102e",kosovo:"#244aa5",bulgaria:"#1d8a5a",romania:"#1f3f8f",moldova:"#1f3f8f",ukraine:"#1f5bb5",russia:"#1f3f9a",liechtenstein:"#1f3f8f",usa:"#3c3b6e",canada:"#d52b1e",mexico:"#1d6847",cuba:"#1f3f9a",guatemala:"#3f8fc0",belize:"#1f3f8f",honduras:"#1f6fb0","el-salvador":"#1f4fa0",nicaragua:"#1f5fb0",costarica:"#1f2f7a",panama:"#c8102e",jamaica:"#1d8a3f",bahamas:"#1f8fa0","dominican-republic":"#1f2f6a","puerto-rico":"#c8102e",colombia:"#c4950a",ecuador:"#c4950a",peru:"#d91023",bolivia:"#1d7934",chile:"#1f39a6",argentina:"#4a90c8",uruguay:"#1f3f9a",paraguay:"#c8102e",brazil:"#1d8c3b",kenya:"#1d6600",tanzania:"#1d8a3f",ethiopia:"#1d8a3f",uganda:"#2b2b2b",rwanda:"#1f8fc0",ghana:"#1d6a3f",senegal:"#1d8a3f",namibia:"#1f3f9a",botswana:"#4f8fc0",zambia:"#1d7a3f",zimbabwe:"#1d7a3f",madagascar:"#1d7a3f",mauritius:"#c8102e","south-africa":"#1d7749",mozambique:"#1d7a5f",malawi:"#c8102e","cape-verde":"#1f3f9a",seychelles:"#1f3f9a",australia:"#1a2a6c","new-zealand":"#1a2a6c",fiji:"#4f9fc8",samoa:"#c8102e",tonga:"#c8102e",vanuatu:"#1d7a3f",palau:"#2f8fd0","papua-new-guinea":"#c8102e","new-caledonia":"#1f3f9a",tahiti:"#c8102e","cook-islands":"#1a2a6c",hawaii:"#1a3f8a",guam:"#1f3f8a",saipan:"#1f5fb0","timor-leste":"#c8102e",greenland:"#c8102e",antarctica:"#1f6fa0"};
 const SHAPES = [ring, rect, oval, hexa], INKS = ["#1f6f5b", "#c8492b", "#2f5fa8", "#6d4fa0", "#b8862a", "#2b6f7a"];
 const hash = (s) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); return (h ^ (h >>> 15)) >>> 0; };
 const inkify = (h) => h.replace(/^<svg([^>]*)>/, '<svg$1><g filter="url(#ppink)">').replace(/<\/svg>$/, "</g></svg>");
-function stampHtml(key, label, sub, date, kanji) {
-  const h = hash(key), col = FLAG[key] || INKS[(h >>> 3) % INKS.length], r = ((h >>> 6) % 26) - 13;
+// salt を渡すと、同じ国でも記事ごとに形と傾きが変わる（色は国の色のまま）
+function stampHtml(key, label, sub, date, kanji, salt) {
+  const h0 = hash(key), h = salt ? hash(key + salt) : h0, col = FLAG[key] || INKS[(h0 >>> 3) % INKS.length], r = ((h >>> 6) % 26) - 13;
   const fn = kanji ? eki : SHAPES[h % 4];
   return { html: fn(col, label, sub, date), r };
 }
@@ -206,66 +210,122 @@ function spaced(c, text, cx, y, sp) {
   const ch = [...text], w = ch.reduce((a, t) => a + c.measureText(t).width, 0) + sp * (ch.length - 1);
   let x = cx - w / 2; ch.forEach((t) => { c.fillText(t, x, y); x += c.measureText(t).width + sp; });
 }
+// 紙や革のざらつき用のノイズ（小さいタイルを敷きつめる）
+function grain(c, a, dark) {
+  const t = document.createElement("canvas"); t.width = t.height = 160; const x = t.getContext("2d"), d = x.createImageData(160, 160);
+  for (let i = 0; i < d.data.length; i += 4) { const v = dark ? 0 : 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = Math.random() < 0.5 ? 0 : v; d.data[i + 3] = Math.random() * 255 * a; }
+  x.putImageData(d, 0, 0); return c.createPattern(t, "repeat");
+}
 async function makeStory(o) {
   await document.fonts.ready;
   const W = 1080, H = 1920, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
   const c = cv.getContext("2d"); c.textBaseline = "alphabetic";
-  c.fillStyle = "#f5f0e2"; c.fillRect(0, 0, W, H);
-  const bg = await svgImg(decodeURIComponent(GL.slice(GL.indexOf(",") + 1, -2)));
-  if (bg) c.drawImage(bg, 0, 0, W, H);
-  // 中身は少し引きで（周りに余白）。ロゴだけはいちばん下に置く
-  const S = 0.82; c.save(); c.translate((W * (1 - S)) / 2, 170); c.scale(S, S);
+  // 背景は表紙と同じ深い緑。その上に、開いた旅券を1冊置く
+  const g = c.createLinearGradient(0, 0, W * 0.3, H); g.addColorStop(0, "#1f6f5b"); g.addColorStop(0.45, "#154c3e"); g.addColorStop(1, "#0b2a22");
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
   // 見出し
-  c.fillStyle = "#1f6f5b"; c.font = "500 39px Cinzel, serif"; spaced(c, "TABISTOCK PASSPORT", W / 2, 150, 12);
-  c.fillStyle = "#1b2330"; c.font = "800 80px 'Shippori Mincho', serif"; c.textAlign = "center";
-  const ttl = `${o.name}の旅券`; let fs = 80; while (c.measureText(ttl).width > 900 && fs > 44) { fs -= 4; c.font = `800 ${fs}px 'Shippori Mincho', serif`; }
-  c.fillText(ttl, W / 2, 278); c.textAlign = "left";
+  c.fillStyle = "rgba(233,214,160,.92)"; c.font = "500 38px Cinzel, serif"; spaced(c, "TABISTOCK PASSPORT", W / 2, 218, 12);
+  // 本：うしろに表紙、右と下にページの重なり、左が綴じ目
+  const P = { x: 120, y: 330, w: 840, h: 1210 }, SC = P.w / 868;
+  const rr = (x, y, w, h, r, left) => { c.beginPath(); if (left) { c.moveTo(x + w, y); c.lineTo(x + r, y); c.quadraticCurveTo(x, y, x, y + r); c.lineTo(x, y + h - r); c.quadraticCurveTo(x, y + h, x + r, y + h); c.lineTo(x + w, y + h); } else { c.moveTo(x, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r); c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h); c.lineTo(x, y + h); } c.closePath(); };
+  // 表紙（見開きの外側にのぞく）
+  c.save(); c.shadowColor = "rgba(0,0,0,.45)"; c.shadowBlur = 60; c.shadowOffsetY = 26; c.fillStyle = "#0f3a2f";
+  rr(P.x - P.w - 18, P.y - 10, P.w * 2 + 44, P.h + 34, 26); c.fill(); c.restore();
+  c.save(); rr(P.x - P.w - 18, P.y - 10, P.w * 2 + 44, P.h + 34, 26); c.clip();
+  const lc = c.createLinearGradient(0, P.y, 0, P.y + P.h + 30); lc.addColorStop(0, "rgba(255,255,255,.07)"); lc.addColorStop(1, "rgba(0,0,0,.18)"); c.fillStyle = lc; c.fill();
+  c.fillStyle = grain(c, 0.5, false); c.globalAlpha = 0.07; c.fill(); c.fillStyle = grain(c, 0.6, true); c.globalAlpha = 0.25; c.fill(); c.globalAlpha = 1;
+  c.strokeStyle = "rgba(255,255,255,.1)"; c.lineWidth = 2; rr(P.x - P.w - 17, P.y - 9, P.w * 2 + 42, P.h + 32, 25); c.stroke(); c.restore();
+  // 右ページの後ろに続くページの重なり（右と下に少しずつずらして）
+  for (let i = 9; i >= 1; i--) { c.fillStyle = i % 2 ? "#d9d0b9" : "#f1ead8"; rr(P.x, P.y, P.w + i * 3.2, P.h + i * 3.2, 14); c.fill(); }
+  for (let i = 5; i >= 1; i--) { c.fillStyle = i % 2 ? "#e6dec9" : "#f1ead8"; rr(P.x - P.w - i * 2.4, P.y, P.w + i * 2.4, P.h + i * 2.4, 14, true); c.fill(); }
+  // 左ページ（表紙裏。画面の左に見切れる）
+  c.save(); rr(P.x - P.w, P.y, P.w, P.h, 12, true); c.clip();
+  c.fillStyle = "#f5f0e2"; c.fillRect(P.x - P.w, P.y, P.w, P.h);
+  if (o.req) { const fr = await svgImg(o.req.replace("<svg ", `<svg xmlns="http://www.w3.org/2000/svg" width="${P.w}" height="${P.h}" `)); if (fr) c.drawImage(fr, P.x - P.w, P.y, P.w, P.h); }
+  const gl = c.createLinearGradient(P.x - 110, 0, P.x, 0); gl.addColorStop(0, "rgba(60,50,30,0)"); gl.addColorStop(1, "rgba(60,50,30,.28)");
+  c.fillStyle = gl; c.fillRect(P.x - 110, P.y, 110, P.h); c.restore();
+  // 右ページ
+  c.save(); rr(P.x, P.y, P.w, P.h, 12); c.clip();
+  c.fillStyle = "#f5f0e2"; c.fillRect(P.x, P.y, P.w, P.h);
+  const bg = await svgImg(decodeURIComponent(GL.slice(GL.indexOf(",") + 1, -2)));
+  if (bg) c.drawImage(bg, P.x, P.y, P.w, P.h);
+  const gt = c.createLinearGradient(P.x, 0, P.x + 110, 0); gt.addColorStop(0, "rgba(60,50,30,.3)"); gt.addColorStop(1, "rgba(60,50,30,0)");
+  c.fillStyle = gt; c.fillRect(P.x, P.y, 110, P.h);
+  c.translate(P.x, P.y); c.scale(SC, SC);
+  // ページの見出し（身分事項のページと同じ）
+  c.fillStyle = "#1f6f5b"; c.font = "600 28px Cinzel, serif"; c.textAlign = "left";
+  { let x = 64; for (const ch of "PASSPORT") { c.fillText(ch, x, 92); x += c.measureText(ch).width + 9; } c.font = "600 30px 'Shippori Mincho', serif"; c.fillText("旅券", x + 14, 92); }
+  c.fillStyle = "#3a4640"; c.font = "400 24px 'Space Mono', monospace"; c.textAlign = "right"; c.fillText(o.no || "", 804, 92); c.textAlign = "left";
   // 身分事項
-  c.fillStyle = "#fbf8ee"; c.fillRect(84, 354, 912, 396); c.strokeStyle = "#d8cfbb"; c.lineWidth = 3; c.strokeRect(84, 354, 912, 396);
-  // Firebase Storage の画像はそのままだと描き込めないので、同じドメインの /api/img を通して読み込む
   const src = /^https:\/\/(firebasestorage\.googleapis\.com|lh3\.googleusercontent\.com)\//.test(o.photo || "") ? "/api/img?u=" + encodeURIComponent(o.photo) : o.photo;
   const ph = src ? await loadImg(src, true) : await svgImg(NOPHOTO);
-  c.fillStyle = "#cfd6d2"; c.fillRect(132, 402, 222, 296);
-  if (ph) { const r = Math.max(222 / ph.width, 296 / ph.height), w = ph.width * r, h = ph.height * r; c.save(); c.beginPath(); c.rect(132, 402, 222, 296); c.clip(); c.drawImage(ph, 132 + (222 - w) / 2, 402 + (296 - h) / 2, w, h); c.restore(); }
-  const lab = (t, y) => { c.fillStyle = "#5d6b63"; c.font = "500 20px 'Noto Sans JP', sans-serif"; c.fillText(t, 402, y); };
-  lab("氏名 / Name", 438); c.fillStyle = "#1b2330"; { let f = 42; c.font = `800 ${f}px 'Shippori Mincho', serif`; while (c.measureText(o.name).width > 380 && f > 24) { f -= 2; c.font = `800 ${f}px 'Shippori Mincho', serif`; } c.fillText(o.name, 402, 488); }
-  lab("発行年月日 / Date of issue", 542); c.font = "700 44px 'Cormorant Garamond', serif"; c.fillText(o.issued, 402, 590);
-  lab("所持人自署 / Signature", 640);
-  if (o.sig) { c.save(); c.translate(396, 636); c.scale(1.2, 1.2); c.strokeStyle = "#1b2330"; c.lineWidth = 3.2; c.lineCap = c.lineJoin = "round"; c.stroke(new Path2D(o.sig)); c.restore(); }
+  const PX = 64, PY = 132, PW = 226, PH = 300;
+  c.fillStyle = "#cfd6d2"; c.fillRect(PX, PY, PW, PH);
+  if (ph) { const r = Math.max(PW / ph.width, PH / ph.height), w = ph.width * r, h = ph.height * r; c.save(); c.beginPath(); c.rect(PX, PY, PW, PH); c.clip(); c.drawImage(ph, PX + (PW - w) / 2, PY + (PH - h) / 2, w, h); c.restore(); }
+  const lab = (t, y) => { c.fillStyle = "#5d6b63"; c.font = "500 19px 'Noto Sans JP', sans-serif"; c.fillText(t, 326, y); };
+  lab("氏名 / Name", 160); c.fillStyle = "#1b2330"; { let f = 40; c.font = `800 ${f}px 'Shippori Mincho', serif`; while (c.measureText(o.name).width > 300 && f > 22) { f -= 2; c.font = `800 ${f}px 'Shippori Mincho', serif`; } c.fillText(o.name, 326, 206); }
+  lab("発行年月日 / Date of issue", 262); c.font = "700 40px 'Cormorant Garamond', serif"; c.fillText(o.issued, 326, 306);
+  lab("所持人自署 / Signature", 362);
+  if (o.sig) { c.save(); c.translate(320, 356); c.scale(1.1, 1.1); c.strokeStyle = "#1b2330"; c.lineWidth = 3.2; c.lineCap = c.lineJoin = "round"; c.stroke(new Path2D(o.sig)); c.restore(); }
+  if (o.seal) {
+    const si = await svgImg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 120" width="60" height="120"><defs>${INK}</defs>${o.seal}</svg>`);
+    if (si) { const k = 1.9, w = 60 * k, h = 120 * k; c.save(); c.globalAlpha = 0.88; c.translate(738, 300); c.rotate((-4 * Math.PI) / 180); c.drawImage(si, -w / 2, -h / 2, w, h); c.restore(); }
+  }
   // 数字
-  c.strokeStyle = "rgba(31,111,91,.35)"; c.lineWidth = 3; [786, 1044].forEach((y) => { c.beginPath(); c.moveTo(84, y); c.lineTo(996, y); c.stroke(); });
+  c.strokeStyle = "rgba(31,111,91,.4)"; c.lineWidth = 2.5; [474, 650].forEach((y) => { c.beginPath(); c.moveTo(64, y); c.lineTo(804, y); c.stroke(); });
   [[o.countries, "COUNTRIES"], [o.days, "DAYS"], [o.trips, "TRIPS"]].forEach(([n, l], i) => {
-    const cx = 84 + 152 + i * 304;
-    c.textAlign = "center"; c.fillStyle = "#1f6f5b"; c.font = "700 104px 'Cormorant Garamond', serif"; c.fillText(String(n), cx, 930);
-    c.textAlign = "left"; c.fillStyle = "#5d6b63"; c.font = "600 27px Cinzel, serif"; spaced(c, l, cx, 992, 5);
+    const cx = 64 + 123 + i * 247;
+    c.textAlign = "center"; c.fillStyle = "#1f6f5b"; c.font = "700 88px 'Cormorant Garamond', serif"; c.fillText(String(n), cx, 572);
+    c.textAlign = "left"; c.fillStyle = "#5d6b63"; c.font = "600 22px Cinzel, serif"; spaced(c, l, cx, 616, 4);
   });
-  // スタンプ（国ごとに1つ。多いときは小さく、たくさん並べる）
+  // スタンプ
   const css = await stampFontCss();
   const items = o.stamps, n = items.length;
   if (n) {
-    const cols = n <= 4 ? 2 : n <= 9 ? 3 : n <= 16 ? 4 : 5, rows = Math.ceil(n / cols);
-    const top = 1080, areaH = 600, cw = 1000 / cols, rh = areaH / rows, sc = Math.min(2.5, (cw / 125) * 1.05, (rh / 100) * 1.1);
+    const AX = 40, AY = 676, AW = 788, AH = 416; // 数字の下の線（650）と機械読み取りの行（1118〜）のあいだ
+    // 列の数は、スタンプがいちばん大きく押せる数を選ぶ（少ないほど1つが大きくなる）
+    const fit = (k) => Math.min(2.2, (AW / k / 125) * 1.22, (AH / Math.ceil(n / k) / 104) * 1.18);
+    let cols = 1; for (let k = 2; k <= Math.min(8, n); k++) if (fit(k) > fit(cols) + 0.01) cols = k;
+    const rows = Math.ceil(n / cols), sc = fit(cols), SH = 104 * sc;
     const imgs = await Promise.all(items.map((it) => svgImg(it.html.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ').replace(/^(<svg[^>]*>)/, `$1<defs><style>${css}</style>${INK}</defs><g filter="url(#ppink)">`).replace(/<\/svg>$/, "</g></svg>"))));
     imgs.forEach((im, i) => {
       if (!im) return; const h = hash(o.seed + i), col = i % cols, row = Math.floor(i / cols), inRow = Math.min(cols, n - row * cols);
-      const cx = 40 + (1000 / inRow) * (col + 0.5) + ((h % 40) - 20), cy = top + rh * (row + 0.5) + (((h >>> 5) % 30) - 15);
+      const cx = AX + (AW / inRow) * (col + 0.5) + ((h % 24) - 12), cy = AY + SH / 2 + (rows > 1 ? ((AH - SH) * row) / (rows - 1) : (AH - SH) / 2) + (((h >>> 5) % 8) - 4);
       const w = im.width * sc, hh = im.height * sc;
       c.save(); c.globalAlpha = 0.9; c.translate(cx, cy); c.rotate((items[i].r * Math.PI) / 180); c.drawImage(im, -w / 2, -hh / 2, w, hh); c.restore();
     });
   }
-  // 身分事項の右に、表紙裏と同じ朱色の「旅券」の印を1つ押す
-  if (o.seal) {
-    const si = await svgImg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 120" width="60" height="120"><defs>${INK}</defs>${o.seal}</svg>`);
-    if (si) [[868, 560, -4, 2.3, 0.88]].forEach(([x, y, r, k, a]) => {
-      const w = 60 * k, h = 120 * k; c.save(); c.globalAlpha = a; c.translate(x, y); c.rotate((r * Math.PI) / 180); c.drawImage(si, -w / 2, -h / 2, w, h); c.restore();
-    });
+  // 機械読み取りの2行と、地紋の文字
+  if (o.mrz) {
+    c.fillStyle = "#26312b"; c.font = "400 28px 'Space Mono', monospace";
+    o.mrz.split("\n").forEach((ln, i) => { let x = 52; for (const ch of ln) { c.fillText(ch, x, 1140 + i * 44); x += 17.6; } });
   }
+  c.fillStyle = "rgba(31,111,91,.5)"; c.font = "400 14px 'Space Mono', monospace";
+  c.save(); c.beginPath(); c.rect(52, 1200, P.w - 104, 30); c.clip(); c.fillText("TABISTOCK·旅券·PASSPORT·".repeat(8), 52, 1220); c.restore();
   c.restore();
-  // ロゴ（Tのマーク＋Tabistock）
+  // 紙の質感：綴じ目に向かって沈み、少し手前でふくらんで光る。全体に粒と、外側のふちの陰り
+  c.save(); c.beginPath(); c.rect(P.x - P.w, P.y, P.w * 2, P.h); c.clip();
+  const sp = c.createLinearGradient(P.x - 170, 0, P.x + 170, 0);
+  [[0, "rgba(0,0,0,0)"], [0.32, "rgba(255,255,255,.16)"], [0.42, "rgba(255,255,255,.06)"], [0.5, "rgba(40,30,15,.42)"], [0.53, "rgba(40,30,15,.22)"], [0.6, "rgba(255,255,255,.04)"], [0.7, "rgba(255,255,255,.18)"], [1, "rgba(0,0,0,0)"]].forEach(([k, col]) => sp.addColorStop(k, col));
+  c.fillStyle = sp; c.fillRect(P.x - 170, P.y, 340, P.h);
+  const lt = c.createLinearGradient(P.x - P.w, P.y, P.x + P.w, P.y + P.h); lt.addColorStop(0, "rgba(255,250,235,.10)"); lt.addColorStop(0.6, "rgba(0,0,0,0)"); lt.addColorStop(1, "rgba(60,45,20,.10)");
+  c.fillStyle = lt; c.fillRect(P.x - P.w, P.y, P.w * 2, P.h);
+  const vg = c.createLinearGradient(0, P.y, 0, P.y + P.h); vg.addColorStop(0, "rgba(90,70,30,.08)"); vg.addColorStop(0.05, "rgba(0,0,0,0)"); vg.addColorStop(0.95, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(90,70,30,.12)");
+  c.fillStyle = vg; c.fillRect(P.x - P.w, P.y, P.w * 2, P.h);
+  const eg = c.createLinearGradient(P.x + P.w - 40, 0, P.x + P.w, 0); eg.addColorStop(0, "rgba(0,0,0,0)"); eg.addColorStop(1, "rgba(90,70,30,.12)");
+  c.fillStyle = eg; c.fillRect(P.x + P.w - 40, P.y, 40, P.h);
+  c.fillStyle = grain(c, 0.5, true); c.globalAlpha = 0.03; c.fillRect(P.x - P.w, P.y, P.w * 2, P.h);
+  c.fillStyle = grain(c, 0.5, false); c.globalAlpha = 0.05; c.fillRect(P.x - P.w, P.y, P.w * 2, P.h); c.restore();
+  // 重なったページの縁に細い影の線
+  c.save(); c.strokeStyle = "rgba(120,100,60,.35)"; c.lineWidth = 1;
+  for (let i = 1; i <= 9; i += 2) { c.beginPath(); c.moveTo(P.x + P.w + i * 3.2 - 1, P.y + 16); c.lineTo(P.x + P.w + i * 3.2 - 1, P.y + P.h + i * 3.2 - 14); c.stroke(); c.beginPath(); c.moveTo(P.x + 4, P.y + P.h + i * 3.2 - 1); c.lineTo(P.x + P.w + i * 3.2 - 14, P.y + P.h + i * 3.2 - 1); c.stroke(); }
+  c.restore();
+  // ロゴ（白）
   const [lg, wm] = await Promise.all([svgImg(LOGO_COLOR), loadImg("./img/wordmark.png")]);
-  const lh = 66, lw = lh * (792 / 618), wh = 54, ww = wm ? wm.width * (wh / wm.height) : 0, gap = 20, tot = lw + gap + ww, x0 = (W - tot) / 2;
-  if (lg) c.drawImage(lg, x0, 1740 - lh, lw, lh);
-  if (wm) c.drawImage(wm, x0 + lw + gap, 1740 - wh - 2, ww, wh);
+  const lh = 62, lw = lh * (792 / 618), wh = 50, ww = wm ? wm.width * (wh / wm.height) : 0, gap = 18, tot = lw + gap + ww, x0 = (W - tot) / 2, LY = 1772;
+  const white = (im, w, h) => { const t = document.createElement("canvas"); t.width = w * 2; t.height = h * 2; const x = t.getContext("2d"); x.drawImage(im, 0, 0, t.width, t.height); x.globalCompositeOperation = "source-in"; x.fillStyle = "#fff"; x.fillRect(0, 0, t.width, t.height); return t; };
+  if (lg) c.drawImage(lg, x0, LY - lh, lw, lh);
+  if (wm) c.drawImage(white(wm, ww, wh), x0 + lw + gap, LY - wh - 2, ww, wh);
   return await new Promise((ok) => cv.toBlob(ok, "image/png"));
 }
 
@@ -326,15 +386,26 @@ export function pagePassport(el, ctx) {
   // 見開きの左：タイトル・期間・トップの写真（最大3枚、枠なしでテープ留め）
   // 記事1本＝1ページ：タイトル・期間・トップの写真（最大3枚、テープ留め）・その旅のスタンプ
   const PH = { 1: [[18, 32, 60, -3]], 2: [[7, 32, 46, -5], [48, 36, 45, 4]], 3: [[8, 31, 40, -5], [52, 32, 40, 5], [29, 43, 40, 2]] };
+  const isTransit = (d) => d.type === "transit" || (d.styles || []).includes("transit");
   function stampsOf(d) {
     const date = dot(d.dateStart) || "";
     const n = daysOf(d);
     const cs = (d.countries || []).filter((v) => v !== "japan");
     const prefs = (d.prefectures || []);
-    let items = cs.map((v) => { const c = cinfo(v) || {}; return stampHtml(v, String(c.en || v).toUpperCase(), n ? `${n} DAYS` : "", date); });
-    if (!cs.length) items = (prefs.length ? prefs : ["日本"]).map((x) => stampHtml(x, x, "", date, true));
+    let items = cs.map((v) => { const c = cinfo(v) || {}; return stampHtml(v, String(c.en || v).toUpperCase(), isTransit(d) ? "TRANSIT" : n ? `${n} DAYS` : "", date); });
+    if (!cs.length) items = (prefs.length ? prefs : ["日本"]).map((x) => stampHtml(x, roma(x), "", date, true));
     if (items.length === 1 && cs.length) items.push({ html: rect("#3a4a5c", "DEPARTED", "JAPAN", date), r: -4 });
     return items;
+  }
+  // シェア画像のスタンプ：記事ごとに押す（同じ国でも投稿の数だけ）。日本は都道府県の駅スタンプで
+  function shareStamps() {
+    return arts.flatMap((d) => {
+      const date = dot(d.dateStart) || "", tr = isTransit(d);
+      const out = (d.countries || []).filter((v) => v !== "japan").map((v) => { const c = cinfo(v) || {}; return stampHtml(v, String(c.en || v).toUpperCase(), tr ? "TRANSIT" : "", date, false, d.id); });
+      (d.prefectures || []).forEach((x) => out.push(stampHtml(x, roma(x), "", date, true, d.id)));
+      if (!out.length && (d.countries || []).includes("japan")) out.push(stampHtml("japan", "JAPAN", tr ? "TRANSIT" : "", date, false, d.id));
+      return out;
+    });
   }
   // スタンプはページの下の方に、少し重なるくらいに散らして押す
   // 国が多いときは列を増やして小さく押す
@@ -601,9 +672,8 @@ export function pagePassport(el, ctx) {
     const b = e.currentTarget; if (b.disabled) return; b.disabled = true; buzz();
     const toastEl = document.createElement("div"); toastEl.className = "ppmk"; toastEl.textContent = "シェア用の画像を作っています…"; el.appendChild(toastEl);
     try {
-      const stamps = [...countries].map((v) => { const ci = cinfo(v) || {}; const first = arts.find((d) => (d.countries || []).includes(v)); return stampHtml(v, String(ci.en || v).toUpperCase(), "", dot(first && first.dateStart) || ""); });
-      if (!stamps.length) { const prefs = [...new Set(arts.flatMap((d) => d.prefectures || []))]; prefs.forEach((x) => stamps.push(stampHtml(x, x, "", "", true))); }
-      const blob = await makeStory({ name: p.nickname || "旅人", photo: p.photoURL || "", issued, sig, countries: countries.size, days: totalDays, trips: arts.length, stamps, seed: ctx.me || "", seal: SEAL });
+      const stamps = shareStamps().slice(-63);
+      const blob = await makeStory({ name: p.nickname || "旅人", photo: p.photoURL || "", issued, sig, countries: countries.size, days: totalDays, trips: arts.length, stamps, seed: ctx.me || "", seal: SEAL, mrz, no, req: REQ_FRAME });
       toastEl.remove();
       const file = new File([blob], "tabistock-passport.png", { type: "image/png" });
       if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); } catch (er) {} }
