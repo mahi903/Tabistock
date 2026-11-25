@@ -3,7 +3,7 @@
 // ・写真の縮小、日数の自動判定
 // ・Firestore への保存（写真アップロード → 記事ドキュメント → トランジット記事の紐付け）
 import { db, storage } from "./firebase-config.js";
-import { collection, doc, setDoc, getDocs, query, where, updateDoc, serverTimestamp }
+import { collection, doc, setDoc, getDoc, getDocs, query, where, updateDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 import { collabFields, notifyNewInvites } from "./collab.js";
@@ -233,10 +233,94 @@ export async function resizeImage(file, maxEdge = 1280, q = 0.82){
   }
 }
 
+// 写真は毎回ちがうファイル名で保存し、上書きしない。なので端末に1年間残してよい（2回目からは通信なしで出る）
+export const IMG_CACHE = "public, max-age=31536000, immutable";
 async function uploadAndGetUrl(path, blob){
   const r = ref(storage, path);
-  await uploadBytes(r, blob, { contentType: "image/jpeg" });
+  await uploadBytes(r, blob, { contentType: "image/jpeg", cacheControl: IMG_CACHE });
   return await getDownloadURL(r);
+}
+
+// ---- サムネイル（一覧のカード・DAY の小さい写真用）----
+// 短い辺を 560px にした小さい版を別に保存し、記事に thumbUrl（＋元の写真の URL を thumbSrc）として持たせる。
+// DAY は days[i].thumbUrl / thumbSrc（その日の1枚目の写真）。元の写真（長辺1280px）の数分の1の大きさになる
+const THUMB_SHORT = 560;
+export async function thumbBlob(src, short = THUMB_SHORT, q = 0.78){
+  let img, w0, h0;
+  try{ img = await createImageBitmap(src, { imageOrientation: "from-image" }); w0 = img.width; h0 = img.height; }
+  catch(e){ img = await loadImage(src); w0 = img.naturalWidth; h0 = img.naturalHeight; }
+  const s = Math.min(1, short / Math.min(w0, h0));
+  const cv = document.createElement("canvas"); cv.width = Math.round(w0 * s); cv.height = Math.round(h0 * s);
+  const ctx = cv.getContext("2d"); ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, 0, 0, cv.width, cv.height);
+  if(img.close) img.close();
+  return await new Promise((r) => cv.toBlob(r, "image/jpeg", q));
+}
+// url の写真のサムネイルの URL を返す。known（元の写真 → サムネ）にあればそれ、なければ作る。
+// blobs に元の写真のデータがあればそれを使い、なければ /api/img（同じサイト経由）で取ってくる。作れなかったら元の写真の URL のまま
+async function thumbFor(articleId, url, known, blobs){
+  if(!url) return "";
+  if(known.has(url)) return known.get(url);
+  try{
+    let blob = blobs && blobs.get(url);
+    if(!blob){
+      const r = await fetch("/api/img?u=" + encodeURIComponent(url));
+      if(!r.ok) throw new Error("img " + r.status);
+      blob = await r.blob();
+    }
+    const base = (decodeURIComponent((url.split("/o/")[1] || "").split("?")[0]).split("/").pop() || "photo.jpg").replace(/\.jpe?g$/i, "");
+    const tu = await uploadAndGetUrl(`articles/${articleId}/${base}_t${Date.now().toString(36)}.jpg`, await thumbBlob(blob));
+    known.set(url, tu);
+    return tu;
+  }catch(e){
+    console.warn("サムネイルを作れませんでした:", e);
+    return url;
+  }
+}
+// すでに記事にあるサムネイル（元の写真 → サムネ）
+function knownThumbs(a){
+  const m = new Map();
+  if(a && a.thumbSrc && a.thumbUrl) m.set(a.thumbSrc, a.thumbUrl);
+  ((a && a.days) || []).forEach((d) => { if(d && d.thumbSrc && d.thumbUrl) m.set(d.thumbSrc, d.thumbUrl); });
+  return m;
+}
+// 記事のトップと各 DAY のサムネイルを決める（{ thumbUrl, thumbSrc, days }）。days は thumbUrl / thumbSrc を足したものを返す
+async function withThumbs(articleId, heroUrls, days, known, blobs){
+  const src = (heroUrls || [])[0] || "";
+  const thumbUrl = src ? await thumbFor(articleId, src, known, blobs) : "";
+  const out = [];
+  for(const d of days || []){
+    const p = (d.photoUrls || [])[0] || "";
+    const { thumbUrl: _a, thumbSrc: _b, ...rest } = d;
+    const tu = p ? await thumbFor(articleId, p, known, blobs) : "";
+    out.push(tu && tu !== p ? { ...rest, thumbSrc: p, thumbUrl: tu } : rest);   // 作れなかったときは付けない（次の一括作成でやり直す）
+  }
+  return { thumbUrl: thumbUrl || src, thumbSrc: thumbUrl && thumbUrl !== src ? src : "", days: out };
+}
+
+/* 管理者用：今ある記事に、まだないサムネイルを作って入れる（何回やっても大丈夫。updatedAt は変えない）。
+   progress(文字) で進み具合を返す。戻り値 { done: 作った記事の数, total: 記事の数 } */
+export async function backfillThumbs(progress = () => {}){
+  const snap = await getDocs(collection(db, "articles"));
+  const list = [];
+  snap.forEach((s) => list.push({ id: s.id, ...s.data() }));
+  let done = 0, i = 0;
+  for(const a of list){
+    i++;
+    const hero = (a.heroUrls || [])[0] || "";
+    const days = a.type === "transit" ? [] : (a.days || []);
+    const need = (hero && a.thumbSrc !== hero) || days.some((d) => (d.photoUrls || [])[0] && d.thumbSrc !== d.photoUrls[0]);
+    if(!need) continue;
+    progress(`${i}/${list.length}　${a.title || "(無題)"}`);
+    const t = await withThumbs(a.id, a.heroUrls, days, knownThumbs(a), null);
+    const made = t.thumbSrc || t.days.some((d) => d.thumbSrc);
+    if(!made) continue;   // 1枚も作れなかった記事は、そのまま（次に押したときにやり直す）
+    const patch = { thumbUrl: t.thumbUrl, thumbSrc: t.thumbSrc };
+    if(a.type !== "transit") patch.days = t.days;
+    await updateDoc(doc(db, "articles", a.id), patch);
+    done++;
+  }
+  return { done, total: list.length };
 }
 
 // 自分が投稿者・共同投稿者のトランジット記事（新しい順）
@@ -255,7 +339,8 @@ export async function loadMyTransits(uid){
 // 写真は並び順のまま。新規分（{file}）だけ縮小してアップロードし、URLの並びを返す（ファイル名は毎回ユニークに）
 function photoSaver(id, progress){
   const stamp = Date.now();
-  return async function(items, prefix, label){
+  const blobs = new Map();   // 新しく上げた写真の URL → 縮小後のデータ（サムネイル作りに使う）
+  const save = async function(items, prefix, label){
     const urls = [];
     const total = items.filter((it) => it.file).length;
     let n = 0;
@@ -265,10 +350,19 @@ function photoSaver(id, progress){
       n++;
       progress(`${label} ${n}/${total} をアップロード中…`);
       const blob = await resizeImage(it.file);
-      urls.push(await uploadAndGetUrl(`articles/${id}/${prefix}_${stamp}_${j + 1}.jpg`, blob));
+      const url = await uploadAndGetUrl(`articles/${id}/${prefix}_${stamp}_${j + 1}.jpg`, blob);
+      blobs.set(url, blob);
+      urls.push(url);
     }
     return urls;
   };
+  save.blobs = blobs;
+  return save;
+}
+// 編集のときは、前に作ったサムネイルを使い回す
+async function prevThumbs(articleRef, editId){
+  if(!editId) return new Map();
+  try{ return knownThumbs((await getDoc(articleRef)).data()); }catch(e){ return new Map(); }
 }
 function statusOf(edit, mode){
   if(mode === "draft") return "draft";
@@ -299,7 +393,10 @@ export async function saveTransit({ d, edit = null, mode = "publish", nickname =
   const id = articleRef.id;
   const status = statusOf(edit, mode), firstSubmit = isFirstSubmit(edit, mode);
   progress(editId ? "記事を更新中…" : "記事を作成中…");
-  const heroUrls = await photoSaver(id, progress)(d.photos || [], "hero", "写真");
+  const saver = photoSaver(id, progress);
+  const heroUrls = await saver(d.photos || [], "hero", "写真");
+  progress("サムネイルを作成中…");
+  const th = await withThumbs(id, heroUrls, [], await prevThumbs(articleRef, editId), saver.blobs);
   const places = (d.places || []).filter((p) => p && typeof p.lat === "number" && typeof p.lng === "number").map((p) => ({ name: p.name || "", lat: p.lat, lng: p.lng }));
   progress("保存中…");
   await setDoc(articleRef, {
@@ -314,7 +411,7 @@ export async function saveTransit({ d, edit = null, mode = "publish", nickname =
     styles: ["transit"],
     airport: d.airport, layover: Number(d.layover) || null,
     title: d.title || "", body: d.body || "",
-    places, heroUrls, thumbUrl: heroUrls[0] || "",
+    places, heroUrls, thumbUrl: th.thumbUrl, thumbSrc: th.thumbSrc,
     parentId: d.parentId || null
   });
   notifyNewInvites(id, d.title || "トランジット記事");
@@ -356,6 +453,8 @@ export async function saveArticle({ d, edit = null, mode = "publish", nickname =
     else if(typeof day.lat === "number" && typeof day.lng === "number"){ dayObj.lat = day.lat; dayObj.lng = day.lng; }
     days.push(dayObj);
   }
+  progress("サムネイルを作成中…");
+  const th = await withThumbs(id, heroUrls, days, await prevThumbs(articleRef, editId), savePhotos.blobs);
 
   progress("保存中…");
   await setDoc(articleRef, {
@@ -372,7 +471,7 @@ export async function saveArticle({ d, edit = null, mode = "publish", nickname =
     costs: d.costs, flights: d.flights, flightWhen: d.flightWhen, flightSite: d.flightSite,
     services: d.services, comment: d.comment,
     agodaUrl: d.agodaUrl || "",
-    days, heroUrls, thumbUrl: heroUrls[0] || ""
+    days: th.days, heroUrls, thumbUrl: th.thumbUrl, thumbSrc: th.thumbSrc
   });
 
   notifyNewInvites(id, d.title);
@@ -394,5 +493,5 @@ export async function saveArticle({ d, edit = null, mode = "publish", nickname =
       }
     }catch(e){ console.warn("トランジット記事の紐付け更新に失敗:", e); }
   }
-  return { id, status, heroUrls, days, firstSubmit };
+  return { id, status, heroUrls, days: th.days, firstSubmit };
 }

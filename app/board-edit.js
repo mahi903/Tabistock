@@ -4,7 +4,7 @@
 import { db, storage } from "../firebase-config.js";
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { ILL, BOARD_CATS, BOARD_SEED, toFs } from "./board.js?v=202611260130";
+import { ILL, BOARD_CATS, BOARD_SEED, toFs } from "./board.js?v=202611260140";
 
 // ブロックの種類（追加ボタンの並び順）
 const KINDS = [
@@ -157,7 +157,7 @@ export async function pageBoardEdit(el, id, C) {
       const { resizeImage } = await import("../post-core.js");
       const blob = await resizeImage(file, 1600, 0.82);
       const r = ref(storage, `boards/${S.id}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.jpg`);
-      await uploadBytes(r, blob, { contentType: "image/jpeg" });
+      await uploadBytes(r, blob, { contentType: "image/jpeg", cacheControl: "public, max-age=31536000, immutable" });
       const url = await getDownloadURL(r);
       if (target) target.url = url; else S.heroUrl = url;
       dirty = true;

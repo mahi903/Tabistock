@@ -68,6 +68,11 @@
         <button id="tab-users" type="button">ユーザー</button>
       </div>
       <div id="msg"></div>
+      <div class="note ok" id="thumbTool" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <span style="flex:1;min-width:200px">一覧用の小さい写真（サムネイル）を、まだない記事の分だけ作ります。何回押しても大丈夫です。数分かかるので、終わるまでこのページを開いたままにしてください。</span>
+        <button type="button" id="thumbBtn" class="b-approve" style="padding:8px 14px;border-radius:8px;border:0;font-weight:700;cursor:pointer">サムネイルを作る</button>
+        <span id="thumbMsg" style="width:100%;font-size:12px"></span>
+      </div>
       <div id="list"><div class="empty">読み込み中…</div></div>
     </div>
   </div>
@@ -290,6 +295,16 @@ onAuthStateChanged(auth, async (user) => {
   }
   $("gate").innerHTML = "";
   $("panel").style.display = "block";
+  // 今ある記事のサムネイルをまとめて作る（post-core.js の backfillThumbs）
+  $("thumbBtn").onclick = async () => {
+    const b = $("thumbBtn"); b.disabled = true; b.textContent = "作成中…";
+    try {
+      const { backfillThumbs } = await import("./post-core.js");
+      const r = await backfillThumbs((t) => ($("thumbMsg").textContent = "作成中：" + t));
+      $("thumbMsg").textContent = `完了しました（${r.total}本中、${r.done}本の記事にサムネイルを作りました）`;
+    } catch (e) { console.error(e); $("thumbMsg").textContent = "途中で止まりました：" + (e.message || e) + "（もう一度押すと続きから作ります）"; }
+    b.disabled = false; b.textContent = "サムネイルを作る";
+  };
   loadList();
   countOpenReports();
 });
