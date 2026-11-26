@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611260241";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611262200";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -573,7 +573,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611260241");
+  const M = await import("./sodan.js?v=202611262200");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -607,7 +607,7 @@ async function loadBoards() {
   // 管理者が開いたとき：記事・事件簿がまだ Firestore に1本もなければ、board.js の分を自動でコピーする（それぞれ最初の1回だけ）
   if (admin && list) {
     try {
-      const M = await import("./board-edit.js?v=202611260241");
+      const M = await import("./board-edit.js?v=202611262200");
       let n = 0;
       if (!list.some((d) => !d.jiken && !d.jikenHead)) n += await M.importSeed(me);
       if (!list.some((d) => d.jiken)) n += await M.importJiken(me);
@@ -645,7 +645,7 @@ async function renderBoard() {
   box.innerHTML = `<div class="bcats">${cats.map(([k, l]) => `<button class="${k === boardCat ? "on" : ""}" data-bc="${k}">${l}</button>`).join("")}</div>
     ${boardCat === "trouble" ? jikenHead(admin) : ""}
     ${adm}
-    <div class="blist">${shown.map((d) => d.jiken ? jikenCard(d, admin) : `<a class="bit press" href="#g-${esc(d.id)}">${boardThumb(d)}<div><small>${esc(catName(d.cat))}${admin && d.status === "draft" ? '<em class="bdraft">下書き</em>' : ""}</small><h3>${esc(d.title)}</h3>${d.lead ? `<p>${esc(d.lead)}</p>` : ""}</div></a>`).join("")}</div>`;
+    <div class="blist">${shown.map((d) => d.jiken ? jikenCard(d, admin) : `<a class="bit press" href="#g-${esc(d.id)}">${boardThumb(d)}<div><small>${esc(catName(d.cat))}${admin && d.status === "draft" ? '<em class="bdraft">下書き</em>' : ""}</small><h3>${esc(noMk(d.title))}</h3>${d.lead ? `<p>${esc(noMk(d.lead))}</p>` : ""}</div></a>`).join("")}</div>`;
   box.querySelectorAll("[data-bc]").forEach((b) => (b.onclick = () => { boardCat = b.dataset.bc; haptic(); renderBoard(); }));
 }
 // 事件簿の1件：どこで・何が起きたか・手口・被害・その後。タップで元の記事へ
@@ -664,33 +664,55 @@ function jikenCard(d, admin) {
     <p class="bcf">${esc(d.by)}さんの「${esc(d.from)}」より<em>記事を読む</em></p></a>`;
   return admin ? `<div class="bcasew">${card}<a class="bced" href="#ge-${esc(d.id)}">${d.status === "draft" ? "下書き・" : ""}編集</a></div>` : card;
 }
+// マーカー：本文の ==ここ== を手書き風のオレンジのマーカーにする（esc したあとの文字に使う）
+const mk = (h) => h.replace(/==(.+?)==/g, '<span class="hl">$1</span>');
+const tx = (x) => mk(esc(x || ""));
+const noMk = (x) => String(x || "").replace(/==/g, "");   // 一覧ではマーカーの記号を消すだけ
 function boardBlock(b) {
-  if (b.t === "h") return `<h2>${esc(b.x)}</h2>`;
-  if (b.t === "p") return `<p class="bp">${para(b.x)}</p>`;
-  if (b.t === "note") return `<p class="bnote">${para(b.x)}</p>`;
-  if (b.t === "list") return `<ul class="bul">${(b.items || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>`;
-  if (b.t === "steps") return `<ol class="bsteps">${(b.items || []).map((x, i) => `<li><i>${i + 1}</i><div><b>${esc(x[0])}</b>${esc(x[1] || "")}</div></li>`).join("")}</ol>`;
-  if (b.t === "photo" && b.url) return `<figure class="bfig"><img src="${esc(b.url)}" alt="${esc(b.cap || "")}" loading="lazy">${b.cap ? `<figcaption>${esc(b.cap)}</figcaption>` : ""}</figure>`;
+  // 見出しは 大（lv 1）・中（lv 2、前からある見出し）・小（lv 3）
+  if (b.t === "h") return b.lv === 1 ? `<h2 class="bh1">${tx(b.x)}</h2>` : b.lv === 3 ? `<h3 class="bh3">${tx(b.x)}</h3>` : `<h2 class="bh2">${tx(b.x)}</h2>`;
+  if (b.t === "p") return `<p class="bp">${mk(para(b.x))}</p>`;
+  if (b.t === "note") return `<p class="bnote">${mk(para(b.x))}</p>`;
+  if (b.t === "list") return `<ul class="bul">${(b.items || []).map((x) => `<li>${tx(x)}</li>`).join("")}</ul>`;
+  if (b.t === "steps") return `<ol class="bsteps">${(b.items || []).map((x, i) => `<li><i>${i + 1}</i><div><b>${tx(x[0])}</b>${tx(x[1])}</div></li>`).join("")}</ol>`;
+  // 表：rows = [{ c: [セル, …] }]。head なら1行目を見出しの行に
+  if (b.t === "table") {
+    const rows = (b.rows || []).map((r) => r.c || []);
+    if (!rows.length) return "";
+    const n = Math.max(...rows.map((r) => r.length));
+    const tr = (r, tag) => `<tr>${Array.from({ length: n }, (_, i) => `<${tag}>${tx(r[i])}</${tag}>`).join("")}</tr>`;
+    return `<div class="btbl"><table>${rows.map((r, i) => tr(r, b.head && i === 0 ? "th" : "td")).join("")}</table></div>`;
+  }
+  // 写真：size = l（画面いっぱい）・m（7割）・s（半分くらい）・two（2枚を横に並べる。2枚目は url2）
+  if (b.t === "photo" && b.url) {
+    const img = (u) => `<img src="${esc(u)}" alt="${esc(b.cap || "")}" loading="lazy">`;
+    if (b.size === "two") return `<figure class="bfig"><div class="bfig2">${img(b.url)}${b.url2 ? img(b.url2) : ""}</div>${b.cap ? `<figcaption>${esc(b.cap)}</figcaption>` : ""}</figure>`;
+    return `<figure class="bfig${b.size === "m" || b.size === "s" ? " " + b.size : ""}">${img(b.url)}${b.cap ? `<figcaption>${esc(b.cap)}</figcaption>` : ""}</figure>`;
+  }
   if (b.t === "ill" && ILL[b.k]) return `<figure class="bfig"><div class="bfill">${ILL[b.k]}</div>${b.cap ? `<figcaption>${esc(b.cap)}</figcaption>` : ""}</figure>`;
   return "";
 }
 function fmtUpdated(u) { const m = String(u || "").match(/^(\d{4})-(\d{2})/); return m ? `${m[1]}年${+m[2]}月更新` : ""; }
+// 記事の中身（上の画像〜本文）。記事ページと、エディタのプレビューで使う
+function boardArticleHtml(d) {
+  const hero = d.heroType === "photo" && d.heroUrl ? `<div class="bhero ph"><img src="${esc(d.heroUrl)}" alt=""></div>` : `<div class="bhero">${illOf(d.ill)}</div>`;
+  return `${hero}<div class="bart">${d.status === "draft" ? '<p class="bdraftbar">下書き（管理者にだけ見えています）</p>' : ""}
+    <small class="bc">${esc(catName(d.cat))}</small><h1>${tx(d.title)}</h1>${d.lead ? `<p class="blead">${tx(d.lead)}</p>` : ""}${fmtUpdated(d.updated) ? `<p class="bupd">${fmtUpdated(d.updated)}</p>` : ""}
+    ${(d.facts || []).length ? `<dl class="bfacts">${d.facts.map((f) => `<div><dt>${esc(f[0])}</dt><dd><b>${tx(f[1])}</b>${f[2] ? `<span>${tx(f[2])}</span>` : ""}</dd></div>`).join("")}</dl>` : ""}
+    ${(d.blocks || []).map(boardBlock).join("")}</div>`;
+}
 async function pageBoard(el, id) {
   el.innerHTML = bar("旅の掲示板") + '<div class="ps under2"><p class="loading">読み込み中…</p></div>';
   const d = (await loadBoards()).find((x) => x.id === id);
   const ps = el.querySelector(".ps");
   if (!d) { ps.innerHTML = '<p class="empty">記事が見つかりませんでした</p>'; return; }
-  const hero = d.heroType === "photo" && d.heroUrl ? `<div class="bhero ph"><img src="${esc(d.heroUrl)}" alt=""></div>` : `<div class="bhero">${illOf(d.ill)}</div>`;
-  ps.innerHTML = `${hero}<div class="bart">${d.status === "draft" ? '<p class="bdraftbar">下書き（管理者にだけ見えています）</p>' : ""}
-    <small class="bc">${esc(catName(d.cat))}</small><h1>${esc(d.title)}</h1>${d.lead ? `<p class="blead">${esc(d.lead)}</p>` : ""}${fmtUpdated(d.updated) ? `<p class="bupd">${fmtUpdated(d.updated)}</p>` : ""}
-    ${(d.facts || []).length ? `<dl class="bfacts">${d.facts.map((f) => `<div><dt>${esc(f[0])}</dt><dd><b>${esc(f[1])}</b>${f[2] ? `<span>${esc(f[2])}</span>` : ""}</dd></div>`).join("")}</dl>` : ""}
-    ${(d.blocks || []).map(boardBlock).join("")}</div>`;
+  ps.innerHTML = boardArticleHtml(d);
   if (!d.jiken && (await isAdminMe()) && !el.querySelector("[data-gedit]")) {
     el.querySelector(".bar2").insertAdjacentHTML("beforeend", '<button class="btn-s on" data-gedit>編集</button>');
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611260241"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611262200"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -700,8 +722,9 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611260241").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611262200").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
+    preview: (d) => boardArticleHtml(normBoard(d)),
     // 事件簿の「元の旅の記事」の候補（公開中の記事）
     articles: () => ALL.map((d) => ({ id: d.id, title: titleOf(d) || "(無題)", by: authorName(d) })),
     nextJikenOrder: Math.max(0, ...(BOARDS || []).filter((d) => d.jiken).map((d) => Number(d.order) || 0)) + 1,
@@ -759,13 +782,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611260241").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611262200").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611260241").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611260241").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611262200").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611262200").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -1072,7 +1095,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611260241"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611262200"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1470,7 +1493,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611260241").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611262200").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);
