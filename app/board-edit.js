@@ -4,16 +4,16 @@
 import { db, storage } from "../firebase-config.js";
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611272320";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611280030";
 
 // ブロックの種類（追加ボタンの並び順）
 const KINDS = [
-  ["h", "見出し"], ["p", "文章"], ["list", "箇条書き"], ["steps", "手順"], ["table", "表"], ["note", "注意"], ["photo", "写真"], ["ill", "イラスト・図"],
+  ["h", "見出し"], ["p", "文章"], ["list", "箇条書き"], ["steps", "手順"], ["table", "表"], ["note", "注意"], ["photo", "写真"], ["ill", "イラスト・図"], ["model", "動かせるモデル"],
 ];
 const kindName = (t) => (KINDS.find((k) => k[0] === t) || [, t])[1];
 const ILL_KEYS = Object.keys(ILL);
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
-const newBlock = (t) => (t === "list" ? { t, items: [""] } : t === "steps" ? { t, items: [{ h: "", x: "" }] } : t === "photo" ? { t, url: "", size: "l", cap: "" } : t === "ill" ? { t, k: "suitcase", cap: "" }
+const newBlock = (t) => (t === "model" ? { t, k: "hadley", p: "atacama", m: 1, cap: "" } : t === "list" ? { t, items: [""] } : t === "steps" ? { t, items: [{ h: "", x: "" }] } : t === "photo" ? { t, url: "", size: "l", cap: "" } : t === "ill" ? { t, k: "suitcase", cap: "" }
   : t === "table" ? { t, head: true, rows: [{ c: ["", "", ""] }, { c: ["", "", ""] }, { c: ["", "", ""] }] } : t === "h" ? { t, lv: 2, x: "" } : { t, x: "" });
 const LV = [[1, "大"], [2, "中"], [3, "小"]];
 const SIZES = [["l", "大"], ["m", "中"], ["s", "小"], ["two", "2枚並べる"]];
@@ -29,6 +29,17 @@ export async function importSeed(me, only) {
     const { mins, ...rest } = toFs(d);   // 「〇分で読める」はもう使わない
     batch.set(doc(db, "boards", d.id), { ...rest, heroType: "ill", status: d.status || "published", authorId: me, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   });
+  await batch.commit();
+  return todo.length;
+}
+
+// ---- すでに Firestore にある国別ガイドの題名を、「〇〇｜旅の基本情報」に直す（古い「はじめての」を消す）。直したぶんだけ返す ----
+export async function fixCountryTitles(list) {
+  const old = "｜はじめての旅の基本情報", neu = "｜旅の基本情報";
+  const todo = list.filter((d) => d.cat === "country" && typeof d.title === "string" && d.title.includes(old));
+  if (!todo.length) return 0;
+  const batch = writeBatch(db);
+  todo.forEach((d) => { d.title = d.title.replace(old, neu); batch.update(doc(db, "boards", d.id), { title: d.title }); });
   await batch.commit();
   return todo.length;
 }
@@ -102,6 +113,7 @@ export async function pageBoardEdit(el, id, C) {
     }
     else if (b.t === "ill") body = `<div class="bed-ph ill">${ILL[b.k] || ""}</div>${illPick(b.k, "pickill", `data-i="${i}"`)}
       <input data-b="${i}" data-k="cap" data-nomk="1" value="${esc(b.cap || "")}" placeholder="説明文（任意）">`;
+    else if (b.t === "model") body = `<p class="bed-hint">手で動かせるモデル（${esc(b.k || "hadley")}）。中身は、コードで決まっています。ここでは、説明文だけ直せます。</p><input data-b="${i}" data-k="cap" data-nomk="1" value="${esc(b.cap || "")}" placeholder="説明文（任意）">`;
     return `<div class="bed-blk" data-blk="${i}">${tools(i)}${body}</div>`;
   }
 
@@ -264,8 +276,9 @@ export async function pageBoardEdit(el, id, C) {
         return { t: "table", head: !!b.head, rows: rows.map((r) => ({ c: [...r, ...Array(n - r.length).fill("")] })) };
       }
       if (b.t === "ill") return { t: "ill", k: b.k || "suitcase", cap: (b.cap || "").trim() };
+      if (b.t === "model") return { t: "model", k: b.k || "hadley", ...(b.p ? { p: b.p } : {}), ...(b.m ? { m: b.m } : {}), cap: (b.cap || "").trim() };
       return { t: b.t, x: (b.x || "").trim() };
-    }).filter((b) => (b.t === "list" || b.t === "steps" ? b.items.length : b.t === "table" ? b.rows.length : b.t === "photo" ? b.url : b.t === "ill" ? true : b.x));
+    }).filter((b) => (b.t === "list" || b.t === "steps" ? b.items.length : b.t === "table" ? b.rows.length : b.t === "photo" ? b.url : b.t === "ill" || b.t === "model" ? true : b.x));
   }
   // 保存する中身（プレビューでも使う）
   function buildData() {

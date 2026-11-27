@@ -118,7 +118,7 @@ export const COUNTRY_AREAS = [
 // 記事のエリア（d.area があればそれを優先）。どこにも入っていなければ "other"
 export const areaOf = (d) => d.area || (COUNTRY_AREAS.find((a) => a[2].includes(d.id)) || ["other"])[0];
 
-export const BOARD_CATS = [["prep", "準備"], ["flight", "航空券"], ["save", "節約"], ["money", "お金・通信"], ["geo", "旅と地理"], ["country", "国別ガイド"], ["trouble", "事件簿"]];
+export const BOARD_CATS = [["prep", "準備"], ["flight", "航空券"], ["save", "節約"], ["money", "お金・通信"], ["country", "国別ガイド"], ["geo", "旅と地理"], ["trouble", "事件簿"]];
 
 export const BOARD_SEED = [
   {
@@ -434,7 +434,7 @@ export const BOARD_SEED = [
   // 国別ガイド：タイ（調べた日 2026-11-27。ビザ・入国・空港アクセスは変わりやすいので、出発前に公式で確認）
   {
     id: "country-thailand", cat: "country", ill: "passport", order: 1, status: "draft", updated: "2026-11-27",
-    title: "タイ｜はじめての旅の基本情報",
+    title: "タイ｜旅の基本情報",
     lead: "通貨・時差・ビザ・入国カード・空港から市内への行き方・使われているアプリまで。タイに行く前に知っておきたいことを、ひとつにまとめました。",
     facts: [
       ["通貨", "バーツ（THB）"],
@@ -496,7 +496,7 @@ export const BOARD_SEED = [
   // 国別ガイド：韓国・台湾・ベトナム・シンガポール・マレーシア（調べた日 2026-11-27）
   {
     id: "country-korea", cat: "country", ill: "passport", order: 2, status: "draft", updated: "2026-11-27",
-    title: "韓国｜はじめての旅の基本情報",
+    title: "韓国｜旅の基本情報",
     lead: "日本から近く、はじめての海外にも人気の韓国。入国前の準備、空港から市内への行き方、旅で使うアプリまでをまとめました。",
     facts: [
       ["通貨", "ウォン（KRW）"],
@@ -553,7 +553,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-taiwan", cat: "country", ill: "passport", order: 3, status: "draft", updated: "2026-11-27",
-    title: "台湾｜はじめての旅の基本情報",
+    title: "台湾｜旅の基本情報",
     lead: "ビザなしで行ける、日本から近い台湾。2025年10月から始まったオンラインの入境登録を中心に、空港から台北への行き方やカードの準備をまとめました。",
     facts: [
       ["通貨", "台湾ドル（TWD）", "お店では「元」と書かれます"],
@@ -608,7 +608,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-vietnam", cat: "country", ill: "passport", order: 4, status: "draft", updated: "2026-11-27",
-    title: "ベトナム｜はじめての旅の基本情報",
+    title: "ベトナム｜旅の基本情報",
     lead: "45日までビザなしで行けるベトナム。入国の条件、ハノイとホーチミンの空港から市内への行き方、配車アプリの使い方をまとめました。",
     facts: [
       ["通貨", "ドン（VND）", "桁が大きいので、レートの計算に慣れておくと安心です"],
@@ -663,7 +663,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-singapore", cat: "country", ill: "passport", order: 5, status: "draft", updated: "2026-11-27",
-    title: "シンガポール｜はじめての旅の基本情報",
+    title: "シンガポール｜旅の基本情報",
     lead: "小さな都市国家のシンガポール。入国前の電子入国カード（SG Arrival Card）、空港から市内への行き方、持ち込みのルールをまとめました。",
     facts: [
       ["通貨", "シンガポールドル（SGD）"],
@@ -718,7 +718,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-malaysia", cat: "country", ill: "passport", order: 6, status: "draft", updated: "2026-11-27",
-    title: "マレーシア｜はじめての旅の基本情報",
+    title: "マレーシア｜旅の基本情報",
     lead: "クアラルンプールを中心に人気のマレーシア。MDAC（デジタル入国カード）と偽サイトへの注意、空港から市内への行き方をまとめました。",
     facts: [
       ["通貨", "リンギット（MYR）"],
@@ -773,7 +773,7 @@ export const BOARD_SEED = [
   // 国別ガイド：ヨーロッパ（イギリス・フランス・イタリア・スペイン・ドイツ／調べた日 2026-11-27）
   {
     id: "country-uk", cat: "country", ill: "passport", order: 7, status: "draft", updated: "2026-11-27",
-    title: "イギリス｜はじめての旅の基本情報",
+    title: "イギリス｜旅の基本情報",
     lead: "ロンドンを中心に人気のイギリス。ビザはいりませんが、入国の前に電子渡航認証（ETA）が必要です。空港から市内への行き方もまとめました。",
     facts: [
       ["通貨", "ポンド（GBP）"],
@@ -827,7 +827,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-france", cat: "country", ill: "passport", order: 8, status: "draft", updated: "2026-11-27",
-    title: "フランス｜はじめての旅の基本情報",
+    title: "フランス｜旅の基本情報",
     lead: "パリを中心に人気のフランス。シェンゲン圏の入国ルール（EES・ETIAS）と、シャルル・ド・ゴール空港からパリ市内への行き方をまとめました。",
     facts: [
       ["通貨", "ユーロ（EUR）"],
@@ -876,7 +876,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-italy", cat: "country", ill: "passport", order: 9, status: "draft", updated: "2026-11-27",
-    title: "イタリア｜はじめての旅の基本情報",
+    title: "イタリア｜旅の基本情報",
     lead: "ローマ、フィレンツェ、ベネチアなど見どころの多いイタリア。シェンゲン圏の入国ルールと、フィウミチーノ空港からローマ市内への行き方をまとめました。",
     facts: [
       ["通貨", "ユーロ（EUR）"],
@@ -925,7 +925,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-spain", cat: "country", ill: "passport", order: 10, status: "draft", updated: "2026-11-27",
-    title: "スペイン｜はじめての旅の基本情報",
+    title: "スペイン｜旅の基本情報",
     lead: "マドリード、バルセロナなど魅力の多いスペイン。シェンゲン圏の入国ルールと、マドリード・バラハス空港から市内への行き方をまとめました。",
     facts: [
       ["通貨", "ユーロ（EUR）"],
@@ -974,7 +974,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-germany", cat: "country", ill: "passport", order: 11, status: "draft", updated: "2026-11-27",
-    title: "ドイツ｜はじめての旅の基本情報",
+    title: "ドイツ｜旅の基本情報",
     lead: "鉄道で巡りやすいドイツ。シェンゲン圏の入国ルールと、フランクフルト空港・ミュンヘン空港から市内への行き方、鉄道アプリをまとめました。",
     facts: [
       ["通貨", "ユーロ（EUR）"],
@@ -1024,7 +1024,7 @@ export const BOARD_SEED = [
   // 国別ガイド：トルコ・アメリカ・オーストラリア（調べた日 2026-11-27）
   {
     id: "country-turkey", cat: "country", ill: "passport", order: 12, status: "draft", updated: "2026-11-27",
-    title: "トルコ｜はじめての旅の基本情報",
+    title: "トルコ｜旅の基本情報",
     lead: "ヨーロッパとアジアにまたがるトルコ。ビザなしで行ける条件、イスタンブール空港から市内への行き方、使うアプリをまとめました。",
     facts: [
       ["通貨", "トルコリラ（TRY）", "物価の上昇が速く、運賃や料金が大きく変わります"],
@@ -1079,7 +1079,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-usa", cat: "country", ill: "passport", order: 13, status: "draft", updated: "2026-11-27",
-    title: "アメリカ｜はじめての旅の基本情報",
+    title: "アメリカ｜旅の基本情報",
     lead: "ニューヨークやロサンゼルスなど、行き先の多いアメリカ。入国の前に必要なESTAと、JFK・LAX空港から市内への行き方をまとめました。",
     facts: [
       ["通貨", "米ドル（USD）"],
@@ -1137,7 +1137,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-australia", cat: "country", ill: "passport", order: 14, status: "draft", updated: "2026-11-27",
-    title: "オーストラリア｜はじめての旅の基本情報",
+    title: "オーストラリア｜旅の基本情報",
     lead: "シドニー、メルボルン、ケアンズなど、人気の高いオーストラリア。入国の前に必要なETAと、シドニー空港から市内への行き方をまとめました。",
     facts: [
       ["通貨", "豪ドル（AUD）"],
@@ -1193,7 +1193,7 @@ export const BOARD_SEED = [
   // 国別ガイド：アジアの続き（フィリピン・インドネシア・香港・カンボジア・モンゴル／調べた日 2026-11-27）
   {
     id: "country-philippines", cat: "country", ill: "passport", order: 7, status: "draft", updated: "2026-11-27",
-    title: "フィリピン｜はじめての旅の基本情報",
+    title: "フィリピン｜旅の基本情報",
     lead: "海とリゾートで人気のフィリピン。30日以内ならビザは不要ですが、入国の前にeTravelの登録が必要です。マニラ空港から市内への行き方もまとめました。",
     facts: [
       ["通貨", "フィリピン・ペソ（PHP）"],
@@ -1247,7 +1247,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-indonesia", cat: "country", ill: "passport", order: 8, status: "draft", updated: "2026-11-27",
-    title: "インドネシア（バリ島）｜はじめての旅の基本情報",
+    title: "インドネシア（バリ島）｜旅の基本情報",
     lead: "バリ島で人気のインドネシア。日本人のビザ免除はいま止まっていて、到着ビザが必要です。2025年10月から義務になった「All Indonesia」の登録もまとめました。",
     facts: [
       ["通貨", "ルピア（IDR）"],
@@ -1302,7 +1302,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-hongkong", cat: "country", ill: "passport", order: 9, status: "draft", updated: "2026-11-27",
-    title: "香港｜はじめての旅の基本情報",
+    title: "香港｜旅の基本情報",
     lead: "日本から近く、週末でも行ける香港。90日以内ならビザなしで、入国カードも不要です。空港から市内へのエアポートエクスプレスもまとめました。",
     facts: [
       ["通貨", "香港ドル（HKD）"],
@@ -1356,7 +1356,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-cambodia", cat: "country", ill: "passport", order: 10, status: "draft", updated: "2026-11-27",
-    title: "カンボジア｜はじめての旅の基本情報",
+    title: "カンボジア｜旅の基本情報",
     lead: "アンコールワットで知られるカンボジア。日本人はビザが必要で、e-Arrivalの登録も必要です。2025年に空港が新しくなったので、行き方も変わりました。",
     facts: [
       ["通貨", "リエル（KHR）", "米ドルも、広く使われています"],
@@ -1403,7 +1403,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-mongolia", cat: "country", ill: "passport", order: 11, status: "draft", updated: "2026-11-27",
-    title: "モンゴル｜はじめての旅の基本情報",
+    title: "モンゴル｜旅の基本情報",
     lead: "草原とゲルで知られるモンゴル。30日以内ならビザなしで、入国カードも不要です。新しい空港が市内から遠いので、行き方を確認しておきましょう。",
     facts: [
       ["通貨", "トゥグルグ（MNT）", "日本では手に入りにくく、現地で両替します"],
@@ -1451,7 +1451,7 @@ export const BOARD_SEED = [
   // 国別ガイド：中国・エジプト・モロッコ・ケニア（調べた日 2026-11-27）
   {
     id: "country-china", cat: "country", ill: "passport", order: 13, status: "draft", updated: "2026-11-27",
-    title: "中国｜はじめての旅の基本情報",
+    title: "中国｜旅の基本情報",
     lead: "日本人は30日以内ならビザなしで入れます。ただし、いまの免除は2026年12月31日までです。入国カードのオンライン申告と、支払いアプリの準備もまとめました。",
     facts: [
       ["通貨", "人民元（CNY・元）"],
@@ -1509,7 +1509,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-egypt", cat: "country", ill: "passport", order: 14, status: "draft", updated: "2026-11-27",
-    title: "エジプト｜はじめての旅の基本情報",
+    title: "エジプト｜旅の基本情報",
     lead: "ピラミッドで知られるエジプト。日本人はビザが必要です。2026年に料金が上がり、カイロ空港の到着ビザのやり方も変わりました。地域ごとの安全の情報もまとめました。",
     facts: [
       ["通貨", "エジプト・ポンド（EGP）"],
@@ -1562,7 +1562,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-morocco", cat: "country", ill: "passport", order: 15, status: "draft", updated: "2026-11-27",
-    title: "モロッコ｜はじめての旅の基本情報",
+    title: "モロッコ｜旅の基本情報",
     lead: "迷路のような旧市街や砂漠で人気のモロッコ。日本人は90日以内ならビザなしです。入国番号のこと、現金の持ち込みの決まりもまとめました。",
     facts: [
       ["通貨", "モロッコ・ディルハム（MAD）"],
@@ -1608,7 +1608,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-kenya", cat: "country", ill: "passport", order: 16, status: "draft", updated: "2026-11-27",
-    title: "ケニア｜はじめての旅の基本情報",
+    title: "ケニア｜旅の基本情報",
     lead: "サファリで人気のケニア。入国前に、電子渡航認証（eTA）が必要です。2026年10月にエボラ出血熱の症例が出ているので、最新の情報の確認が欠かせません。",
     facts: [
       ["通貨", "ケニア・シリング（KES）"],
@@ -1657,7 +1657,7 @@ export const BOARD_SEED = [
   // 国別ガイド：ニュージーランド・カナダ・メキシコ（調べた日 2026-11-27）
   {
     id: "country-newzealand", cat: "country", ill: "passport", order: 17, status: "draft", updated: "2026-11-27",
-    title: "ニュージーランド｜はじめての旅の基本情報",
+    title: "ニュージーランド｜旅の基本情報",
     lead: "自然がきれいなニュージーランド。日本人はビザが要りませんが、NZeTAの取得と、観光税（IVL）の支払いが必要です。アプリで申請すると、少し安くなります。",
     facts: [
       ["通貨", "ニュージーランド・ドル（NZD）"],
@@ -1707,7 +1707,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-canada", cat: "country", ill: "passport", order: 18, status: "draft", updated: "2026-11-27",
-    title: "カナダ｜はじめての旅の基本情報",
+    title: "カナダ｜旅の基本情報",
     lead: "ロッキーやオーロラ、大きな街で人気のカナダ。飛行機で入るときは、eTAが必要です。7カナダドルで、5年間使えます。偽サイトに気をつけてください。",
     facts: [
       ["通貨", "カナダ・ドル（CAD）"],
@@ -1756,7 +1756,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-mexico", cat: "country", ill: "passport", order: 19, status: "draft", updated: "2026-11-27",
-    title: "メキシコ｜はじめての旅の基本情報",
+    title: "メキシコ｜旅の基本情報",
     lead: "遺跡、ビーチ、食べ物で人気のメキシコ。日本人は180日未満ならビザなしです。ただし、地域ごとに治安の差が大きいので、行く場所の危険レベルを確認しましょう。",
     facts: [
       ["通貨", "メキシコ・ペソ（MXN）"],
@@ -1811,7 +1811,7 @@ export const BOARD_SEED = [
   // 国別ガイド：インド・南米5か国（調べた日 2026-11-27）
   {
     id: "country-india", cat: "country", ill: "passport", order: 20, status: "draft", updated: "2026-11-27",
-    title: "インド｜はじめての旅の基本情報",
+    title: "インド｜旅の基本情報",
     lead: "インドは、日本人でもビザが必要です。観光なら、オンラインで取れるe-Visaが基本です。出発前に、電子の入国カードの手続きもあります。",
     facts: [
       ["通貨", "インド・ルピー（INR）"],
@@ -1863,7 +1863,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-peru", cat: "country", ill: "passport", order: 21, status: "draft", updated: "2026-11-27",
-    title: "ペルー｜はじめての旅の基本情報",
+    title: "ペルー｜旅の基本情報",
     lead: "マチュピチュのあるペルー。観光なら、日本人は90日までビザが要りません。標高が高い町が多いので、体調と、治安の情報に気をつけます。",
     facts: [
       ["通貨", "ソル（PEN）"],
@@ -1918,7 +1918,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-bolivia", cat: "country", ill: "passport", order: 22, status: "draft", updated: "2026-11-27",
-    title: "ボリビア｜はじめての旅の基本情報",
+    title: "ボリビア｜旅の基本情報",
     lead: "ウユニ塩湖で有名なボリビア。日本人はビザが要りません。ただし、いまは政治と燃料の不安があるので、日程に余裕をもたせてください。",
     facts: [
       ["通貨", "ボリビアーノ（BOB）"],
@@ -1966,7 +1966,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-brazil", cat: "country", ill: "passport", order: 23, status: "draft", updated: "2026-11-27",
-    title: "ブラジル｜はじめての旅の基本情報",
+    title: "ブラジル｜旅の基本情報",
     lead: "とても広いブラジル。日本人は、90日までビザが要りません。一方で、犯罪が多い国なので、安全の対策がいちばん大事です。",
     facts: [
       ["通貨", "レアル（BRL）"],
@@ -2009,7 +2009,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-argentina", cat: "country", ill: "passport", order: 24, status: "draft", updated: "2026-11-27",
-    title: "アルゼンチン｜はじめての旅の基本情報",
+    title: "アルゼンチン｜旅の基本情報",
     lead: "ブエノスアイレスとパタゴニアのアルゼンチン。日本人は90日までビザが要りません。ブエノスアイレスでは、強盗やスリに気をつけます。",
     facts: [
       ["通貨", "アルゼンチン・ペソ（ARS）"],
@@ -2047,7 +2047,7 @@ export const BOARD_SEED = [
   },
   {
     id: "country-chile", cat: "country", ill: "passport", order: 25, status: "draft", updated: "2026-11-27",
-    title: "チリ｜はじめての旅の基本情報",
+    title: "チリ｜旅の基本情報",
     lead: "南北に細長いチリ。日本人は90日までビザが要りません。入国のとき、食べ物や植物の検査がきびしいので、持ちこみに気をつけます。",
     facts: [
       ["通貨", "チリ・ペソ（CLP）"],
@@ -2077,6 +2077,62 @@ export const BOARD_SEED = [
         "緊急のときの電話番号は、今回、公式の情報で確認できていません。出発前に、日本大使館のページで確認してください",
       ] },
       { t: "note", x: "このページは、外務省、各国政府、各空港・交通機関の公式な案内や、旅行情報サイトを、2026年11月27日に確認してまとめたものです。入国の条件や運賃、時刻は変わることがあります。出発前に、公式ページで最新の情報を確認してください。\n外務省 チリの入国：https://www.anzen.mofa.go.jp/m/mbimmigration_251.html\n外務省 チリの危険情報：https://www.anzen.mofa.go.jp/info/pchazardspecificinfo_2025T037.html\n外務省 安全対策基礎データ（チリ）：https://www.anzen.mofa.go.jp/info/pcsafetymeasure_251.html\n在チリ日本国大使館：https://www.cl.emb-japan.go.jp/" },
+    ],
+  },
+  // 旅と地理（調べた日 2026-11-28）
+  {
+    id: "geo-atacama", cat: "geo", ill: "wind", order: 31, status: "draft", updated: "2026-11-28",
+    title: "アタカマ砂漠｜世界一かわいた場所に、星を見にいく",
+    lead: "チリ北部のアタカマ砂漠は、場所によっては、1年に5mmも雨が降らないといわれる、世界でもいちばんかわいた場所のひとつです。なぜ雨が降らないのかがわかると、いつ行けばいいかも見えてきます。",
+    facts: [
+      ["場所", "チリ北部", "アンデス山脈と太平洋のあいだ"],
+      ["雨の量", "場所によって、1年に5mm未満", "米国海洋大気庁（NOAA）の情報"],
+      ["拠点の町", "サン・ペドロ・デ・アタカマ"],
+      ["時期の選び方", "雨の季節よりも、夜空・気温・人の多さで決める"],
+    ],
+    blocks: [
+      { t: "p", x: "アタカマ砂漠は、アンデス山脈と太平洋にはさまれた細長い砂漠です。とても標高が高く、空気がかわいているので、世界でも指折りの星空が見られる場所として知られています。旅行者のお目当ては、月の表面のような景色と、満天の星です。" },
+      { t: "h", x: "なぜ、雨が降らないの？" },
+      { t: "p", x: "海のすぐそばなのに、かわいているのは、ふしぎです。理由は、おもに3つが重なっているからです。" },
+      { t: "steps", items: [
+        ["空気が下りてくる帯の下にある", "南緯20〜30度のあたりには、高気圧がとどまっていて、空気が下へ下へと降りてきます。降りてくる空気は、かわいていて、雲ができにくくなります。この高気圧が、北に向かう壁のようになって、雨をもたらす低気圧を、南緯40度あたりまでに、とどめているそうです。"],
+        ["冷たい海流が、そばを流れている", "太平洋の沖には、南から北へ、冷たいフンボルト海流が流れています。海面が冷たいと、空気が冷やされて、水分をたくさん含めません。海から風が吹いてきても、雨のもとになりにくいのです。"],
+        ["アンデス山脈が、東の湿った空気を止める", "東側のアマゾンの湿った空気は、アンデス山脈をこえる前に、雨を降らせてしまいます。山をこえて、砂漠に着くころには、ほとんど水分が残っていません。これを『雨かげ』といいます。"],
+      ] },
+      { t: "model", k: "hadley", p: "atacama", m: 1, cap: "かんたんにしたモデルです。月を動かすと、雨の帯（緑）と、かわきやすい帯（オレンジ）が、南北に動きます。アタカマは、どの月でも、かわきやすい帯のなかです。" },
+      { t: "h", x: "動かして、見つけてみよう" },
+      { t: "list", items: [
+        "アタカマとナミブは、どの月に動かしても、ほとんど雨が降らない側にいます。同じ『かわきやすい帯』の下だからです",
+        "バリ島にすると、雨の帯が、南に来る12〜3月ごろが雨季になります（モデルの目安）",
+        "ナイロビにすると、雨の帯が、赤道を南北に通る時期に、雨の多い季節が年に2回出ます",
+        "サハラは、北のかわきやすい帯の下です。アタカマとは、南北が逆なだけで、しくみは同じです",
+      ] },
+      { t: "h", x: "旅の時期は、どう決める？" },
+      { t: "p", x: "アタカマには、はっきりした『雨季』がありません。南半球の夏（12〜2月）に、アンデスをこえて、ほんの少し雨がくるくらいです。だから、旅の時期は、雨ではなく、ほかのことで選びます。" },
+      { t: "table", head: true, rows: [
+        { c: ["したいこと", "時期の目安", "理由"] },
+        { c: ["星空を見たい", "6〜7月", "1年のなかで、空がいちばんすんでいるといわれる（現地の宿の情報）"] },
+        { c: ["人が少ない時期に行きたい", "5〜10月", "この時期は、チリを訪れる旅行者が少ないといわれる（現地の宿の情報）"] },
+        { c: ["ほどよい暑さで歩きたい", "春（9〜11月）", "日中は約17℃、夜は約2℃という紹介がある（旅行会社の情報）。夜は冷えるので、上着が必要"] },
+      ] },
+      { t: "p", x: "旅行者が少ない時期は、宿の料金が下がることが多い、とよくいわれます。ただ、航空券や宿の料金が実際にどのくらい変わるかは、今回の調べでは、数字で確認できていません。気になる月があれば、航空券の検索サイトで、月ごとの料金を、自分で比べてみてください。" },
+      { t: "h", x: "行き方" },
+      { t: "list", items: [
+        "拠点は、サン・ペドロ・デ・アタカマの町です。最寄りの空港は、カラマのエル・ロア空港で、空港からは、送迎や、都市間バスがあります（チリ政府観光局）",
+        "アントファガスタからは、約310kmで、車で3時間40分〜5時間かかります",
+        "車を借りるなら、SUVか4WDが、すすめられています。主要な道はきれいですが、湖や、ピエドラス・ロハスへの道には、砂利道があります",
+        "標高が高い場所が多いので、体調に気をつけて、むりのない日程にします",
+      ] },
+      { t: "h", x: "見どころと、地理のひみつ" },
+      { t: "list", items: [
+        "月の谷（バジェ・デ・ラ・ルナ）：雨が少なく、風と日ざしで削られた、月のような地形です。朝と夕方に、山が金色や赤色に染まるといわれます",
+        "エル・タティオ間欠泉：約80か所から、蒸気が吹き出します。朝早くに行くと、蒸気の柱が、日が昇るにつれて消えていく景色が見られます",
+        "アタカマ塩原：雨が少ないので、水分が蒸発して、塩が残りました。フラミンゴが見られる湖もあります",
+        "天文台：標高が高く、空気がかわいていて、街の明かりがほとんどないので、巨大な電波望遠鏡のALMAなどが置かれています",
+      ] },
+      { t: "h", x: "豆知識：もし、雨が降ったら" },
+      { t: "p", x: "2015年3月、アタカマ砂漠の一部で、数年分の雨が、1日で降ったことがありました。ふだんは雨がないので、地面はカチカチにかたく、水がしみこみません。そのため、町では、鉄砲水が起きたと、NOAAが伝えています。旅行中に、まれに雨が降ったときは、道が通れなくなることもあります。出発前に、現地の天気の情報を見ておきましょう。" },
+      { t: "note", x: "このページは、気象機関や旅行会社などの案内を、2026年11月28日に確認してまとめたものです。雨の量や、旅行の時期、行き方は、変わることがあります。出発前に、最新の情報を確認してください。\nNOAA Climate.gov（アタカマの雨）：https://www.climate.gov/news-features/event-tracker/flooding-atacama-desert-how-did-happen\nWindows to the Universe（アタカマ砂漠）：https://windows2universe.org/earth/atacama_desert.html\nチリ政府観光局（サン・ペドロ・デ・アタカマ）：https://chile.travel/en/blog/san-pedro-de-atacama-the-best-time-to-travel-that-few-people-know-about/\nAwasi Atacama（時期のおすすめ）：https://awasi.com/blog/?p=4414\nJourney Latin America（アタカマの季節）：https://www.journeylatinamerica.com/destinations/chile/places-to-visit/atacama-desert/when-to-go" },
     ],
   }
 ];
