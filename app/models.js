@@ -3,6 +3,7 @@
 //             patagonia＝アンデス山脈の断面（スライダーで風を西から東へ進めると、雨や雪を降らせて乾いていく）
 //             circ＝大気大循環の断面（月のスライダーで、雨の帯と空気の流れが南北に動き、バンコクとバリ島の雨季・乾季が変わる）
 //             uyuni＝ウユニ塩湖（月のスライダーで、雨の量と、塩原が「鏡」と「白い大地」に変わる）
+//             cappa＝カッパドキア／iguazu＝イグアスの滝／canyon＝グランド・キャニオン（どれもステップで進む断面）
 //             pinnacle＝ピナクルズ（砂丘→石灰岩→雨で溶ける→柱が現れる）
 //             butte＝モニュメント・バレー（台地→メサ→ビュート→細い塔）／karst＝ハロン湾（海の底→持ち上がる→雨で溶ける→海に沈む）
 //             rift＝プレートが離れる断面（スライダーで「離れる→割れ目→マグマ→新しい大地」と進む）
@@ -111,7 +112,7 @@ export function modelHtml(b) {
   if (b.k === "rift") return riftHtml(b);
   if (b.k === "circ") return circHtml(b);
   if (b.k === "uyuni") return uyHtml(b);
-  if (b.k === "butte" || b.k === "karst" || b.k === "pinnacle") return stepHtml(b);
+  if (STEP_TXT[b.k]) return stepHtml(b);
   if (b.k !== "hadley") return "";
   const m = Math.min(12, Math.max(1, +b.m || 1));
   return `<figure class="bfig"><div class="mdl" data-mdl="hadley" data-m="${m}" data-lon="-68">
@@ -468,7 +469,76 @@ const STEP_TXT = {
     ["③雨水がしみこんで、溶かす", "雨水がしみこむと、溶けやすいところから穴が広がっていきます。溶け残った部分が、柱の形になりました。"],
     ["④砂が飛ばされて、柱が現れる", "まわりのくずれた砂が風で飛ばされ、溶け残った柱が地上に顔を出しました。これがピナクルズです。"],
   ],
+  cappa: [
+    ["①火山が噴火して、灰が積もる", "近くの火山が何度も噴火して、厚い火山灰が大地をおおいました。"],
+    ["②灰が固まり、上にかたい岩がのる", "積もった灰は固まって、やわらかい凝灰岩になります。その上を、溶岩が固まったかたい岩がおおいました。"],
+    ["③雨や風が、割れ目から削る", "雨や雪どけの水、風が割れ目から少しずつ削り、やわらかい凝灰岩がどんどん削られていきます。"],
+    ["④かたい岩が帽子になって残る", "かたい岩がのった部分だけが、帽子をかぶった柱として残りました。これが「妖精の煙突」です。やわらかい岩は掘りやすいので、人は中に家や教会をつくりました。"],
+  ],
+  iguazu: [
+    ["①溶岩が何度も流れ、段ができる", "大昔、大量の溶岩が何度も流れ出て、玄武岩が階段のように重なりました。"],
+    ["②川が段差から落ちて、滝になる", "川が玄武岩の段差にさしかかり、2段の滝になって落ちます。"],
+    ["③落ちた水が、足元をえぐる", "落ちる水が、崖の下や、岩と岩のさかいめを削ります。支えを失った上の岩が、やがて崩れ落ちます。"],
+    ["④滝は上流へ下がり、峡谷ができる", "崩れるたびに滝は少しずつ上流へ下がり、そのあとに峡谷が残りました。いちばん奥が「悪魔の喉笛」です。"],
+  ],
+  canyon: [
+    ["①地層が積み重なる", "海や砂漠、川の時代をくり返しながら、何億年もかけて地層が積み重なりました。いちばん下の岩は約20億年前のものです。"],
+    ["②大地が持ち上がる", "約7,000万〜3,000万年前、プレートの動きで、この一帯が平らなまま高く持ち上がりました。これがコロラド高原です。"],
+    ["③コロラド川が削り始める", "約500〜600万年前から、コロラド川が高原を下へ下へと削り始めました。"],
+    ["④谷が深く、広くなる", "川が谷を深くし、流れこむ支流が谷を広げて、深さ約1.8kmの大峡谷になりました。いまも少しずつ削られ続けています。"],
+  ],
 };
+function cappaSvg(st) {
+  const INK = "#1b2330", tag = (t, x, y, al = "middle") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#fbf6ee" stroke-width="3">${t}</text>`;
+  let g = "";
+  if (st === 0) {
+    g = `<path d="M230 200 L290 80 L310 80 L360 200 Z" fill="#8a7f74" stroke="${INK}" stroke-width="2"/>` + [0, 1, 2, 3, 4].map((i) => `<circle cx="${270 - i * 30}" cy="${70 - i * 4 + (i % 2) * 8}" r="${12 - i}" fill="#cfc6ba" stroke="${INK}" stroke-width="1.2" opacity=".9"/>`).join("");
+    g += `<rect x="0" y="170" width="230" height="30" fill="#efe4cf" stroke="${INK}" stroke-width="2"/>` + tag("火山", 300, 70) + tag("火山灰", 110, 190);
+  } else if (st === 1 || st === 2) {
+    g = `<rect x="0" y="80" width="360" height="120" fill="#efe4cf" stroke="${INK}" stroke-width="2"/><rect x="0" y="80" width="360" height="14" fill="#6f665d" stroke="${INK}" stroke-width="2"/>`;
+    if (st === 1) g += tag("かたい岩（溶岩が固まったもの）", 180, 72) + tag("やわらかい凝灰岩", 180, 150);
+    else {
+      g += [70, 150, 230, 300].map((x) => `<path d="M${x - 16} 80 L${x + 16} 80 L${x + 3} 200 L${x - 3} 200 Z" fill="#fbf6ee" stroke="${INK}" stroke-width="1.6"/>`).join("");
+      g += [0, 1, 2].map((i) => `<line x1="${110 + i * 80}" y1="${36 + i * 3}" x2="${106 + i * 80}" y2="${50 + i * 3}" stroke="#3b82a0" stroke-width="2.2" stroke-linecap="round"/>`).join("") + tag("雨や風が削る", 180, 24);
+    }
+  } else {
+    const pil = [[60, 70], [140, 110], [220, 80], [300, 100]];
+    g = pil.map(([x, h]) => `<path d="M${x - 22} 200 Q${x - 8} ${200 - h * 0.5} ${x - 7} ${200 - h} L${x + 7} ${200 - h} Q${x + 8} ${200 - h * 0.5} ${x + 22} 200 Z" fill="#efe4cf" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><ellipse cx="${x}" cy="${200 - h - 4}" rx="16" ry="7" fill="#6f665d" stroke="${INK}" stroke-width="2"/>`).join("");
+    g += `<rect x="128" y="150" width="8" height="12" fill="#5b4a3a"/><rect x="144" y="128" width="7" height="9" fill="#5b4a3a"/>` + tag("妖精の煙突", 180, 40) + tag("人が掘った窓", 200, 178, "start");
+  }
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="カッパドキアの奇岩ができるまで"><rect width="360" height="220" fill="#fbf6ee"/>${g}<line x1="0" y1="200" x2="360" y2="200" stroke="${INK}" stroke-width="2"/><rect x="0" y="200" width="360" height="20" fill="#e7d8bd"/></svg>`;
+}
+function iguSvg(st) {
+  const INK = "#1b2330", tag = (t, x, y, al = "middle", c = INK, sc = "#fbf6ee") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="${sc}" stroke-width="3">${t}</text>`;
+  const cliff = [0, 210, 210, 120][st], c2 = cliff + 40;
+  let g;
+  if (st === 0) g = [[60, 100], [100, 140], [140, 200]].map(([a, b], i) => `<rect x="0" y="${a}" width="360" height="${b - a}" fill="${["#6d6a66", "#5e5b57", "#4f4c49"][i]}" stroke="${INK}" stroke-width="1.5"/>`).join("") + tag("玄武岩（溶岩が固まった岩）の層", 180, 52);
+  else {
+    g = `<path d="M0 60 L${cliff} 60 L${cliff} 100 L${c2} 100 L${c2} 140 L360 140 L360 200 L0 200 Z" fill="#5e5b57" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+    g += `<line x1="0" y1="100" x2="${cliff}" y2="100" stroke="#3f3c39" stroke-width="1.4"/><line x1="0" y1="140" x2="${c2}" y2="140" stroke="#3f3c39" stroke-width="1.4"/>`;
+    g += `<rect x="0" y="50" width="${cliff}" height="10" fill="#3b82a0"/><path d="M${cliff} 54 Q${cliff + 14} 70 ${cliff + 12} 100" fill="none" stroke="#3b82a0" stroke-width="8"/><rect x="${cliff + 4}" y="92" width="${c2 - cliff - 4}" height="8" fill="#3b82a0"/><path d="M${c2} 94 Q${c2 + 14} 112 ${c2 + 12} 140" fill="none" stroke="#3b82a0" stroke-width="8"/><rect x="${c2 + 4}" y="132" width="${356 - c2}" height="8" fill="#3b82a0"/>`;
+    g += tag("川", 20, 44, "start") + tag("約35m", cliff - 6, 86, "end", "#fff", "#5e5b57") + tag("約40m", c2 - 6, 126, "end", "#fff", "#5e5b57");
+    if (st === 2) g += `<path d="M${cliff + 1} 100 q-12 -2 -12 -14 l0 -20" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="3 3"/>` + tag("水が足元をえぐる", cliff - 20, 170, "middle", "#fff", "#5e5b57");
+    if (st === 3) g += `<path d="M${cliff} 60 L360 60 L360 100 L${cliff + 40} 100 L${cliff + 40} 140" fill="none" stroke="${INK}" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7"/>` + tag("← 滝が上流へ下がる", cliff + 6, 32, "start") + tag("下がったあとに峡谷ができる", 270, 175, "middle", "#fff", "#5e5b57");
+  }
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="イグアスの滝ができるまで"><rect width="360" height="220" fill="#eef4f6"/>${g}<rect x="0" y="200" width="360" height="20" fill="#8a6b4f"/></svg>`;
+}
+function canyonSvg(st) {
+  const INK = "#1b2330", tag = (t, x, y, al = "middle") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#fbf6ee" stroke-width="3">${t}</text>`;
+  const up = st === 0 ? 70 : 0, cols = ["#e9d6a8", "#c97b4f", "#d9a86c", "#b5543a", "#8c8a86", "#4a4552"];
+  const top = 50 + up, bot = 200, hh = (bot - top) / cols.length;
+  let g = cols.map((c, i) => `<rect x="0" y="${top + i * hh}" width="360" height="${hh}" fill="${c}" stroke="${INK}" stroke-width="1"/>`).join("");
+  if (st >= 2) {
+    const d = st === 2 ? 50 : 135, w = st === 2 ? 30 : 150;
+    g += `<path d="M${180 - w} ${top - 1} L${180 - w * 0.55} ${top + d * 0.45} L${166} ${top + d} L${194} ${top + d} L${180 + w * 0.55} ${top + d * 0.45} L${180 + w} ${top - 1} Z" fill="#fbf6ee" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/><rect x="166" y="${top + d - 5}" width="28" height="5" fill="#3b82a0"/>`;
+    g += tag("コロラド川", 200, top + d - 8, "start");
+    if (st === 3) g += tag("深さ 約1.8km", 20, 40, "start");
+  }
+  if (st === 0) g += tag("地層", 180, top - 8);
+  if (st !== 1) g += `<text x="180" y="196" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="700">いちばん下は約20億年前の岩</text>`;
+  if (st === 1) g += `<path d="M330 190 L330 70" stroke="${INK}" stroke-width="2.4"/><path d="M324 80 L330 70 L336 80" fill="none" stroke="${INK}" stroke-width="2.4"/>` + tag("持ち上がる", 322, 64, "end") + tag("コロラド高原", 120, 40);
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="グランド・キャニオンができるまで"><rect width="360" height="220" fill="#fbf6ee"/>${g}</svg>`;
+}
 function pinnSvg(st) {
   const INK = "#1b2330", tag = (t, x, y, al = "middle") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#fbf6ee" stroke-width="3">${t}</text>`;
   const wind = (y, t) => `<line x1="24" y1="${y}" x2="96" y2="${y}" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/><path d="M88 ${y - 6} L96 ${y} L88 ${y + 6}" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>` + tag(t, 104, y + 4, "start");
@@ -535,7 +605,7 @@ function karstSvg(st) {
     ${st === 3 ? tag("島になった岩山", 92, 70) + tag("海に沈んだ谷", 250, sea + 26, "#fff").replace('stroke="#fbf9f4"', 'stroke="#3b82a0"') : ""}
   </svg>`;
 }
-const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg };
+const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg, cappa: cappaSvg, iguazu: iguSvg, canyon: canyonSvg };
 function stepRes(k, st) { const [t, d] = STEP_TXT[k][st]; return `<span>${t}</span><b>${d}</b>`; }
 function stepHtml(b) {
   const k = b.k, n = STEP_TXT[k].length;
@@ -566,7 +636,7 @@ function init(root) {
   if (root.dataset.mdl === "rift") return initRift(root);
   if (root.dataset.mdl === "circ") return initCirc(root);
   if (root.dataset.mdl === "uyuni") return initUy(root);
-  if (root.dataset.mdl === "butte" || root.dataset.mdl === "karst" || root.dataset.mdl === "pinnacle") return initStep(root);
+  if (STEP_TXT[root.dataset.mdl]) return initStep(root);
   const cv = root.querySelector("canvas");
   if (!cv || cv.dataset.on) return;
   cv.dataset.on = "1";
