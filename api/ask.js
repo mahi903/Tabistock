@@ -259,6 +259,20 @@ function parseAnswer(raw, validIds) {
   }
 }
 
+// 1人1日の相談回数の上限（日本時間の日付ごと。Anthropic の料金を守るため）
+const ASK_DAILY_MAX = 30;
+async function askCountUp(uid) {
+  const day = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const ref = admin.firestore().collection("usage").doc(`ask_${uid}_${day}`);
+  return admin.firestore().runTransaction(async (t) => {
+    const s = await t.get(ref);
+    const n = s.exists ? Number(s.data().n || 0) : 0;
+    if (n >= ASK_DAILY_MAX) return false;
+    t.set(ref, { uid, n: n + 1, day, at: admin.firestore.FieldValue.serverTimestamp() });
+    return true;
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "method not allowed" });
@@ -275,6 +289,8 @@ export default async function handler(req, res) {
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) { res.status(500).json({ error: "missing ANTHROPIC_API_KEY" }); return; }
+
+    if (!(await askCountUp(uid))) { res.status(429).json({ error: "daily limit" }); return; }
 
     // 会話（チャット形式）。messages があればそれを、なければ従来どおり question 1つを使う。
     //   - user と assistant が交互になるよう整え、最後は必ず user にする

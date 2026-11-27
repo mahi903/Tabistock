@@ -55,6 +55,9 @@ async function roundTrip(origin, dest, month, token){
 export const config = { maxDuration: 300 };
 
 export default async function handler(req, res) {
+  // 管理者の更新作業専用。合言葉（環境変数 FARE_CHECK_KEY）を ?key= で付けたときだけ動く。未設定なら常に閉じる
+  const need = process.env.FARE_CHECK_KEY;
+  if (!need || req.query.key !== need) { res.status(403).json({ error: "forbidden" }); return; }
   const token = process.env.TRAVELPAYOUTS_TOKEN;
   if (!token) { res.status(500).json({ error: "TRAVELPAYOUTS_TOKEN が未設定" }); return; }
   const [o, market, regionKey] = String(req.query.q || "").split("-");

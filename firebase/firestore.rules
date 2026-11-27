@@ -300,9 +300,14 @@ service cloud.firestore {
       allow create: if isSignedIn()
                     && request.resource.data.participants is list
                     && request.resource.data.participants.size() == 2
-                    && request.auth.uid in request.resource.data.participants;
+                    && request.auth.uid in request.resource.data.participants
+                    // 会話IDは「参加者2人のUIDを昇順に__でつないだもの」だけ許す（他人のIDを先取りして乗っ取るのを防ぐ）
+                    && request.resource.data.participants[0] < request.resource.data.participants[1]
+                    && convId == request.resource.data.participants[0] + '__' + request.resource.data.participants[1];
       // 更新：参加者本人（lastMessage や unread の更新）。
-      allow update: if isParticipant();
+      // 参加者そのものは書き換えられない（あとから第三者を入れられない）。
+      allow update: if isParticipant()
+                    && request.resource.data.participants == resource.data.participants;
 
       // メッセージ：参加者だけ閲覧・送信。送信者＝自分、本文1〜2000文字または写真。編集・削除は不可。
       match /messages/{msgId} {

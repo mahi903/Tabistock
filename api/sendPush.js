@@ -80,6 +80,24 @@ function ensureApp() {
   });
 }
 
+// 悪用対策：1人が1日に送れる総数と、同じ相手に送れる数を制限する（日本時間の日付ごと）
+const PUSH_DAY_MAX = 300, PUSH_PAIR_MAX = 40;
+async function pushCountUp(from, to) {
+  const day = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  const db = admin.firestore();
+  const a = db.collection("usage").doc(`push_${from}_${day}`);
+  const b = db.collection("usage").doc(`pushTo_${from}_${to}_${day}`);
+  return db.runTransaction(async (t) => {
+    const [sa, sb] = await Promise.all([t.get(a), t.get(b)]);
+    const na = sa.exists ? Number(sa.data().n || 0) : 0, nb = sb.exists ? Number(sb.data().n || 0) : 0;
+    if (na >= PUSH_DAY_MAX || nb >= PUSH_PAIR_MAX) return false;
+    const at = admin.firestore.FieldValue.serverTimestamp();
+    t.set(a, { uid: from, n: na + 1, day, at });
+    t.set(b, { uid: from, n: nb + 1, day, at });
+    return true;
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "method not allowed" });
@@ -99,11 +117,15 @@ export default async function handler(req, res) {
     const toUid = body.toUid;
     const title = String(body.title || "Tabistock").slice(0, 120);
     const text = String(body.body || "").slice(0, 240);
-    const url = String(body.url || "/").slice(0, 300);
+    // 開き先はこのアプリ内（/ か # で始まる）だけ。外部サイトへ誘導するURLは使えない
+    let url = String(body.url || "/").slice(0, 300);
+    if (!/^[\/#]/.test(url) || url.startsWith("//")) url = "/";
     if (!toUid || typeof toUid !== "string") { res.status(400).json({ error: "toUid required" }); return; }
     if (toUid === fromUid) { res.status(200).json({ skipped: "self" }); return; }
 
     const db = admin.firestore();
+
+    if (!(await pushCountUp(fromUid, toUid))) { res.status(429).json({ error: "too many" }); return; }
 
     // iPhoneアプリ（APNs）
     let apnsSent = 0;
