@@ -1475,16 +1475,23 @@ html.ntab .tab{display:none}
 .bjhd{display:flex;gap:14px;align-items:center;padding:14px 20px 4px}
 .bjhd .bill{flex:none;width:92px;height:69px}
 .bjhd p{font-size:12px;line-height:1.7;color:var(--muted)}
-.bcase{display:block;padding:16px 0 15px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
+/* 事件簿だけは「事件ファイル」風：規制線テープ・通し番号・種類のスタンプ */
+.jtape{overflow:hidden;white-space:nowrap;background:#f2c230;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(-1.2deg);margin:16px -20px 8px;padding:5px 0}
+.jtape span{display:inline-block;font:800 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:var(--ink);animation:jtape 28s linear infinite}
+@keyframes jtape{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.jtape span{animation:none}}
+.bcase{position:relative;display:block;margin:16px 4px 6px 0;padding:14px 14px 12px;background:#fff;border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green);color:inherit;text-decoration:none}
 .bcase .bct{display:flex;align-items:center;gap:8px;font-size:11.5px}
+.bcase .bcno{flex:none;font:700 10.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;color:#fff;background:var(--ink);padding:4px 6px}
 .bcase .bct b{font-weight:800;color:var(--ink)}
-.bcase .bct span{font-weight:800;color:#e2683b;border:1.5px solid #e2683b;padding:1px 6px;border-radius:2px;font-size:10.5px}
-.bcase h3{font-size:15.5px;font-weight:900;line-height:1.45;margin-top:6px}
-.bcase dl{margin-top:9px;display:grid;gap:5px}
-.bcase dl div{display:grid;grid-template-columns:44px 1fr;gap:8px;font-size:12.5px;line-height:1.6}
-.bcase dt{font-weight:800;color:var(--green)}
+.bcase .bstamp{flex:none;margin-left:auto;white-space:nowrap;font-weight:900;font-size:11px;line-height:1.25;color:#c8452a;border:2px solid #c8452a;padding:3px 6px;transform:rotate(7deg);opacity:.88;letter-spacing:.04em}
+.bcase h3{font-size:15.5px;font-weight:900;line-height:1.45;margin-top:10px}
+.bcase dl{margin-top:10px;display:grid;gap:0;border-top:1px dashed #b9b2a2}
+.bcase dl div{display:grid;grid-template-columns:46px 1fr;gap:8px;font-size:12.5px;line-height:1.6;padding:6px 0;border-bottom:1px dashed #b9b2a2}
+.bcase dt{font-weight:800;color:var(--ink);font-size:11px;padding-top:1px}
 .bcase dd{margin:0;color:#3a4250}
-.bcase .bcf{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font-size:11px;color:var(--muted)}
+.bcase .loss dd{font-weight:800;color:#c8452a}
+.bcase .bcf{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:9px;font-size:11px;color:var(--muted)}
 .bcase .bcf em{flex:none;font-style:normal;font-weight:800;color:var(--green)}
 .bcase .bcf em:after{content:" →"}
 
@@ -1550,8 +1557,8 @@ html.ntab .tab{display:none}
 .bed select{padding-right:30px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5 5 6.5 8 3.5' fill='none' stroke='%231f6f5b' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center/12px}
 /* 事件簿：管理者の「編集」 */
 .bcasew{position:relative}
-.bcasew .bced{position:absolute;top:13px;right:0;font-size:11px;font-weight:700;color:var(--green);border:1px solid var(--green);background:var(--bg);padding:2px 8px;border-radius:3px;text-decoration:none}
-.bcasew .bcase .bct{padding-right:70px}
+.bcasew .bced{position:absolute;z-index:2;top:4px;right:10px;font-size:11px;font-weight:700;color:var(--green);border:1px solid var(--green);background:var(--bg);padding:2px 8px;border-radius:3px;text-decoration:none}
+.bcasew .bcase{padding-top:22px}
 .bjhd.adm{position:relative;padding-right:76px}
 .bjhd .bced{position:absolute;top:14px;right:20px;font-size:11px;font-weight:700;color:var(--green);border:1px solid var(--green);background:var(--bg);padding:2px 8px;border-radius:3px;text-decoration:none}
 /* アプリ内リンク（旅カードなど）を長押ししても、リンクのメニュー／プレビューを出さない */
