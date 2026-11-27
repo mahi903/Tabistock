@@ -97,6 +97,10 @@ export default async function handler(req, res) {
       if (co || inv) {
         await a.ref.update({ coAuthorIds: FV.arrayRemove(uid), coAuthorInvites: FV.arrayRemove(uid) });
       }
+      // 「一緒に行った人」のタグから外す
+      if (Array.isArray(d.taggedIds) && d.taggedIds.includes(uid)) {
+        await a.ref.update({ taggedIds: FV.arrayRemove(uid) });
+      }
       // 記事へのいいね
       await a.ref.collection("likes").doc(uid).delete();
       // コメント：本人のものは削除、他人のコメントへのいいねも外す

@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271124";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271148";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -574,7 +574,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611271124");
+  const M = await import("./sodan.js?v=202611271148");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -608,7 +608,7 @@ async function loadBoards() {
   // 管理者が開いたとき：記事・事件簿がまだ Firestore に1本もなければ、board.js の分を自動でコピーする（それぞれ最初の1回だけ）
   if (admin && list) {
     try {
-      const M = await import("./board-edit.js?v=202611271124");
+      const M = await import("./board-edit.js?v=202611271148");
       let n = 0;
       if (!list.some((d) => !d.jiken && !d.jikenHead)) n += await M.importSeed(me);
       if (!list.some((d) => d.jiken)) n += await M.importJiken(me);
@@ -713,7 +713,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611271124"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611271148"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -723,7 +723,7 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611271124").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611271148").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
     preview: (d) => boardArticleHtml(normBoard(d)),
     // 事件簿の「元の旅の記事」の候補（公開中の記事）
@@ -783,13 +783,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271124").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271148").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271124").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271124").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271148").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271148").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -851,7 +851,7 @@ async function pageArticle(el, id, opt = {}) {
   if (!d) { try { const s = await getDoc(doc(db, "articles", id)); if (s.exists()) { d = { id: s.id, ...s.data() }; BY[id] = d; } } catch (e) {} }
   if (!d) { el.innerHTML = bar("記事") + '<div class="ps under2"><p class="empty">記事が見つかりませんでした</p></div>'; return; }
   if (!opt.preview) cur = d;
-  await loadProfiles([d.authorId, ...(d.coAuthorIds || [])]);
+  await loadProfiles([d.authorId, ...(d.coAuthorIds || []), ...(d.taggedIds || [])]);
   const mv = isDomestic(d) || !!d.notFromJapan;
   const imgs = (d.heroUrls && d.heroUrls.length ? d.heroUrls : [thumbOf(d)]).filter(Boolean);
   const tags = [placeJp(d), daysLabel(d), ...(d.styles || []).map((v) => (STYLES.find((x) => x.v === v) || {}).tag)].filter(Boolean);
@@ -893,6 +893,7 @@ async function pageArticle(el, id, opt = {}) {
       ${d.comment ? `<div class="dh"><h2>投稿者のコメント</h2></div><p class="ph2">${para(d.comment)}</p>` : ""}
       <div class="dh"><h2>投稿者</h2></div>
       ${authors.map((u) => { const p = PROF[u] || {}; return `<div class="acard"><a href="#u-${esc(u)}"><img src="${esc(avatarOf(u))}" alt=""></a><div><a href="#u-${esc(u)}"><b>${esc(p.nickname || authorName(d))}${vmark(u)}</b></a>${p.bio ? `<p>${esc(p.bio)}</p>` : ""}</div>${u !== me ? `<button class="btn-s" data-follow="${esc(u)}">フォロー</button>` : ""}</div>`; }).join("")}
+      ${(d.taggedIds || []).length ? `<div class="dh"><h2>一緒に行った人</h2></div><div class="tagrow">${(d.taggedIds || []).map((u) => `<a href="#u-${esc(u)}"><img src="${esc(avatarOf(u))}" alt=""><b>${esc((PROF[u] || {}).nickname || "旅人")}${vmark(u)}</b></a>`).join("")}</div>${me && (d.taggedIds || []).includes(me) ? '<button class="untag" data-untag>この旅のタグを外す</button>' : ""}` : ""}
       <div class="dh"><h2>コメント <small id="ccount" style="font-family:Manrope;color:var(--muted)"></small></h2></div>
       <div id="clist"><p class="loading">読み込み中…</p></div>
       <div id="cform"></div>
@@ -937,6 +938,14 @@ async function pageArticle(el, id, opt = {}) {
   el.querySelector("[data-share]").onclick = () => shareMenu(d);
   el.querySelector("[data-share2]").onclick = () => shareMenu(d);
   const own = el.querySelector("[data-own]"); if (own) own.onclick = () => postMenu(d.id);
+  const ut = el.querySelector("[data-untag]");
+  if (ut) ut.onclick = async () => {
+    try {
+      await F.updateDoc(doc(db, "articles", d.id), { taggedIds: F.arrayRemove(me) });
+      d.taggedIds = (d.taggedIds || []).filter((u) => u !== me);
+      toast("タグを外しました"); pageArticle(el, id, opt);
+    } catch (e) { toast("外せませんでした"); }
+  };
   el.querySelector("#repA").onclick = async () => (await mod()).openReport({ type: "article", targetId: d.id, articleId: d.id, targetUid: d.authorId || "", excerpt: titleOf(d) });
   el.querySelectorAll("[data-follow]").forEach((b) => wireFollow(b, b.dataset.follow));
   if (hasRoute) drawRoute(el.querySelector("#rmap"), d);
@@ -1096,7 +1105,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611271124"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611271148"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1220,6 +1229,7 @@ async function pageUser(el, uid) {
   await loadProfiles([uid]);
   const p = PROF[uid] || {};
   const posts = ALL.filter((d) => d.authorId === uid || (d.coAuthorIds || []).includes(uid));
+  const tagged = ALL.filter((d) => (d.taggedIds || []).includes(uid) && d.authorId !== uid && !(d.coAuthorIds || []).includes(uid));
   const ig = String(p.instagram || "").trim();
   const igUrl = ig ? (/^https?:\/\//.test(ig) ? ig : "https://www.instagram.com/" + ig.replace(/^@/, "") + "/") : "";
   const isMe = uid === me;
@@ -1228,7 +1238,7 @@ async function pageUser(el, uid) {
       ${p.bio ? `<p>${esc(p.bio)}</p>` : ""}${nextTripLine(p)}${tagChips(p, false)}${snsLinks(p)}
       <div class="ub" data-ub></div></div>
     <div class="mtabs itabs" style="margin-top:26px"><button class="on" data-ut="posts" aria-label="投稿">${TI.grid}</button><button data-ut="sodan" aria-label="旅ひろば">${TI.sodan}</button><button data-ut="photos" aria-label="写真">${TI.photo}</button></div>
-    <div data-upane="posts">${posts.length ? `<div class="ogrid">${posts.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません</p>'}</div>
+    <div data-upane="posts">${posts.length ? `<div class="ogrid">${posts.map(gridCard).join("")}</div>` : '<p class="empty">まだ公開された投稿はありません</p>'}${tagged.length ? `<div class="sh" style="padding-top:26px"><h2>タグ付けされた旅 <small style="font-family:Manrope;color:var(--muted)">${tagged.length}</small></h2></div><div class="ogrid">${tagged.map(gridCard).join("")}</div>` : ""}</div>
     <div data-upane="sodan" hidden></div>
     <div data-upane="photos" hidden>${photoMosaic(posts.filter((d) => d.authorId === uid)) || '<p class="empty">まだ写真がありません</p>'}</div>
   </div>`;
@@ -1494,7 +1504,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611271124").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611271148").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);
@@ -1835,6 +1845,7 @@ async function pageNotify(el) {
     else if (n.type === "dm") { txt = `${name}さんからメッセージが届きました`; href = "#dm-" + esc(n.fromUid || ""); }
     else if (n.type === "handover") { txt = `${name}さんから「${t}」の投稿者を引き継ぎました`; href = "#a-" + esc(n.articleId || ""); }
     else if (n.type === "collab") { txt = `${name}さんから「${t}」の共同投稿に招待されました`; href = "#a-" + esc(n.articleId || ""); }
+    else if (n.type === "tag") { txt = `${name}さんが「${t}」にあなたを「一緒に行った人」としてタグ付けしました`; href = "#a-" + esc(n.articleId || ""); }
     else if (n.type === "sodan") { txt = `${name}さんがあなたの旅ひろばの投稿に回答しました${t ? `「${t}」` : ""}`; href = "#c-" + esc(n.articleId || ""); }
     else if (n.type === "comment") { txt = `${name}さんが「${t}」にコメントしました`; href = "#a-" + esc(n.articleId || ""); }
     else { txt = `${name}さんがあなたの旅程「${t}」にいいねしました`; href = "#a-" + esc(n.articleId || ""); }

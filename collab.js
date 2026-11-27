@@ -9,6 +9,7 @@ import { esc } from "./tabistock-render.js";
 import { sendNotification } from "./notify.js";
 
 const COLLAB_MAX = 5;
+const TAG_MAX = 10;   // 「一緒に行った人」のタグ付け（承認なし・見るだけ。本人があとから外せる）
 const DEF_AVATAR = "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23e7ddcb%22%2F%3E%3C%2Fsvg%3E";
 
 export const collab = {
@@ -17,6 +18,8 @@ export const collab = {
   ids: [],             // 承認済み
   invites: [],         // 招待中
   origInvites: [],     // 読み込み時点の招待（新しく招待した人にだけ通知するため）
+  tags: [],            // タグ付けした人（taggedIds）
+  origTags: [],        // 読み込み時点のタグ（新しく付けた人にだけ通知するため）
   canManage: true,     // 招待・取り消しできるか
   profiles: {}         // uid -> { nickname, photoURL }
 };
@@ -67,6 +70,13 @@ export function initCollabBox(container, { me, onChange } = {}){
     <div id="collabSearchWrap">
       <input type="text" id="collabSearch" placeholder="ニックネームで検索" autocomplete="off">
       <div id="collabResults" class="collab-results"></div>
+    </div>
+    <label class="f" style="margin-top:18px">一緒に行った人をタグ付け<span class="collab-opt">任意</span></label>
+    <p class="hint" style="margin:0 0 6px">記事に「一緒に行った人」として表示されます（承認は要りません）。相手には通知が届き、相手があとからタグを外すこともできます。</p>
+    <div id="tagSel" class="collab-sel"></div>
+    <div id="tagSearchWrap">
+      <input type="text" id="tagSearch" placeholder="ニックネームで検索" autocomplete="off">
+      <div id="tagResults" class="collab-results"></div>
     </div>`;
 
   document.getElementById("collabSel").addEventListener("click", (e) => {
@@ -114,6 +124,46 @@ export function initCollabBox(container, { me, onChange } = {}){
     renderCollab();
   });
 
+  // ---- タグ付け欄 ----
+  document.getElementById("tagSel").addEventListener("click", (e) => {
+    const x = e.target.closest(".collab-x");
+    if(!x) return;
+    collab.tags = collab.tags.filter(v => v !== x.dataset.uid);
+    renderCollab();
+  });
+  let ttimer = null;
+  document.getElementById("tagSearch").addEventListener("input", (e) => {
+    clearTimeout(ttimer);
+    const q = e.target.value.trim();
+    const box = document.getElementById("tagResults");
+    if(!q){ box.innerHTML = ""; return; }
+    ttimer = setTimeout(async () => {
+      try{
+        const snap = await getDocs(query(collection(db, "publicProfiles"), orderBy("nickname"), startAt(q), endAt(q + ""), limit(8)));
+        const rows = [];
+        snap.forEach(s => {
+          const u = s.id;
+          if(u === collab.me || u === collab.ownerId || collab.tags.includes(u)) return;
+          const p = { nickname: s.data().nickname || "旅人", photoURL: s.data().photoURL || "" };
+          collab.profiles[u] = p;
+          rows.push(`<button type="button" class="collab-res" data-uid="${esc(u)}"><img src="${esc(p.photoURL || DEF_AVATAR)}" alt="">${esc(p.nickname)}</button>`);
+        });
+        box.innerHTML = rows.join("") || `<div class="collab-none">見つかりませんでした</div>`;
+      }catch(err){
+        console.warn("ユーザー検索に失敗:", err);
+        box.innerHTML = `<div class="collab-none">検索できませんでした</div>`;
+      }
+    }, 250);
+  });
+  document.getElementById("tagResults").addEventListener("click", (e) => {
+    const b = e.target.closest(".collab-res");
+    if(!b || collab.tags.length >= TAG_MAX) return;
+    collab.tags.push(b.dataset.uid);
+    document.getElementById("tagSearch").value = "";
+    document.getElementById("tagResults").innerHTML = "";
+    renderCollab();
+  });
+
   renderCollab();
 }
 
@@ -123,6 +173,8 @@ export function loadCollabFrom(data, { isAdmin = false } = {}){
   collab.ids = Array.isArray(data.coAuthorIds) ? data.coAuthorIds.slice() : [];
   collab.invites = Array.isArray(data.coAuthorInvites) ? data.coAuthorInvites.slice() : [];
   collab.origInvites = collab.invites.slice();
+  collab.tags = Array.isArray(data.taggedIds) ? data.taggedIds.slice() : [];
+  collab.origTags = collab.tags.slice();
   collab.canManage = data.authorId === collab.me || isAdmin;
   renderCollab();
 }
@@ -153,6 +205,17 @@ export async function renderCollab(){
       (collab.canManage ? `<button type="button" class="collab-x" data-uid="${esc(u)}" aria-label="外す">×</button>` : "") + `</span>`;
   }).join("") || (collab.canManage ? "" : `<span class="hint">なし</span>`);
   document.getElementById("collabSearchWrap").hidden = !collab.canManage || all.length >= COLLAB_MAX;
+  // タグ付けした人
+  const tsel = document.getElementById("tagSel");
+  if(tsel){
+    await Promise.all(collab.tags.map(u => profileOf(u)));
+    tsel.innerHTML = collab.tags.map(u => {
+      const p = collab.profiles[u];
+      return `<span class="collab-chip"><img src="${esc(p.photoURL || DEF_AVATAR)}" alt="">${esc(p.nickname)}` +
+        (collab.canManage ? ` <button type="button" class="collab-x" data-uid="${esc(u)}" aria-label="外す">×</button>` : "") + `</span>`;
+    }).join("") || (collab.canManage ? "" : `<span class="hint">なし</span>`);
+    document.getElementById("tagSearchWrap").hidden = !collab.canManage || collab.tags.length >= TAG_MAX;
+  }
   onChangeCb();
 }
 
@@ -163,7 +226,8 @@ export function collabFields(isNew, nickname, origNickname){
     authorId: isNew ? collab.me : collab.ownerId,
     authorNickname: isOwner ? nickname : (origNickname || nickname),
     coAuthorIds: collab.ids.slice(),
-    coAuthorInvites: collab.invites.slice()
+    coAuthorInvites: collab.invites.slice(),
+    taggedIds: collab.tags.slice()
   };
 }
 
@@ -172,4 +236,8 @@ export function notifyNewInvites(articleId, articleTitle){
   const fresh = collab.invites.filter(u => !collab.origInvites.includes(u));
   fresh.forEach(toUid => sendNotification({ toUid, type: "collab", articleId, articleTitle }));
   collab.origInvites = collab.invites.slice();
+  // タグ付けした人（新しく付けた人だけ）
+  collab.tags.filter(u => !collab.origTags.includes(u))
+    .forEach(toUid => sendNotification({ toUid, type: "tag", articleId, articleTitle }));
+  collab.origTags = collab.tags.slice();
 }

@@ -248,7 +248,7 @@ async function openPost(el, arg, ctx) {
   S = { step: 0, kind, edit: null, uid: ctx.me, nickname: "", isAdmin: false, transits: [], trips: [], dirty: false, asKey: "", base: "", paused: false };
   F = blank();
   STEPS = kind === "transit" ? TRANSIT_STEPS : TRIP_STEPS;
-  Object.assign(collab, { me: null, ownerId: null, ids: [], invites: [], origInvites: [], canManage: true });
+  Object.assign(collab, { me: null, ownerId: null, ids: [], invites: [], origInvites: [], tags: [], origTags: [], canManage: true });
   const T0 = kind === "transit" ? "トランジットを投稿" : "旅程を投稿";
   if (!ctx.me) { el.innerHTML = C.bar(T0) + '<div class="ps under2"><p class="fol-empty"><a href="#x-login">ログイン</a>すると投稿できます。</p></div>'; return; }
   el.innerHTML = C.bar(editId ? "投稿を編集" : T0) + '<div class="ps"><p class="loading" style="padding-top:140px">読み込み中…</p></div>';

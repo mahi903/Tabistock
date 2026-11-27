@@ -179,6 +179,8 @@ service cloud.firestore {
       }
       function coIds(d)     { return d.get('coAuthorIds', []); }
       function invites(d)   { return d.get('coAuthorInvites', []); }
+      // 「一緒に行った人」のタグ付け（承認なし・見るだけ）。最大10人
+      function tags(d)      { return d.get('taggedIds', []); }
       function onlyChanged(keys) {
         return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
       }
@@ -198,7 +200,8 @@ service cloud.firestore {
                     && (request.resource.data.status == 'pending'
                         || request.resource.data.status == 'draft')
                     && coIds(request.resource.data).size() == 0
-                    && invites(request.resource.data).size() <= 5;
+                    && invites(request.resource.data).size() <= 5
+                    && tags(request.resource.data).size() <= 10;
 
       // 更新：管理者は何でも可（承認＝status変更を含む）。最初の公開（pending）は管理者承認が必要。
       allow update: if isAdmin()
@@ -209,6 +212,7 @@ service cloud.firestore {
                         && request.resource.data.authorId == request.auth.uid
                         && coIds(request.resource.data).toSet().difference(coIds(resource.data).toSet()).size() == 0
                         && invites(request.resource.data).size() <= 5
+                        && tags(request.resource.data).size() <= 10
                         && okStatusChange())
                     // 元の投稿者：承認済みの共同投稿者に投稿者を譲る（自分は共同投稿者として残る）
                     || (isSignedIn()
@@ -225,7 +229,14 @@ service cloud.firestore {
                         && request.resource.data.authorId == resource.data.authorId
                         && coIds(request.resource.data) == coIds(resource.data)
                         && invites(request.resource.data) == invites(resource.data)
+                        && tags(request.resource.data).size() <= 10
                         && okStatusChange())
+                    // タグ付けされた人：自分のタグだけ外せる
+                    || (isSignedIn()
+                        && request.auth.uid in tags(resource.data)
+                        && onlyChanged(['taggedIds'])
+                        && tags(request.resource.data).toSet()
+                           == tags(resource.data).toSet().difference([request.auth.uid].toSet()))
                     // 共同投稿者：自分だけ抜ける
                     || (isSignedIn()
                         && request.auth.uid in coIds(resource.data)
