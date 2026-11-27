@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, COUNTRY_AREAS, areaOf, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271900";
+import { ILL, BOARD_CATS, COUNTRY_AREAS, areaOf, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611272130";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -181,48 +181,70 @@ const SWIPE = ["home", "search", "post", "sodan", "me"];
     return false;
   };
   const canStart = () => !busy && SWIPE.includes(curTab) && !STACK.length && !app.classList.contains("typing") && !$("bs").classList.contains("show") && !document.querySelector(".md-menu,.md-ov,.viewer");
-  app.addEventListener("touchstart", (e) => {
-    st = null;
-    if (e.touches.length !== 1 || !canStart() || blocked(e.target)) return;
-    const t = e.touches[0];
-    st = { x: t.clientX, y: t.clientY, t0: Date.now(), lock: 0, dx: 0, nb: null, dir: 0 };
-  }, { passive: true });
+  // 下のタブの丸い背景の位置（Webのタブのときだけ。アプリのiOSタブは、離したあとに切り替わる）
+  const tabX = (k) => { const b = $("tab").querySelector(`button[data-go="${k}"]`); return b ? b.offsetLeft : null; };
+  const ind = () => (NTAB() ? null : $("tab").querySelector(".ind"));
+  touchStartHook();
+  function touchStartHook() {
+    app.addEventListener("touchstart", (e) => {
+      st = null;
+      if (e.touches.length !== 1 || !canStart() || blocked(e.target)) return;
+      const t = e.touches[0];
+      st = { x: t.clientX, y: t.clientY, t0: Date.now(), lock: 0, dx: 0, nbs: null };
+    }, { passive: true });
+  }
+  // 両どなりの画面を、先に中身まで描いて、画面の外に並べておく（指で動かし始めたときに、空白が見えないように）
+  const prep = (W) => {
+    const idx = SWIPE.indexOf(curTab), nbs = {};
+    [-1, 1].forEach((d) => {
+      const k = SWIPE[idx + d];
+      if (!k) return;
+      if (k === "home" && $("htabs") && !$("htabs").children[0].classList.contains("on")) homeTab(0);
+      if (k === "me") myTab = "trips";
+      const el = $(k);
+      el.hidden = false; el.style.transition = "none"; el.style.transform = `translateX(${d * W}px)`;
+      renderView(k);
+      nbs[d] = { k, el };
+    });
+    return nbs;
+  };
   app.addEventListener("touchmove", (e) => {
     if (!st) return;
     const t = e.touches[0], dx = t.clientX - st.x, dy = t.clientY - st.y;
     if (!st.lock) {
       if (Math.hypot(dx, dy) < 8) return;
-      if (Math.abs(dx) > Math.abs(dy) * 1.2) st.lock = 1; else { st = null; return; }   // 縦に動かしたときは、ふつうのスクロール
+      if (Math.abs(dx) > Math.abs(dy) * 1.2) { st.lock = 1; st.nbs = prep(app.clientWidth); } else { st = null; return; }   // 縦に動かしたときは、ふつうのスクロール
     }
     e.preventDefault();
-    const W = app.clientWidth, cur = $(curTab), idx = SWIPE.indexOf(curTab);
-    const dir = dx < 0 ? 1 : -1, nk = SWIPE[idx + dir];
-    if (dir !== st.dir) {   // 向きが変わったら、隣の画面を入れ替える
-      if (st.nb) { st.nb.hidden = true; st.nb.style.transform = ""; st.nb = null; }
-      st.dir = dir;
-      if (nk) {
-        st.nk = nk; st.nb = $(nk);
-        if (nk === "home" && $("htabs") && !$("htabs").children[0].classList.contains("on")) homeTab(0);
-        if (nk === "me") myTab = "trips";
-        st.nb.hidden = false; renderView(nk);
-      }
-    }
+    const W = app.clientWidth, cur = $(curTab);
+    const d = dx < 0 ? 1 : -1, nb = st.nbs[d];
     st.dx = dx;
-    const mv = st.nb ? dx : dx * 0.3;   // 端では、ゴムのように重くなる
+    const mv = nb ? dx : dx * 0.3;   // 端では、ゴムのように重くなる
     cur.style.transition = "none"; cur.style.transform = `translateX(${mv}px)`;
-    if (st.nb) { st.nb.style.transition = "none"; st.nb.style.transform = `translateX(${mv - dir * W}px)`; }
+    Object.entries(st.nbs).forEach(([dd, n]) => { n.el.style.transform = `translateX(${mv + dd * W}px)`; });
+    const i = ind(), a = tabX(curTab), b = nb ? tabX(nb.k) : null;
+    if (i && a != null && b != null) { i.style.transition = "none"; i.style.transform = `translateX(${a + (b - a) * Math.min(1, Math.abs(dx) / W)}px)`; }
   }, { passive: false });
-  const end = (e) => {
+  const end = () => {
     if (!st || !st.lock) { st = null; return; }
-    const W = app.clientWidth, cur = $(curTab), nb = st.nb, nk = st.nk, dx = st.dx, v = Math.abs(dx) / Math.max(1, Date.now() - st.t0);
+    const W = app.clientWidth, cur = $(curTab), dx = st.dx, nbs = st.nbs, v = Math.abs(dx) / Math.max(1, Date.now() - st.t0);
+    const d = dx < 0 ? 1 : -1, nb = nbs[d];
     st = null; busy = true;
     const commit = !!nb && (Math.abs(dx) > W * 0.33 || (v > 0.45 && Math.abs(dx) > 30));
-    const dir = dx < 0 ? 1 : -1, ease = "transform .3s cubic-bezier(.25,.8,.25,1)";
-    cur.style.transition = ease; cur.style.transform = commit ? `translateX(${-dir * W}px)` : "translateX(0)";
-    if (nb) { nb.style.transition = ease; nb.style.transform = commit ? "translateX(0)" : `translateX(${-dir * W}px)`; }
+    const ease = "transform .3s cubic-bezier(.25,.8,.25,1)";
+    cur.style.transition = ease; cur.style.transform = commit ? `translateX(${-d * W}px)` : "translateX(0)";
+    Object.entries(nbs).forEach(([dd, n]) => {
+      n.el.style.transition = ease;
+      n.el.style.transform = commit && n === nb ? "translateX(0)" : `translateX(${(commit ? dd * W - (n === nb ? 0 : d * W) : dd * W)}px)`;
+    });
+    const i = ind(), a = tabX(curTab), b = nb ? tabX(nb.k) : null;
+    if (i && a != null) { i.style.transition = ease; i.style.transform = `translateX(${commit && b != null ? b : a}px)`; if (commit && b != null) indAt = b; }
     setTimeout(() => {
-      [cur, nb].forEach((el) => el && (el.style.transition = el.style.transform = ""));
-      if (commit) go(nk, { sw: 1 }); else if (nb) nb.hidden = true;
+      [cur, ...Object.values(nbs).map((n) => n.el)].forEach((el) => { el.style.transition = el.style.transform = ""; });
+      if (i) i.style.transition = "";
+      if (commit) go(nb.k, { sw: 1 });
+      else Object.values(nbs).forEach((n) => (n.el.hidden = true));
+      Object.values(nbs).forEach((n) => { if (!commit || n !== nb) n.el.hidden = true; });
       busy = false;
     }, 310);
   };
@@ -682,7 +704,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611271900");
+  const M = await import("./sodan.js?v=202611272130");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -716,7 +738,7 @@ async function loadBoards() {
   // 管理者が開いたとき：記事・事件簿がまだ Firestore に1本もなければ、board.js の分を自動でコピーする（それぞれ最初の1回だけ）
   if (admin && list) {
     try {
-      const M = await import("./board-edit.js?v=202611271900");
+      const M = await import("./board-edit.js?v=202611272130");
       let n = 0;
       if (!list.some((d) => !d.jiken && !d.jikenHead)) n += await M.importSeed(me);
       if (!list.some((d) => d.jiken)) n += await M.importJiken(me);
@@ -837,7 +859,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611271900"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611272130"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -847,7 +869,7 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611271900").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611272130").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
     preview: (d) => boardArticleHtml(normBoard(d)),
     // 事件簿の「元の旅の記事」の候補（公開中の記事）
@@ -907,13 +929,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271900").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611272130").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271900").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271900").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611272130").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611272130").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -1241,7 +1263,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611271900"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611272130"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1640,7 +1662,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611271900").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611272130").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);
