@@ -2,6 +2,7 @@
 // いまあるもの：hadley＝大気大循環の地球儀（月のスライダーで、太陽と、雨の帯・乾きやすい帯が南北に動く。指で地球を回せる）
 //             patagonia＝アンデス山脈の断面（スライダーで風を西から東へ進めると、雨や雪を降らせて乾いていく）
 //             circ＝大気大循環の断面（月のスライダーで、雨の帯と空気の流れが南北に動き、バンコクとバリ島の雨季・乾季が変わる）
+//             uyuni＝ウユニ塩湖（月のスライダーで、雨の量と、塩原が「鏡」と「白い大地」に変わる）
 //             rift＝プレートが離れる断面（スライダーで「離れる→割れ目→マグマ→新しい大地」と進む）
 //             fjord＝フィヨルドができるまで（谷の断面。スライダーで「川の谷→氷河でけずる→海水が入る」と進む）
 // 本物の気候を、ごく簡単にしたモデルです（目安）。
@@ -107,6 +108,7 @@ export function modelHtml(b) {
   if (b.k === "patagonia") return patHtml(b);
   if (b.k === "rift") return riftHtml(b);
   if (b.k === "circ") return circHtml(b);
+  if (b.k === "uyuni") return uyHtml(b);
   if (b.k !== "hadley") return "";
   const m = Math.min(12, Math.max(1, +b.m || 1));
   return `<figure class="bfig"><div class="mdl" data-mdl="hadley" data-m="${m}" data-lon="-68">
@@ -321,6 +323,7 @@ function initRift(root) {
 const CC_BAND = [-12, -13, -10, 2, 6, 10, 14, 15, 12, 7, -2, -8];
 const CC_SUN = (m) => sunLat(m - 1);
 const CC_PL = [{ n: "バリ島", lat: -8 }, { n: "バンコク", lat: 14 }];
+const CC_DS = [{ n: "オーストラリアの砂漠", s: "オーストラリア", lat: -25 }, { n: "サハラ砂漠", s: "サハラ砂漠", lat: 27 }];   // 乾きやすい帯に、一年中かかる
 const ccRain = (lat, m) => Math.abs(lat - CC_BAND[m - 1]) <= 9;
 function circSvg(m) {
   const INK = "#1b2330", X = (l) => 180 + l * 4, b = CC_BAND[m - 1], bx = X(b), xn = X(28 + 0.35 * b), xs = X(-28 + 0.35 * b);
@@ -335,6 +338,7 @@ function circSvg(m) {
   const sx = X(CC_SUN(m));
   const rain = [-10, 0, 10].map((d, i) => `<line x1="${bx + d}" y1="${96 + i * 4}" x2="${bx + d - 3}" y2="${108 + i * 4}" stroke="#3b82a0" stroke-width="2.2" stroke-linecap="round"/>`).join("");
   const pins = CC_PL.map((p) => { const x = X(p.lat), r = ccRain(p.lat, m); return `<circle cx="${x}" cy="200" r="6" fill="${r ? "#1f6f5b" : "#e2683b"}" stroke="${INK}" stroke-width="2"/>` + tag(p.n, x, 220) + tag(r ? "雨季" : "乾季", x, 235, r ? "#175243" : "#b4471f"); }).join("");
+  const dunes = CC_DS.map((p) => { const x = X(p.lat); return `<path d="M${x - 11} 206 Q${x - 4} 192 ${x} 197 Q${x + 5} 190 ${x + 11} 206 Z" fill="#e9b872" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>` + tag(p.s, x, 220) + tag("いつも乾燥", x, 235, "#b4471f"); }).join("");
   return `<svg viewBox="0 0 360 244" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="大気大循環の断面">
     <rect width="360" height="244" fill="#fbf9f4"/>
     <rect x="${bx - 30}" y="40" width="60" height="160" fill="#1f6f5b" opacity=".13"/>
@@ -349,14 +353,14 @@ function circSvg(m) {
     <rect x="0" y="200" width="360" height="44" fill="#e8dfc8"/>
     <line x1="0" y1="200" x2="360" y2="200" stroke="${INK}" stroke-width="2"/>
     ${tag("南", 12, 194, INK, "start", 10.5)}${tag("北", 348, 194, INK, "end", 10.5)}${tag("赤道", 180, 194, INK, "middle", 10.5)}
-    ${pins}
+    ${pins}${dunes}
   </svg>`;
 }
 function circRes(m) {
   const [bali, bkk] = CC_PL.map((p) => ccRain(p.lat, m));
   const where = CC_BAND[m - 1] > 3 ? "赤道の北" : CC_BAND[m - 1] < -3 ? "赤道の南" : "赤道のあたり";
   const tip = !bkk && !bali ? "どちらも乾季です。" : bkk && !bali ? "行くならバリ島がちょうどいい時期です。" : !bkk && bali ? "行くならタイがちょうどいい時期です。" : "どちらも雨が多い時期です。";
-  return `<span>${MONTHS[m - 1]}：雨の帯は${where}にあります。</span><b>バンコクは${bkk ? "雨季" : "乾季"}、バリ島は${bali ? "雨季" : "乾季"}。${tip}</b>`;
+  return `<span>${MONTHS[m - 1]}：雨の帯は${where}にあります。</span><b>バンコクは${bkk ? "雨季" : "乾季"}、バリ島は${bali ? "雨季" : "乾季"}。${tip}</b><span>サハラ砂漠とオーストラリアの砂漠は、どの月も「乾く」帯の中にあります。</span>`;
 }
 function circHtml(b) {
   const m = Math.min(12, Math.max(1, +b.m || 7));
@@ -380,6 +384,67 @@ function initCirc(root) {
   });
 }
 
+// ---- ウユニ塩湖：月ごとの雨と、鏡張り ----
+const UY_RAIN = [42, 37, 27, 1, 1, 1, 1, 1, 2, 1, 10, 22];   // 月ごとの雨の量（mm、目安）
+const uyState = (m) => ([12, 1, 2, 3].includes(m) ? 2 : m === 11 || m === 4 ? 1 : 0);   // 0 乾いた白い大地 / 1 水が少しある / 2 鏡張りのチャンス
+const UY_TXT = [
+  ["乾季：白い塩の大地", "水が干上がって、六角形の塩の模様が地平線まで続きます。車で塩原の奥まで走れる時期です。"],
+  ["季節の変わり目", "ところどころに水たまりがある時期です。鏡張りになるかは、その年の雨しだいです。"],
+  ["雨季：鏡張りのチャンス", "雨の帯が南へ下りてきて、ウユニにも雨が降ります。平らな塩の上に浅く水がたまり、風がなければ空を映す鏡になります。"],
+];
+function uySvg(m) {
+  const INK = "#1b2330", st = uyState(m), H = 112;
+  const person = (x, y, s = 1, op = 1) => `<g opacity="${op}" stroke="${INK}" stroke-width="2.2" stroke-linecap="round" fill="none"><circle cx="${x}" cy="${y - 34 * s}" r="${5 * s}" fill="#fbf9f4"/><line x1="${x}" y1="${y - 29 * s}" x2="${x}" y2="${y - 13 * s}"/><line x1="${x}" y1="${y - 13 * s}" x2="${x - 6 * s}" y2="${y}"/><line x1="${x}" y1="${y - 13 * s}" x2="${x + 6 * s}" y2="${y}"/><line x1="${x - 9 * s}" y1="${y - 24 * s}" x2="${x + 9 * s}" y2="${y - 24 * s}"/></g>`;
+  const cloud = (x, y, k) => `<g fill="#fff" stroke="${INK}" stroke-width="1.5"><ellipse cx="${x - 12 * k}" cy="${y}" rx="${13 * k}" ry="${8 * k}"/><ellipse cx="${x + 4 * k}" cy="${y - 5 * k}" rx="${15 * k}" ry="${10 * k}"/><ellipse cx="${x + 18 * k}" cy="${y + 1}" rx="${10 * k}" ry="${7 * k}"/></g>`;
+  const k = (180 - H) / H, mir = (svg) => `<g transform="translate(0 ${H + H * k}) scale(1 ${-k})" opacity=".6">${svg}</g>`;
+  const sky = cloud(90, 40, 1) + cloud(270, 30, 0.8) + (st ? cloud(190, 58, 0.7) : "");
+  let ground;
+  if (st === 2) ground = `<rect x="0" y="${H}" width="360" height="${180 - H}" fill="#cfe3ec"/>` + mir(sky) + `<g transform="translate(0 280) scale(1 -1)" opacity=".45">${person(180, 140, 0.85)}</g>`;
+  else {
+    let hex = "";
+    for (let r = 0; r < 6; r++) {
+      const w = 14 + r * 9, h = 2 + r * 1.6, y = H + 4 + r * r * 1.9 + r * 4;
+      for (let x = -w + (r % 2) * w * 0.75; x < 370; x += w * 1.5) hex += `<path d="M${x - w / 2} ${y} L${x - w / 4} ${y - h} L${x + w / 4} ${y - h} L${x + w / 2} ${y} L${x + w / 4} ${y + h} L${x - w / 4} ${y + h} Z" fill="none" stroke="#c9c3b3" stroke-width="1.2"/>`;
+    }
+    ground = `<rect x="0" y="${H}" width="360" height="${180 - H}" fill="#f8f6f0"/>${hex}`;
+    if (st === 1) ground += `<ellipse cx="90" cy="150" rx="46" ry="7" fill="#cfe3ec" stroke="${INK}" stroke-width="1"/><ellipse cx="275" cy="135" rx="34" ry="5" fill="#cfe3ec" stroke="${INK}" stroke-width="1"/>`;
+  }
+  const bars = UY_RAIN.map((v, i) => { const h = Math.max(1.5, v * 1.15), x = 22 + i * 27; return `<rect x="${x}" y="${246 - h}" width="17" height="${h}" fill="${i === m - 1 ? "#1f6f5b" : "#c9d6cf"}" stroke="${INK}" stroke-width="${i === m - 1 ? 1.5 : 0}"/><text x="${x + 8.5}" y="258" font-size="9.5" text-anchor="middle" fill="${INK}" font-weight="${i === m - 1 ? 800 : 400}">${i + 1}</text>`; }).join("");
+  return `<svg viewBox="0 0 360 264" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ウユニ塩湖">
+    <rect width="360" height="${H}" fill="#e4f0f5"/>${sky}
+    ${ground}
+    <line x1="0" y1="${H}" x2="360" y2="${H}" stroke="${INK}" stroke-width="1.5"/>
+    ${person(180, 140, 0.85)}
+    ${st === 2 ? `<text x="352" y="${H + 16}" font-size="11" text-anchor="end" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#cfe3ec" stroke-width="3">空が映る</text>` : ""}
+    <rect x="0" y="180" width="360" height="84" fill="#fbf9f4"/>
+    <line x1="0" y1="180" x2="360" y2="180" stroke="${INK}" stroke-width="1.5"/>
+    <text x="12" y="196" font-size="10.5" fill="${INK}" font-weight="700">ウユニの月ごとの雨の量（目安）</text>
+    <text x="348" y="196" font-size="10.5" text-anchor="end" fill="#175243" font-weight="800">${MONTHS[m - 1]}：約${UY_RAIN[m - 1]}mm</text>
+    ${bars}
+  </svg>`;
+}
+function uyRes(m) { const [t, d] = UY_TXT[uyState(m)]; return `<span>${MONTHS[m - 1]}：${t}</span><b>${d}</b>`; }
+function uyHtml(b) {
+  const m = Math.min(12, Math.max(1, +b.m || 1));
+  return `<figure class="bfig"><div class="mdl" data-mdl="uyuni">
+    <p class="mdl-h">手で動かしてみよう</p>
+    <div class="mdl-fj">${uySvg(m)}</div>
+    <div class="mdl-res">${uyRes(m)}</div>
+    <label class="mdl-sl"><span>月</span><input type="range" class="mdl-m" min="1" max="12" step="1" value="${m}" aria-label="月"><b>${MONTHS[m - 1]}</b></label>
+  </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
+}
+function initUy(root) {
+  const r = root.querySelector(".mdl-m");
+  if (!r || r.dataset.on) return;
+  r.dataset.on = "1";
+  r.addEventListener("input", () => {
+    const m = +r.value;
+    root.querySelector(".mdl-fj").innerHTML = uySvg(m);
+    root.querySelector(".mdl-res").innerHTML = uyRes(m);
+    root.querySelector(".mdl-sl b").textContent = MONTHS[m - 1];
+  });
+}
+
 // 画面に出てきたモデルを、動くようにする（画面全体で、1回だけつなぐ）
 let wired = false;
 function init(root) {
@@ -387,6 +452,7 @@ function init(root) {
   if (root.dataset.mdl === "patagonia") return initPat(root);
   if (root.dataset.mdl === "rift") return initRift(root);
   if (root.dataset.mdl === "circ") return initCirc(root);
+  if (root.dataset.mdl === "uyuni") return initUy(root);
   const cv = root.querySelector("canvas");
   if (!cv || cv.dataset.on) return;
   cv.dataset.on = "1";
