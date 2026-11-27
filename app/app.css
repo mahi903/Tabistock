@@ -1203,9 +1203,9 @@ html.ntab .tab{display:none}
 .pmres small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pmres .none{padding:12px;font-size:12.5px;color:var(--muted)}
 /* ---------- 旅の掲示板 ---------- */
-.bcats{display:flex;gap:16px;padding:14px 20px 2px;overflow-x:auto;scrollbar-width:none}
+.bcats{display:flex;justify-content:space-between;gap:6px;padding:14px 16px 2px;overflow-x:auto;scrollbar-width:none}
 .bcats::-webkit-scrollbar{display:none}
-.bcats button{flex:none;font-size:13px;font-weight:700;color:#8a929d;padding:2px 0}
+.bcats button{flex:none;font-size:12px;font-weight:700;color:#8a929d;padding:2px 0;letter-spacing:-.01em}
 .bcats button.on{color:var(--green)}
 .blist{padding:0 20px 30px}
 .barea{display:flex;align-items:baseline;gap:10px;margin:22px 0 0;padding-bottom:8px;border-bottom:2px solid var(--ink);font-size:16px;font-weight:900;scroll-margin-top:12px}
