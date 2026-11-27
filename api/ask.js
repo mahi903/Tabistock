@@ -184,7 +184,7 @@ function faresToText() {
     return `${name}（${country}／${region}）｜${part("TYO", "東京発")}｜${part("OSA", "大阪発")}`;
   });
   return "--- 航空券の相場カレンダー（ここからが資料）---\n" +
-    `日本発・往復の、出発月ごとの最安値の目安（単位：万円。${FARE_UPDATED}時点。Aviasales・Skyscanner調べ）。` +
+    `日本発・往復の、出発月ごとの最安値の目安（単位：万円。${FARE_UPDATED}時点。航空券比較サイト調べ）。` +
     "「-」はデータなし。表示は出発月で、旅の日数や乗り継ぎ回数は含まない。\n" + lines.join("\n");
 }
 

@@ -30,7 +30,7 @@ const man = (n) => (n / 10000).toFixed(1).replace(/\.0$/, "") + "万";
 const md = (d) => { const [, m, dd] = d.split("-"); return Number(m) + "/" + Number(dd); };
 const nights = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
 const trTxt = (n) => (n === 0 ? "直行" : `乗継${n}回`);
-const legs = (x) => (x.tr == null ? "Skyscanner調べ" : x.tr === x.rtr ? trTxt(x.tr) : `行き${trTxt(x.tr)}・帰り${trTxt(x.rtr)}`);
+const legs = (x) => (x.tr == null ? "月別の最安値" : x.tr === x.rtr ? trTxt(x.tr) : `行き${trTxt(x.tr)}・帰り${trTxt(x.rtr)}`);
 const when = (x) => (x.dep ? `${md(x.dep)}〜${md(x.ret)}（${nights(x.dep, x.ret)}泊）` : "");
 const mLabel = (m) => Number(m.split("-")[1]) + "月";
 
@@ -88,7 +88,7 @@ function shell() {
     <div class="fsh"><h3>都市を選ぶ</h3><small>安い順</small></div>
     <div id="fList"></div>
     <div id="fReal"></div>
-    <p class="fnote">航空券比較サイト Aviasales と Skyscanner で直近に見つかった往復の最安値（安い方）をもとにした目安です。日程が出ているものは Aviasales、「Skyscanner調べ」は Skyscanner の月別最安値です。最新の価格・空席は予約サイトで確認してください。</p>`;
+    <p class="fnote">複数の航空券比較サイトで直近に見つかった往復の最安値（安い方）をもとにした目安です。日程が出ているものは具体的な旅程の最安値、「月別の最安値」は月ごとの最安値のみの目安です。最新の価格・空席は予約サイトで確認してください。</p>`;
   box.querySelector("#fOrg").onclick = (e) => { const b = e.target.closest("[data-o]"); if (b) { V.origin = b.dataset.o; C.haptic(); draw(); } };
   box.querySelector("#fReg").onclick = (e) => { const b = e.target.closest("[data-r]"); if (b) { V.region = b.dataset.r; V.city = cheapest(); C.haptic(); draw(true); } };
   box.querySelector("#fMw .fzm").onclick = (e) => {
