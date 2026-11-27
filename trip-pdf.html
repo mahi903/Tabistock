@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>旅程PDF（試作）｜Tabistock</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Shippori+Mincho:wght@500;700;800&family=Noto+Sans+JP:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+:root{--g:#1f6f5b;--gd:#175243;--gp:#eef5f1;--ink:#1b2330;--mut:#667085;--or:#e2683b;--line:#cfdcd5}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#f2f4f3;color:var(--ink);font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans CJK JP",sans-serif;line-height:1.7;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+/* ---- 操作パネル（印刷では隠す）---- */
+.ctl{max-width:720px;margin:0 auto;padding:16px 14px 6px}
+.ctl h1{font-size:17px;margin:0 0 4px;font-family:"Shippori Mincho",serif}
+.ctl p.n{font-size:12px;color:var(--mut);margin:0 0 12px}
+.fm{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--g);background:#fff;padding:14px}
+.fm label{font-size:12px;color:var(--mut);display:block}
+.fm input,.fm select,.fm textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--ink);border-radius:2px;padding:7px 8px;background:#fff;color:var(--ink)}
+.fm .w{grid-column:1/-1}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 4px}
+.btns button{font:inherit;font-size:14px;font-weight:700;padding:10px 16px;border:1.5px solid var(--ink);border-radius:2px;background:#fff;color:var(--ink);cursor:pointer}
+.btns button.p{background:var(--g);color:#fff}
+.btns button:disabled{opacity:.5}
+#msg{font-size:13px;margin:8px 0;min-height:20px}
+#msg.err{color:#c0392b}
+#cost{font-size:12px;color:var(--mut)}
+#out{padding:6px 0 40px}
+/* ---- A4 ---- */
+.pg{position:relative;width:210mm;height:297mm;margin:18px auto;background:#fff;border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--g);overflow:hidden;page-break-after:always;break-after:page}
+@media screen{.pg{zoom:var(--z,1)}}
+@page{size:A4;margin:0}
+@media print{
+  body{background:#fff}
+  .ctl{display:none}
+  #out{padding:0}
+  .pg{margin:0;border:0;box-shadow:none;zoom:1!important}
+}
+/* 共通パーツ */
+.hd{position:absolute;left:14mm;right:14mm;top:10mm;display:flex;align-items:center;justify-content:space-between;font-family:"Cinzel",serif;font-weight:600;font-size:8pt;letter-spacing:.2em;color:var(--gd)}
+.hd .t{display:flex;align-items:center;gap:3mm}
+.hd img{width:7.5mm;height:5.8mm;display:block;object-fit:contain}
+.ft{position:absolute;left:14mm;right:14mm;bottom:8mm;display:flex;justify-content:space-between;font-size:7pt;color:var(--mut);border-top:1px solid var(--line);padding-top:2.5mm}
+.mk{background:linear-gradient(transparent 48%,rgba(226,104,59,.8) 48%);padding:0 1mm}
+.cap{font-family:"Cinzel",serif;font-weight:600;font-size:8pt;letter-spacing:.22em;color:var(--g)}
+.sec{margin:0 0 4mm;display:flex;align-items:baseline;gap:4mm}
+.sec h2{margin:0;font-family:"Shippori Mincho",serif;font-weight:800;font-size:17pt;line-height:1.3}
+.pin{display:inline-block;width:3.4mm;height:3.4mm;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--g);box-shadow:.7mm .7mm 0 var(--ink);position:relative;flex:none}
+.pin::after{content:"";position:absolute;left:50%;top:50%;width:1.1mm;height:1.1mm;margin:-.55mm 0 0 -.55mm;border-radius:50%;background:#fff}
+/* ---- 表紙 ---- */
+.cv-ph{position:absolute;left:0;right:0;top:0;height:160mm;background:var(--gd) center/cover no-repeat}
+.cv-ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,82,67,.25),rgba(23,82,67,.05) 40%,rgba(23,82,67,.55))}
+.cv-logo{position:absolute;left:14mm;top:14mm;z-index:2;display:flex;align-items:center;gap:2.6mm;padding:2mm 4mm 2mm 3mm;border:1.5px solid var(--ink);background:#fff;box-shadow:1.4mm 1.4mm 0 var(--g)}
+.cv-logo i{width:11mm;height:8.6mm;background:url(/images/app-logo.png) center/contain no-repeat}
+.cv-logo b{font-family:"Cinzel",serif;font-weight:700;font-size:14pt;letter-spacing:.06em;color:var(--ink);line-height:1}
+.cv-kind{position:absolute;right:14mm;top:15mm;z-index:2;color:#fff;font-family:"Cinzel",serif;font-weight:600;font-size:8pt;letter-spacing:.3em;text-align:right;line-height:1.9}
+.cv-title{position:absolute;left:14mm;right:14mm;top:167mm}
+.cv-route{position:absolute;left:14mm;right:14mm;bottom:56mm;display:flex;flex-wrap:wrap;gap:2.6mm 6mm;padding-top:4mm;border-top:1.5px solid var(--ink)}
+.cv-route span{display:flex;align-items:center;gap:2.6mm;font-family:"Shippori Mincho",serif;font-weight:700;font-size:10.5pt}
+.cv-en{font-family:"Cinzel",serif;font-weight:800;font-size:50pt;line-height:1.05;letter-spacing:.04em;color:var(--gd);margin:0}
+.cv-jp{font-family:"Shippori Mincho",serif;font-weight:800;font-size:25pt;line-height:1.35;margin:3mm 0 0}
+.cv-catch{font-size:11pt;color:var(--mut);margin:3mm 0 0}
+.bp{position:absolute;left:14mm;right:14mm;bottom:22mm;display:grid;grid-template-columns:1fr 1fr 1fr 1fr 26mm;border:1.5px solid var(--ink);background:var(--gp)}
+.bp>div{padding:3.4mm 4mm;border-right:1.5px dashed var(--ink)}
+.bp .l{font-family:"Cinzel",serif;font-weight:600;font-size:6.5pt;letter-spacing:.2em;color:var(--g)}
+.bp .v{font-family:"Shippori Mincho",serif;font-weight:800;font-size:15pt;line-height:1.3;margin-top:1mm}
+.bp .v small{font-size:8pt;font-weight:700;margin-left:1mm}
+.bp .st{border-right:0;background:var(--g);display:flex;align-items:center;justify-content:center;padding:0}
+.bp .st i{display:block;width:16mm;height:15mm;background:repeating-linear-gradient(90deg,#fff 0 .5mm,transparent .5mm 1.1mm,#fff 1.1mm 2.2mm,transparent 2.2mm 2.6mm,#fff 2.6mm 3.0mm,transparent 3.0mm 3.8mm)}
+.cv-note{position:absolute;left:14mm;right:14mm;bottom:10mm;font-size:7.5pt;color:var(--mut)}
+.stamp{position:absolute;right:14mm;top:140mm;z-index:3;transform:rotate(-8deg);border:1.5px solid var(--or);color:var(--or);font-family:"Cinzel",serif;font-weight:800;font-size:12pt;letter-spacing:.2em;padding:1.5mm 4mm;background:rgba(255,255,255,.9)}
+/* ---- 2ページ目 ---- */
+.p2{position:absolute;left:14mm;right:14mm;top:24mm}
+.sum{font-family:"Shippori Mincho",serif;font-weight:500;font-size:11.5pt;line-height:1.95;margin:0 0 9mm}
+.bar{display:flex;height:9mm;border:1.5px solid var(--ink);margin:0 0 3mm}
+.bar i{display:block;height:100%}
+.cr{display:grid;grid-template-columns:4mm 1fr auto;gap:0 3mm;align-items:center;font-size:9.5pt;padding:1.6mm 0;border-bottom:1px solid var(--line)}
+.cr em{display:block;width:3mm;height:3mm}
+.cr b{font-family:"Space Mono",monospace;font-weight:700;font-size:9.5pt}
+.cr small{color:var(--mut);font-size:7pt;margin-left:1.5mm}
+.cr.tot{border-bottom:0;border-top:1.5px solid var(--ink);margin-top:1mm;font-weight:700;font-size:10.5pt}
+.fare{margin-top:9mm}
+.fare svg{display:block;width:100%;height:auto}
+.route{margin-top:9mm;display:flex;flex-wrap:wrap;gap:3mm 7mm}
+.route span{display:flex;align-items:center;gap:2.6mm;font-family:"Shippori Mincho",serif;font-weight:700;font-size:10.5pt}
+.route span small{font-family:"Cinzel",serif;font-size:7pt;color:var(--g);letter-spacing:.15em}
+/* ---- 日ごと ---- */
+.dw{position:absolute;left:14mm;right:14mm;top:26mm;display:flex;flex-direction:column;gap:12mm}
+.day{display:grid;grid-template-columns:20mm 1fr;gap:0 4mm;break-inside:avoid}
+.day .no{font-family:"Cinzel",serif;font-weight:800;font-size:38pt;line-height:1;color:var(--g)}
+.day .no small{display:block;font-size:7pt;letter-spacing:.3em;margin-bottom:1.5mm;color:var(--ink)}
+.day h3{margin:0;font-family:"Shippori Mincho",serif;font-weight:800;font-size:16pt;line-height:1.4}
+.day .pl{display:flex;align-items:center;gap:2.4mm;font-size:8.5pt;color:var(--mut);margin:1mm 0 2.4mm}
+.day ul{list-style:none;margin:0;padding:0 0 0 3mm;border-left:1.5px solid var(--ink)}
+.day li{display:grid;grid-template-columns:15mm 1fr;gap:0 2mm;font-size:10.5pt;line-height:1.75;padding:1.1mm 0}
+.day li.nt{grid-template-columns:1fr}
+.day li .tm{font-family:"Space Mono",monospace;font-size:8pt;color:var(--g);padding-top:.6mm}
+.day .src{margin-top:2.4mm;display:flex;flex-wrap:wrap;gap:1.6mm}
+.day .src span{font-size:7pt;border:1px solid var(--ink);padding:.4mm 2mm;background:var(--gp)}
+.day .src span b{font-weight:700;color:var(--g)}
+/* ---- 最後 ---- */
+.tp{display:grid;gap:3.2mm;margin:0 0 8mm}
+.tp div{border:1.5px solid var(--ink);padding:3.4mm 4mm;font-size:9.5pt;background:#fff;box-shadow:1.2mm 1.2mm 0 var(--g)}
+.tp div small{display:block;color:var(--mut);font-size:7pt;margin-top:1mm}
+.un{margin:0 0 8mm;padding:0;list-style:none;font-size:9.5pt}
+.un li{display:flex;gap:2.6mm;padding:1.2mm 0;border-bottom:1px dashed var(--line)}
+.un li::before{content:"?";flex:none;width:4.2mm;height:4.2mm;display:grid;place-items:center;background:var(--or);color:#fff;font-family:"Space Mono",monospace;font-weight:700;font-size:7.5pt}
+.so{margin:0;padding:0;list-style:none;font-size:8.5pt}
+.so li{padding:1mm 0;border-bottom:1px solid var(--line)}
+.so li span{color:var(--mut)}
+.dis{margin-top:8mm;font-size:8pt;color:var(--mut);line-height:1.8}
+.cta{position:absolute;left:14mm;right:14mm;bottom:22mm;border:1.5px solid var(--ink);background:var(--g);color:#fff;padding:7mm 8mm;box-shadow:1.6mm 1.6mm 0 var(--ink)}
+.cta .cap{color:#fff;opacity:.85}
+.cta h4{margin:2mm 0 1mm;font-family:"Shippori Mincho",serif;font-weight:800;font-size:16pt;line-height:1.5}
+.cta p{margin:0;font-size:9pt;opacity:.92}
+.cta b{font-family:"Space Mono",monospace;font-size:10pt;letter-spacing:.04em}
+.endlogo{margin-top:9mm;display:flex;align-items:center;gap:4mm}
+.endlogo i{width:13mm;height:10.1mm;background:url(/images/app-logo.png) center/contain no-repeat}
+.endlogo b{font-family:"Cinzel",serif;font-weight:700;font-size:15pt;letter-spacing:.06em;color:var(--ink);line-height:1}
+</style></head>
+<body>
+<div class="ctl">
+  <h1>旅程PDF（試作・管理者専用）</h1>
+  <p class="n">公開記事と、指定した下書きだけを資料にして、旅程案をA4のPDFにします。「PDFにする」→ 印刷画面で「PDFに保存」。</p>
+  <div class="fm">
+    <div><label>行き先（国コード）</label><select id="country"><option value="turkey" selected>トルコ</option><option value="taiwan">台湾</option><option value="korea">韓国</option><option value="thai">タイ</option><option value="mongolia">モンゴル</option><option value="india">インド</option></select></div>
+    <div><label>出発月</label><input id="month" type="month" value="2027-03"></div>
+    <div><label>日数</label><input id="days" type="number" min="2" max="14" value="6"></div>
+    <div><label>予算（万円・航空券を除く）</label><input id="bud" type="number" min="0" max="300" value="15"></div>
+    <div class="w"><label>追加で読ませる記事ID（下書きも可。スペースか改行で区切る）</label><textarea id="inc" rows="2">EPHJtwi6Z6HYrQhsXgiQ</textarea></div>
+  </div>
+  <div class="btns"><button class="p" id="go">旅程をつくる</button><button id="demo">サンプルを表示</button><button id="pr" disabled>PDFにする</button></div>
+  <div id="msg"></div><div id="cost"></div>
+</div>
+<div id="out"></div>
+
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const EN = { turkey: "TÜRKİYE", taiwan: "TAIWAN", korea: "KOREA", thai: "THAILAND", mongolia: "MONGOLIA", india: "INDIA" };
+const PHOTO = { turkey: "/images/turkey01.jpg", mongolia: "/images/mongolia.jpg" };
+const COL = ["#175243", "#1f6f5b", "#5fa58f", "#a9d0c3", "#cfe5dc", "#e6f1ec"];
+const yen = (n) => "¥" + Math.round(n).toLocaleString("ja-JP");
+const man = (n) => (n / 10000).toFixed(1);
+let user = null, last = null;
+// ログイン状態（サンプル表示はログイン不要なので、読み込めなくても画面は動く）
+(async () => {
+  try {
+    const { auth } = await import("./firebase-config.js");
+    const { onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+    onAuthStateChanged(auth, (u) => { user = u; });
+  } catch (e) { console.warn("auth not available", e); }
+})();
+
+function zoom() { const z = Math.min(1, (window.innerWidth - 20) / 794); document.documentElement.style.setProperty("--z", z); }
+window.addEventListener("resize", zoom); zoom();
+
+// ---------- ページのつくり ----------
+const head = (n, total, tag) => `<div class="hd"><span class="t"><img src="/images/app-logo.png" alt="">Tabistock</span><span>${esc(tag)}</span></div><div class="ft"><span>Tabistock に投稿された、実際の旅の記録をもとに作成</span><span>${n} / ${total}</span></div>`;
+
+function build(d) {
+  const p = d.plan, rq = d.request, srcs = d.sources || [];
+  const byId = {}; srcs.forEach((s) => (byId[s.id] = s));
+  const costs = (p.costs || []).filter((c) => c.yen > 0);
+  const costSum = costs.reduce((s, c) => s + c.yen, 0);
+  const fares = d.fares || {}, tyo = (fares.byOrigin || {}).TYO || {}, osa = (fares.byOrigin || {}).OSA || {};
+  const fareNow = rq.month && (tyo[rq.month] || osa[rq.month]) ? Math.min(...[tyo[rq.month], osa[rq.month]].filter(Boolean)) : 0;
+  const total = costSum + fareNow;
+  const days = p.days || [];
+  const perPage = 3, dayPages = Math.ceil(days.length / perPage);
+  const nPages = 2 + dayPages + 1;
+  const [yy, mm] = (rq.month || "").split("-");
+  const photo = PHOTO[rq.country] || "";
+  const chip = (id) => { const s = byId[id]; return s ? `<span><b>参考</b> ${esc(s.title)}${s.author ? "（" + esc(s.author) + "）" : ""}</span>` : ""; };
+
+  // 1 表紙
+  let h = `<section class="pg">
+    <div class="cv-ph" style="${photo ? `background-image:url(${photo})` : ""}"></div>
+    ${d.demo ? '<div class="stamp">SAMPLE</div>' : ""}
+    <div class="cv-logo"><i></i><b>Tabistock</b></div>
+    <div class="cv-kind">TRIP PLAN<br>${yy ? esc(yy) + "." + esc(mm) : ""}</div>
+    <div class="cv-title">
+      <p class="cv-en">${esc(EN[rq.country] || rq.countryJp)}</p>
+      <p class="cv-jp"><span class="mk">${esc(p.title)}</span></p>
+      <p class="cv-catch">${esc(p.catch)}</p>
+    </div>
+    <div class="cv-route">${[...new Set(days.map((dy) => dy.place).filter(Boolean))].map((pl) => `<span><i class="pin"></i>${esc(pl)}</span>`).join("")}</div>
+    <div class="bp">
+      <div><div class="l">FROM</div><div class="v">日本</div></div>
+      <div><div class="l">DEPARTURE</div><div class="v">${yy ? esc(yy) + "<small>年</small>" + Number(mm) + "<small>月</small>" : "—"}</div></div>
+      <div><div class="l">DAYS</div><div class="v">${rq.days}<small>日間</small></div></div>
+      <div><div class="l">ESTIMATE</div><div class="v">${total ? man(total) + "<small>万円</small>" : "—"}</div></div>
+      <div class="st"><i></i></div>
+    </div>
+    <div class="cv-note">${fareNow ? "総額＝現地費用の目安＋航空券の相場（往復の最安値）。" : "総額＝現地費用の目安。"}料金は目安です。</div>
+  </section>`;
+
+  // 2 概要（費用・相場・ルート）
+  const bar = costs.map((c, i) => `<i style="width:${(c.yen / (costSum || 1)) * 100}%;background:${COL[i % COL.length]}"></i>`).join("");
+  const rows = costs.map((c, i) => `<div class="cr"><em style="background:${COL[i % COL.length]}"></em><span>${esc(c.label)}${c.sourceId && byId[c.sourceId] ? "<small>記事の実績</small>" : ""}</span><b>${yen(c.yen)}</b></div>`).join("");
+  // 相場のグラフ（東京発＝濃い緑、大阪発＝薄い緑）
+  const months = []; { const base = rq.month ? new Date(rq.month + "-01T00:00:00Z") : new Date(); for (let i = -2; i < 10; i++) { const t = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + i, 1)); months.push(t.toISOString().slice(0, 7)); } }
+  const vals = months.flatMap((m) => [tyo[m] || 0, osa[m] || 0]);
+  const vmax = Math.max(1, ...vals) * 1.15, W = 700, H = 190, bw = 21, gap = (W - 12 * bw * 2) / 12;
+  let svg = `<svg viewBox="0 0 ${W} ${H + 34}" role="img" aria-label="月ごとの航空券の相場">`;
+  months.forEach((m, i) => {
+    const x = i * (bw * 2 + gap) + gap / 2, a = tyo[m] || 0, b = osa[m] || 0, on = m === rq.month;
+    const ha = (a / vmax) * H, hb = (b / vmax) * H;
+    if (on) svg += `<rect x="${x - 4}" y="0" width="${bw * 2 + 8}" height="${H + 22}" fill="rgba(226,104,59,.8)" opacity=".18"/>`;
+    svg += a ? `<rect x="${x}" y="${H - ha}" width="${bw}" height="${ha}" fill="#1f6f5b"/>` : `<text x="${x + bw / 2}" y="${H - 4}" font-size="11" text-anchor="middle" fill="#98a2b3">–</text>`;
+    svg += b ? `<rect x="${x + bw}" y="${H - hb}" width="${bw}" height="${hb}" fill="#a9d0c3"/>` : "";
+    const top = Math.min(a || 1e9, b || 1e9);
+    if (on && top < 1e9) svg += `<text x="${x + bw}" y="${H - Math.max(ha, hb) - 6}" font-size="13" font-weight="700" text-anchor="middle" fill="#1b2330" font-family="Space Mono,monospace">${man(top)}万</text>`;
+    svg += `<text x="${x + bw}" y="${H + 18}" font-size="12" text-anchor="middle" fill="${on ? "#1b2330" : "#667085"}" font-weight="${on ? 700 : 400}" font-family="Space Mono,monospace">${Number(m.slice(5))}月</text>`;
+  });
+  svg += `<line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="#1b2330" stroke-width="1.5"/></svg>`;
+  const route = days.map((dy, i) => `<span><i class="pin"></i><small>D${i + 1}</small>${esc(dy.place || dy.title)}</span>`).join("");
+  h += `<section class="pg">${head(2, nPages, "AT A GLANCE")}<div class="p2">
+    <div class="sec"><span class="cap">SUMMARY</span><h2>この旅のあらまし</h2></div>
+    <p class="sum">${esc(p.summary)}</p>
+    <div class="sec"><span class="cap">BUDGET</span><h2>費用の目安</h2></div>
+    ${costs.length ? `<div class="bar">${bar}</div>${rows}${fareNow ? `<div class="cr"><em style="background:#fff;border:1.5px solid var(--ink)"></em><span>航空券（往復の相場・最安値）<small>${esc(String(fares.city || ""))}</small></span><b>${yen(fareNow)}</b></div>` : ""}<div class="cr tot"><em></em><span>合計（目安）</span><b>${yen(total)}</b></div>` : '<p style="font-size:9.5pt;color:var(--mut)">記事に費用の実績がなく、現地費用は出せませんでした。</p>'}
+    ${Object.keys(tyo).length || Object.keys(osa).length ? `<div class="fare"><div class="sec" style="margin-bottom:2mm"><span class="cap">FARES</span><h2>航空券の相場</h2></div><p style="font-size:8pt;color:var(--mut);margin:0 0 2mm">往復の最安値の目安（${esc(d.fareUpdated || "")}時点）。<b style="color:#1f6f5b">■</b> 東京発　<b style="color:#a9d0c3">■</b> 大阪発</p>${svg}</div>` : ""}
+    <div class="route">${route}</div>
+  </div></section>`;
+
+  // 3〜 日ごと
+  for (let pg = 0; pg < dayPages; pg++) {
+    const part = days.slice(pg * perPage, pg * perPage + perPage);
+    h += `<section class="pg">${head(3 + pg, nPages, "ITINERARY")}<div class="dw">${part.map((dy, k) => {
+      const i = pg * perPage + k;
+      return `<div class="day"><div class="no"><small>DAY</small>${String(i + 1).padStart(2, "0")}</div><div>
+        <h3>${esc(dy.title)}</h3>
+        <div class="pl"><i class="pin"></i>${esc(dy.place || "")}</div>
+        <ul>${(dy.items || []).map((it) => (it.time ? `<li><span class="tm">${esc(it.time)}</span><span>${esc(it.text)}</span></li>` : `<li class="nt"><span>${esc(it.text)}</span></li>`)).join("")}</ul>
+        <div class="src">${(dy.sourceIds || []).map(chip).join("")}</div>
+      </div></div>`;
+    }).join("")}</div></section>`;
+  }
+
+  // 最後
+  h += `<section class="pg">${head(nPages, nPages, "NOTES")}<div class="p2">
+    ${(p.tips || []).length ? `<div class="sec"><span class="cap">TIPS</span><h2>実際に行った人のひとこと</h2></div><div class="tp">${p.tips.map((t) => `<div>${esc(t.text)}${t.sourceId && byId[t.sourceId] ? `<small>出典：${esc(byId[t.sourceId].title)}${byId[t.sourceId].author ? "（" + esc(byId[t.sourceId].author) + "）" : ""}</small>` : ""}</div>`).join("")}</div>` : ""}
+    ${(p.unknown || []).length ? `<div class="sec"><span class="cap">CHECK</span><h2>出発前に確認すること</h2></div><ul class="un">${p.unknown.map((u) => `<li>${esc(u)}</li>`).join("")}</ul>` : ""}
+    <div class="sec"><span class="cap">SOURCES</span><h2>この旅程のもとになった旅</h2></div>
+    <ul class="so">${srcs.map((s) => `<li>${esc(s.title)}${s.author ? ` <span>— ${esc(s.author)}</span>` : ""}</li>`).join("")}</ul>
+    <p class="dis">この旅程は、Tabistock に投稿された実際の旅の記録を、AIがまとめたものです。記事に書かれていないことは、載せていません。料金・時刻・営業時間は、旅の時点のもので、変わることがあります。最新の情報は、各公式サイトや予約サイトでご確認ください。</p>
+    <div class="endlogo"><i></i><b>Tabistock</b></div>
+  </div>
+  <div class="cta"><span class="cap">YOUR TRIP</span><h4>旅から帰ったら、あなたの旅の記録も。</h4><p>費用・ルート・感想を残すと、次に行く誰かの旅程になります。　<b>tabistock.jp</b></p></div></section>`;
+  return h;
+}
+
+function show(d) {
+  last = d;
+  $("out").innerHTML = build(d);
+  $("pr").disabled = false;
+  const u = d.usage;
+  $("cost").textContent = u ? `読んだ記事 ${d.articleCount} 本・入力 ${u.inputTokens.toLocaleString()} / 出力 ${u.outputTokens.toLocaleString()} トークン・1枚あたり約 ${u.yen} 円` : "";
+}
+
+// ---------- サンプル（ダミーのデータ。デザイン確認用）----------
+function sample() {
+  return {
+    demo: true, articleCount: 0, usage: null, fareUpdated: "サンプル",
+    request: { country: "turkey", countryJp: "トルコ", month: "2027-03", days: 6, budgetMan: 15, styles: [] },
+    fares: { city: "イスタンブール", byOrigin: { TYO: { "2027-01": 96000, "2027-02": 91000, "2027-03": 84000, "2027-04": 99000, "2027-05": 105000, "2027-06": 128000, "2027-07": 142000, "2027-08": 150000, "2027-09": 118000, "2027-10": 102000 }, OSA: { "2027-01": 88000, "2027-02": 86000, "2027-03": 79000, "2027-04": 94000, "2027-05": 99000, "2027-06": 121000, "2027-07": 133000, "2027-08": 146000, "2027-09": 112000, "2027-10": 98000 } } },
+    sources: [{ id: "a", title: "（サンプル）トルコ6日間の記事A", author: "ニックネームA" }, { id: "b", title: "（サンプル）トルコ縦断の記事B", author: "ニックネームB" }, { id: "c", title: "（サンプル）下書きの記事C", author: "ニックネームC" }],
+    plan: {
+      title: "トルコ 6日間", catch: "東と西が出会う街を、歩いてめぐる",
+      summary: "（サンプル）イスタンブールで街歩きとグルメ、カッパドキアで気球と洞窟ホテル。記事に書かれた実際の費用と行程だけで組んだ、6日間の旅程案です。",
+      costs: [{ label: "宿", yen: 42000, sourceId: "a" }, { label: "食事", yen: 28000, sourceId: "a" }, { label: "交通・移動", yen: 31000, sourceId: "b" }, { label: "体験・入場料", yen: 26000, sourceId: "b" }],
+      days: [
+        { title: "到着、旧市街へ", place: "イスタンブール", sourceIds: ["a"], items: [{ time: "午後", text: "（サンプル）空港から市内へ。トラムで旧市街へ移動" }, { time: "夕方", text: "（サンプル）ガラタ橋で夕日、サバサンド" }] },
+        { title: "モスクと市場", place: "イスタンブール", sourceIds: ["a", "c"], items: [{ time: "朝", text: "（サンプル）ブルーモスクとアヤソフィアを見学" }, { time: "昼", text: "（サンプル）グランドバザールで買い物" }, { time: "夜", text: "（サンプル）夜行バスでカッパドキアへ" }] },
+        { title: "気球と奇岩", place: "カッパドキア", sourceIds: ["b"], items: [{ time: "早朝", text: "（サンプル）気球ツアー" }, { time: "昼", text: "（サンプル）ギョレメ野外博物館" }] },
+        { title: "地下都市と谷歩き", place: "カッパドキア", sourceIds: ["b"], items: [{ time: "", text: "（サンプル）地下都市を見学" }, { time: "", text: "（サンプル）ローズバレーを歩く" }] },
+        { title: "古都コンヤ", place: "コンヤ", sourceIds: ["c"], items: [{ time: "", text: "（サンプル）バスで移動、メヴラーナ博物館" }] },
+        { title: "帰国", place: "イスタンブール", sourceIds: ["a"], items: [{ time: "", text: "（サンプル）空港へ。お土産にトルコ菓子" }] }
+      ],
+      tips: [{ text: "（サンプル）夜行バスは寒いので、上着を一枚手元に", sourceId: "b" }, { text: "（サンプル）市場は最初の値段の半分から交渉", sourceId: "a" }],
+      unknown: ["気球ツアーの正確な料金は、記事に情報なし", "コンヤの宿の料金は、記事に情報なし"]
+    }
+  };
+}
+
+// ---------- ボタン ----------
+$("demo").onclick = () => { $("msg").textContent = "ダミーのデータで、デザインだけ表示しています。"; $("msg").className = ""; show(sample()); };
+$("pr").onclick = () => window.print();
+$("go").onclick = async () => {
+  const msg = $("msg"); msg.className = ""; msg.textContent = "";
+  if (!user) { msg.className = "err"; msg.textContent = "ログインが必要です。先にサイトでログインしてください。"; return; }
+  const b = $("go"); b.disabled = true; msg.textContent = "旅程をつくっています（30秒ほど）…";
+  try {
+    const token = await user.getIdToken();
+    const r = await fetch("/api/tripPlan", {
+      method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token },
+      body: JSON.stringify({ country: $("country").value, month: $("month").value, days: $("days").value, budgetMan: $("bud").value, includeIds: $("inc").value.split(/[\s,]+/).filter(Boolean) })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error) throw new Error(j.message || j.error || r.status);
+    msg.textContent = "できました。"; show(j);
+  } catch (e) { msg.className = "err"; msg.textContent = "つくれませんでした：" + (e && e.message ? e.message : e); }
+  b.disabled = false;
+};
+if (new URLSearchParams(location.search).get("demo")) $("demo").click();
+</script>
+</body></html>

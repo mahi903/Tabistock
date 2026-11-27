@@ -18,6 +18,9 @@
     },
     "api/deleteAccount.js": {
       "maxDuration": 60
+    },
+    "api/tripPlan.js": {
+      "maxDuration": 60
     }
   }
 }
