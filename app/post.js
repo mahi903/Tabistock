@@ -695,23 +695,49 @@ async function mapPage(places, label) {
   const q = ov.querySelector("#pmQ"), res = ov.querySelector("#pmRes");
   let qt = 0, qn = 0, hits = [];
   const ccs = (F.countries || []).map((c) => COUNTRY_ISO[c]).filter(Boolean);
+  const JA = /[\u3040-\u30ff\u3400-\u9fff]/;
   const search = async (text, seq) => {
-    const run = async (cc) => {
-      const u = `https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ja&addressdetails=1&q=${encodeURIComponent(text)}${cc ? "&countrycodes=" + cc : ""}`;
+    const run = async (query, cc) => {
+      const u = `https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=ja&addressdetails=1&q=${encodeURIComponent(query)}${cc ? "&countrycodes=" + cc : ""}`;
       try { const r = await fetch(u, { headers: { Accept: "application/json" } }); return r.ok ? await r.json() : []; } catch (e) { return []; }
     };
-    let a = ccs.length ? await run(ccs.join(",")) : [];   // まず記事の国の中から探し、なければ世界中から
-    if (!a.length) a = await run("");
+    const find = async (query) => {
+      let a = ccs.length ? await run(query, ccs.join(",")) : [];   // まず記事の国の中から探し、なければ世界中から
+      if (!a.length) a = await run(query, "");
+      return a;
+    };
+    const toHit = (x, label) => { const parts = String(x.display_name || "").split(",").map((t) => t.trim()); const nm = x.name || parts[0] || text; return { name: label && !JA.test(nm) ? label : nm, sub: (label && !JA.test(nm) && nm !== label ? nm + "・" : "") + parts.slice(1, 4).join("、"), lat: +(+x.lat).toFixed(5), lng: +(+x.lon).toFixed(5), cc: (x.address || {}).country_code || "" }; };
+    let a = await find(text);
     if (seq !== qn) return;
-    hits = a.map((x) => { const parts = String(x.display_name || "").split(",").map((t) => t.trim()); return { name: x.name || parts[0] || text, sub: parts.slice(1, 4).join("、"), lat: +(+x.lat).toFixed(5), lng: +(+x.lon).toFixed(5), cc: (x.address || {}).country_code || "" }; });
-    res.innerHTML = hits.length ? hits.map((h, k) => `<button data-hit="${k}"><b>${esc(h.name)}</b><small>${esc(h.sub)}</small></button>`).join("") : '<p class="none">見つかりませんでした。地図をタップしてピンを置くこともできます</p>';
+    hits = a.map((x) => toHit(x, ""));
+    // 日本語で少ししか見つからないときは、AI が英語・現地語の名前に言い換えて探し直す（海外の場所は日本語名が地図に無いことが多い）
+    if (hits.length < 2 && JA.test(text)) {
+      res.innerHTML = '<p class="none">別の呼び方でも探しています…</p>'; res.hidden = false;
+      try {
+        const tok = await auth.currentUser.getIdToken();
+        const r = await fetch("/api/placeQuery", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${tok}` }, body: JSON.stringify({ text, countries: (F.countries || []).map((v) => (cinfo(v) || {}).en).filter(Boolean) }) });
+        const qs = r.ok ? (((await r.json()) || {}).queries || []) : [];
+        for (const query of qs) {
+          if (seq !== qn) return;
+          await new Promise((ok) => setTimeout(ok, 1100));   // OpenStreetMap の利用ルール：1秒に1回まで
+          for (const x of await find(query)) {
+            const h = toHit(x, text);
+            if (!hits.some((y) => Math.abs(y.lat - h.lat) < 0.0005 && Math.abs(y.lng - h.lng) < 0.0005)) hits.push(h);
+          }
+          if (hits.length >= 4) break;
+        }
+      } catch (e) {}
+    }
+    if (seq !== qn) return;
+    hits = hits.slice(0, 6);
+    res.innerHTML = hits.length ? hits.map((h, k) => `<button data-hit="${k}"><b>${esc(h.name)}</b><small>${esc(h.sub)}</small></button>`).join("") : '<p class="none">見つかりませんでした。英語や現地の名前でも試せます。地図をタップしてピンを置くこともできます</p>';
     res.hidden = false;
   };
   q.oninput = () => {
     clearTimeout(qt); const text = q.value.trim(); const seq = ++qn;
     if (text.length < 2) { res.hidden = true; return; }
     res.hidden = false; res.innerHTML = '<p class="none">検索中…</p>';
-    qt = setTimeout(() => search(text, seq), 450);
+    qt = setTimeout(() => search(text, seq), 1000);
   };
   q.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); clearTimeout(qt); const text = q.value.trim(); if (text.length >= 1) search(text, ++qn); } };
   res.onclick = (e) => {
