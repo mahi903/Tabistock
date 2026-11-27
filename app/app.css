@@ -7,6 +7,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #app{position:fixed;inset:0;background:var(--bg);overflow:hidden}
 @media (min-width:600px){#app{inset:auto;left:50%;top:50%;width:390px;height:844px;transform:translate(-50%,-50%);border-radius:44px;box-shadow:0 30px 80px rgba(0,0,0,.25),0 0 0 10px #1b1b1b}}
 #app.swiping{background:#000}
+/* アプリ（iOS）では、スワイプ中だけ、画面を上の端（ダイナミックアイランドのあたり）まで広げる。中身は、同じだけ下げて、位置が動かないようにする */
+html.native #app.swiping{top:0}
+html.native #app.swiping .view{padding-top:env(safe-area-inset-top,0px)}
 .view{background:var(--bg);position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(100px + var(--sb));scrollbar-width:none}
 .view::-webkit-scrollbar{display:none}
 .view[hidden]{display:none}
