@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271700";
+import { ILL, BOARD_CATS, COUNTRY_AREAS, areaOf, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271830";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -615,7 +615,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611271700");
+  const M = await import("./sodan.js?v=202611271830");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -649,7 +649,7 @@ async function loadBoards() {
   // 管理者が開いたとき：記事・事件簿がまだ Firestore に1本もなければ、board.js の分を自動でコピーする（それぞれ最初の1回だけ）
   if (admin && list) {
     try {
-      const M = await import("./board-edit.js?v=202611271700");
+      const M = await import("./board-edit.js?v=202611271830");
       let n = 0;
       if (!list.some((d) => !d.jiken && !d.jikenHead)) n += await M.importSeed(me);
       if (!list.some((d) => d.jiken)) n += await M.importJiken(me);
@@ -678,6 +678,16 @@ const illOf = (k) => ILL[k] || ILL.suitcase;
 // 一覧の小さな画像：写真の記事は写真、それ以外はイラスト
 const boardThumb = (d) => (d.heroType === "photo" && d.heroUrl ? `<span class="bill ph" style="background-image:url('${esc(d.heroUrl)}')"></span>` : `<span class="bill">${illOf(d.ill)}</span>`);
 const catName = (c) => (BOARD_CATS.find((x) => x[0] === c) || [, ""])[1];
+// 一覧の1行（記事）
+const boardRow = (d, admin) => `<a class="bit press" href="#g-${esc(d.id)}">${boardThumb(d)}<div><small>${esc(catName(d.cat))}${admin && d.status === "draft" ? '<em class="bdraft">下書き</em>' : ""}</small><h3>${esc(noMk(d.title))}</h3>${d.lead ? `<p>${esc(noMk(d.lead))}</p>` : ""}</div></a>`;
+// 国別ガイド：エリアごとに見出しをつけて並べる。上のボタンで、そのエリアへ飛べる
+function countryList(shown, admin) {
+  const groups = [...COUNTRY_AREAS.map(([k, l]) => [k, l]), ["other", "その他"]]
+    .map(([k, l]) => [k, l, shown.filter((d) => areaOf(d) === k).sort((x, y) => (x.order ?? 99) - (y.order ?? 99))])
+    .filter((g) => g[2].length);
+  const jump = groups.length > 1 ? `<div class="bareas">${groups.map(([k, l, ds]) => `<button data-ba="${k}">${l}<em>${ds.length}</em></button>`).join("")}</div>` : "";
+  return `${jump}<div class="blist">${groups.map(([k, l, ds]) => `<h2 class="barea" id="barea-${k}"><span>${l}</span><em>${ds.length}か国</em></h2>${ds.map((d) => boardRow(d, admin)).join("")}`).join("")}</div>`;
+}
 async function renderBoard() {
   const box = $("boardPane");
   if (!BOARDS) box.innerHTML = '<p class="fol-empty">読み込み中…</p>';
@@ -692,8 +702,9 @@ async function renderBoard() {
   box.innerHTML = `<div class="bcats">${cats.map(([k, l]) => `<button class="${k === boardCat ? "on" : ""}" data-bc="${k}">${l}</button>`).join("")}</div>
     ${boardCat === "trouble" ? jikenHead(admin) : ""}
     ${adm}
-    <div class="blist">${shown.map((d) => d.jiken ? jikenCard(d, admin) : `<a class="bit press" href="#g-${esc(d.id)}">${boardThumb(d)}<div><small>${esc(catName(d.cat))}${admin && d.status === "draft" ? '<em class="bdraft">下書き</em>' : ""}</small><h3>${esc(noMk(d.title))}</h3>${d.lead ? `<p>${esc(noMk(d.lead))}</p>` : ""}</div></a>`).join("")}</div>`;
+    ${boardCat === "country" ? countryList(shown, admin) : `<div class="blist">${shown.map((d) => d.jiken ? jikenCard(d, admin) : boardRow(d, admin)).join("")}</div>`}`;
   box.querySelectorAll("[data-bc]").forEach((b) => (b.onclick = () => { boardCat = b.dataset.bc; haptic(); renderBoard(); }));
+  box.querySelectorAll("[data-ba]").forEach((b) => (b.onclick = () => { haptic(); const t = $("barea-" + b.dataset.ba); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); }));
 }
 // 事件簿の1件：どこで・何が起きたか・手口・被害・その後。タップで元の記事へ
 // 事件簿のタブの一番上：イラスト（または写真）と説明文。管理者には右上に「編集」
@@ -761,7 +772,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611271700"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611271830"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -771,7 +782,7 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611271700").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611271830").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
     preview: (d) => boardArticleHtml(normBoard(d)),
     // 事件簿の「元の旅の記事」の候補（公開中の記事）
@@ -831,13 +842,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271700").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271830").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271700").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271700").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271830").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271830").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -1165,7 +1176,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611271700"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611271830"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1564,7 +1575,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611271700").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611271830").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);
