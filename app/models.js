@@ -3,6 +3,7 @@
 //             patagonia＝アンデス山脈の断面（スライダーで風を西から東へ進めると、雨や雪を降らせて乾いていく）
 //             circ＝大気大循環の断面（月のスライダーで、雨の帯と空気の流れが南北に動き、バンコクとバリ島の雨季・乾季が変わる）
 //             uyuni＝ウユニ塩湖（月のスライダーで、雨の量と、塩原が「鏡」と「白い大地」に変わる）
+//             butte＝モニュメント・バレー（台地→メサ→ビュート→細い塔）／karst＝ハロン湾（海の底→持ち上がる→雨で溶ける→海に沈む）
 //             rift＝プレートが離れる断面（スライダーで「離れる→割れ目→マグマ→新しい大地」と進む）
 //             fjord＝フィヨルドができるまで（谷の断面。スライダーで「川の谷→氷河でけずる→海水が入る」と進む）
 // 本物の気候を、ごく簡単にしたモデルです（目安）。
@@ -109,6 +110,7 @@ export function modelHtml(b) {
   if (b.k === "rift") return riftHtml(b);
   if (b.k === "circ") return circHtml(b);
   if (b.k === "uyuni") return uyHtml(b);
+  if (b.k === "butte" || b.k === "karst") return stepHtml(b);
   if (b.k !== "hadley") return "";
   const m = Math.min(12, Math.max(1, +b.m || 1));
   return `<figure class="bfig"><div class="mdl" data-mdl="hadley" data-m="${m}" data-lon="-68">
@@ -445,6 +447,90 @@ function initUy(root) {
   });
 }
 
+// ---- ステップで進む断面モデル（モニュメント・バレー／ハロン湾） ----
+const STEP_TXT = {
+  butte: [
+    ["①地層が積み重なった、平らな台地", "下はやわらかい頁岩、その上にかたい砂岩、いちばん上にさらにかたい岩がのっています。"],
+    ["②雨と川が、割れ目を削る", "雨や川が少しずつ台地を削り、テーブルのような形の「メサ」が残ります。"],
+    ["③やわらかい層から先に削れる", "下のやわらかい層が削れると、上の砂岩が崩れて崖になります。かたい岩が帽子のように守っている部分だけが、塔の形の「ビュート」として残ります。"],
+    ["④最後は、細い塔になる", "さらに削れると、細い塔（スパイア）になります。帽子の岩がなくなると、やがて崩れて消えていきます。"],
+  ],
+  karst: [
+    ["①海の底で、石灰岩ができる", "大昔の海の底に、貝殻などが積もって、厚い石灰岩の層ができました。"],
+    ["②持ち上がって、陸になる", "大地の動きで石灰岩が持ち上がり、陸になります。表面には、たくさんの割れ目があります。"],
+    ["③雨が割れ目を溶かす", "雨水は少しだけ酸性で、石灰岩を溶かします。割れ目が広がって谷になり、とがった岩山が並ぶ地形になりました。"],
+    ["④海面が上がり、岩山が島になる", "海面が上がって谷に海が入り、岩山の頭だけが島として残りました。波が足元をえぐって、くびれもできます。"],
+  ],
+};
+function butteSvg(st) {
+  const INK = "#1b2330", W = [360, 210, 96, 30][st], c = 180, base = 196, sh = 160, ss = 86, cap = 74;
+  const L = c - W / 2, R = c + W / 2, sl = st === 0 ? 0 : 36 + st * 6;
+  const tag = (t, x, y, al = "start") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#fbf9f4" stroke-width="3">${t}</text>`;
+  const capW = st === 3 ? 18 : W;
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ビュートができるまで">
+    <rect width="360" height="220" fill="#fbf6ee"/>
+    ${st ? `<rect x="0" y="${cap}" width="360" height="${base - cap}" fill="none" stroke="${INK}" stroke-width="1.3" stroke-dasharray="4 4" opacity=".45"/>` : ""}
+    <path d="M${L - sl} ${base} L${L} ${sh} L${R} ${sh} L${R + sl} ${base} Z" fill="#c98f74" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+    <rect x="${L}" y="${ss}" width="${W}" height="${sh - ss}" fill="#c8603a" stroke="${INK}" stroke-width="2"/>
+    <rect x="${c - capW / 2}" y="${cap}" width="${capW}" height="${ss - cap}" fill="#8f7d6a" stroke="${INK}" stroke-width="2"/>
+    <rect x="0" y="${base}" width="360" height="24" fill="#e7c9a0"/><line x1="0" y1="${base}" x2="360" y2="${base}" stroke="${INK}" stroke-width="2"/>
+    ${st === 0 ? tag("かたい岩（帽子の岩）", 12, cap + 9) + tag("砂岩（かたい）", 12, 126) + tag("頁岩（やわらかい）", 12, 182) : ""}
+    ${st > 0 ? tag(["", "メサ", "ビュート", "スパイア（細い塔）"][st], c, cap - 8, "middle") : ""}
+    ${st === 2 ? tag("帽子の岩が守る", R + 6, cap + 9) : ""}
+    ${st === 1 ? tag("削られた", 14, 60) : ""}
+  </svg>`;
+}
+function karstSvg(st) {
+  const INK = "#1b2330", tag = (t, x, y, c = INK, al = "middle") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="#fbf9f4" stroke-width="3">${t}</text>`;
+  const sea = [40, 175, 175, 148][st], top = st === 0 ? 150 : 70, bot = 210;
+  const towers = [[30, 70], [92, 52], [156, 74], [214, 58], [276, 80], [330, 62]];
+  let rock;
+  if (st <= 1) {
+    rock = `<rect x="${st ? 24 : 0}" y="${top}" width="${st ? 312 : 360}" height="${bot - top}" fill="#d9d4c3" stroke="${INK}" stroke-width="2"/>` + [40, 60, 80, 100].map((d) => `<line x1="${st ? 24 : 0}" y1="${top + d * (bot - top) / 120}" x2="${st ? 336 : 360}" y2="${top + d * (bot - top) / 120}" stroke="#b9b29c" stroke-width="1.2"/>`).join("");
+    if (st === 1) rock += [62, 124, 186, 246, 304].map((x) => `<path d="M${x} ${top} L${x + 3} ${top + 30} L${x - 2} ${top + 55}" fill="none" stroke="${INK}" stroke-width="1.6"/>`).join("");
+  } else {
+    const pts = [`M0 ${bot}`];
+    towers.forEach(([x, w], i) => { const h = 62 + (i % 3) * 14; pts.push(`L${x - 22} 178 Q${x - 26} ${178 - h * 0.6} ${x - 12} ${178 - h} Q${x} ${168 - h} ${x + 12} ${178 - h} Q${x + 26} ${178 - h * 0.6} ${x + 22} 178`); });
+    pts.push(`L360 178 L360 ${bot} Z`);
+    rock = `<path d="${pts.join(" ")}" fill="#d9d4c3" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>` + towers.map(([x], i) => `<path d="M${x - 10} ${178 - 62 - (i % 3) * 14 + 6} q10 -8 20 0" fill="none" stroke="#5e9a6b" stroke-width="5" stroke-linecap="round"/>`).join("");
+    if (st === 2) rock += [0, 1, 2].map((i) => `<line x1="${110 + i * 70}" y1="${28 + i * 3}" x2="${106 + i * 70}" y2="${42 + i * 3}" stroke="#3b82a0" stroke-width="2.2" stroke-linecap="round"/>`).join("") + tag("雨（少し酸性）", 180, 20);
+  }
+  const seaRect = `<rect x="0" y="${sea}" width="360" height="${bot - sea}" fill="#3b82a0" opacity="${st === 0 ? 0.55 : 0.75}"/>`;
+  const shells = st === 0 ? [40, 100, 170, 240, 300].map((x) => `<path d="M${x} 146 q6 -9 12 0 z" fill="#fff" stroke="${INK}" stroke-width="1.2"/>`).join("") : "";
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ハロン湾ができるまで">
+    <rect width="360" height="220" fill="#eef4f6"/>
+    ${st === 3 ? rock + seaRect : seaRect + rock}
+    ${shells}
+    <line x1="0" y1="${sea}" x2="360" y2="${sea}" stroke="${INK}" stroke-width="1.5" stroke-dasharray="5 4"/>
+    ${tag("海面", 352, sea - 5, INK, "end")}
+    ${st === 0 ? tag("石灰岩の層", 180, 186) : ""}
+    ${st === 1 ? tag("割れ目", 124, top - 6) : ""}
+    ${st === 3 ? tag("島になった岩山", 92, 70) + tag("海に沈んだ谷", 250, sea + 26, "#fff").replace('stroke="#fbf9f4"', 'stroke="#3b82a0"') : ""}
+  </svg>`;
+}
+const STEP_SVG = { butte: butteSvg, karst: karstSvg };
+function stepRes(k, st) { const [t, d] = STEP_TXT[k][st]; return `<span>${t}</span><b>${d}</b>`; }
+function stepHtml(b) {
+  const k = b.k, n = STEP_TXT[k].length;
+  return `<figure class="bfig"><div class="mdl" data-mdl="${k}">
+    <p class="mdl-h">手で動かしてみよう</p>
+    <div class="mdl-fj">${STEP_SVG[k](0)}</div>
+    <div class="mdl-res">${stepRes(k, 0)}</div>
+    <label class="mdl-sl"><span>ステップ</span><input type="range" class="mdl-m" min="1" max="${n}" step="1" value="1" aria-label="ステップ"><b>1 / ${n}</b></label>
+  </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
+}
+function initStep(root) {
+  const r = root.querySelector(".mdl-m"), k = root.dataset.mdl, n = STEP_TXT[k].length;
+  if (!r || r.dataset.on) return;
+  r.dataset.on = "1";
+  r.addEventListener("input", () => {
+    const st = +r.value - 1;
+    root.querySelector(".mdl-fj").innerHTML = STEP_SVG[k](st);
+    root.querySelector(".mdl-res").innerHTML = stepRes(k, st);
+    root.querySelector(".mdl-sl b").textContent = `${st + 1} / ${n}`;
+  });
+}
+
 // 画面に出てきたモデルを、動くようにする（画面全体で、1回だけつなぐ）
 let wired = false;
 function init(root) {
@@ -453,6 +539,7 @@ function init(root) {
   if (root.dataset.mdl === "rift") return initRift(root);
   if (root.dataset.mdl === "circ") return initCirc(root);
   if (root.dataset.mdl === "uyuni") return initUy(root);
+  if (root.dataset.mdl === "butte" || root.dataset.mdl === "karst") return initStep(root);
   const cv = root.querySelector("canvas");
   if (!cv || cv.dataset.on) return;
   cv.dataset.on = "1";

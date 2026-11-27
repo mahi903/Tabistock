@@ -2205,6 +2205,51 @@ export const BOARD_SEED = [
       {"t": "p", "x": "豆知識：塩の下には、リチウムを多く含む塩水がたまっています。またとても平らなので、人工衛星が地面の高さを正しく測れているかを確かめる場所としても使われています。"},
       {"t": "note", "x": "このページは、地理の資料や気候のデータ、旅行会社などの情報をもとに、2026年11月28日にまとめました。雨の量や旅行の時期、行き方は変わることがあるので、出発前に最新の情報を見てください。\nSalar de Uyuni（Wikipedia）：https://en.wikipedia.org/wiki/Salar_de_Uyuni\nBibliotheca Alexandrina（ウユニ塩湖）：https://www.bibalex.org/SCIplanet/en/Article/Details?id=14794\nJSTOR Daily（ウユニ塩湖）：https://daily.jstor.org/salar-de-uyuni/\nweather2travel（ウユニの気候）：https://www.weather2travel.com/bolivia/uyuni/climate\nHIS（ウユニ塩湖）：https://www.his-j.com/tyo/zekkei/uyuni/\ninkl（鏡になるしくみ）：https://www.inkl.com/news/how-rain-turns-a-salt-desert-into-the-world-s-largest-mirror-in-bolivia"},
     ],
+  },
+  {
+    id: "geo-monument", cat: "geo", ill: "wind", order: 36, rev: 1, status: "draft", updated: "2026-11-28",
+    title: "モニュメント・バレー｜アメリカ",
+    lead: "赤い大地に、テーブルや塔のような岩山がぽつんと立つモニュメント・バレー。西部劇でおなじみのこの景色は、かたい岩とやわらかい岩が、ちがう速さで削られてできました。",
+    facts: [
+      ["場所", "アメリカ ユタ州とアリゾナ州の境", "ナバホ族の土地にある公園"],
+      ["岩山の高さ", "高いもので約300m"],
+      ["行きやすい時期", "春（3〜5月）と秋（9〜11月）"],
+    ],
+    blocks: [
+      {"t": "h", "x": "なぜ、岩山だけが残ったの？"},
+      {"t": "p", "x": "モニュメント・バレーの岩山は、何億年も前に積もった地層でできています。いちばん下はやわらかい頁岩、その上にかたい砂岩、さらに上にかたい岩が重なっています。雨や風、川が何百万年もかけて削るとき、やわらかい岩は速く、かたい岩はゆっくり削られます。その差で、かたい岩に守られた部分だけが、岩山として残りました。"},
+      {"t": "model", "k": "butte", "m": 1, "cap": "岩山ができるまでを単純にした断面のモデルです。スライダーを動かすと、平らな台地が削られて、メサ、ビュート、細い塔へと変わっていきます。点線は、もとの台地の形です。"},
+      {"t": "list", "items": ["横に広い岩山を「メサ」、背が高くて細いものを「ビュート」と呼びます。メサが削られて小さくなったものがビュートです。", "いちばん上のかたい岩が「帽子」のように下の岩を守っているあいだは、岩山は崩れません。帽子がなくなると、やがて崩れていきます。", "いま見ている景色も、少しずつ削られ続けています。"]},
+      {"t": "h", "x": "旅の時期"},
+      {"t": "table", "head": true, "rows": [{"c": ["したいこと", "時期の目安", "理由"]}, {"c": ["歩きやすさを優先したい", "3〜5月、9〜11月", "気温がおだやかで、外を回りやすい季節です。"]}, {"c": ["夏に行く", "6〜8月", "昼はとても暑くなります。日中を避けて、朝か夕方に回りましょう。"]}]},
+      {"t": "p", "x": "朝に着くか、夕方のツアーに参加すると、岩が赤く染まるきれいな景色が見られます。"},
+      {"t": "h", "x": "行き方と注意点"},
+      {"t": "list", "items": ["国立公園ではなく、ナバホ族が管理する公園です。アメリカの国立公園の年間パスは使えません。入場料は1人10ドルです（公式サイト）。", "いちばんの見どころは、約27km（17マイル）の「バレー・ドライブ」です。舗装されていない、かなり荒れた道なので、ゆっくり走りましょう。", "近くに大きな空港はなく、車が必要です。フェニックスから車で約5時間、ラスベガスから約7時間かかります。", "ドローンの使用は禁止されています。決められた道の外を歩くには、許可が必要です。", "アメリカへの入国にはESTAが必要です。くわしくはアメリカの国別ガイドにまとめています。"]},
+      {"t": "note", "x": "このページは、地質の資料や観光局、公園の公式サイトなどの情報をもとに、2026年11月28日にまとめました。入場料や道路の状況は変わることがあるので、出発前に最新の情報を見てください。\nMonument Valley（Wikipedia）：https://en.wikipedia.org/wiki/Monument_Valley\nCBS News（地層）：https://www.cbsnews.com/news/nature-up-close-monument-valley\nTrafalgar（ビュートのでき方）：https://www.trafalgar.com/real-word/sandstone-pillars-monument-valley-formed/\nNavajo Nation Parks（入場料）：https://navajonationparks.org/entry-fee/\nVisit Utah（行き方）：https://www.visitutah.com/places-to-go/parks-outdoors/monument-valley-tribal-park/monument-valley-logistics\nEarth Trekkers（バレー・ドライブ）：https://www.earthtrekkers.com/ultimate-guide-monument-valley/\nBald Hiker（注意点）：https://www.baldhiker.com/?p=4978"},
+    ],
+  },
+  {
+    id: "geo-halong", cat: "geo", ill: "wind", order: 37, rev: 1, status: "draft", updated: "2026-11-28",
+    title: "ハロン湾｜ベトナム",
+    lead: "エメラルド色の海に、緑をかぶった岩山が2,000近く浮かぶハロン湾。この岩山はすべて石灰岩で、雨に溶かされたあと、海に沈んでできた景色です。",
+    facts: [
+      ["場所", "ベトナム北部", "ハノイから車で約2時間半"],
+      ["島の数", "1,969", "ほとんどが石灰岩の島"],
+      ["行きやすい時期", "9〜11月ごろ"],
+    ],
+    blocks: [
+      {"t": "h", "x": "なぜ、岩山が海に浮かんでいるの？"},
+      {"t": "p", "x": "ハロン湾の岩山は、大昔の海の底に貝殻などが積もってできた石灰岩です。それが大地の動きで持ち上げられ、雨に削られて、とがった岩山がたくさん並ぶ地形になりました。そのあと海面が上がり、谷に海が入って、岩山の頭だけが島として残ったのです。"},
+      {"t": "model", "k": "karst", "m": 1, "cap": "ハロン湾ができるまでを単純にした断面のモデルです。スライダーを動かすと、海の底の石灰岩が持ち上がり、雨に溶かされて、最後に海に沈むまでを見られます。"},
+      {"t": "list", "items": ["石灰岩は、二酸化炭素を含んで少し酸性になった雨水に溶けます。こうしてできた地形を「カルスト地形」といいます。", "島の中には大きな洞窟があるものも多く、クルーズで中を歩けます。", "波が岩山の足元をえぐるので、水面のところがくびれた岩も見られます。", "オーストラリアのピナクルズも、石灰岩が雨に溶けてできた地形です。こちらは海に沈まず、砂漠の中に岩の柱が残りました。"]},
+      {"t": "h", "x": "旅の時期は、雨季を避ける"},
+      {"t": "p", "x": "ハロン湾は北緯21度ほどにあります。「風を知ると、旅の季節がわかる」のモデルで見たように、北半球の夏は雨の帯が北に来るので、5〜10月が雨季になります。"},
+      {"t": "table", "head": true, "rows": [{"c": ["時期", "ようす", "おすすめ度"]}, {"c": ["9〜11月", "秋で晴れが多く、海もおだやかです。", "クルーズにいちばんおすすめです。"]}, {"c": ["12〜2月", "涼しく乾いていて、湾にうっすら霧がかかります。10℃くらいまで冷えこむ日もあります。", "霧の景色が好きなら、上着を持って。"]}, {"c": ["3〜4月", "暖かくなり、天気も安定してきます。", "おすすめです。"]}, {"c": ["5〜8月", "暑くて雨が多く、台風が来ることもあります。", "クルーズが中止になることがあります。"]}]},
+      {"t": "h", "x": "行き方と楽しみ方"},
+      {"t": "list", "items": ["ハノイから高速道路で、車で約2時間半です。港からクルーズ船に乗ります。", "日帰りもできますが、船に1泊すると、静かな海で朝日を見られます。", "ティートップ島の展望台からは、湾を見渡せます。", "ベトナムは、45日以内ならビザなしで入国できます。条件はベトナムの国別ガイドにまとめています。"]},
+      {"t": "p", "x": "豆知識：「ハロン」は「龍が降りる」という意味です。海に降りてきた龍が、敵を防ぐために吐いた宝石が島になった、という伝説があります。"},
+      {"t": "note", "x": "このページは、地質の資料やユネスコ、ベトナム政府観光局などの情報をもとに、2026年11月28日にまとめました。天気や行き方は変わることがあるので、出発前に最新の情報を見てください。\nNASA Earth Observatory（ハロン湾）：https://science.nasa.gov/earth/earth-observatory/the-emerald-isles-of-ha-long-bay-149803\nHạ Long Bay（Wikipedia）：https://en.wikipedia.org/wiki/H%E1%BA%A1_Long_Bay\nUNESCO（ハロン湾）：https://en.unesco.org/silkroad/silk-road-themes/biosphere-reserve/ha-long-bay\nベトナム政府観光局（ハロン）：https://vietnam.travel/jp/place-to-go/red-river-delta/ha-long/\nNEWT（ハロン湾の季節）：https://newt.net/vnm/mag-9063982301\nVietnam Discovery（冬の気温）：https://vietnamdiscovery.com/ha-long-bay/best-months-to-cruise-ha-long-bay/\nThe Pinnacles（Wikipedia）：https://en.wikipedia.org/wiki/The_Pinnacles_(Western_Australia)"},
+    ],
   }
 ];
 
