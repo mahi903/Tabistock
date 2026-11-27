@@ -2250,6 +2250,27 @@ export const BOARD_SEED = [
       {"t": "p", "x": "豆知識：「ハロン」は「龍が降りる」という意味です。海に降りてきた龍が、敵を防ぐために吐いた宝石が島になった、という伝説があります。"},
       {"t": "note", "x": "このページは、地質の資料やユネスコ、ベトナム政府観光局などの情報をもとに、2026年11月28日にまとめました。天気や行き方は変わることがあるので、出発前に最新の情報を見てください。\nNASA Earth Observatory（ハロン湾）：https://science.nasa.gov/earth/earth-observatory/the-emerald-isles-of-ha-long-bay-149803\nHạ Long Bay（Wikipedia）：https://en.wikipedia.org/wiki/H%E1%BA%A1_Long_Bay\nUNESCO（ハロン湾）：https://en.unesco.org/silkroad/silk-road-themes/biosphere-reserve/ha-long-bay\nベトナム政府観光局（ハロン）：https://vietnam.travel/jp/place-to-go/red-river-delta/ha-long/\nNEWT（ハロン湾の季節）：https://newt.net/vnm/mag-9063982301\nVietnam Discovery（冬の気温）：https://vietnamdiscovery.com/ha-long-bay/best-months-to-cruise-ha-long-bay/\nThe Pinnacles（Wikipedia）：https://en.wikipedia.org/wiki/The_Pinnacles_(Western_Australia)"},
     ],
+  },
+  {
+    id: "geo-pinnacles", cat: "geo", ill: "wind", order: 38, rev: 1, status: "draft", updated: "2026-11-28",
+    title: "ピナクルズ｜オーストラリア",
+    lead: "西オーストラリアの黄色い砂漠に、何千本もの石の柱が立ち並ぶピナクルズ。この柱は石灰岩で、ハロン湾と同じく、雨に溶かされずに残った部分です。",
+    facts: [
+      ["場所", "西オーストラリア州 ナンバン国立公園", "パースから車で約2時間"],
+      ["柱の高さ", "最大5mほど", "何千本も並ぶ"],
+      ["おすすめの時期", "8〜10月", "野生の花の季節"],
+    ],
+    blocks: [
+      {"t": "h", "x": "なぜ、石の柱が立っているの？"},
+      {"t": "p", "x": "もとは海の貝殻です。貝殻が砕けてできた砂が風で内陸へ運ばれ、大きな砂丘になりました。砂丘はやがて固まって石灰岩になり、そこへしみこんだ雨水が、少しずつ溶かしていきます。溶けやすいところは穴になって広がり、溶け残った部分が柱になりました。最後に、まわりの砂が風で飛ばされて、柱が地上に現れたのです。"},
+      {"t": "model", "k": "pinnacle", "m": 1, "cap": "ピナクルズができるまでを単純にした断面のモデルです。スライダーを動かすと、貝殻の砂の砂丘が石灰岩になり、雨に溶かされて柱が現れるまでを見られます。"},
+      {"t": "list", "items": ["研究によると、柱ができたのは約10万年前です。このあたりがここ50万年でいちばん雨の多かった時期で、たくさんの水が石灰岩を溶かしました。", "柱の頭がきのこのように広がっているものは、上のかたい層が、下の層より削られにくいためです。モニュメント・バレーの「帽子の岩」と同じしくみです。", "植物の根が関わったという説などもあり、くわしいでき方はまだ議論が続いています。", "ハロン湾も、石灰岩が雨に溶けてできた地形です。ハロン湾は海に沈んで島になり、ピナクルズは砂漠の中に柱として残りました。"]},
+      {"t": "h", "x": "旅の時期"},
+      {"t": "table", "head": true, "rows": [{"c": ["したいこと", "時期の目安", "理由"]}, {"c": ["野生の花を見たい", "8〜10月", "南半球の春で、西オーストラリアの野生の花が砂漠を彩ります。"]}, {"c": ["いちばんきれいな景色", "日の入り前", "太陽が低くなって柱の影が長くのび、砂の色も変わります。"]}, {"c": ["夏に行く", "12〜2月", "暑くなるので、水を多めに持っていきましょう。"]}]},
+      {"t": "h", "x": "行き方と注意点"},
+      {"t": "list", "items": ["パースから北へ約200km、車で約2時間です。海沿いのインディアン・オーシャン・ドライブは全部舗装されていて、普通の車で行けます。", "近くを通る公共交通はないので、レンタカーかツアーで行きます。", "国立公園の入場料が、車1台ごとにかかります。料金は西オーストラリア州の公園サイトで見ておきましょう。", "柱のあいだを走る約4kmの道と、歩いて回れる道があり、1〜2時間あれば回れます。", "入り口のディスカバリー・センターでは、柱のでき方を展示で学べます。", "オーストラリアへの入国にはETAが必要です。くわしくはオーストラリアの国別ガイドにまとめています。"]},
+      {"t": "note", "x": "このページは、地質の研究や観光局、旅行情報サイトなどの情報をもとに、2026年11月28日にまとめました。入場料や道路の状況は変わることがあるので、出発前に最新の情報を見てください。\nThe Pinnacles（Wikipedia）：https://en.wikipedia.org/wiki/The_Pinnacles_(Western_Australia)\nLipar & Webb 2015（ピナクルズのでき方）：https://agris.fao.org/search/en/records/65de61064c5aef494fdbbef0\nカーティン大学（約10万年前）：https://www.curtin.edu.au/news/?p=26359\n西オーストラリア州 公園サイト（ナンバン国立公園）：https://exploreparks.dbca.wa.gov.au/park/nambung\nAustralia's Coral Coast（行き方）：https://www.australiascoralcoast.com/destination/pinnacles\nApollo（道と所要時間）：https://www.apollocamper.com/be-inspired/blog/guide-to-the-pinnacles-of-nambung-national-park\nAAA（時期・行き方）：https://www.aaa.com/tripcanvas/attraction/pinnacles-desert-VA414"},
+    ],
   }
 ];
 

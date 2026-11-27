@@ -3,6 +3,7 @@
 //             patagonia＝アンデス山脈の断面（スライダーで風を西から東へ進めると、雨や雪を降らせて乾いていく）
 //             circ＝大気大循環の断面（月のスライダーで、雨の帯と空気の流れが南北に動き、バンコクとバリ島の雨季・乾季が変わる）
 //             uyuni＝ウユニ塩湖（月のスライダーで、雨の量と、塩原が「鏡」と「白い大地」に変わる）
+//             pinnacle＝ピナクルズ（砂丘→石灰岩→雨で溶ける→柱が現れる）
 //             butte＝モニュメント・バレー（台地→メサ→ビュート→細い塔）／karst＝ハロン湾（海の底→持ち上がる→雨で溶ける→海に沈む）
 //             rift＝プレートが離れる断面（スライダーで「離れる→割れ目→マグマ→新しい大地」と進む）
 //             fjord＝フィヨルドができるまで（谷の断面。スライダーで「川の谷→氷河でけずる→海水が入る」と進む）
@@ -110,7 +111,7 @@ export function modelHtml(b) {
   if (b.k === "rift") return riftHtml(b);
   if (b.k === "circ") return circHtml(b);
   if (b.k === "uyuni") return uyHtml(b);
-  if (b.k === "butte" || b.k === "karst") return stepHtml(b);
+  if (b.k === "butte" || b.k === "karst" || b.k === "pinnacle") return stepHtml(b);
   if (b.k !== "hadley") return "";
   const m = Math.min(12, Math.max(1, +b.m || 1));
   return `<figure class="bfig"><div class="mdl" data-mdl="hadley" data-m="${m}" data-lon="-68">
@@ -461,7 +462,33 @@ const STEP_TXT = {
     ["③雨が割れ目を溶かす", "雨水は少しだけ酸性で、石灰岩を溶かします。割れ目が広がって谷になり、とがった岩山が並ぶ地形になりました。"],
     ["④海面が上がり、岩山が島になる", "海面が上がって谷に海が入り、岩山の頭だけが島として残りました。波が足元をえぐって、くびれもできます。"],
   ],
+  pinnacle: [
+    ["①貝殻の砂が、風で砂丘になる", "海の貝殻が砕けてできた砂が、風で内陸へ運ばれ、大きな砂丘になりました。"],
+    ["②砂丘が固まって、石灰岩になる", "砂丘は長い時間をかけて固まり、石灰岩になります。表面にはかたい層ができ、植物の根も入りこみました。"],
+    ["③雨水がしみこんで、溶かす", "雨水がしみこむと、溶けやすいところから穴が広がっていきます。溶け残った部分が、柱の形になりました。"],
+    ["④砂が飛ばされて、柱が現れる", "まわりのくずれた砂が風で飛ばされ、溶け残った柱が地上に顔を出しました。これがピナクルズです。"],
+  ],
 };
+function pinnSvg(st) {
+  const INK = "#1b2330", tag = (t, x, y, al = "middle") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#fbf6ee" stroke-width="3">${t}</text>`;
+  const wind = (y, t) => `<line x1="24" y1="${y}" x2="96" y2="${y}" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/><path d="M88 ${y - 6} L96 ${y} L88 ${y + 6}" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>` + tag(t, 104, y + 4, "start");
+  const cols = [40, 100, 160, 220, 280, 330];
+  let g = "";
+  if (st === 0) g = `<path d="M0 200 Q120 70 230 120 Q300 150 360 190 L360 220 L0 220 Z" fill="#f0d9a0" stroke="${INK}" stroke-width="2"/>` + [70, 150, 250].map((x) => `<path d="M${x} 168 q6 -9 12 0 z" fill="#fff" stroke="${INK}" stroke-width="1.2"/>`).join("") + wind(36, "風") + tag("砂丘", 180, 150);
+  else if (st === 1 || st === 2) {
+    g = `<rect x="0" y="90" width="360" height="130" fill="#e3cf9a" stroke="${INK}" stroke-width="2"/><rect x="0" y="90" width="360" height="12" fill="#b99d63" stroke="${INK}" stroke-width="2"/>`;
+    g += cols.map((x) => `<path d="M${x} 102 q-4 16 2 30 q5 14 -2 30" fill="none" stroke="#7a5a3a" stroke-width="1.6"/>`).join("");
+    if (st === 1) g += tag("かたい層", 300, 84) + tag("石灰岩", 180, 190) + tag("植物の根", 60, 84);
+    else {
+      g += cols.slice(0, 5).map((x) => `<path d="M${x + 22} 90 L${x + 38} 90 L${x + 34} 200 L${x + 26} 200 Z" fill="#f8efd8" stroke="${INK}" stroke-width="1.6"/>`).join("");
+      g += [0, 1, 2, 3].map((i) => `<line x1="${80 + i * 60}" y1="${40 + (i % 2) * 6}" x2="${76 + i * 60}" y2="${54 + (i % 2) * 6}" stroke="#3b82a0" stroke-width="2.2" stroke-linecap="round"/>`).join("") + tag("雨水が溶かした穴", 180, 30);
+    }
+  } else {
+    g = cols.map((x, i) => { const h = 50 + ((i * 37) % 4) * 14, w = 16 + (i % 3) * 4; return `<path d="M${x - w / 2} 200 L${x - w / 2 + 2} ${170 - h + 8} Q${x} ${170 - h - 4} ${x + w / 2 - 2} ${170 - h + 8} L${x + w / 2} 200 Z" fill="#e3cf9a" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`; }).join("");
+    g += `<rect x="0" y="170" width="360" height="50" fill="#f0d9a0" stroke="${INK}" stroke-width="2"/>` + wind(36, "砂が飛ばされる") + tag("溶け残った柱（高さは最大5mほど）", 180, 206);
+  }
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ピナクルズができるまで"><rect width="360" height="220" fill="#fbf6ee"/>${g}</svg>`;
+}
 function butteSvg(st) {
   const INK = "#1b2330", W = [360, 210, 96, 30][st], c = 180, base = 196, sh = 160, ss = 86, cap = 74;
   const L = c - W / 2, R = c + W / 2, sl = st === 0 ? 0 : 36 + st * 6;
@@ -508,7 +535,7 @@ function karstSvg(st) {
     ${st === 3 ? tag("島になった岩山", 92, 70) + tag("海に沈んだ谷", 250, sea + 26, "#fff").replace('stroke="#fbf9f4"', 'stroke="#3b82a0"') : ""}
   </svg>`;
 }
-const STEP_SVG = { butte: butteSvg, karst: karstSvg };
+const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg };
 function stepRes(k, st) { const [t, d] = STEP_TXT[k][st]; return `<span>${t}</span><b>${d}</b>`; }
 function stepHtml(b) {
   const k = b.k, n = STEP_TXT[k].length;
@@ -539,7 +566,7 @@ function init(root) {
   if (root.dataset.mdl === "rift") return initRift(root);
   if (root.dataset.mdl === "circ") return initCirc(root);
   if (root.dataset.mdl === "uyuni") return initUy(root);
-  if (root.dataset.mdl === "butte" || root.dataset.mdl === "karst") return initStep(root);
+  if (root.dataset.mdl === "butte" || root.dataset.mdl === "karst" || root.dataset.mdl === "pinnacle") return initStep(root);
   const cv = root.querySelector("canvas");
   if (!cv || cv.dataset.on) return;
   cv.dataset.on = "1";
