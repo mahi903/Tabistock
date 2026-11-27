@@ -4,7 +4,7 @@
 import { db, storage } from "../firebase-config.js";
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611280100";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611280200";
 
 // ブロックの種類（追加ボタンの並び順）
 const KINDS = [
@@ -50,9 +50,16 @@ export async function refreshSeedDrafts(list) {
   if (!todo.length) return 0;
   const batch = writeBatch(db);
   todo.forEach(({ d, cur }) => {
-    const { title, lead, facts, blocks, rev, ill } = toFs(d);
+    // 写真ブロック（エディタで足したもの）は消さずに、同じ位置（何番目の文章ブロックのあとか）に残す
+    const fresh = d.blocks.map((b) => ({ ...b }));
+    let k = 0, add = 0;
+    (cur.blocks || []).forEach((b) => {
+      if (b.t === "photo") { if (b.src || b.url) { fresh.splice(Math.min(k + add, fresh.length), 0, b); add++; } }
+      else k++;
+    });
+    const { title, lead, facts, blocks, rev, ill } = toFs({ ...d, blocks: fresh });
     batch.update(doc(db, "boards", d.id), { title, lead, facts, blocks, rev, ill, updatedAt: serverTimestamp() });
-    Object.assign(cur, { title, lead, facts: d.facts, blocks: d.blocks, rev });
+    Object.assign(cur, { title, lead, facts: d.facts, blocks: fresh, rev });
   });
   await batch.commit();
   return todo.length;
