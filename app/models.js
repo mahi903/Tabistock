@@ -1,106 +1,127 @@
 // 旅の掲示板（旅と地理）の記事の中に入れる、手で動かせるモデル
-// いまあるもの：hadley＝大気大循環（月をスライダーで動かすと、雨の帯と、乾燥の帯が南北に動く。行き先ごとの「いまの雨」が出る）
-// 本物の気候を、ごく簡単にしたモデルです（目安）。細かい雨の量は、各地の観光局などの情報で確認してください。
+// いまあるもの：hadley＝大気大循環の地球儀（月のスライダーで、雨の帯と、かわきやすい帯が南北に動く。指で地球をまわせる）
+// 本物の気候を、ごく簡単にしたモデルです（目安）。
 
-const INK = "#1b2330", G = "#1f6f5b", T = "#e2683b";
 const MONTHS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+const RAD = Math.PI / 180;
+const SIZE = 360;   // 地球儀を描く絵のサイズ（正方形）
 
-// 行き先：lat＝だいたいの緯度（南がマイナス）
-const PLACES = {
-  atacama: { n: "アタカマ砂漠", lat: -23 },
-  namib: { n: "ナミブ砂漠", lat: -24 },
-  sahara: { n: "サハラ砂漠", lat: 23 },
-  bali: { n: "バリ島", lat: -8.5 },
-  nairobi: { n: "ナイロビ（ケニア）", lat: -1.3 },
-};
+// 行き先（いまはアタカマだけ）
+const PLACE = { n: "アタカマ砂漠", lat: -23, lon: -68.5 };
+
+// 南アメリカの、ごくおおまかな海岸線（経度, 緯度）
+const SA = [[-77, 8], [-72, 12], [-67, 11], [-62, 10.5], [-57, 6], [-52, 5], [-50, 0], [-45, -2], [-40, -3], [-35, -5], [-35, -9], [-38, -13], [-39, -18], [-41, -22], [-45, -24], [-48, -26], [-49, -29], [-53, -34], [-57, -35], [-58, -38], [-62, -39], [-65, -41], [-65, -45], [-67, -47], [-69, -51], [-68, -54], [-71, -54], [-74, -50], [-74, -45], [-73, -40], [-71, -33], [-71, -28], [-70, -20], [-71, -17], [-76, -14], [-79, -9], [-81, -5], [-80, -1], [-79, 2]];
 
 // 太陽の真下の緯度（月の真ん中の日で計算。12月に南回帰線、6月に北回帰線）
 const sunLat = (t) => -23.44 * Math.cos((2 * Math.PI * ((t - 0.5) * 30.4 + 10)) / 365);
 // 雨の帯（熱帯収束帯）の中心。太陽より少しおそれて、動きもおだやか（目安）
 const bandLat = (m) => 0.55 * sunLat(m - 1);
+// かわきやすい帯（亜熱帯高圧帯）の中心。夏の半球のほうが、少し極がわにずれる
+const dryLat = (m, sign) => sign * 28 + 0.35 * bandLat(m);
 
-const X = (lat) => 20 + ((lat + 60) / 120) * 320;
-const clampLat = (l) => Math.max(-60, Math.min(60, l));
+const inPoly = (lon, lat) => {
+  let c = false;
+  for (let i = 0, j = SA.length - 1; i < SA.length; j = i++) {
+    const [xi, yi] = SA[i], [xj, yj] = SA[j];
+    if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) c = !c;
+  }
+  return c;
+};
+const soft = (d, w) => (d >= w ? 0 : d <= w * 0.6 ? 1 : 1 - (d - w * 0.6) / (w * 0.4));   // 帯のふちを、すこしぼかす
+const mix = (a, b, t) => a + (b - a) * t;
 
-function state(m, lat) {
-  const b = bandLat(m);
-  const wet = Math.exp(-(((lat - b) / 9) ** 2));
-  if (Math.abs(lat) >= 18) return { k: "dry", t: "一年じゅう、ほぼ乾燥（高圧帯の下）" };
-  if (wet > 0.55) return { k: "wet", t: "雨が多い時期（雨季）" };
-  if (wet > 0.2) return { k: "mid", t: "雨がふえる・へる、まんなか" };
-  return { k: "dry", t: "雨が少ない時期（乾季）" };
+// 地球儀を1回描く（絵のピクセルを、1つずつ、緯度・経度にもどして色をつける）
+function draw(cv, m, lon0) {
+  const ctx = cv.getContext("2d"), lat0 = -18 * RAD, l0 = lon0 * RAD;
+  const img = ctx.createImageData(SIZE, SIZE), px = img.data;
+  const b = bandLat(m), hs = dryLat(m, -1), hn = dryLat(m, 1);
+  const sl = Math.sin(lat0), cl = Math.cos(lat0), R = SIZE / 2 - 6, cx = SIZE / 2, cy = SIZE / 2;
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      const nx = (x - cx) / R, ny = -(y - cy) / R, rho = Math.hypot(nx, ny), o = (y * SIZE + x) * 4;
+      if (rho > 1) continue;
+      const c = Math.asin(rho), sc = Math.sin(c), cc = Math.cos(c);
+      const lat = rho === 0 ? lat0 : Math.asin(cc * sl + (ny * sc * cl) / rho);
+      let lon = l0 + (rho === 0 ? 0 : Math.atan2(nx * sc, rho * cl * cc - ny * sl * sc));
+      lon = ((((lon / RAD + 180) % 360) + 360) % 360) - 180;
+      const la = lat / RAD;
+      let r, g, bl;
+      if (inPoly(lon, la)) { r = 208; g = 192; bl = 152; } else { r = 214; g = 230; bl = 232; }   // 陸と海
+      const wr = soft(Math.abs(la - b), 10), wd = Math.max(soft(Math.abs(la - hs), 10), soft(Math.abs(la - hn), 10));
+      if (wr > 0) { const t = wr * 0.62; r = mix(r, 31, t); g = mix(g, 111, t); bl = mix(bl, 91, t); }   // 雨の帯＝緑
+      if (wd > 0) { const t = wd * 0.6; r = mix(r, 226, t); g = mix(g, 104, t); bl = mix(bl, 59, t); }   // かわきやすい帯＝オレンジ
+      // 緯度・経度の線（30度ごと）
+      const gl = Math.abs(((la + 15) % 30) - 15), gn = Math.abs((((lon + 15) % 30) + 30) % 30 - 15);
+      if (gl < 0.35 || gn < 0.35) { r = mix(r, 27, 0.35); g = mix(g, 35, 0.35); bl = mix(bl, 48, 0.35); }
+      const sh = 1 - 0.28 * rho * rho;   // ふちほど、すこし暗く
+      px[o] = r * sh; px[o + 1] = g * sh; px[o + 2] = bl * sh; px[o + 3] = 255;
+    }
+  }
+  ctx.clearRect(0, 0, SIZE, SIZE);
+  ctx.putImageData(img, 0, 0);
+  // ふちの線
+  ctx.strokeStyle = "#1b2330"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();
+  // アタカマの印（見えている向きのときだけ）
+  const pl = PLACE.lat * RAD, dl = (PLACE.lon - lon0) * RAD;
+  const vis = Math.sin(lat0) * Math.sin(pl) + Math.cos(lat0) * Math.cos(pl) * Math.cos(dl);
+  if (vis > 0.05) {
+    const px0 = cx + R * Math.cos(pl) * Math.sin(dl), py0 = cy - R * (Math.cos(lat0) * Math.sin(pl) - Math.sin(lat0) * Math.cos(pl) * Math.cos(dl));
+    ctx.fillStyle = "#e2683b"; ctx.strokeStyle = "#1b2330"; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(px0, py0, 7, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    ctx.font = "700 14px 'Noto Sans JP',sans-serif"; ctx.textAlign = "left"; ctx.lineWidth = 4; ctx.strokeStyle = "rgba(251,249,244,.95)";
+    ctx.strokeText(PLACE.n, px0 + 11, py0 + 5); ctx.fillStyle = "#1b2330"; ctx.fillText(PLACE.n, px0 + 11, py0 + 5);
+  }
 }
 
-function svg(m, placeKey) {
-  const b = bandLat(m), d = sunLat(m);
-  const hs = -28 + 0.35 * b, hn = 28 + 0.35 * b;   // 亜熱帯高圧帯（乾燥しやすい帯）の中心。夏の半球のほうが、少し極がわにずれる
-  const band = (c, w, fill, op) => {
-    const x1 = X(clampLat(c - w)), x2 = X(clampLat(c + w));
-    return x2 > x1 ? `<rect x="${x1.toFixed(1)}" y="26" width="${(x2 - x1).toFixed(1)}" height="118" fill="${fill}" opacity="${op}"/>` : "";
-  };
-  const arrow = (lat, up) => {
-    if (lat < -56 || lat > 56) return "";
-    const x = X(lat).toFixed(1), y1 = up ? 132 : 40, y2 = up ? 44 : 130, hd = up ? 52 : 122;
-    return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${INK}" stroke-width="2.5"/><path d="M${(+x - 6).toFixed(1)} ${hd} L${x} ${up ? 42 : 134} L${(+x + 6).toFixed(1)} ${hd}" fill="none" stroke="${INK}" stroke-width="2.5"/>`;
-  };
-  const pins = Object.entries(PLACES).map(([k, p]) => {
-    const x = X(p.lat).toFixed(1), on = k === placeKey;
-    return `<g><line x1="${x}" y1="146" x2="${x}" y2="${on ? 164 : 158}" stroke="${INK}" stroke-width="${on ? 3 : 1.5}"/>${on ? `<circle cx="${x}" cy="168" r="6" fill="${T}" stroke="${INK}" stroke-width="2.5"/>` : `<circle cx="${x}" cy="160" r="3" fill="${INK}"/>`}</g>`;
-  }).join("");
-  const ticks = [[-23.4, "南回帰線"], [0, "赤道"], [23.4, "北回帰線"]].map(([l, n]) => `<line x1="${X(l).toFixed(1)}" y1="26" x2="${X(l).toFixed(1)}" y2="146" stroke="${INK}" stroke-width="1" stroke-dasharray="3 4" opacity=".45"/><text x="${X(l).toFixed(1)}" y="190" font-size="9" text-anchor="middle" fill="${INK}" opacity=".7">${n}</text>`).join("");
-  const p = PLACES[placeKey];
-  const lab = `<text x="${Math.max(48, Math.min(312, X(p.lat))).toFixed(1)}" y="205" font-size="11" font-weight="700" text-anchor="middle" fill="${INK}">${p.n}</text>`;
-  return `<svg viewBox="0 0 360 212" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="大気大循環のモデル">
-    <rect x="20" y="26" width="320" height="120" fill="#fbf9f4" stroke="${INK}" stroke-width="2.5"/>
-    ${band(b, 9, G, 0.32)}${band(hs, 9, T, 0.28)}${band(hn, 9, T, 0.28)}
-    ${ticks}
-    ${arrow(b, true)}${arrow(hs, false)}${arrow(hn, false)}
-    <rect x="20" y="146" width="320" height="6" fill="${INK}"/>
-    <circle cx="${X(d).toFixed(1)}" cy="13" r="8" fill="${T}" stroke="${INK}" stroke-width="2.5"/>
-    <text x="${Math.max(60, Math.min(300, X(d)) + 0).toFixed(1)}" y="12" dx="${X(d) > 250 ? -14 : 14}" font-size="9" text-anchor="${X(d) > 250 ? "end" : "start"}" fill="${INK}" dy="3">太陽が真上にくる緯度</text>
-    <text x="24" y="40" font-size="9" fill="${INK}" opacity=".6">南緯60°</text><text x="336" y="40" font-size="9" text-anchor="end" fill="${INK}" opacity=".6">北緯60°</text>
-    ${pins}${lab}
-  </svg>`;
+const fmtLat = (l) => (l < 0 ? "南緯" : "北緯") + Math.abs(Math.round(l)) + "度";
+function result(m) {
+  const b = bandLat(m), hs = dryLat(m, -1), dist = Math.abs(PLACE.lat - hs);
+  return `<span>${MONTHS[m - 1]}：雨の帯は${fmtLat(b)}あたり</span><b>${PLACE.n}（${fmtLat(PLACE.lat)}）は、かわきやすい帯${dist <= 10 ? "のなか" : "のふち"}</b>`;
 }
 
-// 1つ分のモデルの中身（スライダーと行き先のボタンは、そのまま。図と文字だけ入れかえる）
-function inner(m, placeKey) {
-  const p = PLACES[placeKey], st = state(m, p.lat);
-  return `<div class="mdl-fig">${svg(m, placeKey)}</div>
-    <div class="mdl-res ${st.k}"><span>${MONTHS[m - 1]}の${p.n}</span><b>${st.t}</b></div>`;
-}
-
-// 記事の中に出す（b = { t: "model", k: "hadley", p: 最初の行き先, m: 最初の月, cap: 説明 }）
+// 記事の中に出す（b = { t: "model", k: "hadley", m: 最初の月, cap: 説明 }）
 export function modelHtml(b) {
   if (b.k !== "hadley") return "";
-  const place = PLACES[b.p] ? b.p : "atacama", m = Math.min(12, Math.max(1, +b.m || 1));
-  return `<figure class="bfig"><div class="mdl" data-mdl="hadley" data-m="${m}" data-p="${place}">
+  const m = Math.min(12, Math.max(1, +b.m || 1));
+  return `<figure class="bfig"><div class="mdl" data-mdl="hadley" data-m="${m}" data-lon="-68">
     <p class="mdl-h">手で動かしてみよう</p>
-    <div class="mdl-body">${inner(m, place)}</div>
+    <canvas class="mdl-cv" width="${SIZE}" height="${SIZE}" aria-label="大気大循環の地球儀"></canvas>
+    <p class="mdl-hint">指を左右に動かすと、地球がまわります</p>
+    <div class="mdl-res">${result(m)}</div>
     <label class="mdl-sl"><span>月</span><input type="range" class="mdl-m" min="1" max="12" step="1" value="${m}" aria-label="月"><b>${MONTHS[m - 1]}</b></label>
-    <div class="mdl-ps">${Object.entries(PLACES).map(([k, q]) => `<button type="button" class="mdl-p${k === place ? " on" : ""}" data-pk="${k}">${q.n}</button>`).join("")}</div>
+    <p class="mdl-lg"><i class="g"></i>雨が多い帯　<i class="o"></i>かわきやすい帯</p>
   </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
 }
 
-// 動かしたとき（スライダー・行き先のボタン）。画面全体で、1回だけつなぐ
+// 画面に出てきたモデルを、動くようにする（画面全体で、1回だけつなぐ）
 let wired = false;
+function init(root) {
+  const cv = root.querySelector("canvas");
+  if (!cv || cv.dataset.on) return;
+  cv.dataset.on = "1";
+  const paint = () => draw(cv, +root.dataset.m, +root.dataset.lon);
+  paint();
+  let drag = null;
+  cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, lon: +root.dataset.lon }; try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
+  cv.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const w = cv.getBoundingClientRect().width || SIZE;
+    root.dataset.lon = String(drag.lon - ((e.clientX - drag.x) / w) * 200);   // 指を右に動かすと、地球が右にまわる
+    paint();
+  });
+  const up = () => { drag = null; };
+  cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+  root.querySelector(".mdl-m").addEventListener("input", (e) => {
+    const m = +e.target.value; root.dataset.m = String(m);
+    root.querySelector(".mdl-sl b").textContent = MONTHS[m - 1];
+    root.querySelector(".mdl-res").innerHTML = result(m);
+    paint();
+  });
+}
 export function wireModels() {
   if (wired) return;
   wired = true;
-  const redraw = (root) => {
-    const m = +root.dataset.m, p = root.dataset.p;
-    root.querySelector(".mdl-body").innerHTML = inner(m, p);
-    root.querySelector(".mdl-sl b").textContent = MONTHS[m - 1];
-    root.querySelectorAll(".mdl-p").forEach((x) => x.classList.toggle("on", x.dataset.pk === p));
-  };
-  document.addEventListener("input", (e) => {
-    const r = e.target.closest && e.target.closest(".mdl .mdl-m");
-    if (!r) return;
-    const root = r.closest(".mdl"); root.dataset.m = r.value; redraw(root);
-  });
-  document.addEventListener("click", (e) => {
-    const bt = e.target.closest && e.target.closest(".mdl-p");
-    if (!bt) return;
-    const root = bt.closest(".mdl"); root.dataset.p = bt.dataset.pk; redraw(root);
-  });
+  const scan = () => document.querySelectorAll(".mdl[data-mdl]").forEach(init);
+  new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
+  scan();
 }
