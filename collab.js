@@ -139,7 +139,7 @@ export function initCollabBox(container, { me, onChange } = {}){
     if(!q){ box.innerHTML = ""; return; }
     ttimer = setTimeout(async () => {
       try{
-        const snap = await getDocs(query(collection(db, "publicProfiles"), orderBy("nickname"), startAt(q), endAt(q + ""), limit(8)));
+        const snap = await getDocs(query(collection(db, "publicProfiles"), orderBy("nickname"), startAt(q), endAt(q + "\uf8ff"), limit(8)));
         const rows = [];
         snap.forEach(s => {
           const u = s.id;

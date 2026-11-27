@@ -1600,10 +1600,10 @@ a[href^="#"],a[href^="#"] *{-webkit-touch-callout:none;-webkit-user-drag:none}
 #myPosts .oc em{font-size:8.5px}
 #myPosts .oc b{font-size:11.5px;line-height:1.35;-webkit-line-clamp:3}
 #myPosts .oc small{display:none}
-#myPosts .mymeta{top:4px;left:4px;right:4px;gap:3px}
-#myPosts .pst{font-size:7.5px;padding:1px 3px;white-space:nowrap;line-height:1.5;flex:none}
-#myPosts .pmn{width:18px;height:16px;font-size:10px;line-height:1;padding:0 0 3px;margin-left:auto;flex:none}
-#myPosts .mymeta{flex-wrap:nowrap;align-items:center}
+#myPosts .mymeta{top:6px;left:6px;right:6px;gap:3px;flex-wrap:nowrap;align-items:flex-start;min-height:15px}
+#myPosts .pst{font-size:8px;padding:2px 4px;white-space:nowrap;line-height:1.4;flex:none}
+/* 「…」は今のデザインのまま、右上の角に寄せ、点の中心をラベルの縦中央（高さ15pxの中心）にそろえる */
+#myPosts .mymeta .pmn{position:absolute!important;top:0;right:-4px;margin:0!important;width:28px!important;height:15px!important;padding:0!important}
 /* 記事ページ：一緒に行った人（タグ付け） */
 .tagrow{display:flex;flex-wrap:wrap;gap:14px 18px;padding:6px 0 4px}
 .tagrow a{display:flex;align-items:center;gap:8px;font-size:13.5px}
