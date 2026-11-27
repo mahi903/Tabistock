@@ -1,6 +1,8 @@
 // 旅の掲示板（旅と地理）の記事の中に入れる、手で動かせるモデル
 // いまあるもの：hadley＝大気大循環の地球儀（月のスライダーで、太陽と、雨の帯・乾きやすい帯が南北に動く。指で地球を回せる）
 //             patagonia＝アンデス山脈の断面（スライダーで風を西から東へ進めると、雨や雪を降らせて乾いていく）
+//             circ＝大気大循環の断面（月のスライダーで、雨の帯と空気の流れが南北に動き、バンコクとバリ島の雨季・乾季が変わる）
+//             rift＝プレートが離れる断面（スライダーで「離れる→割れ目→マグマ→新しい大地」と進む）
 //             fjord＝フィヨルドができるまで（谷の断面。スライダーで「川の谷→氷河でけずる→海水が入る」と進む）
 // 本物の気候を、ごく簡単にしたモデルです（目安）。
 
@@ -103,6 +105,8 @@ function result(m) {
 export function modelHtml(b) {
   if (b.k === "fjord") return fjordHtml(b);
   if (b.k === "patagonia") return patHtml(b);
+  if (b.k === "rift") return riftHtml(b);
+  if (b.k === "circ") return circHtml(b);
   if (b.k !== "hadley") return "";
   const m = Math.min(12, Math.max(1, +b.m || 1));
   return `<figure class="bfig"><div class="mdl" data-mdl="hadley" data-m="${m}" data-lon="-68">
@@ -257,11 +261,132 @@ function initPat(root) {
   });
 }
 
+// ---- アイスランド：離れていくプレート ----
+const RF_STEPS = [
+  { g: 0, t: "①2つのプレートが、左右に引っぱられる", d: "西の北アメリカプレートと、東のユーラシアプレートが、年に約2cmずつ離れていきます。" },
+  { g: 34, t: "②地面が割れて、谷ができる", d: "引っぱられた地面に割れ目ができ、まん中が落ちこんで谷になります。シンクヴェトリルで歩けるのが、この谷です。" },
+  { g: 34, t: "③下から、マグマが上がってくる", d: "すき間ができると、地下のマントルからマグマが上がってきて、割れ目から噴き出します。" },
+  { g: 56, t: "④固まって、新しい大地になる", d: "マグマが冷えて固まり、新しい大地になります。これを何百万年もくり返して、島ができました。" },
+];
+function riftSvg(st) {
+  const INK = "#1b2330", S = RF_STEPS[st], g = S.g, L = 180 - g / 2, R = 180 + g / 2, top = 92, bot = 150, sag = st >= 1 ? 14 : 0;
+  const tag = (t, x, y, c = INK, al = "middle", sz = 11) => `<text x="${x}" y="${y}" font-size="${sz}" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="#fbf9f4" stroke-width="3">${t}</text>`;
+  const arr = (x1, x2, y) => { const d = Math.sign(x2 - x1); return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/><path d="M${x2 - d * 8} ${y - 6} L${x2} ${y} L${x2 - d * 8} ${y + 6}" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`; };
+  const lp = `M0 ${top} L${L - 30} ${top} L${L} ${top + sag} L${L} ${bot} L0 ${bot} Z`;
+  const rp = `M360 ${top} L${R + 30} ${top} L${R} ${top + sag} L${R} ${bot} L360 ${bot} Z`;
+  let mid = "";
+  if (st === 2) mid = `<path d="M${L} ${bot + 30} L${L} ${top + sag} L${R} ${top + sag} L${R} ${bot + 30} Z" fill="#e2683b"/>` + [[-10, 14], [0, 26], [10, 16], [-4, 38], [6, 34]].map(([dx, dy]) => `<circle cx="${180 + dx}" cy="${top + sag - dy}" r="${dy > 30 ? 3 : 4}" fill="#e2683b" stroke="${INK}" stroke-width="1.2"/>`).join("") + tag("マグマ", 180, bot - 10, "#fff").replace('stroke="#fbf9f4"', 'stroke="#e2683b"');
+  if (st === 1) mid = `<path d="M${L} ${top + sag + 8} L${R} ${top + sag + 8} L${R} ${bot} L${L} ${bot} Z" fill="#d8cba5" stroke="${INK}" stroke-width="2"/><path d="M${L} ${top + sag + 8} L${R} ${top + sag + 8}" stroke="#5e9a6b" stroke-width="4"/>`;
+  if (st === 3) mid = `<path d="M${L} ${top + sag} L${R} ${top + sag} L${R} ${bot} L${L} ${bot} Z" fill="#5b5f66" stroke="${INK}" stroke-width="2"/>` + tag("新しい大地", 180, top + sag - 8);
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="プレートが離れる断面">
+    <rect width="360" height="220" fill="#fbf9f4"/>
+    <rect x="0" y="${bot}" width="360" height="${220 - bot}" fill="#f3d2b3"/>
+    ${tag("マントル（地下の熱い岩）", 180, 205, INK, "middle", 10.5)}
+    ${st === 2 ? `<path d="M150 214 Q165 180 ${L + 4} ${bot + 2} M210 214 Q195 180 ${R - 4} ${bot + 2}" fill="none" stroke="#e2683b" stroke-width="2.4" stroke-dasharray="4 4"/>` : ""}
+    ${mid}
+    <path d="${lp}" fill="#d8cba5" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="${rp}" fill="#d8cba5" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M0 ${top} L${L - 30} ${top} L${L} ${top + sag}" fill="none" stroke="#5e9a6b" stroke-width="4"/>
+    <path d="M360 ${top} L${R + 30} ${top} L${R} ${top + sag}" fill="none" stroke="#5e9a6b" stroke-width="4"/>
+    ${tag("北アメリカプレート", 70, 124, INK, "middle", 10.5)}${tag("ユーラシアプレート", 290, 124, INK, "middle", 10.5)}
+    ${arr(110, 40, 50)}${arr(250, 320, 50)}
+    ${tag("西へ", 75, 40)}${tag("東へ", 285, 40)}
+    ${tag("年に約2cm", 180, 30)}
+    ${st === 1 ? tag("谷", 180, top + sag - 4) : ""}
+  </svg>`;
+}
+function riftRes(st) { const S = RF_STEPS[st]; return `<span>${S.t}</span><b>${S.d}</b>`; }
+function riftHtml(b) {
+  return `<figure class="bfig"><div class="mdl" data-mdl="rift">
+    <p class="mdl-h">手で動かしてみよう</p>
+    <div class="mdl-fj">${riftSvg(0)}</div>
+    <div class="mdl-res">${riftRes(0)}</div>
+    <label class="mdl-sl"><span>ステップ</span><input type="range" class="mdl-m" min="1" max="4" step="1" value="1" aria-label="ステップ"><b>1 / 4</b></label>
+  </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
+}
+function initRift(root) {
+  const r = root.querySelector(".mdl-m");
+  if (!r || r.dataset.on) return;
+  r.dataset.on = "1";
+  r.addEventListener("input", () => {
+    const st = +r.value - 1;
+    root.querySelector(".mdl-fj").innerHTML = riftSvg(st);
+    root.querySelector(".mdl-res").innerHTML = riftRes(st);
+    root.querySelector(".mdl-sl b").textContent = `${st + 1} / 4`;
+  });
+}
+
+// ---- 大気大循環：赤道をはさんだ空気の流れ（東南アジアの目安） ----
+// 雨の帯の中心（緯度）。東南アジアあたりの目安で、太陽より1〜2か月おくれて動く
+const CC_BAND = [-12, -13, -10, 2, 6, 10, 14, 15, 12, 7, -2, -8];
+const CC_SUN = (m) => sunLat(m - 1);
+const CC_PL = [{ n: "バリ島", lat: -8 }, { n: "バンコク", lat: 14 }];
+const ccRain = (lat, m) => Math.abs(lat - CC_BAND[m - 1]) <= 9;
+function circSvg(m) {
+  const INK = "#1b2330", X = (l) => 180 + l * 4, b = CC_BAND[m - 1], bx = X(b), xn = X(28 + 0.35 * b), xs = X(-28 + 0.35 * b);
+  const tag = (t, x, y, c = INK, al = "middle", sz = 11) => `<text x="${x}" y="${y}" font-size="${sz}" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="#fbf9f4" stroke-width="3">${t}</text>`;
+  const head = (x, y, dir, c) => { const d = { r: [-7, -5, -7, 5], l: [7, -5, 7, 5], u: [-5, 7, 5, 7], d: [-5, -7, 5, -7] }[dir]; return `<path d="M${x + d[0]} ${y + d[1]} L${x} ${y} L${x + d[2]} ${y + d[3]}" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`; };
+  const loop = (x2) => {
+    const s = Math.sign(x2 - bx), top = 64, low = 182;
+    const p = `M${bx} ${low} L${bx} ${top} L${x2} ${top} L${x2} ${low} Z`;
+    return `<path d="${p}" fill="none" stroke="${INK}" stroke-width="2" stroke-linejoin="round" opacity=".75"/>`
+      + head(bx, 150, "u", "#1f6f5b") + head((bx + x2) / 2, top, s > 0 ? "r" : "l", INK) + head(x2, 130, "d", "#e2683b") + head((bx + x2) / 2, low, s > 0 ? "l" : "r", INK);
+  };
+  const sx = X(CC_SUN(m));
+  const rain = [-10, 0, 10].map((d, i) => `<line x1="${bx + d}" y1="${96 + i * 4}" x2="${bx + d - 3}" y2="${108 + i * 4}" stroke="#3b82a0" stroke-width="2.2" stroke-linecap="round"/>`).join("");
+  const pins = CC_PL.map((p) => { const x = X(p.lat), r = ccRain(p.lat, m); return `<circle cx="${x}" cy="200" r="6" fill="${r ? "#1f6f5b" : "#e2683b"}" stroke="${INK}" stroke-width="2"/>` + tag(p.n, x, 220) + tag(r ? "雨季" : "乾季", x, 235, r ? "#175243" : "#b4471f"); }).join("");
+  return `<svg viewBox="0 0 360 244" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="大気大循環の断面">
+    <rect width="360" height="244" fill="#fbf9f4"/>
+    <rect x="${bx - 30}" y="40" width="60" height="160" fill="#1f6f5b" opacity=".13"/>
+    <rect x="${xn - 26}" y="40" width="52" height="160" fill="#e2683b" opacity=".13"/>
+    <rect x="${xs - 26}" y="40" width="52" height="160" fill="#e2683b" opacity=".13"/>
+    <line x1="180" y1="40" x2="180" y2="200" stroke="${INK}" stroke-width="1.2" stroke-dasharray="3 4" opacity=".5"/>
+    ${loop(xn)}${loop(xs)}
+    <g fill="#fff" stroke="${INK}" stroke-width="1.6"><ellipse cx="${bx - 10}" cy="88" rx="12" ry="8"/><ellipse cx="${bx + 4}" cy="83" rx="14" ry="10"/><ellipse cx="${bx + 16}" cy="89" rx="9" ry="7"/></g>${rain}
+    ${tag("雨の帯", bx, 56, "#175243")}
+    ${tag("乾く", xn, 56, "#b4471f")}${tag("乾く", xs, 56, "#b4471f")}
+    <circle cx="${sx}" cy="20" r="9" fill="#f6b23c" stroke="${INK}" stroke-width="2"/>${tag("太陽が真上", sx + (sx > 250 ? -14 : 14), 24, INK, sx > 250 ? "end" : "start", 10.5)}
+    <rect x="0" y="200" width="360" height="44" fill="#e8dfc8"/>
+    <line x1="0" y1="200" x2="360" y2="200" stroke="${INK}" stroke-width="2"/>
+    ${tag("南", 12, 194, INK, "start", 10.5)}${tag("北", 348, 194, INK, "end", 10.5)}${tag("赤道", 180, 194, INK, "middle", 10.5)}
+    ${pins}
+  </svg>`;
+}
+function circRes(m) {
+  const [bali, bkk] = CC_PL.map((p) => ccRain(p.lat, m));
+  const where = CC_BAND[m - 1] > 3 ? "赤道の北" : CC_BAND[m - 1] < -3 ? "赤道の南" : "赤道のあたり";
+  const tip = !bkk && !bali ? "どちらも乾季です。" : bkk && !bali ? "行くならバリ島がちょうどいい時期です。" : !bkk && bali ? "行くならタイがちょうどいい時期です。" : "どちらも雨が多い時期です。";
+  return `<span>${MONTHS[m - 1]}：雨の帯は${where}にあります。</span><b>バンコクは${bkk ? "雨季" : "乾季"}、バリ島は${bali ? "雨季" : "乾季"}。${tip}</b>`;
+}
+function circHtml(b) {
+  const m = Math.min(12, Math.max(1, +b.m || 7));
+  return `<figure class="bfig"><div class="mdl" data-mdl="circ">
+    <p class="mdl-h">手で動かしてみよう</p>
+    <div class="mdl-fj">${circSvg(m)}</div>
+    <div class="mdl-res">${circRes(m)}</div>
+    <label class="mdl-sl"><span>月</span><input type="range" class="mdl-m" min="1" max="12" step="1" value="${m}" aria-label="月"><b>${MONTHS[m - 1]}</b></label>
+    <p class="mdl-lg"><i class="g"></i>空気がのぼって雨が降る　<i class="o"></i>空気がおりて乾く</p>
+  </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
+}
+function initCirc(root) {
+  const r = root.querySelector(".mdl-m");
+  if (!r || r.dataset.on) return;
+  r.dataset.on = "1";
+  r.addEventListener("input", () => {
+    const m = +r.value;
+    root.querySelector(".mdl-fj").innerHTML = circSvg(m);
+    root.querySelector(".mdl-res").innerHTML = circRes(m);
+    root.querySelector(".mdl-sl b").textContent = MONTHS[m - 1];
+  });
+}
+
 // 画面に出てきたモデルを、動くようにする（画面全体で、1回だけつなぐ）
 let wired = false;
 function init(root) {
   if (root.dataset.mdl === "fjord") return initFjord(root);
   if (root.dataset.mdl === "patagonia") return initPat(root);
+  if (root.dataset.mdl === "rift") return initRift(root);
+  if (root.dataset.mdl === "circ") return initCirc(root);
   const cv = root.querySelector("canvas");
   if (!cv || cv.dataset.on) return;
   cv.dataset.on = "1";

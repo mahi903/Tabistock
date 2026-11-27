@@ -4,7 +4,7 @@
 import { db, storage } from "../firebase-config.js";
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611280230";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611280330";
 
 // ブロックの種類（追加ボタンの並び順）
 const KINDS = [
@@ -46,7 +46,7 @@ export async function fixCountryTitles(list) {
 
 // ---- 下書きの記事を、書きなおしたとき（BOARD_SEED の rev が大きくなったとき）、Firestore にある下書きを新しい中身に入れかえる ----
 export async function refreshSeedDrafts(list) {
-  const todo = BOARD_SEED.filter((d) => d.rev && d.status === "draft").map((d) => ({ d, cur: list.find((x) => x.id === d.id) })).filter((x) => x.cur && (x.cur.rev || 0) < x.d.rev);
+  const todo = BOARD_SEED.filter((d) => d.rev && (d.status === "draft" || d.id === "wind-seasons")).map((d) => ({ d, cur: list.find((x) => x.id === d.id) })).filter((x) => x.cur && (x.cur.rev || 0) < x.d.rev);
   if (!todo.length) return 0;
   const batch = writeBatch(db);
   todo.forEach(({ d, cur }) => {
