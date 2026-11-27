@@ -349,5 +349,18 @@ service cloud.firestore {
                     && request.resource.data.note.size() <= 500;
       allow read, update, delete: if isAdmin();
     }
+
+    // ---- お問い合わせ・ご要望 ----
+    // ログインユーザーが作成（送り主＝自分・read は false 固定・本文は2000字まで）。閲覧・既読・削除は管理者のみ。
+    match /feedback/{fbId} {
+      allow create: if isSignedIn()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.kind in ['post', 'design', 'board', 'request', 'other']
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 2000
+                    && request.resource.data.read == false;
+      allow read, update, delete: if isAdmin();
+    }
 }
 }

@@ -10,8 +10,8 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, COUNTRY_AREAS, areaOf, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611280730";
-import { modelHtml, wireModels } from "./models.js?v=202611280730";
+import { ILL, BOARD_CATS, COUNTRY_AREAS, areaOf, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611280800";
+import { modelHtml, wireModels } from "./models.js?v=202611280800";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -719,7 +719,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611280730");
+  const M = await import("./sodan.js?v=202611280800");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -753,7 +753,7 @@ async function loadBoards() {
   // 管理者が開いたとき：記事・事件簿がまだ Firestore に1本もなければ、board.js の分を自動でコピーする（それぞれ最初の1回だけ）
   if (admin && list) {
     try {
-      const M = await import("./board-edit.js?v=202611280730");
+      const M = await import("./board-edit.js?v=202611280800");
       let n = 0;
       if (!list.some((d) => !d.jiken && !d.jikenHead)) n += await M.importSeed(me);
       if (!list.some((d) => d.jiken)) n += await M.importJiken(me);
@@ -880,7 +880,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611280730"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611280800"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -890,7 +890,7 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611280730").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611280800").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
     preview: (d) => boardArticleHtml(normBoard(d)),
     // 事件簿の「元の旅の記事」の候補（公開中の記事）
@@ -950,14 +950,16 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611280730").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611280800").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x" && arg === "saved") pageSaved(el);
+  else if (kind === "x" && arg === "contact") pageContact(el);
+  else if (kind === "x" && arg === "inbox") pageInbox2(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611280730").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611280730").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611280800").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611280800").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -1285,7 +1287,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611280730"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611280800"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1660,6 +1662,62 @@ function pageSaved(el) {
   const l = ALL.filter((d) => saved.has(d.id));
   el.innerHTML = bar("保存した旅") + `<div class="ps under2 nb">${l.length ? `<div class="cnt"><span><b>${l.length}件</b>保存中</span></div><div class="ogrid">${l.map(gridCard).join("")}</div>` : '<div class="empty">まだ保存した旅はありません<br>記事の保存ボタンで保存できます</div>'}</div>`;
 }
+// ---------- お問い合わせ・ご要望（#x-contact）：送った内容は feedback に保存。管理者だけが受信箱（#x-inbox）で読める ----------
+const FB_KINDS = [["post", "投稿フォームについて"], ["design", "デザインについて"], ["board", "旅の掲示板の情報について"], ["request", "追加してほしい国・機能"], ["other", "その他"]];
+function pageContact(el) {
+  if (!me) { el.innerHTML = bar("お問い合わせ・ご要望") + '<div class="ps under2"><p class="fol-empty">送るには<a href="#x-login">ログイン</a>してください。</p></div>'; return; }
+  let kind = "";
+  el.innerHTML = bar("お問い合わせ・ご要望") + `<div class="ps under2 nb"><div class="fbk">
+    <p class="fbk-lead">Tabistockへの意見や、困っていること、「こんな国や機能がほしい」を、運営に直接送れます。</p>
+    <p class="fbk-lab">どんな内容ですか？</p>
+    <div class="fbk-k">${FB_KINDS.map(([k, l]) => `<button type="button" data-fk="${k}">${l}</button>`).join("")}</div>
+    <p class="fbk-lab">内容</p>
+    <textarea id="fbText" maxlength="2000" placeholder="できるだけ具体的に書いてもらえると助かります。&#10;例：〇〇の記事の〇〇が間違っているので、訂正してほしい&#10;例：ジョージアの国別ガイドがほしい"></textarea>
+    <p class="fbk-n"><span id="fbN">0</span> / 2000</p>
+    <button class="fbk-send" id="fbSend" disabled>送る</button>
+    <p class="fbk-note">返事が必要なときは、運営からメッセージ（DM）でお送りします。</p></div></div>`;
+  const ta = el.querySelector("#fbText"), send = el.querySelector("#fbSend");
+  const check = () => { el.querySelector("#fbN").textContent = ta.value.length; send.disabled = !kind || !ta.value.trim(); };
+  el.querySelectorAll("[data-fk]").forEach((b) => (b.onclick = () => { kind = b.dataset.fk; el.querySelectorAll("[data-fk]").forEach((x) => x.classList.toggle("on", x === b)); haptic(); check(); }));
+  ta.oninput = check;
+  send.onclick = async () => {
+    send.disabled = true; send.textContent = "送信中…";
+    try {
+      const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+      await F.addDoc(collection(db, "feedback"), { uid: me, nickname: (PROF[me] || {}).nickname || "", kind, text: ta.value.trim().slice(0, 2000), read: false, createdAt: serverTimestamp() });
+      haptic();
+      el.querySelector(".fbk").innerHTML = '<div class="fbk-done"><b>送信しました</b><p>ありがとうございます。いただいた内容は、運営がすべて読んでいます。</p><button class="btn-g" id="fbBack">戻る</button></div>';
+      el.querySelector("#fbBack").onclick = () => history.back();
+    } catch (e) { console.error(e); toast("送れませんでした。時間をおいてもう一度お試しください"); send.disabled = false; send.textContent = "送る"; }
+  };
+}
+// 受信箱（管理者だけ）：新しい順。種類で絞りこみ、タップで既読。送り主のプロフィールからDMで返事できる
+async function pageInbox2(el) {
+  el.innerHTML = bar("お問い合わせの受信箱") + '<div class="ps under2 nb"><div class="fbx"><p class="loading">読み込み中…</p></div></div>';
+  const box = el.querySelector(".fbx");
+  if (!(await isAdminMe())) { box.innerHTML = '<p class="fol-empty">管理者だけが見られます。</p>'; return; }
+  const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  let list = [];
+  try { list = (await getDocs(F.query(collection(db, "feedback"), F.orderBy("createdAt", "desc"), F.limit(200)))).docs.map((d) => ({ id: d.id, ...d.data() })); }
+  catch (e) { console.error(e); box.innerHTML = '<p class="fol-empty">読み込めませんでした。Firestore のルールに feedback を足したか確認してください。</p>'; return; }
+  await loadProfiles([...new Set(list.map((d) => d.uid))]);
+  let f = "";
+  const lab = Object.fromEntries(FB_KINDS);
+  const draw = () => {
+    const shown = list.filter((d) => !f || d.kind === f), unread = list.filter((d) => !d.read).length;
+    box.innerHTML = `<p class="fbx-c">${list.length}件・未読 ${unread}件</p><div class="fbk-k fbx-f"><button data-ff="" class="${f ? "" : "on"}">すべて</button>${FB_KINDS.map(([k, l]) => `<button data-ff="${k}" class="${f === k ? "on" : ""}">${l}</button>`).join("")}</div>`
+      + (shown.length ? shown.map((d) => { const p = PROF[d.uid] || {}; const t = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate() : null;
+        return `<div class="fbx-i${d.read ? "" : " new"}" data-fid="${esc(d.id)}"><div class="fbx-h"><span class="fbx-k">${esc(lab[d.kind] || "その他")}</span><time>${t ? `${t.getFullYear()}/${t.getMonth() + 1}/${t.getDate()} ${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}` : ""}</time></div>
+          <p class="fbx-t">${esc(d.text)}</p><div class="fbx-u"><a href="#u-${esc(d.uid)}"><img src="${esc(p.photoURL || DEF_AV)}" alt="">${esc(p.nickname || d.nickname || "ユーザー")}</a>${d.read ? "" : '<button class="btn-g" data-fread>既読にする</button>'}</div></div>`; }).join("")
+        : '<p class="fol-empty">まだ届いていません。</p>');
+    box.querySelectorAll("[data-ff]").forEach((b) => (b.onclick = () => { f = b.dataset.ff; draw(); }));
+    box.querySelectorAll("[data-fread]").forEach((b) => (b.onclick = async () => {
+      const id = b.closest("[data-fid]").dataset.fid, d = list.find((x) => x.id === id);
+      try { await F.updateDoc(doc(db, "feedback", id), { read: true }); d.read = true; haptic(); draw(); } catch (e) { toast("更新できませんでした"); }
+    }));
+  };
+  draw();
+}
 function renderSaved() {
   const l = ALL.filter((d) => saved.has(d.id));
   $("savedList").innerHTML = l.length ? `<div class="cnt"><span><b>${l.length}件</b>保存中</span></div><div class="ogrid">${l.map(gridCard).join("")}</div>` : '<div class="empty">まだ保存した旅はありません<br>記事の保存ボタンで保存できます</div>';
@@ -1689,7 +1747,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611280730").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611280800").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);
@@ -1842,7 +1900,9 @@ function meMenu() {
     <p class="mlab">SUPPORT</p>
     <a class="srow" href="/terms.html" target="_blank">利用規約</a>
     <a class="srow" href="/privacy.html" target="_blank">プライバシーポリシー</a>
-    <a class="srow" href="https://www.instagram.com/tabistock/" target="_blank" rel="noopener">お問い合わせ（Instagram）</a>
+    <a class="srow" href="#x-contact">お問い合わせ・ご要望</a>
+    <a class="srow" href="#x-inbox" id="mmInbox" hidden>お問い合わせの受信箱（管理者）</a>
+    <a class="srow" href="https://www.instagram.com/tabistock/" target="_blank" rel="noopener">Instagram</a>
     <p class="mlab">ACCOUNT</p>
     <button class="srow" id="mmOut">ログアウト</button>
     <button class="srow red" id="mmDel">アカウントを削除</button></div>`;
@@ -1852,6 +1912,7 @@ function meMenu() {
   $("mmDel").onclick = deleteAccountSheet;
   $("mmPw").onclick = passwordSheet;
   $("mmPush").onclick = pushSheet;
+  isAdminMe().then((ok) => { const r = $("mmInbox"); if (r && ok) r.hidden = false; });
 }
 // パスワード変更（今のパスワードで本人確認 → 新しいパスワードに更新）。忘れた場合は再設定メールを送る
 function passwordSheet() {
