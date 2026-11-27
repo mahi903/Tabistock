@@ -1,5 +1,5 @@
 // 旅の掲示板（旅と地理）の記事の中に入れる、手で動かせるモデル
-// いまあるもの：hadley＝大気大循環の地球儀（月のスライダーで、雨の帯と、かわきやすい帯が南北に動く。指で地球をまわせる）
+// いまあるもの：hadley＝大気大循環の地球儀（月のスライダーで、太陽と、雨の帯・乾きやすい帯が南北に動く。指で地球を回せる）
 //             patagonia＝アンデス山脈の断面（スライダーで風を西から東へ進めると、雨や雪を降らせて乾いていく）
 //             fjord＝フィヨルドができるまで（谷の断面。スライダーで「川の谷→氷河でけずる→海水が入る」と進む）
 // 本物の気候を、ごく簡単にしたモデルです（目安）。
@@ -7,6 +7,7 @@
 const MONTHS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
 const RAD = Math.PI / 180;
 const SIZE = 360;   // 地球儀を描く絵のサイズ（正方形）
+const GR = 140;     // 地球儀の半径（まわりに、太陽と帯の名前を書く余白をとる）
 
 // 行き先（いまはアタカマだけ）
 const PLACE = { n: "アタカマ砂漠", lat: -23, lon: -68.5 };
@@ -37,7 +38,7 @@ function draw(cv, m, lon0) {
   const ctx = cv.getContext("2d"), lat0 = -18 * RAD, l0 = lon0 * RAD;
   const img = ctx.createImageData(SIZE, SIZE), px = img.data;
   const b = bandLat(m), hs = dryLat(m, -1), hn = dryLat(m, 1);
-  const sl = Math.sin(lat0), cl = Math.cos(lat0), R = SIZE / 2 - 6, cx = SIZE / 2, cy = SIZE / 2;
+  const sl = Math.sin(lat0), cl = Math.cos(lat0), R = GR, cx = SIZE / 2, cy = SIZE / 2;
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       const nx = (x - cx) / R, ny = -(y - cy) / R, rho = Math.hypot(nx, ny), o = (y * SIZE + x) * 4;
@@ -54,7 +55,8 @@ function draw(cv, m, lon0) {
       if (wd > 0) { const t = wd * 0.6; r = mix(r, 226, t); g = mix(g, 104, t); bl = mix(bl, 59, t); }   // かわきやすい帯＝オレンジ
       // 緯度・経度の線（30度ごと）
       const gl = Math.abs(((la + 15) % 30) - 15), gn = Math.abs((((lon + 15) % 30) + 30) % 30 - 15);
-      if (gl < 0.35 || gn < 0.35) { r = mix(r, 27, 0.35); g = mix(g, 35, 0.35); bl = mix(bl, 48, 0.35); }
+      if (gl < 0.3 || gn < 0.3) { r = mix(r, 27, 0.2); g = mix(g, 35, 0.2); bl = mix(bl, 48, 0.2); }
+      if (Math.abs(la) < 0.6) { r = mix(r, 27, 0.75); g = mix(g, 35, 0.75); bl = mix(bl, 48, 0.75); }   // 赤道は、太めにはっきり
       const sh = 1 - 0.28 * rho * rho;   // ふちほど、すこし暗く
       px[o] = r * sh; px[o + 1] = g * sh; px[o + 2] = bl * sh; px[o + 3] = 255;
     }
@@ -63,22 +65,38 @@ function draw(cv, m, lon0) {
   ctx.putImageData(img, 0, 0);
   // ふちの線
   ctx.strokeStyle = "#1b2330"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();
+  // 地球儀の上の点を、絵の座標に（vis > 0 なら、こちら側に見えている）
+  const proj = (la, lo) => {
+    const p = la * RAD, d = (lo - lon0) * RAD;
+    return { x: cx + R * Math.cos(p) * Math.sin(d), y: cy - R * (Math.cos(lat0) * Math.sin(p) - Math.sin(lat0) * Math.cos(p) * Math.cos(d)), vis: Math.sin(lat0) * Math.sin(p) + Math.cos(lat0) * Math.cos(p) * Math.cos(d) };
+  };
+  const label = (t, x, y, col, al) => {
+    ctx.font = "700 13px 'Noto Sans JP',sans-serif"; ctx.textAlign = al; ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,255,255,.95)";
+    ctx.strokeText(t, x, y); ctx.fillStyle = col; ctx.fillText(t, x, y);
+  };
+  // 太陽（右がわ）：いま、どの緯度の真上にあるか
+  const sp = proj(sunLat(m - 1), lon0 + 88), sx = cx + R + 22, sy = sp.y;
+  ctx.setLineDash([3, 4]); ctx.strokeStyle = "#e2683b"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(sp.x + 2, sp.y); ctx.lineTo(sx - 12, sy); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = "#f6b23c"; ctx.strokeStyle = "#1b2330"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(sx, sy, 10, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  label("太陽", sx, sy - 16, "#1b2330", "center");
+  // 赤道と、帯の名前（左がわ）
+  const eq = proj(0, lon0 - 80); label("赤道", eq.x - 6, eq.y + 4, "#1b2330", "right");
+  const rb = proj(b, lon0 - 62); label("雨の帯", rb.x - 4, rb.y + 5, "#175243", "right");
+  const db = proj(hs, lon0 - 50); label("乾きやすい帯", db.x - 4, db.y + 5, "#b4471f", "right");
   // アタカマの印（見えている向きのときだけ）
-  const pl = PLACE.lat * RAD, dl = (PLACE.lon - lon0) * RAD;
-  const vis = Math.sin(lat0) * Math.sin(pl) + Math.cos(lat0) * Math.cos(pl) * Math.cos(dl);
-  if (vis > 0.05) {
-    const px0 = cx + R * Math.cos(pl) * Math.sin(dl), py0 = cy - R * (Math.cos(lat0) * Math.sin(pl) - Math.sin(lat0) * Math.cos(pl) * Math.cos(dl));
+  const pa = proj(PLACE.lat, PLACE.lon);
+  if (pa.vis > 0.05) {
     ctx.fillStyle = "#e2683b"; ctx.strokeStyle = "#1b2330"; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(px0, py0, 7, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
-    ctx.font = "700 14px 'Noto Sans JP',sans-serif"; ctx.textAlign = "left"; ctx.lineWidth = 4; ctx.strokeStyle = "rgba(251,249,244,.95)";
-    ctx.strokeText(PLACE.n, px0 + 11, py0 + 5); ctx.fillStyle = "#1b2330"; ctx.fillText(PLACE.n, px0 + 11, py0 + 5);
+    ctx.beginPath(); ctx.arc(pa.x, pa.y, 7, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    label("アタカマ", pa.x + 11, pa.y + 5, "#1b2330", "left");
   }
 }
 
 const fmtLat = (l) => (l < 0 ? "南緯" : "北緯") + Math.abs(Math.round(l)) + "度";
 function result(m) {
-  const b = bandLat(m), hs = dryLat(m, -1), dist = Math.abs(PLACE.lat - hs);
-  return `<span>${MONTHS[m - 1]}：雨の帯は${fmtLat(b)}あたり</span><b>${PLACE.n}（${fmtLat(PLACE.lat)}）は、かわきやすい帯${dist <= 10 ? "のなか" : "のふち"}</b>`;
+  const s = sunLat(m - 1), hs = dryLat(m, -1), dist = Math.abs(PLACE.lat - hs);
+  const sun = s > 8 ? "太陽が北半球の真上にあるので、雨の帯も北へ寄っています。" : s < -8 ? "太陽が南半球の真上にあるので、雨の帯も南へ寄っています。" : "太陽はほぼ赤道の真上。雨の帯も赤道のあたりにあります。";
+  return `<span>${MONTHS[m - 1]}：${sun}</span><b>アタカマ（${fmtLat(PLACE.lat)}）は、乾きやすい帯の${dist <= 10 ? "中" : "ふち"}。雨はほとんど降りません。</b>`;
 }
 
 // 記事の中に出す（b = { t: "model", k: "hadley", m: 最初の月, cap: 説明 }）
@@ -90,38 +108,54 @@ export function modelHtml(b) {
   return `<figure class="bfig"><div class="mdl" data-mdl="hadley" data-m="${m}" data-lon="-68">
     <p class="mdl-h">手で動かしてみよう</p>
     <canvas class="mdl-cv" width="${SIZE}" height="${SIZE}" aria-label="大気大循環の地球儀"></canvas>
-    <p class="mdl-hint">指を左右に動かすと、地球が回ります。</p>
+    <p class="mdl-hint">月を動かすと、太陽といっしょに帯が南北に動きます。地球儀は指で回せます。</p>
     <div class="mdl-res">${result(m)}</div>
     <label class="mdl-sl"><span>月</span><input type="range" class="mdl-m" min="1" max="12" step="1" value="${m}" aria-label="月"><b>${MONTHS[m - 1]}</b></label>
-    <p class="mdl-lg"><i class="g"></i>雨が多い帯　<i class="o"></i>かわきやすい帯</p>
+    <p class="mdl-lg"><i class="g"></i>雨の帯（雲ができやすい）　<i class="o"></i>乾きやすい帯（空気が下りてくる）</p>
   </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
 }
 
 
 // ---- フィヨルドができるまで ----
 const FJ_STEPS = [
-  { t: "①川が、V字の谷をつくる", d: "山から流れる川が、谷を削ります。ただし川は、海面より下を削れません。" },
-  { t: "②氷河が、谷を深いU字に削る", d: "氷河期、重い氷河が谷をすべり落ちて、谷底と横を削り、海面より下まで深くします。" },
-  { t: "③氷がとけて、海水が入る", d: "氷がとけて海面が上がると、深い谷に海水が入ります。入り口は、氷河が残した土砂で浅くなっています。" },
+  { t: "①川が、V字の谷をつくる", d: "山から流れる川が、谷を少しずつ削ります。ただし川が削れるのは、海面の高さまでです。" },
+  { t: "②氷河が、谷を深いU字に削る", d: "氷河期になると、谷を重い氷河が埋めます。氷は谷底と横をまとめて削り、海面より下まで深くえぐります。点線は、もとのV字の谷です。" },
+  { t: "③氷がとけて、海水が入る", d: "氷河期が終わって氷がとけると、海面より深い谷に海水が流れこみます。これがフィヨルドです。" },
 ];
 function fjordSvg(stage) {
   const INK = "#1b2330";
   const X = (x) => (180 + x * 160).toFixed(1), Y = (e) => (150 - e * 110).toFixed(1);
-  const floor = stage === 0 ? 0 : -0.4, p = stage === 0 ? 1.15 : 3.6;
-  const e = (x) => floor + (1 - floor) * Math.pow(Math.abs(x), p);
+  const prof = (st) => { const floor = st === 0 ? 0 : -0.4, p = st === 0 ? 1.15 : 3.6; return (x) => floor + (1 - floor) * Math.pow(Math.abs(x), p); };
+  const e = prof(stage);
   const pts = []; for (let i = -50; i <= 50; i++) { const x = i / 50; pts.push([x, e(x)]); }
-  const land = pts.map(([x, v], i) => `${i ? "L" : "M"}${X(x)} ${Y(v)}`).join(" ") + ` L${X(1)} 214 L${X(-1)} 214 Z`;
-  const inner = (top) => pts.filter(([, v]) => v <= top).map(([x, v], i) => `${i ? "L" : "M"}${X(x)} ${Y(v)}`).join(" ");
-  const cut = (top) => { const q = pts.filter(([, v]) => v <= top); if (!q.length) return ""; return `${inner(top)} L${X(q[q.length - 1][0])} ${Y(top)} L${X(q[0][0])} ${Y(top)} Z`; };
-  const ice = stage === 1 ? `<path d="${cut(0.62)}" fill="#f2f8fb" stroke="${INK}" stroke-width="2"/><text x="180" y="${Y(0.2)}" font-size="11" text-anchor="middle" fill="${INK}" font-weight="700">氷河</text>` : "";
-  const sea = stage === 2 ? `<path d="${cut(0)}" fill="#5fa3b8" opacity=".85"/><text x="180" y="${Y(-0.14)}" font-size="11" text-anchor="middle" fill="#fff" font-weight="700">海水</text>` : "";
-  const river = stage === 0 ? `<path d="${cut(0.04)}" fill="#5fa3b8" opacity=".9"/>` : "";
+  const path = (q) => q.map(([x, v], i) => `${i ? "L" : "M"}${X(x)} ${Y(v)}`).join(" ");
+  const land = path(pts) + ` L${X(1)} 214 L${X(-1)} 214 Z`;
+  const cut = (top) => { const q = pts.filter(([, v]) => v <= top); if (!q.length) return ""; return `${path(q)} L${X(q[q.length - 1][0])} ${Y(top)} L${X(q[0][0])} ${Y(top)} Z`; };
+  const arrow = (x1, y1, x2, y2, c) => { const a = Math.atan2(y2 - y1, x2 - x1), h = 7; return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="2.4" stroke-linecap="round"/><path d="M${(x2 - h * Math.cos(a - 0.5)).toFixed(1)} ${(y2 - h * Math.sin(a - 0.5)).toFixed(1)} L${x2} ${y2} L${(x2 - h * Math.cos(a + 0.5)).toFixed(1)} ${(y2 - h * Math.sin(a + 0.5)).toFixed(1)}" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`; };
+  const tag = (t, x, y, c = INK, al = "middle") => `<text x="${x}" y="${y}" font-size="11" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="#fbf9f4" stroke-width="3">${t}</text>`;
+  let over = "";
+  if (stage === 0) {
+    over = `<path d="${cut(0.05)}" fill="#3b82a0"/>` + tag("川", 180, 136) + tag("川はここより下を削れない", 180, 176, INK) + arrow(180, 166, 180, 154, INK);
+  }
+  if (stage >= 1) {
+    const v = prof(0), q = []; for (let i = -50; i <= 50; i++) { const x = i / 50; q.push([x, v(x)]); }
+    over += `<path d="${path(q)}" fill="none" stroke="${INK}" stroke-width="1.5" stroke-dasharray="4 4" opacity=".5"/>`;
+  }
+  if (stage === 1) {
+    over += `<path d="${cut(0.62)}" fill="#eef6fa" stroke="${INK}" stroke-width="2"/>` + tag("氷河", 180, 96)
+      + arrow(180, 160, 180, 182, "#1f6f5b") + arrow(112, 120, 92, 132, "#1f6f5b") + arrow(248, 120, 268, 132, "#1f6f5b") + tag("重い氷が、底と横を削る", 180, 128, "#175243");
+  }
+  if (stage === 2) {
+    over += `<path d="${cut(0)}" fill="#3b82a0" opacity=".9"/>` + tag("海水", 150, 176, "#fff").replace('stroke="#fbf9f4"', 'stroke="#3b82a0"')
+      + arrow(232, 154, 232, 189, INK) + arrow(232, 189, 232, 154, INK) + tag("海面より深い", 240, 176, INK, "start");
+  }
   return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="谷の断面">
     <rect x="0" y="0" width="360" height="220" fill="#fbf9f4"/>
     <path d="${land}" fill="#d8cba5" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
-    ${river}${ice}${sea}
-    <line x1="14" y1="${Y(0)}" x2="346" y2="${Y(0)}" stroke="${INK}" stroke-width="1.5" stroke-dasharray="4 4"/>
-    <text x="346" y="${(+Y(0) - 5).toFixed(1)}" font-size="10" text-anchor="end" fill="${INK}">海面</text>
+    <path d="M20 40 L36 40 L28 32 Z M324 40 L340 40 L332 32 Z" fill="#fff" opacity="0"/>
+    ${over}
+    <line x1="10" y1="${Y(0)}" x2="350" y2="${Y(0)}" stroke="${INK}" stroke-width="1.5" stroke-dasharray="5 4"/>
+    ${tag("海面", 348, +Y(0) - 6, INK, "end")}
   </svg>`;
 }
 function fjordHtml(b) {
