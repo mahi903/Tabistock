@@ -1593,3 +1593,13 @@ a[href^="#"],a[href^="#"] *{-webkit-touch-callout:none;-webkit-user-drag:none}
 .bed-phs.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bed-phs .bed-ph{margin-top:0}
 .bed-phs .bed-add1{text-align:center;width:100%}
+/* マイページ：旅の一覧は3列（小さめのカード。投稿者名は自分なので省く） */
+#myPosts .ogrid{grid-template-columns:repeat(3,1fr);gap:6px;padding:6px 14px 0}
+#myPosts .ogrid .oc,#myPosts .mycard .oc{height:168px}
+#myPosts .oc .ovt{left:7px;right:7px;bottom:7px}
+#myPosts .oc em{font-size:8.5px}
+#myPosts .oc b{font-size:11.5px;line-height:1.35;-webkit-line-clamp:3}
+#myPosts .oc small{display:none}
+#myPosts .mymeta{top:4px;left:4px;right:4px;gap:3px}
+#myPosts .pst{font-size:9px;padding:1px 4px}
+#myPosts .pmn{width:24px;height:22px;font-size:13px}

@@ -32,7 +32,7 @@ function place(d) {
 function days(d) {
   if (d.dateStart && d.dateEnd) {
     const n = Math.round((new Date(d.dateEnd) - new Date(d.dateStart)) / 864e5) + 1;
-    if (n > 0 && n < 400) return n === 1 ? "日帰り" : `${n - 1}泊${n}日`;
+    if (n > 0 && n < 400) return n === 1 ? "日帰り" : n === 2 ? "1泊" : n <= 5 ? "3〜5日" : n <= 9 ? "1週間" : n <= 16 ? "2週間" : n <= 23 ? "3週間" : "3週間〜";
   }
   return "";
 }
