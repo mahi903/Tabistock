@@ -52,6 +52,13 @@
 
     /* 回答エリア（クリーム地） */
     .ask-body{padding:26px 6% 60px;min-height:30vh}
+    .ask-lock{max-width:560px;margin:0 auto;padding:26px 22px 24px;border:1.5px solid #1b2330;box-shadow:4px 4px 0 #1f6f5b;background:#fff;border-radius:6px}
+    .ask-lock h2{font-size:19px;margin:0 0 12px}
+    .ask-lock p{font-size:14px;line-height:1.85;margin:0 0 10px}
+    .lock-bar{height:12px;border:1.5px solid #1b2330;border-radius:6px;overflow:hidden;margin:16px 0 8px;background:#fff}
+    .lock-bar i{display:block;height:100%;background:#1f6f5b;transition:width .8s}
+    .ask-lock .lock-cnt{text-align:center;margin-bottom:16px}
+    .ask-lock .btn{display:block;text-align:center}
     .ask-result{max-width:860px;margin:0 auto;background:#fff;border:1px solid #e7ddcb;border-radius:18px;padding:22px 22px;box-shadow:0 10px 30px rgba(20,30,25,.06)}
     .ask-result[hidden]{display:none}
     .ask-result-head{margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#1f6f5b}
@@ -354,11 +361,11 @@ body.pwa.chatting{padding-bottom:0}
       <p class="ask-eyebrow">AI Travel Assistant</p>
       <h1>AIに旅を相談</h1>
       <p class="ask-note">旅の具体的な情報が知りたい時、AIがTabistockに投稿された旅程記事からアドバイスと関連記事を返します。</p>
-      <div class="ask-form">
+      <div class="ask-form" hidden>
         <textarea id="askInput" rows="2" placeholder="旅の質問を入力（例：オーストラリアで自然を楽しむならどこがいい？）"></textarea>
         <button type="button" id="askBtn">相談する</button>
       </div>
-      <div class="ask-chips" id="askChips">
+      <div class="ask-chips" id="askChips" hidden>
         <button type="button" class="ask-chip">学生低予算ひとり旅のコツは？</button>
         <button type="button" class="ask-chip">治安がいい場所を旅行したい。</button>
         <button type="button" class="ask-chip">インド旅行で気をつけることは？</button>
@@ -372,7 +379,15 @@ body.pwa.chatting{padding-bottom:0}
       <div class="chat-head"><p>AIとの相談</p><button type="button" class="chat-new" id="chatNew">新しい相談</button></div>
       <div id="chatLog" style="display:flex;flex-direction:column;gap:14px"></div>
     </div>
-    <p class="ask-disclaimer">回答はTabistockに投稿された旅程記事をもとにAIが生成しています。最新の現地情報や料金は、必ず公式サイト等でご確認ください。</p>
+    <div class="ask-lock" id="askLock">
+      <h2>AI相談は準備中です</h2>
+      <p>Tabistockに載っている旅程記事（費用・ルート・感想）と航空券の相場を読んで、「行き先」「予算」「日数」の相談に答えるAIです。</p>
+      <p>記事が少ないうちは答えが薄くなってしまうので、<b>公開記事が100本になったら</b>解放します。</p>
+      <div class="lock-bar"><i id="lockFill" style="width:0"></i></div>
+      <p class="lock-cnt" id="lockCnt"></p>
+      <a class="btn btn-g" href="post.html">旅を投稿して、解放を早める</a>
+    </div>
+    <p class="ask-disclaimer" hidden>回答はTabistockに投稿された旅程記事をもとにAIが生成しています。最新の現地情報や料金は、必ず公式サイト等でご確認ください。</p>
   </section>
 
   <div class="composer" id="composer" hidden>
@@ -423,6 +438,17 @@ body.pwa.chatting{padding-bottom:0}
       const un = onAuthStateChanged(auth, (u) => { authReady = true; un(); resolve(u); });
     });
     const $ = (id) => document.getElementById(id);
+    // 公開記事の本数（解放までの進み具合）。数えられなければ、棒は出さずに文章だけ
+    (async () => {
+      try {
+        const { db } = await import("./firebase-config.js");
+        const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+        const c = await F.getCountFromServer(F.query(F.collection(db, "articles"), F.where("status", "==", "published")));
+        const n = Math.min(c.data().count, 100);
+        $("lockFill").style.width = n + "%";
+        $("lockCnt").innerHTML = "いま <b>" + n + "</b> / 100 本";
+      } catch (e) { document.querySelector(".lock-bar").hidden = true; }
+    })();
     const input = $("askInput"), btn = $("askBtn"), chips = $("askChips");
     const chat = $("chat"), log = $("chatLog"), composer = $("composer");
     const chatInput = $("chatInput"), chatSend = $("chatSend"), chatNew = $("chatNew");

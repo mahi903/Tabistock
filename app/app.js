@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271259";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271314";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -148,7 +148,7 @@ function go(k, opt = {}) {
     if (k === "me") myTab = "trips";
   }
   VIEWS.forEach((t) => ($(t).hidden = t !== k));
-  $("aiCmp").hidden = k !== "ai";
+  $("aiCmp").hidden = k !== "ai" || !AI_OPEN;
   renderTab();
   if (k === "search") {
     if (opt.reset) { Object.assign(state, { q: "", country: [], pref: [], budget: [], days: [], style: [] }); $("q").value = ""; }
@@ -615,7 +615,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611271259");
+  const M = await import("./sodan.js?v=202611271314");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -649,7 +649,7 @@ async function loadBoards() {
   // 管理者が開いたとき：記事・事件簿がまだ Firestore に1本もなければ、board.js の分を自動でコピーする（それぞれ最初の1回だけ）
   if (admin && list) {
     try {
-      const M = await import("./board-edit.js?v=202611271259");
+      const M = await import("./board-edit.js?v=202611271314");
       let n = 0;
       if (!list.some((d) => !d.jiken && !d.jikenHead)) n += await M.importSeed(me);
       if (!list.some((d) => d.jiken)) n += await M.importJiken(me);
@@ -754,7 +754,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611271259"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611271314"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -764,7 +764,7 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611271259").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611271314").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
     preview: (d) => boardArticleHtml(normBoard(d)),
     // 事件簿の「元の旅の記事」の候補（公開中の記事）
@@ -824,13 +824,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271259").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271314").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271259").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271259").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271314").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271314").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -857,7 +857,7 @@ function popPage() {
   if (top.cleanup) try { top.cleanup(); } catch (e) {}
   if (top.el.classList.contains("ppg")) { ppCircle(false, () => top.el.remove()); }
   else { top.el.classList.remove("open"); setTimeout(() => top.el.remove(), 380); }
-  if (!STACK.length) { $("tab").classList.remove("hide"); $("aiCmp").hidden = curTab !== "ai"; }
+  if (!STACK.length) { $("tab").classList.remove("hide"); $("aiCmp").hidden = curTab !== "ai" || !AI_OPEN; }
   // 旅ひろばの投稿から戻ったら、一覧を描き直す（回答した・いいねした・解決済みにした数をすぐ反映）
   if (!STACK.length && curTab === "sodan" && SDM) SDM.renderSodan();
   syncNativeTab();
@@ -1158,7 +1158,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611271259"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611271314"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1557,7 +1557,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611271259").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611271314").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);
@@ -2016,6 +2016,18 @@ function squareJpeg(file, size) {
 }
 
 // ---------- AI相談（タブ） ----------
+// 公開記事が AI_UNLOCK 本になるまでは「準備中」を表示する。解放するときは AI_OPEN を true にし、
+// Vercel の環境変数 ASK_OPEN=1 も入れる（api/ask.js も同じ条件で閉じている）
+const AI_OPEN = false, AI_UNLOCK = 100;
+function aiLockHtml() {
+  const n = Math.min((ALL || []).length, AI_UNLOCK), pct = Math.round((n / AI_UNLOCK) * 100);
+  return `<div class="ailock">${aiSym("")}<h3>AI相談は準備中です</h3>
+    <p>Tabistockに載っている旅程記事（費用・ルート・感想）と航空券の相場を読んで、「行き先」「予算」「日数」の相談に答えるAIです。</p>
+    <p>記事が少ないうちは答えが薄くなってしまうので、<b>公開記事が${AI_UNLOCK}本になったら</b>解放します。</p>
+    <div class="aibar"><i style="width:${pct}%"></i></div>
+    <p class="aicnt">いま <b>${n}</b> / ${AI_UNLOCK} 本</p>
+    <button class="btn-g aipost" data-go="post">旅を投稿して、解放を早める</button></div>`;
+}
 let aiConv = [], aiBusy = false;
 const aiKey = () => (me ? "tabistock-ask-v1:" + me : null);
 function aiLoad() { try { const v = JSON.parse(localStorage.getItem(aiKey()) || "[]"); aiConv = Array.isArray(v) ? v : []; } catch (e) { aiConv = []; } }
@@ -2046,6 +2058,12 @@ function aiBubble(m) {
 let aiTypeT = null;
 function aiRender(extra = "", typeLast = false) {
   clearInterval(aiTypeT);
+  if (!AI_OPEN) {
+    $("aiLock").hidden = false; $("aiLock").innerHTML = aiLockHtml();
+    $("aiIntro").hidden = true; $("aiNew").hidden = true; $("aiLog").innerHTML = ""; $("aiCmp").hidden = true;
+    return;
+  }
+  $("aiLock").hidden = true;
   $("aiIntro").hidden = !!aiConv.length; $("aiNew").hidden = !aiConv.length;
   $("aiLog").innerHTML = aiConv.map(aiBubble).join("") + extra;
   const end = () => requestAnimationFrame(() => $("ai").scrollTo({ top: 1e6, behavior: "smooth" }));

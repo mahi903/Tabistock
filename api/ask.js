@@ -278,6 +278,8 @@ export default async function handler(req, res) {
     res.status(405).json({ error: "method not allowed" });
     return;
   }
+  // 公開記事が100本になるまでは閉じておく（解放するときは Vercel の環境変数 ASK_OPEN=1 を入れる）
+  if (process.env.ASK_OPEN !== "1") { res.status(403).json({ error: "closed" }); return; }
   try {
     ensureApp();
 

@@ -1615,3 +1615,13 @@ a[href^="#"],a[href^="#"] *{-webkit-touch-callout:none;-webkit-user-drag:none}
 .ptg.on{background:var(--green)}
 .ptg.on i{transform:translateX(20px)}
 .ptg:disabled{opacity:.45}
+
+/* AI相談：準備中の案内 */
+.ailock{margin:18px 16px 0;padding:22px 18px 20px;border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green);background:#fff;border-radius:6px;text-align:center}
+.ailock .aisym{width:44px;height:auto;margin:0 auto 6px;display:block}
+.ailock h3{font-size:16px;margin:4px 0 10px}
+.ailock p{font-size:13px;line-height:1.8;margin:0 0 10px;text-align:left}
+.ailock .aibar{height:10px;border:1.5px solid var(--ink);border-radius:5px;background:#fff;overflow:hidden;margin:14px 0 6px}
+.ailock .aibar i{display:block;height:100%;background:var(--green)}
+.ailock .aicnt{text-align:center;font-size:13px;margin:0 0 14px}
+.ailock .aipost{width:100%;justify-content:center}
