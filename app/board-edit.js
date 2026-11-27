@@ -4,7 +4,7 @@
 import { db, storage } from "../firebase-config.js";
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611272130";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611272300";
 
 // ブロックの種類（追加ボタンの並び順）
 const KINDS = [
