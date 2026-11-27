@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271226";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271229";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -574,7 +574,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611271226");
+  const M = await import("./sodan.js?v=202611271229");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -608,7 +608,7 @@ async function loadBoards() {
   // 管理者が開いたとき：記事・事件簿がまだ Firestore に1本もなければ、board.js の分を自動でコピーする（それぞれ最初の1回だけ）
   if (admin && list) {
     try {
-      const M = await import("./board-edit.js?v=202611271226");
+      const M = await import("./board-edit.js?v=202611271229");
       let n = 0;
       if (!list.some((d) => !d.jiken && !d.jikenHead)) n += await M.importSeed(me);
       if (!list.some((d) => d.jiken)) n += await M.importJiken(me);
@@ -713,7 +713,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611271226"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611271229"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -723,7 +723,7 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611271226").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611271229").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
     preview: (d) => boardArticleHtml(normBoard(d)),
     // 事件簿の「元の旅の記事」の候補（公開中の記事）
@@ -783,13 +783,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271226").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271229").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271226").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271226").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271229").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271229").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -920,13 +920,12 @@ async function pageArticle(el, id, opt = {}) {
     </div></div>
     <div class="pnav"><div class="topnav">${esc(titleOf(d))}</div>
       <button class="fb" style="left:16px" data-back aria-label="戻る"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
-      ${me && (d.authorId === me || (d.coAuthorIds || []).includes(me)) ? '<button class="fb" style="right:64px" data-own aria-label="記事のメニュー"><svg width="18" height="18" viewBox="0 0 24 24" fill="#1b2330"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' : ""}
-      ${(d.taggedIds || []).length ? `<button class="fb" style="right:${me && (d.authorId === me || (d.coAuthorIds || []).includes(me)) ? 112 : 64}px" data-tgs aria-label="一緒に行った人"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c0-4 3.4-6.3 7.5-6.3s7.5 2.3 7.5 6.3"/></svg></button>` : ""}
-      <button class="fb" style="right:16px" data-share aria-label="共有"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12"/></svg></button></div>
+      ${me && (d.authorId === me || (d.coAuthorIds || []).includes(me)) ? '<button class="fb" style="right:16px" data-own aria-label="記事のメニュー"><svg width="18" height="18" viewBox="0 0 24 24" fill="#1b2330"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' : ""}
+      ${(d.taggedIds || []).length ? `<button class="fb" style="right:${me && (d.authorId === me || (d.coAuthorIds || []).includes(me)) ? 64 : 16}px" data-tgs aria-label="一緒に行った人"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c0-4 3.4-6.3 7.5-6.3s7.5 2.3 7.5 6.3"/></svg></button>` : ""}</div>
     <div class="act show"><button class="ab" data-like aria-label="いいね"><svg viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg><b data-lc></b>いいね</button>
       <button class="ab ${saved.has(d.id) ? "saved" : ""}" data-save="${esc(d.id)}" aria-label="保存"><svg viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2" stroke-linejoin="round"><path d="M6.5 3.5h11v17l-5.5-3.6-5.5 3.6z"/></svg>保存</button>
       <button class="ab" data-share2 aria-label="共有"><svg viewBox="0 0 24 24" fill="none" stroke="#1b2330" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12"/></svg>共有</button></div>`;
-  { const n = el.querySelectorAll(".pnav .fb").length - 1; const tn = el.querySelector(".topnav"); if (tn) { const pd = 16 + 48 * Math.max(n - 1, 1) + 8; tn.style.paddingLeft = tn.style.paddingRight = pd + "px"; } }
+  { const n = el.querySelectorAll(".pnav .fb").length - 1; const tn = el.querySelector(".topnav"); if (tn) { const pd = 16 + 48 * Math.max(n, 1) + 8; tn.style.paddingLeft = tn.style.paddingRight = pd + "px"; } }
   const ps = el.querySelector(".ps");
   ps.onscroll = () => { const on = ps.scrollTop > 360; el.querySelector(".topnav").classList.toggle("show", on); el.querySelectorAll(".pnav .fb").forEach((b) => b.classList.toggle("solid", on)); };
   // トップの写真は4:3で固定（CSS）
@@ -956,7 +955,6 @@ async function pageArticle(el, id, opt = {}) {
     if (hasRoute) drawRoute(el.querySelector("#rmap"), d);
     return;
   }
-  el.querySelector("[data-share]").onclick = () => shareMenu(d);
   el.querySelector("[data-share2]").onclick = () => shareMenu(d);
   const own = el.querySelector("[data-own]"); if (own) own.onclick = () => postMenu(d.id);
   const tg = el.querySelector("[data-tgs]"); if (tg) tg.onclick = () => tagSheet(d);
@@ -1119,7 +1117,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611271226"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611271229"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1518,7 +1516,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611271226").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611271229").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);
