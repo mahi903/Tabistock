@@ -1681,3 +1681,5 @@ a[href^="#"],a[href^="#"] *{-webkit-touch-callout:none;-webkit-user-drag:none}
 .fbx-u{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12px}
 .fbx-u a{display:flex;align-items:center;gap:8px;color:var(--ink);font-weight:700;text-decoration:none}
 .fbx-u img{width:26px;height:26px;border-radius:50%;object-fit:cover}
+/* 下シートの中身が長いとき（マイページのメニューなど）は、シートの中でスクロールできるように */
+.bs > .shs{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;margin:0 -20px;padding:0 20px}
