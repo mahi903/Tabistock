@@ -372,7 +372,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #artNav.show .fb{pointer-events:auto}
 #artNav .fb{z-index:50}
 .fb{transition:background .25s}
-.fb.solid{background:transparent;box-shadow:none}
+.fb.solid{background:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 /* マイページ */
 .stats{background:none;border-radius:0;border-top:1px solid var(--ink);border-bottom:1px solid var(--line);margin-top:22px}
 .grp{background:none;border-radius:0;border-top:1px solid var(--line);margin-top:26px}
