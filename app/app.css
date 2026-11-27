@@ -6,7 +6,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .num{font-family:Manrope,sans-serif;font-weight:800;letter-spacing:-.01em}
 #app{position:fixed;inset:0;background:var(--bg);overflow:hidden}
 @media (min-width:600px){#app{inset:auto;left:50%;top:50%;width:390px;height:844px;transform:translate(-50%,-50%);border-radius:44px;box-shadow:0 30px 80px rgba(0,0,0,.25),0 0 0 10px #1b1b1b}}
-.view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(100px + var(--sb));scrollbar-width:none}
+.view{background:var(--bg);position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(100px + var(--sb));scrollbar-width:none}
 .view::-webkit-scrollbar{display:none}
 .view[hidden]{display:none}
 .pt{padding-top:calc(var(--st) + 18px)}
@@ -1208,9 +1208,6 @@ html.ntab .tab{display:none}
 .bcats button{flex:none;font-size:13px;font-weight:700;color:#8a929d;padding:2px 0}
 .bcats button.on{color:var(--green)}
 .blist{padding:0 20px 30px}
-.bareas{display:flex;flex-wrap:wrap;gap:8px;padding:14px 20px 0}
-.bareas button{font-size:12.5px;font-weight:700;color:var(--ink);background:#fff;border:1.5px solid var(--ink);border-radius:4px;padding:5px 10px}
-.bareas button em{font-style:normal;color:var(--green);margin-left:6px}
 .barea{display:flex;align-items:baseline;gap:10px;margin:22px 0 0;padding-bottom:8px;border-bottom:2px solid var(--ink);font-size:16px;font-weight:900;scroll-margin-top:12px}
 .barea:first-child{margin-top:6px}
 .barea em{font-style:normal;font-size:11.5px;font-weight:700;color:#8a929d}

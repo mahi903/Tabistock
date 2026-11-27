@@ -10,7 +10,7 @@ import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, COUNTRY_AREAS, areaOf, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271830";
+import { ILL, BOARD_CATS, COUNTRY_AREAS, areaOf, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611271900";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -137,6 +137,20 @@ addEventListener("resize", () => { indAt = null; renderTab(); });
 // タブの画面で文字を入力している間は、下のタブを隠す（キーボードの上にタブが乗って入力欄の邪魔になるため）
 document.addEventListener("focusin", (e) => { if (e.target.matches("textarea, input[type=text], input[type=search], input:not([type])") && !e.target.closest(".page, #bs")) { $("app").classList.add("typing"); syncNativeTab(); } });
 document.addEventListener("focusout", () => setTimeout(() => { const a = document.activeElement; if (!a || !a.matches || !a.matches("textarea, input")) { $("app").classList.remove("typing"); syncNativeTab(); } }, 50));
+// タブの中身を描く（go と、スワイプで隣の画面を先に見せるときの両方から使う）
+function renderView(k, opt = {}) {
+  if (k === "search") {
+    if (opt.reset) { Object.assign(state, { q: "", country: [], pref: [], budget: [], days: [], style: [] }); $("q").value = ""; }
+    if (opt.country) { state.country = [opt.country]; state.pref = []; }
+    if (opt.style) state.style = [opt.style];
+    renderSearch();
+  }
+  if (k === "me") renderMe();
+  if (k === "post") renderDrafts();
+  if (k === "saved") renderSaved();
+  if (k === "ai") { aiLoad(); aiRender(); }
+  if (k === "sodan") SD().then((M) => M.renderSodan());
+}
 function go(k, opt = {}) {
   if (STACK.length) { location.hash = ""; }
   if (k === curTab && !Object.keys(opt).length) { $(k).scrollTo({ top: 0, behavior: "smooth" }); return; }
@@ -150,18 +164,71 @@ function go(k, opt = {}) {
   VIEWS.forEach((t) => ($(t).hidden = t !== k));
   $("aiCmp").hidden = k !== "ai" || !AI_OPEN;
   renderTab();
-  if (k === "search") {
-    if (opt.reset) { Object.assign(state, { q: "", country: [], pref: [], budget: [], days: [], style: [] }); $("q").value = ""; }
-    if (opt.country) { state.country = [opt.country]; state.pref = []; }
-    if (opt.style) state.style = [opt.style];
-    renderSearch();
-  }
-  if (k === "me") renderMe();
-  if (k === "post") renderDrafts();
-  if (k === "saved") renderSaved();
-  if (k === "ai") { aiLoad(); aiRender(); }
-  if (k === "sodan") SD().then((M) => M.renderSodan());
+  if (!opt.sw) renderView(k, opt);
 }
+// ---------- 下のタブを、横スワイプで切り替える（インスタ式：指に画面がついてくる） ----------
+const SWIPE = ["home", "search", "post", "sodan", "me"];
+(function tabSwipe() {
+  const app = $("app");
+  let st = null, busy = false;
+  // 横に動かす部品（カルーセル・地図・横スクロール・入力欄）の上から始めたときは、タブの切り替えにしない
+  const blocked = (el) => {
+    for (let n = el; n && n !== app; n = n.parentElement) {
+      if (n.matches && n.matches("input, textarea, select, [contenteditable], .leaflet-container, [data-noswipe]")) return true;
+      const cs = getComputedStyle(n);
+      if ((cs.overflowX === "auto" || cs.overflowX === "scroll") && n.scrollWidth > n.clientWidth + 2) return true;
+    }
+    return false;
+  };
+  const canStart = () => !busy && SWIPE.includes(curTab) && !STACK.length && !app.classList.contains("typing") && !$("bs").classList.contains("show") && !document.querySelector(".md-menu,.md-ov,.viewer");
+  app.addEventListener("touchstart", (e) => {
+    st = null;
+    if (e.touches.length !== 1 || !canStart() || blocked(e.target)) return;
+    const t = e.touches[0];
+    st = { x: t.clientX, y: t.clientY, t0: Date.now(), lock: 0, dx: 0, nb: null, dir: 0 };
+  }, { passive: true });
+  app.addEventListener("touchmove", (e) => {
+    if (!st) return;
+    const t = e.touches[0], dx = t.clientX - st.x, dy = t.clientY - st.y;
+    if (!st.lock) {
+      if (Math.hypot(dx, dy) < 8) return;
+      if (Math.abs(dx) > Math.abs(dy) * 1.2) st.lock = 1; else { st = null; return; }   // 縦に動かしたときは、ふつうのスクロール
+    }
+    e.preventDefault();
+    const W = app.clientWidth, cur = $(curTab), idx = SWIPE.indexOf(curTab);
+    const dir = dx < 0 ? 1 : -1, nk = SWIPE[idx + dir];
+    if (dir !== st.dir) {   // 向きが変わったら、隣の画面を入れ替える
+      if (st.nb) { st.nb.hidden = true; st.nb.style.transform = ""; st.nb = null; }
+      st.dir = dir;
+      if (nk) {
+        st.nk = nk; st.nb = $(nk);
+        if (nk === "home" && $("htabs") && !$("htabs").children[0].classList.contains("on")) homeTab(0);
+        if (nk === "me") myTab = "trips";
+        st.nb.hidden = false; renderView(nk);
+      }
+    }
+    st.dx = dx;
+    const mv = st.nb ? dx : dx * 0.3;   // 端では、ゴムのように重くなる
+    cur.style.transition = "none"; cur.style.transform = `translateX(${mv}px)`;
+    if (st.nb) { st.nb.style.transition = "none"; st.nb.style.transform = `translateX(${mv - dir * W}px)`; }
+  }, { passive: false });
+  const end = (e) => {
+    if (!st || !st.lock) { st = null; return; }
+    const W = app.clientWidth, cur = $(curTab), nb = st.nb, nk = st.nk, dx = st.dx, v = Math.abs(dx) / Math.max(1, Date.now() - st.t0);
+    st = null; busy = true;
+    const commit = !!nb && (Math.abs(dx) > W * 0.33 || (v > 0.45 && Math.abs(dx) > 30));
+    const dir = dx < 0 ? 1 : -1, ease = "transform .3s cubic-bezier(.25,.8,.25,1)";
+    cur.style.transition = ease; cur.style.transform = commit ? `translateX(${-dir * W}px)` : "translateX(0)";
+    if (nb) { nb.style.transition = ease; nb.style.transform = commit ? "translateX(0)" : `translateX(${-dir * W}px)`; }
+    setTimeout(() => {
+      [cur, nb].forEach((el) => el && (el.style.transition = el.style.transform = ""));
+      if (commit) go(nk, { sw: 1 }); else if (nb) nb.hidden = true;
+      busy = false;
+    }, 310);
+  };
+  app.addEventListener("touchend", end);
+  app.addEventListener("touchcancel", end);
+})();
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-go]");
   if (!b) return;
@@ -615,7 +682,7 @@ function openPushUrl(u) {
 let SDM = null;
 const SD = async () => {
   if (SDM) return SDM;
-  const M = await import("./sodan.js?v=202611271830");
+  const M = await import("./sodan.js?v=202611271900");
   M.initSodan({
     me: () => me, esc, para, ago, PROF, loadProfiles, avatarOf, toast, haptic, mod, bar,
     isAdmin: () => isAdminMe(),
@@ -649,7 +716,7 @@ async function loadBoards() {
   // 管理者が開いたとき：記事・事件簿がまだ Firestore に1本もなければ、board.js の分を自動でコピーする（それぞれ最初の1回だけ）
   if (admin && list) {
     try {
-      const M = await import("./board-edit.js?v=202611271830");
+      const M = await import("./board-edit.js?v=202611271900");
       let n = 0;
       if (!list.some((d) => !d.jiken && !d.jikenHead)) n += await M.importSeed(me);
       if (!list.some((d) => d.jiken)) n += await M.importJiken(me);
@@ -685,8 +752,7 @@ function countryList(shown, admin) {
   const groups = [...COUNTRY_AREAS.map(([k, l]) => [k, l]), ["other", "その他"]]
     .map(([k, l]) => [k, l, shown.filter((d) => areaOf(d) === k).sort((x, y) => (x.order ?? 99) - (y.order ?? 99))])
     .filter((g) => g[2].length);
-  const jump = groups.length > 1 ? `<div class="bareas">${groups.map(([k, l, ds]) => `<button data-ba="${k}">${l}<em>${ds.length}</em></button>`).join("")}</div>` : "";
-  return `${jump}<div class="blist">${groups.map(([k, l, ds]) => `<h2 class="barea" id="barea-${k}"><span>${l}</span><em>${ds.length}か国</em></h2>${ds.map((d) => boardRow(d, admin)).join("")}`).join("")}</div>`;
+  return `<div class="blist">${groups.map(([k, l, ds]) => `<h2 class="barea" id="barea-${k}"><span>${l}</span><em>${ds.length}か国</em></h2>${ds.map((d) => boardRow(d, admin)).join("")}`).join("")}</div>`;
 }
 async function renderBoard() {
   const box = $("boardPane");
@@ -704,7 +770,6 @@ async function renderBoard() {
     ${adm}
     ${boardCat === "country" ? countryList(shown, admin) : `<div class="blist">${shown.map((d) => d.jiken ? jikenCard(d, admin) : boardRow(d, admin)).join("")}</div>`}`;
   box.querySelectorAll("[data-bc]").forEach((b) => (b.onclick = () => { boardCat = b.dataset.bc; haptic(); renderBoard(); }));
-  box.querySelectorAll("[data-ba]").forEach((b) => (b.onclick = () => { haptic(); const t = $("barea-" + b.dataset.ba); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); }));
 }
 // 事件簿の1件：どこで・何が起きたか・手口・被害・その後。タップで元の記事へ
 // 事件簿のタブの一番上：イラスト（または写真）と説明文。管理者には右上に「編集」
@@ -772,7 +837,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611271830"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611271900"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -782,7 +847,7 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611271830").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611271900").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
     preview: (d) => boardArticleHtml(normBoard(d)),
     // 事件簿の「元の旅の記事」の候補（公開中の記事）
@@ -842,13 +907,13 @@ function pushPage(h) {
   else if (kind === "dm") pageThread(el, arg);
   else if (kind === "w") pageFrame(el, arg);
   else if (kind === "f") pageFollows(el, arg);
-  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271830").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "pass") { const entry = STACK[STACK.length - 1]; el.classList.add("ppg"); ppCircle(true, () => el.classList.add("shown")); import("./passport.js?v=202611271900").then((M) => { const c = M.pagePassport(el, { me, esc, bar, haptic, cinfo, fmtPeriod, profile: PROF[me] || {}, arts: [...MY.trips, ...MY.transit].filter((d) => d.authorId === me || d._collab), loadSig: async () => ((await getDoc(doc(db, "users", me))).data() || {}).ppSig || "", saveSig: (d) => setDoc(doc(db, "users", me), { ppSig: d }, { merge: true }), created: (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime) ? new Date(auth.currentUser.metadata.creationTime).toISOString().slice(0, 10) : "" }); if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("Tabistock パスポート") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
   else if (kind === "x" && arg === "profile") pageProfileEdit(el);
   else if (kind === "x" && arg === "login") pageLogin(el);
   else if (kind === "x") pageBlocks(el);
   else if (kind === "n") pageNotify(el);
-  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271830").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
-  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271830").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
+  else if (kind === "fare") { const entry = STACK[STACK.length - 1]; import("./fares.js?v=202611271900").then((M) => M.pageFares(el, { me, bar, haptic, loadLeaflet, all: () => ALL, thumb: thumbOf, rings: ringsOf, shapes: async () => (SHAPES = SHAPES || (await fetch("/country-shapes.json").then((r) => r.json()))) })).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("航空券の相場") + '<div class="ps under2"><p class="empty">開けませんでした</p></div>'; }); }
+  else if (kind === "p") { const entry = STACK[STACK.length - 1]; import("./post.js?v=202611271900").then((M) => M.pagePost(el, arg, postCtx())).then((c) => { if (c) entry.cleanup = c; }).catch((e) => { console.error(e); el.innerHTML = bar("旅程を投稿") + '<div class="ps under2"><p class="empty">投稿画面を開けませんでした</p></div>'; }); }
   haptic();
 }
 // パスポートを開く・閉じるとき：バッジの位置から緑の円が画面いっぱいに広がる／バッジへ縮んで戻る
@@ -1176,7 +1241,7 @@ function shareMenu(d) {
 async function makeStory(d, url) {
   $("bs").querySelector(".shs h3").textContent = "作成中…";
   let file = null;
-  try { const { makeStoryImage } = await import("./story.js?v=202611271830"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
+  try { const { makeStoryImage } = await import("./story.js?v=202611271900"); file = await makeStoryImage(d, url, storyEyebrow(d)); } catch (e) { console.warn(e); }
   closeSheet();
   if (!file) { toast("画像を作成できませんでした"); return; }
   try {
@@ -1575,7 +1640,7 @@ function renderMe() {
   // パスポート：プロフィール画像の右下に小さなパスポート。タップで開く
   Promise.resolve(true).then(() => {
     const im = box.querySelector(".uhead .row > img"); if (!im || im.closest(".ppav")) return;
-    import("./passport.js?v=202611271830").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
+    import("./passport.js?v=202611271900").then((M) => M.warmFonts && M.warmFonts()).catch(() => {});
     const a = document.createElement("a"); a.className = "ppav"; a.href = "#pass"; a.setAttribute("aria-label", "パスポートを開く");
     a.addEventListener("click", () => { const r = (a.querySelector("i") || a).getBoundingClientRect(); window.__ppFrom = { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     im.replaceWith(a); a.appendChild(im);

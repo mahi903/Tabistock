@@ -108,8 +108,8 @@ export const ILL = {
 
 // 国別ガイドの、エリア分け（一覧でエリアごとにまとめる）。新しい国は ids に足す
 export const COUNTRY_AREAS = [
-  ["asia", "アジア", ["country-thailand", "country-korea", "country-taiwan", "country-vietnam", "country-singapore", "country-malaysia", "country-philippines", "country-indonesia", "country-hongkong", "country-cambodia", "country-mongolia"]],
-  ["europe", "ヨーロッパ・中東", ["country-uk", "country-france", "country-italy", "country-spain", "country-germany", "country-turkey"]],
+  ["asia", "アジア", ["country-thailand", "country-korea", "country-taiwan", "country-vietnam", "country-singapore", "country-malaysia", "country-philippines", "country-indonesia", "country-hongkong", "country-cambodia", "country-mongolia", "country-turkey"]],
+  ["europe", "ヨーロッパ・中東", ["country-uk", "country-france", "country-italy", "country-spain", "country-germany"]],
   ["namerica", "北米", ["country-usa"]],
   ["oceania", "オセアニア", ["country-australia"]],
 ];
