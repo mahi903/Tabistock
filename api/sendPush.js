@@ -26,8 +26,11 @@ import crypto from "node:crypto";
 // 認証は .p8 の鍵で作る JWT（ES256）。同じものを50分ほど使い回す
 let apnsJwt = null, apnsJwtAt = 0;
 function apnsToken() {
-  const key = (process.env.APNS_KEY || "").replace(/\\n/g, "\n");
-  const kid = process.env.APNS_KEY_ID, iss = process.env.APNS_TEAM_ID;
+  // 鍵は貼り付け方で改行が消えたり「\n」の文字になったりするので、中身（base64）だけ取り出して PEM の形に組み直す
+  const raw = String(process.env.APNS_KEY || "").replace(/\\n/g, "\n");
+  const b64key = raw.replace(/-----(BEGIN|END)[^-]*-----/g, "").replace(/[^A-Za-z0-9+/=]/g, "");
+  const key = b64key ? "-----BEGIN PRIVATE KEY-----\n" + b64key.match(/.{1,64}/g).join("\n") + "\n-----END PRIVATE KEY-----\n" : "";
+  const kid = String(process.env.APNS_KEY_ID || "").trim(), iss = String(process.env.APNS_TEAM_ID || "").trim();
   if (!key || !kid || !iss) return null;
   const now = Math.floor(Date.now() / 1000);
   if (apnsJwt && now - apnsJwtAt < 50 * 60) return apnsJwt;
