@@ -1,5 +1,6 @@
 // 旅の掲示板（旅と地理）の記事の中に入れる、手で動かせるモデル
 // いまあるもの：hadley＝大気大循環の地球儀（月のスライダーで、雨の帯と、かわきやすい帯が南北に動く。指で地球をまわせる）
+//             fjord＝フィヨルドができるまで（谷の断面。スライダーで「川の谷→氷河でけずる→海水が入る」と進む）
 // 本物の気候を、ごく簡単にしたモデルです（目安）。
 
 const MONTHS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
@@ -81,6 +82,7 @@ function result(m) {
 
 // 記事の中に出す（b = { t: "model", k: "hadley", m: 最初の月, cap: 説明 }）
 export function modelHtml(b) {
+  if (b.k === "fjord") return fjordHtml(b);
   if (b.k !== "hadley") return "";
   const m = Math.min(12, Math.max(1, +b.m || 1));
   return `<figure class="bfig"><div class="mdl" data-mdl="hadley" data-m="${m}" data-lon="-68">
@@ -93,9 +95,59 @@ export function modelHtml(b) {
   </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
 }
 
+
+// ---- フィヨルドができるまで ----
+const FJ_STEPS = [
+  { t: "①川が、V字の谷をつくる", d: "山から流れる川が、谷をけずります。でも川は、海面より下をけずれません。" },
+  { t: "②氷河が、谷を深く、U字にけずる", d: "氷河期、重たい氷河が谷をすべり落ちて、谷底と横をけずり、海面より下まで深くします。" },
+  { t: "③氷がとけて、海水が入る", d: "氷がとけて海面が上がると、深い谷に海水が入ります。入り口は、氷河が置いていった土砂で、あさくなっています。" },
+];
+function fjordSvg(stage) {
+  const INK = "#1b2330";
+  const X = (x) => (180 + x * 160).toFixed(1), Y = (e) => (150 - e * 110).toFixed(1);
+  const floor = stage === 0 ? 0 : -0.4, p = stage === 0 ? 1.15 : 3.6;
+  const e = (x) => floor + (1 - floor) * Math.pow(Math.abs(x), p);
+  const pts = []; for (let i = -50; i <= 50; i++) { const x = i / 50; pts.push([x, e(x)]); }
+  const land = pts.map(([x, v], i) => `${i ? "L" : "M"}${X(x)} ${Y(v)}`).join(" ") + ` L${X(1)} 214 L${X(-1)} 214 Z`;
+  const inner = (top) => pts.filter(([, v]) => v <= top).map(([x, v], i) => `${i ? "L" : "M"}${X(x)} ${Y(v)}`).join(" ");
+  const cut = (top) => { const q = pts.filter(([, v]) => v <= top); if (!q.length) return ""; return `${inner(top)} L${X(q[q.length - 1][0])} ${Y(top)} L${X(q[0][0])} ${Y(top)} Z`; };
+  const ice = stage === 1 ? `<path d="${cut(0.62)}" fill="#f2f8fb" stroke="${INK}" stroke-width="2"/><text x="180" y="${Y(0.2)}" font-size="11" text-anchor="middle" fill="${INK}" font-weight="700">氷河</text>` : "";
+  const sea = stage === 2 ? `<path d="${cut(0)}" fill="#5fa3b8" opacity=".85"/><text x="180" y="${Y(-0.14)}" font-size="11" text-anchor="middle" fill="#fff" font-weight="700">海水</text>` : "";
+  const river = stage === 0 ? `<path d="${cut(0.04)}" fill="#5fa3b8" opacity=".9"/>` : "";
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="谷の断面">
+    <rect x="0" y="0" width="360" height="220" fill="#fbf9f4"/>
+    <path d="${land}" fill="#d8cba5" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
+    ${river}${ice}${sea}
+    <line x1="14" y1="${Y(0)}" x2="346" y2="${Y(0)}" stroke="${INK}" stroke-width="1.5" stroke-dasharray="4 4"/>
+    <text x="346" y="${(+Y(0) - 5).toFixed(1)}" font-size="10" text-anchor="end" fill="${INK}">海面</text>
+  </svg>`;
+}
+function fjordHtml(b) {
+  const st = Math.min(2, Math.max(0, (+b.m || 1) - 1));
+  return `<figure class="bfig"><div class="mdl" data-mdl="fjord" data-st="${st}">
+    <p class="mdl-h">手で動かしてみよう</p>
+    <div class="mdl-fj">${fjordSvg(st)}</div>
+    <div class="mdl-res"><span class="fj-n">${FJ_STEPS[st].t}</span><b class="fj-d">${FJ_STEPS[st].d}</b></div>
+    <label class="mdl-sl"><span>ステップ</span><input type="range" class="mdl-m" min="1" max="3" step="1" value="${st + 1}" aria-label="ステップ"><b>${st + 1} / 3</b></label>
+  </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
+}
+function initFjord(root) {
+  const r = root.querySelector(".mdl-m");
+  if (!r || r.dataset.on) return;
+  r.dataset.on = "1";
+  r.addEventListener("input", () => {
+    const st = +r.value - 1;
+    root.querySelector(".mdl-fj").innerHTML = fjordSvg(st);
+    root.querySelector(".fj-n").textContent = FJ_STEPS[st].t;
+    root.querySelector(".fj-d").textContent = FJ_STEPS[st].d;
+    root.querySelector(".mdl-sl b").textContent = `${st + 1} / 3`;
+  });
+}
+
 // 画面に出てきたモデルを、動くようにする（画面全体で、1回だけつなぐ）
 let wired = false;
 function init(root) {
+  if (root.dataset.mdl === "fjord") return initFjord(root);
   const cv = root.querySelector("canvas");
   if (!cv || cv.dataset.on) return;
   cv.dataset.on = "1";

@@ -2121,6 +2121,44 @@ export const BOARD_SEED = [
       { t: "p", x: "豆知識：2015年3月に、数年分の雨が1日で降って、町で鉄砲水が起きました。ふだん雨がないので、地面がかたく、水がしみこまなかったのです。" },
       { t: "note", x: "このページは、気象機関や旅行会社などの案内を、2026年11月28日に確認してまとめたものです。雨の量や、旅行の時期、行き方は、変わることがあります。出発前に、最新の情報を確認してください。\nNOAA Climate.gov（アタカマの雨）：https://www.climate.gov/news-features/event-tracker/flooding-atacama-desert-how-did-happen\nWindows to the Universe（アタカマ砂漠）：https://windows2universe.org/earth/atacama_desert.html\nチリ政府観光局：https://chile.travel/en/blog/san-pedro-de-atacama-the-best-time-to-travel-that-few-people-know-about/\nAwasi Atacama：https://awasi.com/blog/?p=4414\nJourney Latin America：https://www.journeylatinamerica.com/destinations/chile/places-to-visit/atacama-desert/when-to-go" },
     ],
+  },
+  {
+    id: "geo-fjord", cat: "geo", ill: "wind", order: 32, status: "draft", updated: "2026-11-28",
+    title: "フィヨルド｜氷河がつくった海を、船で旅する",
+    lead: "ノルウェーのフィヨルドは、切り立った崖のあいだに、深い海が入りこんだ景色です。氷河期に氷河が谷をけずったあと、海水が入ってできました。しくみがわかると、船から見上げる崖が、ちがって見えてきます。",
+    facts: [
+      ["場所", "ノルウェー西海岸", "拠点は、ベルゲンなど"],
+      ["いちばん大きいフィヨルド", "ソグネフィヨルド", "長さ約205km・最大の深さ1,308m"],
+      ["船の季節", "5月末〜9月中旬ごろ"],
+    ],
+    blocks: [
+      { t: "p", x: "フィヨルドは、氷河がけずった谷に、海水が入ってできた、細長い入り江です。氷河期に、重たい氷河が谷をすべり落ちるとき、谷底を海面より下までけずりました。氷がとけて海面が上がると、そこに海水が入りこんだのです。" },
+      { t: "model", k: "fjord", m: 1, cap: "谷の断面をかんたんにしたモデルです。スライダーを動かすと、川がつくった谷が、氷河でけずられて、海水が入るまでを見られます。" },
+      { t: "list", items: [
+        "川は、海面より下をけずれません。だから、海の底まで深い谷は、氷河がつくったと考えられています",
+        "入り口は、氷河が置いていった土砂で、あさくなっています。ソグネフィヨルドも、入り口付近は約100mですが、中ほどでは1,000mをこえます",
+        "ノルウェー以外にも、グリーンランド、アラスカ、チリ、ニュージーランドなどに、同じしくみのフィヨルドがあります",
+      ] },
+      { t: "h", x: "旅の時期は、何を見たいかで決める" },
+      { t: "table", head: true, rows: [
+        { c: ["したいこと", "時期の目安", "理由"] },
+        { c: ["滝の迫力を見たい", "春〜初夏", "山の雪がとけて、水が増える（現地のツアー会社）"] },
+        { c: ["山を歩きたい", "6月以降", "高い山の道は、6月ごろまで雪が残ることがある。夏しか開かない山道もある（現地のツアー会社）"] },
+        { c: ["船を確実に乗りたい", "6〜8月", "船便が安定して、日が長い（旅行サイト）。人気の便は、数週間前に売り切れることがある"] },
+      ] },
+      { t: "p", x: "フロムやガイランゲルのような小さな村は、部屋が少なく、直前になると料金が上がることがあるそうです。早めの予約がおすすめです。航空券の料金が月ごとにどのくらい変わるかは、今回、数字では確認できていません。" },
+      { t: "h", x: "ベルゲンは、雨の町" },
+      { t: "p", x: "拠点になるベルゲンは、年に約2,250mmの雨が降ります。ロンドンの約557mmと比べると、4倍ほどです。理由は、大西洋から吹く偏西風が、まわりの山にぶつかって、雨雲になるからです。はっきりした乾季はなく、どの月も雨が降るので、雨具は必須です。" },
+      { t: "h", x: "入国と気をつけること" },
+      { t: "list", items: [
+        "ビザは、180日のうち90日までの観光なら不要です。パスポートは、シェンゲン領域を出る予定の日から、3か月以上の残りが必要です",
+        "2026年4月10日から、入国のとき、顔写真と指紋を、専用の機械で登録する制度（EES）が始まっています",
+        "ETIAS（事前の渡航認証）は、2026年の第4四半期に始まる予定でした。いまの運用状況は、今回、確認できていません。出発前に、外務省のページで確認してください",
+        "置き引きやスリが多いです。空港、駅、バスの中では、貴重品を身につけておきます。オスロ中央駅のまわりは、夜、一人歩きを避けます",
+        "トロルトゥンガ（トロルの舌）は、ふもとから約10時間かけて登ります。服装、食料、水、雨具、登山靴を、しっかり準備します（外務省）",
+      ] },
+      { t: "note", x: "このページは、地理の資料や、旅行会社、外務省の案内を、2026年11月28日に確認してまとめたものです。旅行の時期や入国の手続きは、変わることがあります。出発前に、最新の情報を確認してください。\nNASA Earth Observatory（ハーダンゲルフィヨルド）：https://science.nasa.gov/earth/earth-observatory/hardangerfjord-norway-1269/\nFjords.com（フィヨルドとは）：https://www.fjords.com/en/western-norwegian-fjords/fjord-guide/what-is-a-fjord/\nSognefjord（Wikipedia）：https://en.wikipedia.org/wiki/Sognefjord\nFjord Tours（時期）：https://www.fjordtours.com/en/norway/places-to-visit/fjords/when-to-visit-the-fjords\nベルゲンの雨（レディング大学）：https://blogs.reading.ac.uk/weather-and-climate-at-reading/2014/a-meteorological-postcard-from-bergen-norway\n外務省 ノルウェー（観光時の留意事項）：https://www.anzen.mofa.go.jp/m/mbconsideration_166.html\n外務省 ETIAS：https://www.mofa.go.jp/mofaj/toko/page4_000122.html" },
+    ],
   }
 ];
 

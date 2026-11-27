@@ -1644,3 +1644,4 @@ a[href^="#"],a[href^="#"] *{-webkit-touch-callout:none;-webkit-user-drag:none}
 .mdl-lg{margin-top:8px;font-size:11.5px;color:var(--muted)}
 .mdl-lg i{display:inline-block;width:12px;height:12px;vertical-align:-2px;margin-right:4px;border:1px solid var(--ink)}
 .mdl-lg i.g{background:#1f6f5b}.mdl-lg i.o{background:#e2683b}
+.mdl-fj svg{display:block;width:100%;height:auto;border:1.5px solid var(--ink)}
