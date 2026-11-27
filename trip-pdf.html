@@ -40,6 +40,7 @@ body{background:#f2f4f3;color:var(--ink);font-family:"Noto Sans JP","Hiragino Ka
 .hd{position:absolute;left:14mm;right:14mm;top:10mm;display:flex;align-items:center;justify-content:space-between;font-family:"Cinzel",serif;font-weight:600;font-size:8pt;letter-spacing:.2em;color:var(--gd)}
 .hd .t{display:flex;align-items:center;gap:3mm}
 .hd img{width:7.5mm;height:5.8mm;display:block;object-fit:contain}
+.hd img.wm{width:auto;height:4.2mm}
 .ft{position:absolute;left:14mm;right:14mm;bottom:8mm;display:flex;justify-content:space-between;font-size:7pt;color:var(--mut);border-top:1px solid var(--line);padding-top:2.5mm}
 .mk{background:linear-gradient(transparent 48%,rgba(226,104,59,.8) 48%);padding:0 1mm}
 .cap{font-family:"Cinzel",serif;font-weight:600;font-size:8pt;letter-spacing:.22em;color:var(--g)}
@@ -52,7 +53,7 @@ body{background:#f2f4f3;color:var(--ink);font-family:"Noto Sans JP","Hiragino Ka
 .cv-ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,82,67,.25),rgba(23,82,67,.05) 40%,rgba(23,82,67,.55))}
 .cv-logo{position:absolute;left:14mm;top:14mm;z-index:2;display:flex;align-items:center;gap:2.6mm;padding:2mm 4mm 2mm 3mm;border:1.5px solid var(--ink);background:#fff;box-shadow:1.4mm 1.4mm 0 var(--g)}
 .cv-logo i{width:11mm;height:8.6mm;background:url(/images/app-logo.png) center/contain no-repeat}
-.cv-logo b{font-family:"Cinzel",serif;font-weight:700;font-size:14pt;letter-spacing:.06em;color:var(--ink);line-height:1}
+.cv-logo b{display:block;width:30mm;height:7.4mm;background:url(/images/wordmark.png) left center/contain no-repeat}
 .cv-kind{position:absolute;right:14mm;top:15mm;z-index:2;color:#fff;font-family:"Cinzel",serif;font-weight:600;font-size:8pt;letter-spacing:.3em;text-align:right;line-height:1.9}
 .cv-title{position:absolute;left:14mm;right:14mm;top:167mm}
 .cv-route{position:absolute;left:14mm;right:14mm;bottom:56mm;display:flex;flex-wrap:wrap;gap:2.6mm 6mm;padding-top:4mm;border-top:1.5px solid var(--ink)}
@@ -116,7 +117,7 @@ body{background:#f2f4f3;color:var(--ink);font-family:"Noto Sans JP","Hiragino Ka
 .cta b{font-family:"Space Mono",monospace;font-size:10pt;letter-spacing:.04em}
 .endlogo{margin-top:9mm;display:flex;align-items:center;gap:4mm}
 .endlogo i{width:13mm;height:10.1mm;background:url(/images/app-logo.png) center/contain no-repeat}
-.endlogo b{font-family:"Cinzel",serif;font-weight:700;font-size:15pt;letter-spacing:.06em;color:var(--ink);line-height:1}
+.endlogo b{display:block;width:34mm;height:8.4mm;background:url(/images/wordmark.png) left center/contain no-repeat}
 </style></head>
 <body>
 <div class="ctl">
@@ -156,7 +157,7 @@ function zoom() { const z = Math.min(1, (window.innerWidth - 20) / 794); documen
 window.addEventListener("resize", zoom); zoom();
 
 // ---------- ページのつくり ----------
-const head = (n, total, tag) => `<div class="hd"><span class="t"><img src="/images/app-logo.png" alt="">Tabistock</span><span>${esc(tag)}</span></div><div class="ft"><span>Tabistock に投稿された、実際の旅の記録をもとに作成</span><span>${n} / ${total}</span></div>`;
+const head = (n, total, tag) => `<div class="hd"><span class="t"><img src="/images/app-logo.png" alt=""><img class="wm" src="/images/wordmark.png" alt="Tabistock"></span><span>${esc(tag)}</span></div><div class="ft"><span>Tabistock に投稿された、実際の旅の記録をもとに作成</span><span>${n} / ${total}</span></div>`;
 
 function build(d) {
   const p = d.plan, rq = d.request, srcs = d.sources || [];
@@ -177,7 +178,7 @@ function build(d) {
   let h = `<section class="pg">
     <div class="cv-ph" style="${photo ? `background-image:url(${photo})` : ""}"></div>
     ${d.demo ? '<div class="stamp">SAMPLE</div>' : ""}
-    <div class="cv-logo"><i></i><b>Tabistock</b></div>
+    <div class="cv-logo"><i></i><b></b></div>
     <div class="cv-kind">TRIP PLAN<br>${yy ? esc(yy) + "." + esc(mm) : ""}</div>
     <div class="cv-title">
       <p class="cv-en">${esc(EN[rq.country] || rq.countryJp)}</p>
@@ -245,7 +246,7 @@ function build(d) {
     <div class="sec"><span class="cap">SOURCES</span><h2>この旅程のもとになった旅</h2></div>
     <ul class="so">${srcs.map((s) => `<li>${esc(s.title)}${s.author ? ` <span>— ${esc(s.author)}</span>` : ""}</li>`).join("")}</ul>
     <p class="dis">この旅程は、Tabistock に投稿された実際の旅の記録を、AIがまとめたものです。記事に書かれていないことは、載せていません。料金・時刻・営業時間は、旅の時点のもので、変わることがあります。最新の情報は、各公式サイトや予約サイトでご確認ください。</p>
-    <div class="endlogo"><i></i><b>Tabistock</b></div>
+    <div class="endlogo"><i></i><b></b></div>
   </div>
   <div class="cta"><span class="cap">YOUR TRIP</span><h4>旅から帰ったら、あなたの旅の記録も。</h4><p>費用・ルート・感想を残すと、次に行く誰かの旅程になります。　<b>tabistock.jp</b></p></div></section>`;
   return h;

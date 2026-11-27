@@ -1236,6 +1236,7 @@ html.ntab .tab{display:none}
 .bsteps b{display:block;font-size:14px}
 .bul{margin:10px 0 0 1.1em;font-size:13.5px;line-height:1.75}
 .bul li{margin-top:4px}
+.bp a,.bnote a,.bsteps a{color:var(--green);text-decoration:underline;word-break:break-all}
 .bnote{margin-top:20px;padding:10px 12px;background:var(--green-t);border-left:3px solid var(--green);font-size:12.5px;line-height:1.7}
 .bit p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .bfacts dt{width:96px}

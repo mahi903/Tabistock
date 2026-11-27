@@ -4,7 +4,7 @@
 import { db, storage } from "../firebase-config.js";
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611260225";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611271510";
 
 // ブロックの種類（追加ボタンの並び順）
 const KINDS = [
@@ -19,15 +19,15 @@ const LV = [[1, "大"], [2, "中"], [3, "小"]];
 const SIZES = [["l", "大"], ["m", "中"], ["s", "小"], ["two", "2枚並べる"]];
 
 // ---- アプリ内の記事（BOARD_SEED）を Firestore にコピー。すでにある記事は上書きしない ----
-export async function importSeed(me) {
+export async function importSeed(me, only) {
   const have = new Set();
   (await getDocs(collection(db, "boards"))).forEach((s) => have.add(s.id));
-  const todo = BOARD_SEED.filter((d) => !have.has(d.id));
+  const todo = BOARD_SEED.filter((d) => !have.has(d.id) && (!only || only.includes(d.id)));
   if (!todo.length) return 0;
   const batch = writeBatch(db);
   todo.forEach((d) => {
     const { mins, ...rest } = toFs(d);   // 「〇分で読める」はもう使わない
-    batch.set(doc(db, "boards", d.id), { ...rest, heroType: "ill", status: "published", authorId: me, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    batch.set(doc(db, "boards", d.id), { ...rest, heroType: "ill", status: d.status || "published", authorId: me, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   });
   await batch.commit();
   return todo.length;
