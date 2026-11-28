@@ -479,7 +479,118 @@ const FLAT = (() => {
   };
 })();
 
-const MODELS = { fjord: FJ, rift: RIFT, butte: BUTTE, karst: KARST, pinnacle: PINN, cappa: CAPPA, iguazu: IGU, canyon: CANYON, uluru: ULURU, flat: FLAT };
+// ---------------- パタゴニア：アンデス山脈を越える西風 ----------------
+const PATA = (() => {
+  const FOREST = hex("#6f9a5c"), ROCKC = hex("#9a8f82"), ICE = hex("#f1f6f9"), STEPPE = hex("#d9c48c"), SEA = [112, 170, 196];
+  const prof = (x) => {   // 西（左）から東（右）への、山の形
+    const andes = 0.95 * Math.exp(-(((x - 0.47) / 0.15) ** 2)), plain = 0.14 * ss(0.5, 0.75, x);
+    return -0.12 + 0.2 * ss(0.1, 0.2, x) + andes + plain;
+  };
+  const zf = (x, y) => prof(x) * (0.86 + 0.14 * Math.sin(y * 8 + x * 4) * ss(0.2, 0.5, prof(x))) + 0.012 * Math.sin(x * 37 + y * 21);
+  const WX = [0.07, 0.3, 0.47, 0.64, 0.86], MO = [100, 65, 35, 12, 8];   // 風の位置と、風に残っている水分（目安）
+  const at = (arr, t) => { const i = Math.min(3, Math.floor(clamp(t, 0, 4))); return lerp(arr[i], arr[i + 1], clamp(t, 0, 4) - i); };
+  return {
+    key: "patagonia", aria: "アンデス山脈を越える西風の立体のモデル",
+    slider: { label: "風を進める" },
+    steps: [
+      ["①太平洋の上", "海の上を渡るあいだに、西風は水分をたっぷり含んでいく。"],
+      ["②西の斜面をのぼる", "山にぶつかった風は斜面をはい上がり、冷やされて雲になって雨を降らせる。チリ側に深い森が育つのはこのため。"],
+      ["③山の上", "高いところでは、雨は雪に。降り積もった雪が固まって、巨大な氷原ができた。"],
+      ["④東の斜面をくだる", "水分を落としきった風は、乾いたまま一気に吹きおろす。"],
+      ["⑤東の平原", "雨がほとんど届かず、木の少ない草原が広がる。これがアルゼンチン側の景色。"],
+    ],
+    size: [3.0, 1.9, 1.25], base: -0.4, view: { yaw: -0.22, pitch: 0.5 }, scale: 4.7, center: [0.5, 0.5, 0.25],
+    z: (x, y) => zf(x, y),
+    color: (x, y, z) => {
+      const west = 1 - ss(0.42, 0.5, x);
+      let c = mix(mix(STEPPE, hex("#cbb57a"), 0.5 + 0.5 * Math.sin(x * 29 + y * 17)), mix(FOREST, hex("#5c8a4e"), 0.5 + 0.5 * Math.sin(x * 41 + y * 23)), west);
+      c = mix(c, ROCKC, ss(0.5, 0.72, z));
+      return mix(c, ICE, ss(0.72, 0.86, z));
+    },
+    cutAt: (x, y, zz) => (zz < -0.2 ? hex("#c9b594") : hex("#d8c8a8")),
+    layers: [{ top: () => 0, color: () => SEA, alpha: () => 1 }],
+    lines: (t) => {
+      const X = at(WX, t), n = 28, pts = [], rest = [];
+      for (let i = 0; i <= n; i++) { const x = lerp(0.0, 0.99, i / n); (x <= X ? pts : rest).push([x, 0.5, Math.max(0.2, zf(x, 0.5) + 0.22)]); }
+      if (pts.length < 2) pts.push([X, 0.5, Math.max(0.2, zf(X, 0.5) + 0.22)]);
+      return [rest.length > 1 && { pts: [pts[pts.length - 1], ...rest], c: "rgba(27,35,48,.35)", w: 1.6, dash: [4, 4] }, { pts, c: "#1f6f5b", w: 3.2, arrow: true }];
+    },
+    marks: (t) => {
+      const X = at(WX, t), zz = Math.max(0.2, zf(X, 0.5) + 0.22);
+      return [
+        t < 2.6 && { type: "cloud", p: [X, 0.5, zz + 0.22], a: 1 - ss(2.1, 2.6, t), size: lerp(1.15, 0.7, clamp(t / 2.5)) },
+        t > 0.5 && t < 1.6 && { type: "rain", p: [X, 0.5, zz + 0.1], a: ss(0.5, 0.9, t) * (1 - ss(1.3, 1.6, t)) },
+        t > 1.5 && t < 2.6 && { type: "snow", p: [X, 0.5, zz + 0.1], a: ss(1.5, 1.9, t) * (1 - ss(2.2, 2.6, t)) },
+      ];
+    },
+    hud: (g, W, H, t, tag) => {   // 風に残っている水分（目安）
+      const mo = at(MO, t), x0 = 12, y0 = H - 16, w = 110;
+      tag("風に残っている水分", x0, y0 - 14, INK, 10, "left");
+      g.fillStyle = "#e6edf0"; g.fillRect(x0, y0 - 5, w, 9); g.fillStyle = "#3b82a0"; g.fillRect(x0, y0 - 5, w * mo / 100, 9);
+      g.strokeStyle = INK; g.lineWidth = 1.2; g.strokeRect(x0, y0 - 5, w, 9);
+    },
+    labels: () => [
+      { s: "太平洋", p: [0.06, 0.2, 0.03], c: "#fff", halo: "#2f6f9a" }, { s: "森（チリ）", p: [0.27, 0, -0.08] }, { s: "氷原", p: [0.47, 0.5, 1.02] }, { s: "乾いた草原（アルゼンチン）", p: [0.8, 0, -0.08] },
+      { s: "西", p: [0.02, 0, -0.3], size: 10 }, { s: "東", p: [0.98, 0, -0.3], size: 10 },
+    ],
+  };
+})();
+
+// ---------------- ウユニ塩湖：月ごとの雨と、鏡張り ----------------
+const UYUNI = (() => {
+  const RAIN = [42, 37, 27, 1, 1, 1, 1, 1, 2, 1, 10, 22];   // 月ごとの雨の量（mm、目安）
+  const state = (m) => ([12, 1, 2, 3].includes(m) ? 2 : m === 11 || m === 4 ? 1 : 0);   // 0 乾いた白い大地 / 1 水が少し / 2 鏡張りのチャンス
+  const TXT = [
+    ["乾季：白い塩の大地", "水が干上がり、六角形の塩の模様が地平線まで続く。車で塩原の奥まで走れる時期。"],
+    ["季節の変わり目", "ところどころに水たまりが残る時期。鏡張りになるかは、その年の雨しだい。"],
+    ["雨季：鏡張りのチャンス", "雨の帯が南へ下りてきて、ウユニにも雨が降る。平らな塩の上に浅く水がたまり、風のない日は空を映す鏡に。"],
+  ];
+  const wetAt = (t) => { const i = Math.floor(clamp(t, 0, 11)), j = Math.min(11, i + 1); return lerp(state(i + 1), state(j + 1), clamp(t, 0, 11) - i) / 2; };
+  const SALT = hex("#f6f4ee"), EDGE = hex("#d9d2c2"), MTN = hex("#a79685"), SKY = [176, 212, 232];
+  const hexEdge = (x, y) => {   // 塩の六角形の模様：いちばん近い六角形のふちまでの近さ（0がふち）
+    const px = x * 11, py = y * 11 * 0.92, m = (v, r) => ((v % r) + r) % r - r / 2;
+    const ax = m(px, 1), ay = m(py, 1.7320508), bx = m(px - 0.5, 1), by = m(py - 0.8660254, 1.7320508);
+    const gx = ax * ax + ay * ay < bx * bx + by * by ? ax : bx, gy = ax * ax + ay * ay < bx * bx + by * by ? ay : by;
+    return 0.5 - Math.max(Math.abs(gx), Math.abs(gx) * 0.5 + Math.abs(gy) * 0.8660254);
+  };
+  const mtn = (x, y) => 0.42 * ss(0.8, 0.98, y) * (0.6 + 0.4 * Math.sin(x * 9 + 1) * Math.sin(x * 4)) + 0.3 * Math.exp(-(((x - 0.8) / 0.12) ** 2) - (((y - 0.72) / 0.12) ** 2));
+  const dip = (x, y) => 0.012 * Math.sin(x * 7 + 1) * Math.sin(y * 6 + 2);   // ごくわずかなくぼみ（水たまりになるところ）
+  return {
+    key: "uyuni", aria: "ウユニ塩湖の雨季と乾季の立体のモデル", useM: true,
+    slider: { label: "月", fmt: (st) => `${st + 1}月` },
+    steps: RAIN.map((r, i) => { const [a, b] = TXT[state(i + 1)]; return [`${i + 1}月：${a}`, b]; }),
+    size: [2.6, 2.4, 1.1], base: -0.22, view: { yaw: -0.25, pitch: 0.42 }, scale: 4.5, center: [0.5, 0.5, 0.12],
+    z: (x, y) => 0.02 + dip(x, y) + mtn(x, y),
+    color: (x, y, z, t) => {
+      if (mtn(x, y) > 0.012) return mix(MTN, hex("#8c7b6b"), ss(0.1, 0.4, z));
+      return mix(SALT, EDGE, (1 - ss(0.015, 0.05, hexEdge(x, y))) * 0.9);
+    },
+    cutAt: (x, y, zz) => (zz > -0.06 ? hex("#efeae0") : hex("#cdbfa6")),
+    layers: [{ top: (x, y, t) => 0.02 - 0.014 + 0.03 * wetAt(t), color: (x, y) => mix(SKY, [222, 236, 244], 0.5 + 0.5 * Math.sin(x * 5 + y * 3)), alpha: () => 1 }],
+    marks: (t) => [
+      { type: "cloud", p: [0.3, 0.6, 0.75], size: 1.1 }, { type: "cloud", p: [0.7, 0.4, 0.85], size: 0.9 },
+      wetAt(t) > 0.5 && { type: "rain", p: [0.3, 0.6, 0.62], a: ss(0.5, 1, wetAt(t)) }, wetAt(t) > 0.5 && { type: "rain", p: [0.7, 0.4, 0.72], a: ss(0.5, 1, wetAt(t)) },
+    ],
+    hud: (g, W, H, t, tag) => {   // 月ごとの雨の量
+      const m = Math.round(clamp(t, 0, 11)), x0 = 12, bw = 9, gap = 3, y0 = H - 20, hmax = 34;
+      tag("月ごとの雨の量（目安）", x0, y0 - hmax - 10, INK, 10, "left");
+      RAIN.forEach((r, i) => {
+        const h = Math.max(1.5, hmax * r / 42), x = x0 + i * (bw + gap);
+        g.fillStyle = i === m ? "#1f6f5b" : "#c9d8d2"; g.fillRect(x, y0 - h, bw, h);
+        if (i === m) { g.strokeStyle = INK; g.lineWidth = 1.2; g.strokeRect(x, y0 - h, bw, h); }
+        g.font = `${i === m ? 800 : 500} 8px "Noto Sans JP", sans-serif`; g.textAlign = "center"; g.textBaseline = "top"; g.fillStyle = INK; g.fillText(String(i + 1), x + bw / 2, y0 + 3);
+      });
+      tag(`${m + 1}月：約${RAIN[m]}mm`, x0 + 12 * (bw + gap) + 6, y0 - 8, "#175243", 10, "left");
+    },
+    labels: (t) => [
+      wetAt(t) > 0.75 && { s: "浅い水が、空を映す", p: [0.45, 0.3, 0.06], c: "#2f6f9a" },
+      wetAt(t) < 0.25 && { s: "六角形の塩の模様", p: [0.45, 0.3, 0.06] },
+      wetAt(t) >= 0.25 && wetAt(t) <= 0.75 && { s: "ところどころに水たまり", p: [0.45, 0.3, 0.06] },
+    ],
+  };
+})();
+
+const MODELS = { fjord: FJ, rift: RIFT, butte: BUTTE, karst: KARST, pinnacle: PINN, cappa: CAPPA, iguazu: IGU, canyon: CANYON, uluru: ULURU, flat: FLAT, patagonia: PATA, uyuni: UYUNI };
 export const hasTerrain = (k) => !!MODELS[k];
 
 // ---------------- 描く ----------------
@@ -614,6 +725,24 @@ function draw(cv, M, S, view) {
     };
     M.front(t, line, (str, x, zz, c, size, al) => { const p = P(x, 0, zz); tagAt(str, p[0], p[1], c, size, al); });
   }
+  for (const mk of (M.marks ? M.marks(t) : [])) {
+    if (!mk) continue;
+    const [x, y] = P(...mk.p), a = mk.a === undefined ? 1 : mk.a, k = mk.size || 1;
+    g.globalAlpha = a;
+    if (mk.type === "cloud") {
+      g.fillStyle = mk.c || "#fff"; g.strokeStyle = INK; g.lineWidth = 1.3;
+      g.beginPath(); [[-11, 3, 8], [0, -3, 11], [12, 3, 8], [1, 5, 8]].forEach(([dx, dy, r]) => { g.moveTo(x + (dx + r) * k, y + dy * k); g.arc(x + dx * k, y + dy * k, r * k, 0, 7); });
+      g.stroke(); g.fill();
+    } else if (mk.type === "rain") {
+      g.strokeStyle = "#2f6f9a"; g.lineWidth = 2;
+      for (let n = -1; n <= 1; n++) { g.beginPath(); g.moveTo(x + n * 9 + 2, y); g.lineTo(x + n * 9 - 2, y + 11); g.stroke(); }
+    } else if (mk.type === "snow") {
+      g.fillStyle = "#fff"; g.strokeStyle = INK; g.lineWidth = 1;
+      [[-9, 0], [0, 5], [9, 1], [-3, 12], [6, 13]].forEach(([dx, dy]) => { g.beginPath(); g.arc(x + dx, y + dy, 2.4, 0, 7); g.fill(); g.stroke(); });
+    }
+    g.globalAlpha = 1;
+  }
+  if (M.hud) M.hud(g, W, H, t, tagAt);
   for (const lb of M.labels(t)) {
     if (!lb) continue;
     const p = P(...lb.p);
@@ -624,14 +753,16 @@ function draw(cv, M, S, view) {
 // ---------------- 記事の中に置く ----------------
 const res = (M, st) => `<span>${M.steps[st][0]}</span><b>${M.steps[st][1]}</b>`;
 
+const slText = (M, st) => (M.slider && M.slider.fmt ? M.slider.fmt(st) : `${st + 1} / ${M.steps.length}`);
 export function terrainHtml(b) {
-  const M = MODELS[b.k], n = M.steps.length;
+  const M = MODELS[b.k], n = M.steps.length, lab = (M.slider && M.slider.label) || "ステップ";
+  const st = M.useM ? Math.min(n - 1, Math.max(0, (+b.m || 1) - 1)) : 0;   // 月で動かすモデルは、記事で決めた月から始める
   return `<figure class="bfig"><div class="mdl" data-mdl="t3d" data-k="${M.key}">
     <p class="mdl-h">手で動かしてみよう</p>
     <canvas class="mdl-3d" aria-label="${M.aria}"></canvas>
     <p class="mdl-hint">指でドラッグすると、向きを変えられます</p>
-    <div class="mdl-res">${res(M, 0)}</div>
-    <label class="mdl-sl"><span>ステップ</span><input type="range" class="mdl-m" min="1" max="${n}" step="1" value="1" aria-label="ステップ"><b>1 / ${n}</b></label>
+    <div class="mdl-res">${res(M, st)}</div>
+    <label class="mdl-sl"><span>${lab}</span><input type="range" class="mdl-m" min="1" max="${n}" step="1" value="${st + 1}" aria-label="${lab}"><b>${slText(M, st)}</b></label>
   </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
 }
 
@@ -640,7 +771,7 @@ export function initTerrain(root) {
   if (!cv || !M || cv.dataset.on) return;
   cv.dataset.on = "1";
   const view = { ...M.view };
-  let t = 0, goal = 0, S = build(M, 0, true), raf = 0, idle = 0, drag = null;
+  let t = +r.value - 1, goal = t, S = build(M, t, true), raf = 0, idle = 0, drag = null;
   const paint = () => draw(cv, M, S, view);
   const settle = () => { clearTimeout(idle); idle = setTimeout(() => { if (!raf && !drag) { S = build(M, t, true); paint(); } }, 120); };
   const tick = () => {
@@ -654,7 +785,7 @@ export function initTerrain(root) {
     const st = +r.value - 1;
     goal = st;
     root.querySelector(".mdl-res").innerHTML = res(M, st);
-    root.querySelector(".mdl-sl b").textContent = `${st + 1} / ${M.steps.length}`;
+    root.querySelector(".mdl-sl b").textContent = slText(M, st);
     if (!raf) raf = requestAnimationFrame(tick);
   });
   cv.addEventListener("pointerdown", (e) => { if (!raf) S = build(M, t, false); drag = { x: e.clientX, y: e.clientY, yaw: view.yaw, pitch: view.pitch }; cv.style.cursor = "grabbing"; try { cv.setPointerCapture(e.pointerId); } catch (_) {} });

@@ -1,16 +1,15 @@
-import { himaHtml, initHima } from "./hima3d.js?v=202611282030";
-import { euHtml, initEu } from "./eurowind.js?v=202611282030";
-import { hasTerrain, terrainHtml, initTerrain } from "./terrain3d.js?v=202611282030";
+import { himaHtml, initHima } from "./hima3d.js?v=202611282100";
+import { euHtml, initEu } from "./eurowind.js?v=202611282100";
+import { auroraHtml, initAurora } from "./aurora.js?v=202611282100";
+import { hasTerrain, terrainHtml, initTerrain } from "./terrain3d.js?v=202611282100";
 // 旅の掲示板（旅と地理）の記事の中に入れる、手で動かせるモデル
 // いまあるもの：hadley＝大気大循環の地球儀（月のスライダーで、太陽と、雨の帯・乾きやすい帯が南北に動く。指で地球を回せる）
-//             patagonia＝アンデス山脈の断面（スライダーで風を西から東へ進めると、雨や雪を降らせて乾いていく）
 //             circ＝大気大循環の断面（月のスライダーで、雨の帯と空気の流れが南北に動き、バンコクとバリ島の雨季・乾季が変わる）
-//             uyuni＝ウユニ塩湖（月のスライダーで、雨の量と、塩原が「鏡」と「白い大地」に変わる）
 //             立体の地形（terrain3d.js。ステップでなめらかに形が変わり、指で向きを変えられる）：
 //               fjord＝フィヨルド／rift＝アイスランド（プレートが離れる）／butte＝モニュメント・バレー／karst＝ハロン湾
 //               pinnacle＝ピナクルズ／cappa＝カッパドキア／iguazu＝イグアスの滝／canyon＝グランド・キャニオン
-//               uluru＝ウルル／flat＝オーストラリアの平らさ
-//             aurora＝オーロラが光るまで（ステップで進む断面）
+//               uluru＝ウルル／flat＝オーストラリアの平らさ／patagonia＝アンデスを越える西風／uyuni＝ウユニ塩湖（月のスライダー）
+//             aurora＝オーロラが光るまで（粒が流れるモデル。aurora.js）
 //             himalaya＝ヒマラヤができるまで（立体の地図。hima3d.js。指で向きを変えられる）
 //             europe＝ヨーロッパの冬が暖かい理由（風が流れる地図。eurowind.js）
 // 本物の気候を、ごく簡単にしたモデルです（目安）。
@@ -113,12 +112,10 @@ function result(m) {
 // 記事の中に出す（b = { t: "model", k: "hadley", m: 最初の月, cap: 説明 }）
 export function modelHtml(b) {
   if (hasTerrain(b.k)) return terrainHtml(b);   // 立体の地形モデル（terrain3d.js）
-  if (b.k === "patagonia") return patHtml(b);
   if (b.k === "circ") return circHtml(b);
-  if (b.k === "uyuni") return uyHtml(b);
   if (b.k === "himalaya") return himaHtml(b);   // ヒマラヤは立体の地図（hima3d.js）
+  if (b.k === "aurora") return auroraHtml(b);   // オーロラは、粒が流れるモデル（aurora.js）
   if (b.k === "europe") return euHtml(b);       // ヨーロッパの冬は、風が流れる地図（eurowind.js）
-  if (STEP_TXT[b.k]) return stepHtml(b);
   if (b.k !== "hadley") return "";
   const m = Math.min(12, Math.max(1, +b.m || 1));
   return `<figure class="bfig"><div class="mdl" data-mdl="hadley" data-m="${m}" data-lon="-68">
@@ -131,82 +128,6 @@ export function modelHtml(b) {
   </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
 }
 
-
-// ---- パタゴニア：山を越える西風 ----
-const PT_LAND = [[60, 170], [100, 150], [140, 100], [170, 58], [200, 100], [230, 140], [260, 160], [360, 166]];
-function ptTerrain(x) {
-  if (x <= 60) return 170;
-  for (let i = 1; i < PT_LAND.length; i++) {
-    const [x1, y1] = PT_LAND[i - 1], [x2, y2] = PT_LAND[i];
-    if (x <= x2) return y1 + (y2 - y1) * (x - x1) / (x2 - x1);
-  }
-  return 166;
-}
-const ptY = (x) => Math.max(30, ptTerrain(x) - 38);
-const PT_STEPS = [
-  { x: 32, mo: 100, t: "①太平洋の上", d: "海の上を渡るあいだに、西風は水分をたっぷり含んでいく。" },
-  { x: 112, mo: 65, t: "②西の斜面をのぼる", d: "山にぶつかった風は斜面をはい上がり、冷やされて雲になって雨を降らせる。チリ側に深い森が育つのはこのため。" },
-  { x: 170, mo: 35, t: "③山の上", d: "高いところでは、雨は雪に。降り積もった雪が固まって、巨大な氷原ができた。" },
-  { x: 228, mo: 12, t: "④東の斜面をくだる", d: "水分を落としきった風は、乾いたまま一気に吹きおろす。" },
-  { x: 305, mo: 8, t: "⑤東の平原", d: "雨がほとんど届かず、木の少ない草原が広がる。これがアルゼンチン側の景色。" },
-];
-function patSvg(st) {
-  const INK = "#1b2330", S = PT_STEPS[st], x = S.x, y = ptY(x);
-  const pts = []; for (let px = 20; px <= 340; px += 5) pts.push([px, ptY(px)]);
-  const line = (q) => q.map(([a, c], i) => `${i ? "L" : "M"}${a} ${c.toFixed(1)}`).join(" ");
-  const done = pts.filter(([px]) => px <= x);
-  let air = "";
-  if (S.mo >= 30) {
-    const s = 0.6 + 0.5 * S.mo / 100, e = (cx, cy, rx, ry) => `<ellipse cx="${(x + cx * s).toFixed(1)}" cy="${(y + cy * s).toFixed(1)}" rx="${(rx * s).toFixed(1)}" ry="${(ry * s).toFixed(1)}"/>`;
-    air = `<g fill="#e3f0f4" stroke="${INK}" stroke-width="1.8">${e(-12, 2, 12, 9)}${e(2, -4, 15, 12)}${e(15, 2, 11, 8)}</g>`;
-    if (st === 1) air += [-12, 0, 12].map((d, i) => `<line x1="${x + d}" y1="${y + 16 + i * 3}" x2="${x + d - 4}" y2="${y + 28 + i * 3}" stroke="#3b82a0" stroke-width="2.4" stroke-linecap="round"/>`).join("");
-    if (st === 2) air += [[-12, 18], [0, 24], [12, 18], [-6, 30], [6, 31]].map(([dx, dy]) => `<circle cx="${x + dx}" cy="${y + dy}" r="2.6" fill="#fff" stroke="${INK}" stroke-width="1.2"/>`).join("");
-  } else {
-    air = `<path d="M${x - 20} ${y - 4} Q${x - 6} ${y - 12} ${x + 4} ${y - 2} L${x + 16} ${y + 6}" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/><path d="M${x + 9} ${y + 7} L${x + 17} ${y + 7} L${x + 15} ${y - 1}" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><text x="${x}" y="${y - 16}" font-size="10" text-anchor="middle" fill="${INK}" font-weight="700">乾いた風</text>`;
-  }
-  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="アンデス山脈の断面">
-    <rect width="360" height="220" fill="#fbf9f4"/>
-    <rect x="0" y="170" width="60" height="50" fill="#5fa3b8" opacity=".85"/>
-    <path d="M60 170 L100 150 L140 100 L170 58 L170 220 L60 220 Z" fill="#8fbf98"/>
-    <path d="M170 58 L200 100 L230 140 L260 160 L360 166 L360 220 L170 220 Z" fill="#e3d3a6"/>
-    <path d="M60 170 L100 150 L140 100 L170 58 L200 100 L230 140 L260 160 L360 166" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M151.4 84 L170 58 L188.6 84 L178 80 L170 86 L162 80 Z" fill="#fff" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round"/>
-    <text x="30" y="196" font-size="10" text-anchor="middle" fill="#fff" font-weight="700">太平洋</text>
-    <text x="112" y="186" font-size="11" text-anchor="middle" fill="${INK}" font-weight="700">森</text>
-    <text x="170" y="104" font-size="10" text-anchor="middle" fill="${INK}" font-weight="700">氷原</text>
-    <text x="300" y="190" font-size="11" text-anchor="middle" fill="${INK}" font-weight="700">乾いた草原</text>
-    <text x="112" y="210" font-size="10" text-anchor="middle" fill="${INK}">チリ</text>
-    <text x="300" y="210" font-size="10" text-anchor="middle" fill="${INK}">アルゼンチン</text>
-    <text x="10" y="16" font-size="11" fill="${INK}" font-weight="700">西</text><text x="350" y="16" font-size="11" text-anchor="end" fill="${INK}" font-weight="700">東</text>
-    <path d="${line(pts)}" fill="none" stroke="${INK}" stroke-width="1.4" stroke-dasharray="4 5" opacity=".45"/>
-    <path d="${line(done)}" fill="none" stroke="#1f6f5b" stroke-width="3" stroke-linecap="round"/>
-    <path d="M334 ${(ptY(340) - 5).toFixed(1)} L342 ${ptY(340).toFixed(1)} L334 ${(ptY(340) + 5).toFixed(1)}" fill="none" stroke="${INK}" stroke-width="1.4" opacity=".45"/>
-    ${air}
-  </svg>`;
-}
-function patRes(st) {
-  const S = PT_STEPS[st];
-  return `<span>${S.t}</span><b>${S.d}</b><span class="pt-lb">風に残っている水分</span><div class="pat-bar"><i style="width:${S.mo}%"></i></div>`;
-}
-function patHtml(b) {
-  return `<figure class="bfig"><div class="mdl" data-mdl="patagonia">
-    <p class="mdl-h">手で動かしてみよう</p>
-    <div class="mdl-fj">${patSvg(0)}</div>
-    <div class="mdl-res">${patRes(0)}</div>
-    <label class="mdl-sl"><span>風を進める</span><input type="range" class="mdl-m" min="1" max="5" step="1" value="1" aria-label="風を進める"><b>1 / 5</b></label>
-  </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
-}
-function initPat(root) {
-  const r = root.querySelector(".mdl-m");
-  if (!r || r.dataset.on) return;
-  r.dataset.on = "1";
-  r.addEventListener("input", () => {
-    const st = +r.value - 1;
-    root.querySelector(".mdl-fj").innerHTML = patSvg(st);
-    root.querySelector(".mdl-res").innerHTML = patRes(st);
-    root.querySelector(".mdl-sl b").textContent = `${st + 1} / 5`;
-  });
-}
 
 // ---- 大気大循環：赤道をはさんだ空気の流れ（東南アジアの目安） ----
 // 雨の帯の中心（緯度）。東南アジアあたりの目安で、太陽より1〜2か月おくれて動く
@@ -222,7 +143,9 @@ function circSvg(m) {
   const loop = (x2) => {
     const s = Math.sign(x2 - bx), top = 64, low = 182;
     const p = `M${bx} ${low} L${bx} ${top} L${x2} ${top} L${x2} ${low} Z`;
-    return `<path d="${p}" fill="none" stroke="${INK}" stroke-width="2" stroke-linejoin="round" opacity=".75"/>`
+    // 空気のつぶが、輪にそって回りつづける（雨の帯で上がり、上空を流れ、乾く帯で下りて、地表をもどる）
+    const dots = [0, 1, 2, 3, 4, 5].map((k) => `<circle r="3.4" fill="#1b2330"><animateMotion dur="9s" begin="${-k * 1.5}s" repeatCount="indefinite" path="${p}"/></circle>`).join("");
+    return `<path d="${p}" fill="none" stroke="${INK}" stroke-width="2" stroke-linejoin="round" opacity=".45"/>${dots}`
       + head(bx, 150, "u", "#1f6f5b") + head((bx + x2) / 2, top, s > 0 ? "r" : "l", INK) + head(x2, 130, "d", "#e2683b") + head((bx + x2) / 2, low, s > 0 ? "l" : "r", INK);
   };
   const sx = X(CC_SUN(m));
@@ -274,128 +197,14 @@ function initCirc(root) {
   });
 }
 
-// ---- ウユニ塩湖：月ごとの雨と、鏡張り ----
-const UY_RAIN = [42, 37, 27, 1, 1, 1, 1, 1, 2, 1, 10, 22];   // 月ごとの雨の量（mm、目安）
-const uyState = (m) => ([12, 1, 2, 3].includes(m) ? 2 : m === 11 || m === 4 ? 1 : 0);   // 0 乾いた白い大地 / 1 水が少しある / 2 鏡張りのチャンス
-const UY_TXT = [
-  ["乾季：白い塩の大地", "水が干上がり、六角形の塩の模様が地平線まで続く。車で塩原の奥まで走れる時期。"],
-  ["季節の変わり目", "ところどころに水たまりが残る時期。鏡張りになるかは、その年の雨しだい。"],
-  ["雨季：鏡張りのチャンス", "雨の帯が南へ下りてきて、ウユニにも雨が降る。平らな塩の上に浅く水がたまり、風のない日は空を映す鏡に。"],
-];
-function uySvg(m) {
-  const INK = "#1b2330", st = uyState(m), H = 112;
-  const person = (x, y, s = 1, op = 1) => `<g opacity="${op}" stroke="${INK}" stroke-width="2.2" stroke-linecap="round" fill="none"><circle cx="${x}" cy="${y - 34 * s}" r="${5 * s}" fill="#fbf9f4"/><line x1="${x}" y1="${y - 29 * s}" x2="${x}" y2="${y - 13 * s}"/><line x1="${x}" y1="${y - 13 * s}" x2="${x - 6 * s}" y2="${y}"/><line x1="${x}" y1="${y - 13 * s}" x2="${x + 6 * s}" y2="${y}"/><line x1="${x - 9 * s}" y1="${y - 24 * s}" x2="${x + 9 * s}" y2="${y - 24 * s}"/></g>`;
-  const cloud = (x, y, k) => `<g fill="#fff" stroke="${INK}" stroke-width="1.5"><ellipse cx="${x - 12 * k}" cy="${y}" rx="${13 * k}" ry="${8 * k}"/><ellipse cx="${x + 4 * k}" cy="${y - 5 * k}" rx="${15 * k}" ry="${10 * k}"/><ellipse cx="${x + 18 * k}" cy="${y + 1}" rx="${10 * k}" ry="${7 * k}"/></g>`;
-  const k = (180 - H) / H, mir = (svg) => `<g transform="translate(0 ${H + H * k}) scale(1 ${-k})" opacity=".6">${svg}</g>`;
-  const sky = cloud(90, 40, 1) + cloud(270, 30, 0.8) + (st ? cloud(190, 58, 0.7) : "");
-  let ground;
-  if (st === 2) ground = `<rect x="0" y="${H}" width="360" height="${180 - H}" fill="#cfe3ec"/>` + mir(sky) + `<g transform="translate(0 280) scale(1 -1)" opacity=".45">${person(180, 140, 0.85)}</g>`;
-  else {
-    let hex = "";
-    for (let r = 0; r < 6; r++) {
-      const w = 14 + r * 9, h = 2 + r * 1.6, y = H + 4 + r * r * 1.9 + r * 4;
-      for (let x = -w + (r % 2) * w * 0.75; x < 370; x += w * 1.5) hex += `<path d="M${x - w / 2} ${y} L${x - w / 4} ${y - h} L${x + w / 4} ${y - h} L${x + w / 2} ${y} L${x + w / 4} ${y + h} L${x - w / 4} ${y + h} Z" fill="none" stroke="#c9c3b3" stroke-width="1.2"/>`;
-    }
-    ground = `<rect x="0" y="${H}" width="360" height="${180 - H}" fill="#f8f6f0"/>${hex}`;
-    if (st === 1) ground += `<ellipse cx="90" cy="150" rx="46" ry="7" fill="#cfe3ec" stroke="${INK}" stroke-width="1"/><ellipse cx="275" cy="135" rx="34" ry="5" fill="#cfe3ec" stroke="${INK}" stroke-width="1"/>`;
-  }
-  const bars = UY_RAIN.map((v, i) => { const h = Math.max(1.5, v * 1.15), x = 22 + i * 27; return `<rect x="${x}" y="${246 - h}" width="17" height="${h}" fill="${i === m - 1 ? "#1f6f5b" : "#c9d6cf"}" stroke="${INK}" stroke-width="${i === m - 1 ? 1.5 : 0}"/><text x="${x + 8.5}" y="258" font-size="9.5" text-anchor="middle" fill="${INK}" font-weight="${i === m - 1 ? 800 : 400}">${i + 1}</text>`; }).join("");
-  return `<svg viewBox="0 0 360 264" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ウユニ塩湖">
-    <rect width="360" height="${H}" fill="#e4f0f5"/>${sky}
-    ${ground}
-    <line x1="0" y1="${H}" x2="360" y2="${H}" stroke="${INK}" stroke-width="1.5"/>
-    ${person(180, 140, 0.85)}
-    ${st === 2 ? `<text x="352" y="${H + 16}" font-size="11" text-anchor="end" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#cfe3ec" stroke-width="3">空が映る</text>` : ""}
-    <rect x="0" y="180" width="360" height="84" fill="#fbf9f4"/>
-    <line x1="0" y1="180" x2="360" y2="180" stroke="${INK}" stroke-width="1.5"/>
-    <text x="12" y="196" font-size="10.5" fill="${INK}" font-weight="700">ウユニの月ごとの雨の量（目安）</text>
-    <text x="348" y="196" font-size="10.5" text-anchor="end" fill="#175243" font-weight="800">${MONTHS[m - 1]}：約${UY_RAIN[m - 1]}mm</text>
-    ${bars}
-  </svg>`;
-}
-function uyRes(m) { const [t, d] = UY_TXT[uyState(m)]; return `<span>${MONTHS[m - 1]}：${t}</span><b>${d}</b>`; }
-function uyHtml(b) {
-  const m = Math.min(12, Math.max(1, +b.m || 1));
-  return `<figure class="bfig"><div class="mdl" data-mdl="uyuni">
-    <p class="mdl-h">手で動かしてみよう</p>
-    <div class="mdl-fj">${uySvg(m)}</div>
-    <div class="mdl-res">${uyRes(m)}</div>
-    <label class="mdl-sl"><span>月</span><input type="range" class="mdl-m" min="1" max="12" step="1" value="${m}" aria-label="月"><b>${MONTHS[m - 1]}</b></label>
-  </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
-}
-function initUy(root) {
-  const r = root.querySelector(".mdl-m");
-  if (!r || r.dataset.on) return;
-  r.dataset.on = "1";
-  r.addEventListener("input", () => {
-    const m = +r.value;
-    root.querySelector(".mdl-fj").innerHTML = uySvg(m);
-    root.querySelector(".mdl-res").innerHTML = uyRes(m);
-    root.querySelector(".mdl-sl b").textContent = MONTHS[m - 1];
-  });
-}
-
-// ---- ステップで進む断面モデル（モニュメント・バレー／ハロン湾） ----
-const STEP_TXT = {
-  aurora: [
-    ["①太陽から、電気を帯びた粒が飛んでくる", "太陽からは、電気を帯びた小さな粒（太陽風）が、いつも吹き出している。"],
-    ["②地球の磁場が、粒をはね返す", "地球は大きな磁石のようなもの。磁場が太陽風の多くをはね返し、地球を守っている。"],
-    ["③一部の粒が、極のほうへ流れこむ", "はね返されなかった粒は、磁力の線にそって、北と南の極のほうへ流れこむ。"],
-    ["④空の上で、空気とぶつかって光る", "粒が地上100km以上の空で酸素などにぶつかり、光を出す。光るのは、磁極を囲む輪のような地域の空。"],
-  ],
-};
-function auroraSvg(st) {
-  const INK = "#1b2330", tag = (t, x, y, al = "middle", c = INK, sc = "#fbf6ee") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="${sc}" stroke-width="3">${t}</text>`;
-  const ex = 250, ey = 110, R = 34;
-  let g = `<rect width="360" height="220" fill="#1b2330"/>`;
-  g += `<circle cx="-30" cy="110" r="70" fill="#f2c14e" stroke="#e2683b" stroke-width="3"/>` + tag("太陽", 22, 114, "middle", INK, "#f2c14e");
-  // 磁力線（地球のまわりのだ円）
-  if (st >= 1) g += [52, 76, 100].map((w, i) => `<path d="M${ex} ${ey - R} C ${ex - w} ${ey - R - w * 0.9}, ${ex - w * 1.2} ${ey + R + w * 0.9}, ${ex} ${ey + R} M${ex} ${ey - R} C ${ex + w * 1.6} ${ey - R - w * 0.9}, ${ex + w * 1.8} ${ey + R + w * 0.9}, ${ex} ${ey + R}" fill="none" stroke="#9bb8c9" stroke-width="1.4" opacity="${0.8 - i * 0.2}"/>`).join("");
-  // 太陽風の粒
-  const dots = st === 0 ? [[70, 70], [100, 120], [130, 90], [160, 140], [110, 160], [150, 60], [185, 105]] : [[70, 70], [100, 120], [130, 90], [110, 160], [150, 60]];
-  g += dots.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.2" fill="#f2c14e"/><path d="M${x - 14} ${y} H${x - 5}" stroke="#f2c14e" stroke-width="1.6" stroke-linecap="round"/>`).join("");
-  if (st === 1) g += `<path d="M178 78 Q190 60 168 50 M178 142 Q190 160 168 170" fill="none" stroke="#f2c14e" stroke-width="2" stroke-linecap="round"/>` + tag("はね返す", 172, 40, "middle", "#fbf6ee", INK);
-  if (st >= 2) g += `<path d="M190 70 C 215 40, 240 50, ${ex - 6} ${ey - R + 2}" fill="none" stroke="#f2c14e" stroke-width="2" stroke-dasharray="4 4"/><path d="M190 150 C 215 180, 240 170, ${ex - 6} ${ey + R - 2}" fill="none" stroke="#f2c14e" stroke-width="2" stroke-dasharray="4 4"/>`;
-  // 地球
-  g += `<circle cx="${ex}" cy="${ey}" r="${R}" fill="#3b82a0" stroke="#fbf6ee" stroke-width="2"/><path d="M${ex - 18} ${ey - 10} q10 -8 20 0 q8 8 -4 16 q-12 4 -16 -16z M${ex + 6} ${ey + 8} q8 -4 12 4 q-2 10 -12 6z" fill="#1f6f5b"/>`;
-  if (st === 3) g += `<ellipse cx="${ex}" cy="${ey - R + 3}" rx="16" ry="5" fill="none" stroke="#7fe3a6" stroke-width="4" opacity=".95"/><ellipse cx="${ex}" cy="${ey + R - 3}" rx="16" ry="5" fill="none" stroke="#7fe3a6" stroke-width="4" opacity=".95"/>` + tag("オーロラの輪（オーバル）", ex, ey - R - 14, "middle", "#7fe3a6", INK) + tag("南にも輪ができる", ex, ey + R + 22, "middle", "#7fe3a6", INK);
-  g += st === 0 ? tag("太陽風（電気を帯びた粒）", 130, 30, "middle", "#fbf6ee", INK) : st === 2 ? tag("極のほうへ流れこむ", 300, 30, "middle", "#fbf6ee", INK) : "";
-  if (st >= 1) g += tag("地球の磁場", 330, 200, "end", "#9bb8c9", INK);
-  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="オーロラが光るまで">${g}</svg>`;
-}
-const STEP_SVG = { aurora: auroraSvg };
-function stepRes(k, st) { const [t, d] = STEP_TXT[k][st]; return `<span>${t}</span><b>${d}</b>`; }
-function stepHtml(b) {
-  const k = b.k, n = STEP_TXT[k].length;
-  return `<figure class="bfig"><div class="mdl" data-mdl="${k}">
-    <p class="mdl-h">手で動かしてみよう</p>
-    <div class="mdl-fj">${STEP_SVG[k](0)}</div>
-    <div class="mdl-res">${stepRes(k, 0)}</div>
-    <label class="mdl-sl"><span>ステップ</span><input type="range" class="mdl-m" min="1" max="${n}" step="1" value="1" aria-label="ステップ"><b>1 / ${n}</b></label>
-  </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
-}
-function initStep(root) {
-  const r = root.querySelector(".mdl-m"), k = root.dataset.mdl, n = STEP_TXT[k].length;
-  if (!r || r.dataset.on) return;
-  r.dataset.on = "1";
-  r.addEventListener("input", () => {
-    const st = +r.value - 1;
-    root.querySelector(".mdl-fj").innerHTML = STEP_SVG[k](st);
-    root.querySelector(".mdl-res").innerHTML = stepRes(k, st);
-    root.querySelector(".mdl-sl b").textContent = `${st + 1} / ${n}`;
-  });
-}
-
 // 画面に出てきたモデルを、動くようにする（画面全体で、1回だけつなぐ）
 let wired = false;
 function init(root) {
   if (root.dataset.mdl === "t3d") return initTerrain(root);
-  if (root.dataset.mdl === "patagonia") return initPat(root);
   if (root.dataset.mdl === "circ") return initCirc(root);
-  if (root.dataset.mdl === "uyuni") return initUy(root);
   if (root.dataset.mdl === "hima3d") return initHima(root);
   if (root.dataset.mdl === "euwind") return initEu(root);
-  if (STEP_TXT[root.dataset.mdl]) return initStep(root);
+  if (root.dataset.mdl === "aurora2") return initAurora(root);
   const cv = root.querySelector("canvas");
   if (!cv || cv.dataset.on) return;
   cv.dataset.on = "1";
