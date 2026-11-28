@@ -118,6 +118,21 @@ export const COUNTRY_AREAS = [
 // 記事のエリア（d.area があればそれを優先）。どこにも入っていなければ "other"
 export const areaOf = (d) => d.area || (COUNTRY_AREAS.find((a) => a[2].includes(d.id)) || ["other"])[0];
 
+// 旅と地理の、グループ分け（しくみの記事と、場所の記事）。新しい記事は ids に足すか、編集画面で選ぶ（d.area に入る）
+export const GEO_GROUPS = [
+  ["why", "しくみ・なぜ？", ["wind-seasons", "geo-europe", "geo-australia", "geo-aurora"]],
+  ["place", "観光地と地形", ["geo-atacama", "geo-fjord", "geo-patagonia", "geo-iceland", "geo-uyuni", "geo-monument", "geo-halong", "geo-pinnacles", "geo-cappadocia", "geo-iguazu", "geo-grandcanyon", "geo-uluru", "geo-himalaya"]],
+];
+// カテゴリーごとのグループ分け。[キー, 見出し, 記事のID]。unit は見出しの横の数の単位
+export const BOARD_GROUPS = { country: { groups: COUNTRY_AREAS, unit: "か国", def: "other" }, geo: { groups: GEO_GROUPS, unit: "本", def: "place" } };
+// 記事が入るグループのキー（グループ分けのないカテゴリーは ""）
+export const groupOf = (d) => {
+  const G = BOARD_GROUPS[d.cat];
+  if (!G) return "";
+  if (d.area && G.groups.some((g) => g[0] === d.area)) return d.area;
+  return (G.groups.find((g) => g[2].includes(d.id)) || [G.def])[0];
+};
+
 export const BOARD_CATS = [["prep", "準備"], ["flight", "航空券"], ["save", "節約"], ["money", "お金・通信"], ["country", "国別ガイド"], ["geo", "旅と地理"], ["trouble", "事件簿"]];
 
 export const BOARD_SEED = [

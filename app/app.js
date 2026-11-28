@@ -4,14 +4,14 @@
 import { auth, db, storage } from "../firebase-config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, getCountFromServer, serverTimestamp
+  collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, getCountFromServer, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   cinfo, esc, para, yen, isDomestic, prefLabel, derivePrefs, pubSec, costTotalOf, fmtPeriod,
   STYLES, COST_ITEMS, DAYS_OPT, REGION_JP, REGION_EN, COUNTRY_LL, COUNTRY_ISO, COUNTRIES, PREF_GROUPS
 } from "../tabistock-render.js";
-import { ILL, BOARD_CATS, COUNTRY_AREAS, areaOf, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611281900";
-import { modelHtml, wireModels } from "./models.js?v=202611281900";
+import { ILL, BOARD_CATS, BOARD_GROUPS, groupOf, BOARD_SEED, JIKEN, normBoard } from "./board.js?v=202611282000";
+import { modelHtml, wireModels } from "./models.js?v=202611282000";
 
 const $ = (id) => document.getElementById(id);
 const I = {
@@ -753,7 +753,7 @@ async function loadBoards() {
   // 管理者が開いたとき：記事・事件簿がまだ Firestore に1本もなければ、board.js の分を自動でコピーする（それぞれ最初の1回だけ）
   if (admin && list) {
     try {
-      const M = await import("./board-edit.js?v=202611281900");
+      const M = await import("./board-edit.js?v=202611282000");
       let n = 0;
       if (!list.some((d) => !d.jiken && !d.jikenHead)) n += await M.importSeed(me);
       if (!list.some((d) => d.jiken)) n += await M.importJiken(me);
@@ -786,13 +786,14 @@ const illOf = (k) => ILL[k] || ILL.suitcase;
 const boardThumb = (d) => (d.heroType === "photo" && d.heroUrl ? `<span class="bill ph" style="background-image:url('${esc(d.heroUrl)}')"></span>` : `<span class="bill">${illOf(d.ill)}</span>`);
 const catName = (c) => (BOARD_CATS.find((x) => x[0] === c) || [, ""])[1];
 // 一覧の1行（記事）
-const boardRow = (d, admin) => `<a class="bit press" href="#g-${esc(d.id)}">${boardThumb(d)}<div><small>${esc(catName(d.cat))}${admin && d.status === "draft" ? '<em class="bdraft">下書き</em>' : ""}</small><h3>${esc(noMk(d.title))}</h3>${d.lead ? `<p>${esc(noMk(d.lead))}</p>` : ""}</div></a>`;
-// 国別ガイド：エリアごとに見出しをつけて並べる。上のボタンで、そのエリアへ飛べる
-function countryList(shown, admin) {
-  const groups = [...COUNTRY_AREAS.map(([k, l]) => [k, l]), ["other", "その他"]]
-    .map(([k, l]) => [k, l, shown.filter((d) => areaOf(d) === k).sort((x, y) => (x.order ?? 99) - (y.order ?? 99))])
+const boardRow = (d, admin) => `<a class="bit press" href="#g-${esc(d.id)}" data-id="${esc(d.id)}"${d._seed ? " data-seed=\"1\"" : ""}>${boardThumb(d)}<div><small>${esc(catName(d.cat))}${admin && d.status === "draft" ? '<em class="bdraft">下書き</em>' : ""}</small><h3>${esc(noMk(d.title))}</h3>${d.lead ? `<p>${esc(noMk(d.lead))}</p>` : ""}</div></a>`;
+// 国別ガイド・旅と地理：グループごとに見出しをつけて並べる。並べかえは同じグループの中だけ（.bgrp の中）
+function groupedList(shown, admin, cat) {
+  const G = BOARD_GROUPS[cat];
+  const groups = [...G.groups.map(([k, l]) => [k, l]), ["other", "その他"]]
+    .map(([k, l]) => [k, l, shown.filter((d) => groupOf(d) === k).sort((x, y) => (x.order ?? 99) - (y.order ?? 99))])
     .filter((g) => g[2].length);
-  return `<div class="blist">${groups.map(([k, l, ds]) => `<h2 class="barea" id="barea-${k}"><span>${l}</span><em>${ds.length}か国</em></h2>${ds.map((d) => boardRow(d, admin)).join("")}`).join("")}</div>`;
+  return `<div class="blist">${groups.map(([k, l, ds]) => `<h2 class="barea" id="barea-${k}"><span>${l}</span><em>${ds.length}${G.unit}</em></h2><div class="bgrp">${ds.map((d) => boardRow(d, admin)).join("")}</div>`).join("")}</div>`;
 }
 async function renderBoard() {
   const box = $("boardPane");
@@ -808,8 +809,106 @@ async function renderBoard() {
   box.innerHTML = `<div class="bcats">${cats.map(([k, l]) => `<button class="${k === boardCat ? "on" : ""}" data-bc="${k}">${l}</button>`).join("")}</div>
     ${boardCat === "trouble" ? jikenHead(admin) : ""}
     ${adm}
-    ${boardCat === "country" ? countryList(shown, admin) : `<div class="blist">${shown.map((d, i) => d.jiken ? jikenCard(d, admin, i) : boardRow(d, admin)).join("")}</div>`}`;
+    ${BOARD_GROUPS[boardCat] ? groupedList(shown, admin, boardCat) : boardCat === "trouble" ? `<div class="blist">${shown.map((d, i) => jikenCard(d, admin, i)).join("")}</div>` : `<div class="blist"><div class="bgrp">${shown.map((d) => boardRow(d, admin)).join("")}</div></div>`}
+    ${admin && boardCat !== "trouble" ? '<p class="bhint">長押しして動かすと、並び順を入れかえられます（管理者だけ）</p>' : ""}`;
   box.querySelectorAll("[data-bc]").forEach((b) => (b.onclick = () => { boardCat = b.dataset.bc; haptic(); renderBoard(); }));
+  box.classList.toggle("bsortable", !!admin && boardCat !== "trouble");
+  if (admin) wireReorder(box);
+}
+// ---- 管理者だけ：記事を長押しして、ドラッグで並べかえる（同じグループの中だけ）。はなすと order を Firestore に保存 ----
+function wireReorder(box) {
+  if (box.dataset.sortWired) return;   // 掲示板を描きなおすたびに呼ばれるので、つなぐのは1回だけ
+  box.dataset.sortWired = "1";
+  const HOLD = 420, SLOP = 8;
+  let timer = null, start = null, drag = null, raf = 0, lastY = 0;
+  const scroller = (el) => { for (let p = el.parentElement; p; p = p.parentElement) { const o = getComputedStyle(p).overflowY; if ((o === "auto" || o === "scroll") && p.scrollHeight > p.clientHeight) return p; } return document.scrollingElement; };
+  const cancelHold = () => { clearTimeout(timer); timer = null; };
+  const place = () => {
+    const el = drag.el;
+    el.style.transform = "";
+    const top = el.getBoundingClientRect().top;
+    el.style.transform = `translateY(${lastY - drag.grab - top}px)`;
+  };
+  const tick = () => {
+    if (!drag) return;
+    const r = drag.sc === document.scrollingElement ? { top: 0, bottom: innerHeight } : drag.sc.getBoundingClientRect();
+    const edge = 70; let v = 0;
+    if (lastY < r.top + edge) v = -Math.ceil((r.top + edge - lastY) / 6);
+    else if (lastY > r.bottom - edge) v = Math.ceil((lastY - (r.bottom - edge)) / 6);
+    if (v) { drag.sc.scrollTop += v; reorder(); place(); }
+    raf = requestAnimationFrame(tick);
+  };
+  // 指の位置で、同じグループの中の行と入れかえる
+  const reorder = () => {
+    const el = drag.el, sibs = [...drag.grp.querySelectorAll(":scope > .bit")].filter((x) => x !== el);
+    for (const s of sibs) {
+      const r = s.getBoundingClientRect(), mid = r.top + r.height / 2;
+      const before = el.compareDocumentPosition(s) & Node.DOCUMENT_POSITION_PRECEDING;
+      if (before && lastY < mid) { drag.grp.insertBefore(el, s); haptic(); return; }
+      if (!before && lastY > mid) { drag.grp.insertBefore(el, s.nextSibling); haptic(); return; }
+    }
+  };
+  const begin = (el) => {
+    const grp = el.parentElement;
+    if (!grp || !grp.classList.contains("bgrp")) return;
+    drag = { el, grp, grab: start.y - el.getBoundingClientRect().top, sc: scroller(el), moved: false, before: [...box.querySelectorAll(".bit")].map((x) => x.dataset.id).join() };
+    lastY = start.y;
+    el.classList.add("bdrag"); box.classList.add("bsorting");
+    try { navigator.vibrate && navigator.vibrate(15); } catch (e) {}
+    raf = requestAnimationFrame(tick);
+  };
+  const end = async () => {
+    cancelHold();
+    if (!drag) return;
+    const { el } = drag; drag.done = true;
+    cancelAnimationFrame(raf);
+    el.style.transition = "transform .18s ease"; el.style.transform = "";
+    setTimeout(() => { el.style.transition = ""; el.classList.remove("bdrag"); box.classList.remove("bsorting"); }, 190);
+    const ids = [...box.querySelectorAll(".bit")].map((x) => x.dataset.id);
+    const changed = ids.join() !== drag.before;
+    drag = null;
+    if (changed) await saveOrder(ids);
+  };
+  const saveOrder = async (ids) => {
+    const seeds = new Set([...box.querySelectorAll('.bit[data-seed]')].map((x) => x.dataset.id));
+    const batch = writeBatch(db);
+    let n = 0;
+    ids.forEach((id, i) => {
+      const d = (BOARDS || []).find((x) => x.id === id);
+      if (d) d.order = i + 1;
+      if (!seeds.has(id)) { batch.update(doc(db, "boards", id), { order: i + 1 }); n++; }
+    });
+    if (BOARDS) BOARDS.sort((a, b) => (!!a.jiken - !!b.jiken) || (a.order ?? 99) - (b.order ?? 99));
+    try { if (n) await batch.commit(); toast("並び順を保存しました"); }
+    catch (e) { console.error(e); toast("並び順を保存できませんでした"); BOARDS = null; renderBoard(); }
+  };
+  box.addEventListener("pointerdown", (e) => {
+    const el = e.target.closest(".bit");
+    if (!el || !box.classList.contains("bsortable") || (e.pointerType === "mouse" && e.button !== 0)) return;
+    start = { x: e.clientX, y: e.clientY };
+    cancelHold();
+    timer = setTimeout(() => { timer = null; begin(el); }, HOLD);
+  });
+  box.addEventListener("pointermove", (e) => {
+    if (drag) { lastY = e.clientY; drag.moved = true; reorder(); place(); return; }
+    if (timer && start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > SLOP) cancelHold();
+  });
+  box.addEventListener("pointerup", end);
+  box.addEventListener("pointercancel", (e) => { if (drag && e.pointerType === "touch") return; end(); });   // 指のときは touchend で終える
+  // ドラッグ中は画面がスクロールしないように（iOS は touchmove を止める必要がある）。指の位置も touchmove で追う
+  box.addEventListener("touchmove", (e) => {
+    if (!drag) return;
+    e.preventDefault();
+    lastY = e.touches[0].clientY; drag.moved = true; reorder(); place();
+  }, { passive: false });
+  box.addEventListener("touchend", () => { if (drag) { box.dataset.justDragged = "1"; setTimeout(() => delete box.dataset.justDragged, 400); end(); } });
+  box.addEventListener("touchcancel", () => { if (drag) end(); });
+  // ドラッグのあとのタップで、記事が開かないように。長押しのメニューも出さない
+  box.addEventListener("click", (e) => { if (box.dataset.justDragged) { e.preventDefault(); e.stopPropagation(); delete box.dataset.justDragged; } }, true);
+  box.addEventListener("contextmenu", (e) => { if (e.target.closest(".bit")) e.preventDefault(); });
+  const markDragged = () => { if (drag) { box.dataset.justDragged = "1"; setTimeout(() => delete box.dataset.justDragged, 400); } };
+  box.addEventListener("pointerup", markDragged, true);
+  box.addEventListener("pointercancel", markDragged, true);
 }
 // 事件簿の1件：どこで・何が起きたか・手口・被害・その後。タップで元の記事へ
 // 事件簿のタブの一番上：イラスト（または写真）と説明文。管理者には右上に「編集」
@@ -881,7 +980,7 @@ async function pageBoard(el, id) {
     el.querySelector("[data-gedit]").onclick = async () => {
       // 自動のコピーに失敗していた（board.js の記事のまま）ときは、ここでもう一度コピーしてから編集する
       if (d._seed) {
-        try { const M = await import("./board-edit.js?v=202611281900"); await M.importSeed(me); BOARDS = null; renderBoard(); }
+        try { const M = await import("./board-edit.js?v=202611282000"); await M.importSeed(me); BOARDS = null; renderBoard(); }
         catch (e) { console.error(e); toast("記事を Firestore にコピーできませんでした"); return; }
       }
       location.hash = "#ge-" + encodeURIComponent(id);
@@ -891,7 +990,7 @@ async function pageBoard(el, id) {
 // 管理者の記事エディタ（app/board-edit.js）
 function pageBoardEditor(el, id) {
   const entry = STACK[STACK.length - 1];
-  import("./board-edit.js?v=202611281900").then((M) => M.pageBoardEdit(el, id, {
+  import("./board-edit.js?v=202611282000").then((M) => M.pageBoardEdit(el, id, {
     me: () => me, esc, toast, haptic, cat: boardCat,
     preview: (d) => boardArticleHtml(normBoard(d)),
     // 事件簿の「元の旅の記事」の候補（公開中の記事）

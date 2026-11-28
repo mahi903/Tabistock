@@ -1208,6 +1208,11 @@ html.ntab .tab{display:none}
 .bcats button{flex:none;font-size:12px;font-weight:700;color:#8a929d;padding:2px 0;letter-spacing:-.01em}
 .bcats button.on{color:var(--green)}
 .blist{padding:0 20px 30px}
+.bsortable .bit{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.bit.bdrag{position:relative;z-index:5;background:var(--bg);outline:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green);padding-left:10px;padding-right:10px;margin:0 -10px;border-radius:4px}
+.bsorting .bit:not(.bdrag){transition:opacity .2s}
+.bsorting .bit:not(.bdrag){opacity:.75}
+.bhint{padding:0 20px 28px;font-size:11.5px;color:var(--muted)}
 .barea{display:flex;align-items:baseline;gap:10px;margin:22px 0 0;padding-bottom:8px;border-bottom:2px solid var(--ink);font-size:16px;font-weight:900;scroll-margin-top:12px}
 .barea:first-child{margin-top:6px}
 .barea em{font-style:normal;font-size:11.5px;font-weight:700;color:#8a929d}

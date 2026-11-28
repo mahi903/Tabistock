@@ -4,7 +4,7 @@
 import { db, storage } from "../firebase-config.js";
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611281900";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs, BOARD_GROUPS, groupOf } from "./board.js?v=202611282000";
 
 // ブロックの種類（追加ボタンの並び順）
 const KINDS = [
@@ -68,7 +68,7 @@ export async function refreshSeedDrafts(list) {
 // ---- 文章の直し（app/board-fixes.js）を、Firestore の記事に1回だけ反映する。直した記事の数を返す ----
 // 表示用の形（normBoard）ではなく、保存されている形をそのまま読み直して置きかえる（facts や手順の形を崩さないため）
 export async function applyTextFixes() {
-  const { TEXT_FIXES, TEXT_FIX_V } = await import("./board-fixes.js?v=202611281900");
+  const { TEXT_FIXES, TEXT_FIX_V } = await import("./board-fixes.js?v=202611282000");
   const FIELDS = ["title", "lead", "facts", "blocks", "how", "after", "text"];
   const fix = (o, pairs) => {
     if (typeof o === "string") return pairs.reduce((s, [a, b]) => (s.includes(a) ? s.split(a).join(b) : s), o);
@@ -125,7 +125,7 @@ export async function pageBoardEdit(el, id, C) {
     if (!d) { root.innerHTML = '<p class="empty">この記事はまだ Firestore にありません。<br>掲示板の一覧を開き直してから、もう一度お試しください。</p>'; bindBack(); return; }
     if (d.jiken) return pageJikenEdit(el, root, { id, ...d }, C);
     const f = toFs(d);   // 古い形（配列）が混ざっていても編集用の形にそろえる
-    S = { id, title: f.title || "", lead: f.lead || "", cat: f.cat || "prep", order: f.order ?? 99, status: f.status === "published" ? "published" : "draft", heroType: f.heroType === "photo" ? "photo" : "ill", ill: f.ill || "suitcase", heroUrl: f.heroUrl || "", facts: f.facts.map((x) => ({ k: x.k || "", v: x.v || "", s: x.s || "" })), blocks: f.blocks.map((b) => ({ ...b })) };
+    S = { id, title: f.title || "", lead: f.lead || "", cat: f.cat || "prep", area: f.area || "", order: f.order ?? 99, status: f.status === "published" ? "published" : "draft", heroType: f.heroType === "photo" ? "photo" : "ill", ill: f.ill || "suitcase", heroUrl: f.heroUrl || "", facts: f.facts.map((x) => ({ k: x.k || "", v: x.v || "", s: x.s || "" })), blocks: f.blocks.map((b) => ({ ...b })) };
   }
 
   // ---------- 描画 ----------
@@ -181,6 +181,7 @@ export async function pageBoardEdit(el, id, C) {
         <label>カテゴリー<select data-f="cat">${BOARD_CATS.filter(([k]) => k !== "trouble").map(([k, l]) => `<option value="${k}" ${k === S.cat ? "selected" : ""}>${l}</option>`).join("")}</select></label>
         <label>並び順<input data-f="order" type="number" inputmode="numeric" value="${esc(String(S.order))}"></label>
       </div>
+      ${BOARD_GROUPS[S.cat] ? `<div class="bed-sec"><label>グループ<select data-f="area">${BOARD_GROUPS[S.cat].groups.map(([k, l]) => `<option value="${k}" ${k === groupOf(S) ? "selected" : ""}>${l}</option>`).join("")}</select></label></div>` : ""}
       <p class="bed-hint bed-pad">並び順は、数字が小さいほど上に出ます</p>
       <div class="bed-sec"><h4>タイトル</h4><input data-f="title" value="${esc(S.title)}" placeholder="タイトル"></div>
       <div class="bed-sec"><h4>リード</h4>${ta('data-f="lead"', S.lead, "記事の最初に出る短い紹介文", 3)}</div>
@@ -209,6 +210,8 @@ export async function pageBoardEdit(el, id, C) {
     else return;
     dirty = true;
   });
+  // カテゴリーを変えたら、グループの選び直しが出るように描きなおす
+  root.addEventListener("change", (e) => { if (e.target.dataset && e.target.dataset.f === "cat") { S.area = ""; draw(); } });
 
   // ---------- マーカー：最後に触った文字の欄で、選んだ文字を ==…== で囲む（もう一度押すと外す）----------
   let lastField = null;
@@ -331,6 +334,7 @@ export async function pageBoardEdit(el, id, C) {
   function buildData() {
     return {
       title: S.title.trim(), lead: S.lead.trim(), cat: S.cat, order: Number(S.order) || 0, status: S.status,
+      area: BOARD_GROUPS[S.cat] ? groupOf(S) : "",
       heroType: S.heroType, ill: S.ill, heroUrl: S.heroUrl || "",
       facts: S.facts.map((f) => ({ k: f.k.trim(), v: f.v.trim(), s: f.s.trim() })).filter((f) => f.k || f.v),
       blocks: cleanBlocks(),
