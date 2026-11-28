@@ -1,3 +1,4 @@
+import { himaHtml, initHima } from "./hima3d.js?v=202611281915";
 // 旅の掲示板（旅と地理）の記事の中に入れる、手で動かせるモデル
 // いまあるもの：hadley＝大気大循環の地球儀（月のスライダーで、太陽と、雨の帯・乾きやすい帯が南北に動く。指で地球を回せる）
 //             patagonia＝アンデス山脈の断面（スライダーで風を西から東へ進めると、雨や雪を降らせて乾いていく）
@@ -7,7 +8,8 @@
 //             pinnacle＝ピナクルズ（砂丘→石灰岩→雨で溶ける→柱が現れる）
 //             butte＝モニュメント・バレー（台地→メサ→ビュート→細い塔）／karst＝ハロン湾（海の底→持ち上がる→雨で溶ける→海に沈む）
 //             rift＝プレートが離れる断面（スライダーで「離れる→割れ目→マグマ→新しい大地」と進む）
-//             aurora＝オーロラが光るまで／himalaya＝ヒマラヤができるまで（どちらもステップで進む断面）
+//             aurora＝オーロラが光るまで（ステップで進む断面）
+//             himalaya＝ヒマラヤができるまで（立体の地図。hima3d.js。指で向きを変えられる）
 //             fjord＝フィヨルドができるまで（谷の断面。スライダーで「川の谷→氷河でけずる→海水が入る」と進む）
 // 本物の気候を、ごく簡単にしたモデルです（目安）。
 
@@ -113,6 +115,7 @@ export function modelHtml(b) {
   if (b.k === "rift") return riftHtml(b);
   if (b.k === "circ") return circHtml(b);
   if (b.k === "uyuni") return uyHtml(b);
+  if (b.k === "himalaya") return himaHtml(b);   // ヒマラヤは立体の地図（hima3d.js）
   if (STEP_TXT[b.k]) return stepHtml(b);
   if (b.k !== "hadley") return "";
   const m = Math.min(12, Math.max(1, +b.m || 1));
@@ -512,12 +515,6 @@ const STEP_TXT = {
     ["③一部の粒が、極のほうへ流れこむ", "はね返されなかった粒は、磁力の線にそって、北と南の極のほうへ流れこむ。"],
     ["④空の上で、空気とぶつかって光る", "粒が地上100km以上の空で酸素などにぶつかり、光を出す。光るのは、磁極を囲む輪のような地域の空。"],
   ],
-  himalaya: [
-    ["①インドが北へ動いていく", "大昔、インドは南の大陸から分かれて北へ。アジアとのあいだには、テチス海が広がっていた。"],
-    ["②海が閉じ、大陸どうしがぶつかる", "5,000万〜6,000万年前、テチス海が閉じて、インドがアジアにぶつかった。"],
-    ["③海の底の地層が、押し上げられる", "陸どうしはどちらも下にもぐりこめず、ぶつかったところが押し上げられて山脈に。エベレストの山頂は、海の底でできた石灰岩。"],
-    ["④山脈が、湿った風をさえぎる", "南からの湿った風が山にぶつかり、南側に大雨を降らせる。山をこえた北側のチベット高原は乾いている。"],
-  ],
 };
 function cappaSvg(st) {
   const INK = "#1b2330", tag = (t, x, y, al = "middle") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#fbf6ee" stroke-width="3">${t}</text>`;
@@ -723,31 +720,7 @@ function auroraSvg(st) {
   if (st >= 1) g += tag("地球の磁場", 330, 200, "end", "#9bb8c9", INK);
   return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="オーロラが光るまで">${g}</svg>`;
 }
-function himaSvg(st) {
-  const INK = "#1b2330", tag = (t, x, y, al = "middle", c = INK) => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="#fbf6ee" stroke-width="3">${t}</text>`;
-  const ir = [90, 160, 200, 200][st];   // インドの右はし（ここまで動いてくる）
-  let g = `<rect width="360" height="220" fill="#fbf6ee"/>`;
-  if (st < 2) g += `<rect x="${ir}" y="150" width="${200 - ir}" height="40" fill="#9fc9dd" stroke="${INK}" stroke-width="1.5"/>` + tag("テチス海", (ir + 200) / 2, 142, "middle", "#2f6f9a");
-  g += `<rect x="-4" y="150" width="${ir + 4}" height="40" fill="#d8b98a" stroke="${INK}" stroke-width="2"/>` + tag("インド", Math.min(ir - 45, 80), 174);
-  g += `<rect x="200" y="150" width="164" height="40" fill="#b9a58a" stroke="${INK}" stroke-width="2"/>` + tag("アジア", 290, 174);
-  if (st < 2) g += `<path d="M${ir - 70} 128 H${ir - 30}" stroke="${INK}" stroke-width="2.4"/><path d="M${ir - 38} 122 L${ir - 30} 128 L${ir - 38} 134" fill="none" stroke="${INK}" stroke-width="2.4"/>` + tag("北へ動く", ir - 50, 116);
-  if (st >= 2) {
-    const h = st === 2 ? 80 : 110;
-    g += `<path d="M150 150 L182 ${150 - h * 0.5} L200 ${150 - h} L216 ${150 - h * 0.6} L250 150 Z" fill="#c9b6a0" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
-    g += `<path d="M190 ${150 - h * 0.62} L200 ${150 - h} L210 ${150 - h * 0.66} Z" fill="#fff" stroke="${INK}" stroke-width="1.4"/>`;
-    g += `<path d="M170 ${150 - h * 0.25} Q200 ${150 - h * 0.42} 232 ${150 - h * 0.2}" fill="none" stroke="#3b82a0" stroke-width="3"/>`;
-    g += tag(st === 2 ? "押し上げられる" : "ヒマラヤ山脈", 200, 150 - h - 10);
-    if (st === 2) g += tag("海の底の地層", 290, 150 - h * 0.3, "middle", "#2f6f9a") + `<path d="M252 ${150 - h * 0.32} L228 ${150 - h * 0.24}" stroke="#2f6f9a" stroke-width="1.4"/>`;
-  }
-  if (st === 3) {
-    const y = 150 - 110 * 0.55;
-    g += `<path d="M20 64 C 80 64, 130 72, 172 ${y}" fill="none" stroke="#3b82a0" stroke-width="2.6"/><path d="M163 ${y - 6} L172 ${y} L163 ${y + 5}" fill="none" stroke="#3b82a0" stroke-width="2.6"/>` + tag("南からの湿った風", 70, 52, "middle", "#2f6f9a");
-    g += [0, 1, 2, 3].map((i) => `<line x1="${120 + i * 11}" y1="${92 + i * 5}" x2="${116 + i * 11}" y2="${106 + i * 5}" stroke="#3b82a0" stroke-width="2.2" stroke-linecap="round"/>`).join("") + tag("南側に大雨", 70, 128, "middle", "#2f6f9a");
-    g += tag("北側は乾いた高原", 300, 100, "middle", "#c2552f") + tag("（チベット）", 300, 114, "middle", "#c2552f");
-  }
-  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ヒマラヤができるまで">${g}</svg>`;
-}
-const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg, cappa: cappaSvg, iguazu: iguSvg, canyon: canyonSvg, flat: flatSvg, uluru: uluruSvg, europe: europeSvg, aurora: auroraSvg, himalaya: himaSvg };
+const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg, cappa: cappaSvg, iguazu: iguSvg, canyon: canyonSvg, flat: flatSvg, uluru: uluruSvg, europe: europeSvg, aurora: auroraSvg };
 function stepRes(k, st) { const [t, d] = STEP_TXT[k][st]; return `<span>${t}</span><b>${d}</b>`; }
 function stepHtml(b) {
   const k = b.k, n = STEP_TXT[k].length;
@@ -778,6 +751,7 @@ function init(root) {
   if (root.dataset.mdl === "rift") return initRift(root);
   if (root.dataset.mdl === "circ") return initCirc(root);
   if (root.dataset.mdl === "uyuni") return initUy(root);
+  if (root.dataset.mdl === "hima3d") return initHima(root);
   if (STEP_TXT[root.dataset.mdl]) return initStep(root);
   const cv = root.querySelector("canvas");
   if (!cv || cv.dataset.on) return;

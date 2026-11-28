@@ -1646,6 +1646,7 @@ a[href^="#"],a[href^="#"] *{-webkit-touch-callout:none;-webkit-user-drag:none}
 .mdl{border:1.5px solid var(--ink);box-shadow:4px 4px 0 var(--green);background:#fff;padding:12px 12px 14px;margin:0 4px 4px 0}
 .mdl-h{font:800 13px/1.4 Manrope,'Noto Sans JP',sans-serif;color:var(--green-d);margin-bottom:6px}
 .mdl-cv{display:block;width:100%;max-width:340px;aspect-ratio:1;margin:0 auto;touch-action:pan-y;cursor:grab;-webkit-user-select:none;user-select:none}
+.mdl-3d{display:block;width:100%;border:1.5px solid var(--ink);touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none}
 .mdl-hint{text-align:center;font-size:11px;color:var(--muted);margin-top:4px}
 .mdl-res{display:flex;flex-direction:column;gap:2px;margin-top:8px;padding:8px 10px;background:var(--green-t);font-size:12.5px;line-height:1.5}
 .mdl-res b{font-size:13px}
