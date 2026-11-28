@@ -487,6 +487,24 @@ const STEP_TXT = {
     ["③コロラド川が削り始める", "約500〜600万年前、コロラド川が高原を下へ下へと削り始めた。"],
     ["④谷が深く、広くなる", "川が谷を深くし、流れこむ支流が谷を広げて、深さ約1.8kmの大峡谷に。いまも少しずつ削られ続けている。"],
   ],
+  flat: [
+    ["①大陸がぶつかり、山ができる", "大昔、大陸どうしがぶつかって、高い山脈が押し上げられた。"],
+    ["②プレートの境目から遠くなる", "オーストラリアはプレートの真ん中に。山を押し上げる力が届かず、新しい山がほとんどできなくなった。"],
+    ["③何億年も削られ続ける", "雨や風、川が山を少しずつ削り、削られた砂や泥が低い土地を埋めていく。"],
+    ["④低く、平らな大陸に", "平均の標高は約330m。いちばん高いコジオスコ山でも2,228mで、富士山より1,500mほど低い。"],
+  ],
+  uluru: [
+    ["①山から砂や小石が流れ出る", "約5億5,000万年前、西にあった高い山脈が削られ、砂や小石がふもとに扇のように積もった。"],
+    ["②海に沈み、岩になる", "やがて海の底に沈み、上に積もったものの重みで押し固められて岩に。これがアルコースという砂岩。"],
+    ["③地層が立ち上がる", "約4億〜3億年前、大地が横から押されて地層が折れ曲がった。ウルルの地層は、ほぼ垂直に。"],
+    ["④まわりが削られ、ウルルだけが残る", "3億年ほどかけて、まわりのやわらかい岩が削られ、かたいウルルが平原に残った。赤いのは、岩にふくまれる鉄がさびた色。"],
+  ],
+  europe: [
+    ["①同じ緯度で比べてみる", "ロンドンは札幌より900km以上も北。それでも1月の最高気温は、ロンドンが平均8℃ほど、札幌が-0.4℃。"],
+    ["②中緯度では、西風が吹く", "どちらの上空でも、西から東へ強い風（偏西風）が吹いている。"],
+    ["③海から来る風、大陸から来る風", "ヨーロッパに届くのは、冬も冷えにくい大西洋を渡ってきた風。日本には、シベリアで冷えきった空気が北西の季節風になって吹いてくる。"],
+    ["④暖流も、海を温める", "メキシコ湾流から続く北大西洋海流が、海をさらに温める。どれくらい効いているかは研究者のあいだでも議論が続く。"],
+  ],
 };
 function cappaSvg(st) {
   const INK = "#1b2330", tag = (t, x, y, al = "middle") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#fbf6ee" stroke-width="3">${t}</text>`;
@@ -605,7 +623,75 @@ function karstSvg(st) {
     ${st === 3 ? tag("島になった岩山", 92, 70) + tag("海に沈んだ谷", 250, sea + 26, "#fff").replace('stroke="#fbf9f4"', 'stroke="#3b82a0"') : ""}
   </svg>`;
 }
-const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg, cappa: cappaSvg, iguazu: iguSvg, canyon: canyonSvg };
+function flatSvg(st) {
+  const INK = "#1b2330", tag = (t, x, y, al = "middle") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#fbf6ee" stroke-width="3">${t}</text>`;
+  const base = 186;
+  let g = "";
+  if (st < 3) {
+    const k = [1, 0.8, 0.45][st], h = (v) => base - v * k;
+    g += `<path d="M0 ${base} L0 ${h(40)} L40 ${h(80)} L85 ${h(30)} L180 ${h(120)} L250 ${h(45)} L300 ${h(90)} L360 ${h(35)} L360 220 L0 220 Z" fill="#a9876a" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+    if (st === 2) g += `<path d="M0 ${base - 4} L80 ${base - 6} M280 ${base - 6} L360 ${base - 4}" stroke="${INK}" stroke-width="1.2"/><rect x="0" y="${base - 6}" width="90" height="6" fill="#e7cf9e"/><rect x="270" y="${base - 6}" width="90" height="6" fill="#e7cf9e"/>`;
+  } else {
+    // to scale: 1px = about 31m (Mt Fuji 3,776m = 120px)
+    g += `<path d="M300 ${base} L330 ${base - 120} L360 ${base}" fill="none" stroke="${INK}" stroke-width="1.4" stroke-dasharray="4 4" opacity=".6"/>` + tag("富士山 3,776m", 352, base - 128, "end");
+    g += `<path d="M0 ${base} L0 ${base - 10} L70 ${base - 11} Q110 ${base - 50} 150 ${base - 60} L182 ${base - 64} Q194 ${base - 72} 206 ${base - 64} L230 ${base - 58} Q260 ${base - 40} 290 ${base - 11} L360 ${base - 10} L360 220 L0 220 Z" fill="#c98f5f" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+    g += tag("コジオスコ山 2,228m", 194, base - 80) + tag("山頂も、なだらかな高原の一部", 190, base - 30) + tag("平均の標高 約330m", 8, base - 18, "start") + tag("（高さは同じ縮尺）", 8, 22, "start");
+  }
+  if (st === 0) g += `<path d="M20 140 L64 140" stroke="${INK}" stroke-width="2.4"/><path d="M56 134 L64 140 L56 146" fill="none" stroke="${INK}" stroke-width="2.4"/><path d="M340 150 L296 150" stroke="${INK}" stroke-width="2.4"/><path d="M304 144 L296 150 L304 156" fill="none" stroke="${INK}" stroke-width="2.4"/>` + tag("ぶつかる", 42, 128) + tag("ぶつかる", 318, 138) + tag("高い山脈", 180, 54);
+  if (st === 1) g += tag("プレートの境目は、ずっと遠く", 180, 40) + `<path d="M110 52 L20 52 M250 52 L340 52" stroke="${INK}" stroke-width="1.6" stroke-dasharray="4 4"/>`;
+  if (st === 2) g += [0, 1, 2, 3].map((i) => `<line x1="${110 + i * 45}" y1="${70 + (i % 2) * 6}" x2="${106 + i * 45}" y2="${84 + (i % 2) * 6}" stroke="#3b82a0" stroke-width="2.2" stroke-linecap="round"/>`).join("") + tag("雨や風、川が削る", 180, 58) + tag("削られた砂や泥が埋める", 70, 206);
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="オーストラリアが平らになるまで"><rect width="360" height="220" fill="#fbf6ee"/>${g}</svg>`;
+}
+function uluruSvg(st) {
+  const INK = "#1b2330", tag = (t, x, y, al = "middle", c = INK, sc = "#fbf6ee") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="${sc}" stroke-width="3">${t}</text>`;
+  const cols = ["#d9a37a", "#c98f6a", "#e0b48d", "#bf8460", "#d6a07a"];
+  let g = "";
+  if (st === 0) {
+    g = `<path d="M0 190 L0 60 L40 40 L80 70 L110 190 Z" fill="#8f8378" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>` + tag("高い山脈", 46, 30);
+    g += `<path d="M90 190 Q170 150 330 178 L360 190 Z" fill="#e0b48d" stroke="${INK}" stroke-width="2"/>` + [0, 1, 2, 3, 4].map((i) => `<circle cx="${130 + i * 40}" cy="${176 - (i < 2 ? 8 : 2)}" r="2.6" fill="${INK}"/>`).join("");
+    g += `<path d="M100 120 Q150 130 190 150" fill="none" stroke="${INK}" stroke-width="2" stroke-dasharray="5 4"/><path d="M182 144 L190 150 L180 152" fill="none" stroke="${INK}" stroke-width="2"/>` + tag("砂や小石が流れ出る", 220, 128, "start");
+  } else if (st === 1) {
+    g = `<rect x="0" y="40" width="360" height="80" fill="#3b82a0" opacity=".55"/>` + tag("海", 340, 58, "end", "#fff", "#3b82a0");
+    g += cols.map((c, i) => `<rect x="0" y="${120 + i * 14}" width="360" height="14" fill="${c}" stroke="${INK}" stroke-width="1"/>`).join("") + tag("横向きに重なった地層（アルコース）", 180, 112);
+    g += `<path d="M180 60 L180 100" stroke="${INK}" stroke-width="2.4"/><path d="M174 92 L180 100 L186 92" fill="none" stroke="${INK}" stroke-width="2.4"/>` + tag("重みで押し固められる", 190, 82, "start", "#fff", "#3b82a0");
+  } else if (st === 2) {
+    g = cols.concat(cols).map((c, i) => `<rect x="${60 + i * 24}" y="70" width="24" height="120" fill="${c}" stroke="${INK}" stroke-width="1"/>`).join("");
+    g += `<rect x="0" y="70" width="60" height="120" fill="#cbb79a" stroke="${INK}" stroke-width="1"/><rect x="300" y="70" width="60" height="120" fill="#cbb79a" stroke="${INK}" stroke-width="1"/>`;
+    g += `<path d="M10 50 L50 50" stroke="${INK}" stroke-width="2.4"/><path d="M42 44 L50 50 L42 56" fill="none" stroke="${INK}" stroke-width="2.4"/><path d="M350 50 L310 50" stroke="${INK}" stroke-width="2.4"/><path d="M318 44 L310 50 L318 56" fill="none" stroke="${INK}" stroke-width="2.4"/>` + tag("押される", 30, 40) + tag("押される", 330, 40) + tag("地層がほぼ垂直に", 180, 60);
+  } else {
+    g = `<path d="M70 180 Q76 96 150 86 L220 86 Q292 92 300 180 Z" fill="#c2552f" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+    g += [100, 125, 150, 175, 200, 225, 250, 275].map((x) => `<line x1="${x}" y1="${x < 110 || x > 270 ? 130 : 92}" x2="${x + 2}" y2="178" stroke="#9e3f20" stroke-width="1.4" opacity=".8"/>`).join("");
+    g += `<path d="M320 180 L320 86" stroke="${INK}" stroke-width="1.6"/><path d="M314 86 L326 86 M314 180 L326 180" stroke="${INK}" stroke-width="1.6"/>` + tag("348m", 316, 136, "end");
+    g += `<rect x="0" y="180" width="360" height="40" fill="#d9a37a"/><line x1="0" y1="180" x2="360" y2="180" stroke="${INK}" stroke-width="2"/><rect x="0" y="40" width="360" height="40" fill="none"/>` + tag("まわりは削られて平原に", 180, 204) + tag("ウルル", 185, 70);
+    g += `<path d="M20 80 L20 180 M340 80 L340 180" stroke="${INK}" stroke-width="1" stroke-dasharray="4 4" opacity=".4"/>`;
+  }
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ウルルができるまで"><rect width="360" height="220" fill="#fbf6ee"/>${g}${st < 3 ? `<rect x="0" y="190" width="360" height="30" fill="#e7d8bd"/><line x1="0" y1="190" x2="360" y2="190" stroke="${INK}" stroke-width="2"/>` : ""}</svg>`;
+}
+function europeSvg(st) {
+  const INK = "#1b2330", tag = (t, x, y, al = "middle", c = INK, sc = "#fbf6ee") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="${sc}" stroke-width="3">${t}</text>`;
+  const SEA = "#9cc6d8", LAND = "#d8c9a6", COLD = "#e6edf2";
+  const arrow = (x1, y, x2, col) => `<line x1="${x1}" y1="${y}" x2="${x2 - 6}" y2="${y}" stroke="${col}" stroke-width="3" stroke-linecap="round"/><path d="M${x2 - 9} ${y - 6} L${x2} ${y} L${x2 - 9} ${y + 6}" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+  let g = "";
+  // Europe row (top): ocean on the west, land on the east
+  g += `<rect x="0" y="22" width="200" height="78" fill="${SEA}"/><path d="M200 22 Q192 60 204 100 L360 100 L360 22 Z" fill="${LAND}" stroke="${INK}" stroke-width="1.6"/>`;
+  g += tag("大西洋", 60, 92) + `<circle cx="236" cy="62" r="5" fill="${INK}"/>` + tag("ロンドン 北緯51.5度", 246, 52, "start");
+  // Japan row (bottom): continent on the west, sea, Japan on the east
+  g += `<rect x="0" y="122" width="360" height="78" fill="${SEA}"/><path d="M0 122 L230 122 Q238 160 226 200 L0 200 Z" fill="${st >= 2 ? COLD : LAND}" stroke="${INK}" stroke-width="1.6"/><path d="M300 136 Q316 150 312 172 Q306 190 296 196 L288 190 Q300 170 292 146 Z" fill="${LAND}" stroke="${INK}" stroke-width="1.6"/>`;
+  g += tag(st >= 2 ? "シベリア（冬は冷えきる）" : "ユーラシア大陸", 100, 190) + `<circle cx="300" cy="150" r="5" fill="${INK}"/>` + tag("札幌 北緯43度", 352, 132, "end");
+  g += tag("ヨーロッパ", 8, 16, "start") + tag("日本", 8, 116, "start");
+  if (st === 0) g += tag("1月の最高気温 8℃ほど", 300, 86, "middle", "#c2552f") + tag("1月の最高気温 -0.4℃", 262, 214, "middle", "#2f6f9a");
+  if (st >= 1) {
+    const cw = st === 1 ? "#6b7280" : null;
+    g += arrow(20, 44, 120, cw || "#e2683b") + arrow(60, 70, 170, cw || "#e2683b") + arrow(150, 56, 225, cw || "#e2683b");
+    g += arrow(130, 140, 210, cw || "#3b82a0") + arrow(180, 160, 285, cw || "#3b82a0");
+    g += tag(st === 1 ? "偏西風（西から東へ）" : "海を渡った、暖かく湿った風", 110, 36, "middle", st === 1 ? INK : "#c2552f");
+    if (st >= 2) g += tag("大陸で冷えた北西の風", 205, 214, "middle", "#2f6f9a");
+    else g += tag("偏西風（西から東へ）", 205, 214);
+  }
+  if (st === 3) g += `<path d="M20 96 Q110 96 190 70" fill="none" stroke="#c2552f" stroke-width="2.4" stroke-dasharray="6 4"/><path d="M182 68 L190 70 L186 78" fill="none" stroke="#c2552f" stroke-width="2.4"/>` + tag("北大西洋海流（暖流）", 100, 110, "middle", "#c2552f");
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ヨーロッパの冬が暖かい理由"><rect width="360" height="220" fill="#fbf6ee"/>${g}</svg>`;
+}
+const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg, cappa: cappaSvg, iguazu: iguSvg, canyon: canyonSvg, flat: flatSvg, uluru: uluruSvg, europe: europeSvg };
 function stepRes(k, st) { const [t, d] = STEP_TXT[k][st]; return `<span>${t}</span><b>${d}</b>`; }
 function stepHtml(b) {
   const k = b.k, n = STEP_TXT[k].length;

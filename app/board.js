@@ -2336,6 +2336,63 @@ export const BOARD_SEED = [
       {"t": "list", "items": ["2026年1月から、アメリカに住んでいない16歳以上の人は、ふつうの入場料に加えて1人100ドルを払う必要があります。日本からの旅行者もこれにあたります。", "入場料の支払いはカードだけで、現金は使えません。", "入場券は7日間有効です。", "アメリカへの入国にはESTAが必要です。くわしくはアメリカの国別ガイドにまとめています。"]},
       {"t": "note", "x": "このページは、アメリカ国立公園局や地質の資料、ニュースなどの情報をもとに、2026年11月28日にまとめました。入場料や開いている場所は変わることがあるので、出発前に公式サイトで最新の情報を見てください。\n国立公園局（グランド・キャニオンの地質）：https://home.nps.gov/grca/learn/nature/grca-geology.htm\n国立公園局（入場料）：https://www.nps.gov/grca/planyourvisit/fees.htm\nIUGS（グランド・キャニオン）：https://iugs-geoheritage.org/geoheritage_sites/the-grand-canyon/\nHawaii Tribune-Herald（大きさと削れる速さ）：https://www.hawaiitribune-herald.com/2026/04/18/nation-world-news/scientists-decipher-the-geological-history-of-the-grand-canyon/\nScience ABC（岩の年代）：https://www.scienceabc.com/nature/how-was-the-grand-canyon-formed\nTusayan（外国人の料金）：https://explore.tusayan-az.gov/know-before-you-go/\ngrandcanyon.com（サウスリムとノースリム）：https://grandcanyon.com/news/grand-canyon-foreign-visitor-fee/"},
     ],
+  },
+  {
+    id: "geo-australia", cat: "geo", ill: "wind", order: 42, rev: 1, status: "draft", updated: "2026-11-28",
+    title: "平らな大陸｜オーストラリア",
+    lead: "オーストラリアの平均の標高は約330m。大陸の中でいちばん低く、平らです。いちばん高いコジオスコ山でも2,228mで、富士山より1,500mほど低い山です。",
+    facts: [
+      ["平均の標高", "約330m", "大陸の中でいちばん低い"],
+      ["いちばん高い山", "コジオスコ山 2,228m", "リフトを使えば日帰りで山頂へ"],
+      ["いちばん低い場所", "海面より約15m低い", "カティ・タンダ＝エア湖"]
+    ],
+    blocks: [
+      {"t": "h", "x": "どうしてこんなに平らなの？"},
+      {"t": "p", "x": "理由は大きく2つあります。1つ目は、オーストラリアがプレートの真ん中にあること。日本やヒマラヤのように、プレートどうしがぶつかって山を押し上げる場所から遠いので、新しい山がほとんどできません。2つ目は、大地がとても古いこと。西部には30億年以上前の岩もあり、昔あった山は何億年もかけて雨や風に削られ、低くなりました。"},
+      {"t": "model", "k": "flat", "m": 1, "cap": "オーストラリアの大地が平らになるまでを単純にした断面のモデルです。スライダーを動かすと、山ができてから削られ、低く平らな大陸になるまでを見られます。最後のステップだけ、高さを同じ縮尺で描いています。"},
+      {"t": "list", "items": ["東部のグレートディバイディング山脈も、ほとんどはなだらかな高原です。コジオスコ山の頂上も、その高原の一部です。", "オーストラリアは、いま活動している火山がない大陸でもあります。", "ナラボー平原を通るエア・ハイウェイには、146.6kmもカーブが1つもない直線道路があります。オーストラリアでいちばん長い直線です。"]},
+      {"t": "h", "x": "旅で「平ら」を体験する"},
+      {"t": "table", "head": true, "rows": [{"c": ["場所", "ようす"]}, {"c": ["コジオスコ山", "スレドボからリフトで上がり、山頂まで往復13km、4〜5時間ほど。雪がとける12〜3月がベストシーズンです。"]}, {"c": ["90マイル・ストレート", "エア・ハイウェイのバラドニア〜カイグナのあいだ。どこまでもまっすぐな道が続きます。"]}, {"c": ["ウルル", "平らな大地に、ぽつんと立つ一枚岩。でき方は「ウルル｜オーストラリア」の記事にまとめています。"]}]},
+      {"t": "note", "x": "このページは、オーストラリア統計局やNASA、ギネス世界記録、各観光局などの情報をもとに、2026年11月28日にまとめました。道路や登山道の状況は変わることがあるので、出発前に最新の情報を見てください。\nギネス世界記録（いちばん平らな大陸）：https://www.guinnessworldrecords.com/world-records/flattest-continental-landmass\nオーストラリア統計局（地形の成り立ち）：https://www.abs.gov.au/ausstats/abs@.nsf/0/D714DB46E11B072ACA256CAD0080F864\nNASA（標高が低い理由）：https://science.nasa.gov/earth/earth-observatory/australia-shaded-relief-and-colored-height-5100\nNSW国立公園（コジオスコ山）：https://www.nationalparks.nsw.gov.au/things-to-do/walking-tracks/kosciuszko-walk-thredbo-to-mount-kosciuszko\nオーストラリア政府観光局（ナラボー平原）：https://www.australia.com/en/itineraries/crossing-nullarbor.html\nDangerous Roads（90マイル・ストレート）：https://dangerousroads.org/australia-and-oceania/australia/1690-eyre-highway-australia.html"}
+    ],
+  },
+  {
+    id: "geo-uluru", cat: "geo", ill: "wind", order: 43, rev: 1, status: "draft", updated: "2026-11-28",
+    title: "ウルル｜オーストラリア",
+    lead: "赤い平原に、ぽつんとそびえる一枚岩ウルル。地面からの高さは348m、まわりを歩くと約10kmあります。実はこの岩、地層がほぼ垂直に立っています。",
+    facts: [
+      ["場所", "オーストラリア 北部準州", "ウルル＝カタ・ジュタ国立公園"],
+      ["高さ", "地面から348m", "海抜は863m"],
+      ["入園料", "大人38豪ドル（3日間）", "17歳以下は無料"]
+    ],
+    blocks: [
+      {"t": "h", "x": "どうやってできたの？"},
+      {"t": "p", "x": "ウルルは、アルコースという砂岩でできています。始まりは約5億5,000万年前。西にあった高い山脈が削られ、砂や小石がふもとに厚く積もりました。その後、海の底に沈んで押し固められ、岩になります。約4億〜3億年前には大地が横から押されて地層が折れ曲がり、ウルルの地層はほぼ垂直に。そして3億年ほどかけて、まわりのやわらかい岩が削られ、かたいウルルだけが残りました。"},
+      {"t": "model", "k": "uluru", "m": 1, "cap": "ウルルができるまでを単純にした断面のモデルです。スライダーを動かすと、砂が積もって岩になり、立ち上がって残るまでを見られます。"},
+      {"t": "list", "items": ["赤い色は、岩にふくまれる鉄がさびた色です。もともとの色は灰色で、洞くつの中ではその色が見られます。", "地上に見えているのは一部だけで、岩の大部分は地面の下に続いています。", "約25km西には、丸い岩が集まるカタ・ジュタがあります。こちらは小石が固まった礫岩（れきがん）です。"]},
+      {"t": "h", "x": "旅で行くなら"},
+      {"t": "list", "items": ["ウルルは、先住民アナングの人たちにとって大切な聖地です。2019年10月26日から、登ることは禁止されています。", "まわりを一周するベースウォークは約10km。暑い時期は朝のうちに歩き始め、11時までに終えるのが公式のおすすめです。", "日の出と日の入りのころは、岩の色が刻々と変わる人気の時間帯です。", "写真を撮ってはいけない場所があるので、現地の看板に従いましょう。", "入園には公園パスが必要です。オンラインで事前に買っておくと、入口でスムーズに入れます。"]},
+      {"t": "note", "x": "このページは、オーストラリア公園局や北部準州政府観光局などの情報をもとに、2026年11月28日にまとめました。入園料やルールは変わることがあるので、出発前に公式サイトで最新の情報を見てください。\nオーストラリア公園局（ウルルの地質）：https://parksaustralia.gov.au/uluru/discover/nature/geology\nオーストラリア公園局（地質のファクトシート）：https://parksaustralia.gov.au/uluru/pub/FS-Geology.pdf\nオーストラリア公園局（登山の禁止）：https://parksaustralia.gov.au/uluru/discover/culture/uluru-climb\nオーストラリア公園局（ベースウォーク）：https://parksaustralia.gov.au/uluru/do/walks/uluru-base-walk\nオーストラリア公園局（入園料）：https://parksaustralia.gov.au/news/update-to-park-passes-2021\n北部準州政府観光局（入園料）：https://northernterritory.com/sg/en/uluru-and-surrounds/see-and-do/ranger-guided-mala-walk"}
+    ],
+  },
+  {
+    id: "geo-europe", cat: "geo", ill: "wind", order: 44, rev: 1, status: "draft", updated: "2026-11-28",
+    title: "緯度のわりに暖かい冬｜ヨーロッパ",
+    lead: "ロンドンは北緯51.5度。札幌より900km以上も北にあるのに、1月の最高気温は平均8℃ほどです。札幌は-0.4℃。どうしてヨーロッパの冬は、緯度のわりに暖かいのでしょうか。",
+    facts: [
+      ["ロンドン", "北緯51.5度", "1月の最高気温は平均8℃ほど"],
+      ["札幌", "北緯43度", "1月の最高気温は平均-0.4℃"],
+      ["カギになるもの", "西風と大西洋", ""]
+    ],
+    blocks: [
+      {"t": "h", "x": "決め手は「風がどこから来るか」"},
+      {"t": "p", "x": "日本やヨーロッパがある中緯度では、上空で西から東へ強い風（偏西風）が吹いています。ヨーロッパは大陸の西のはし。西風は、冬でも冷えにくい大西洋の上を通ってから届くので、暖かく湿った空気が運ばれてきます。いっぽう日本は大陸の東側。冬はシベリアで冷えきった空気が、北西の季節風になって吹きつけます。同じような緯度でも、風が海から来るか、大陸から来るかで、冬の寒さが大きく変わるのです。"},
+      {"t": "model", "k": "europe", "m": 1, "cap": "ヨーロッパと日本の冬の風を単純にしたモデルです。スライダーを動かすと、同じ西風でも、通ってくる場所で暖かさが変わるようすを見られます。"},
+      {"t": "list", "items": ["海は、夏のあいだにためた熱を冬にゆっくり出します。海の表面からわずか2mの水が、その上の大気全体よりも多くの熱をたくわえているほどです。", "メキシコ湾流から続く暖かい海流（北大西洋海流）も、海を温めています。ただ、この暖流がどれくらい効いているかは研究者のあいだでも意見が分かれていて、西風が海の空気を運んでくることが大きいと考える研究もあります。", "海から離れた中欧や東欧ほど、冬の寒さは厳しくなります。"]},
+      {"t": "h", "x": "冬のヨーロッパ旅で気をつけたいこと"},
+      {"t": "list", "items": ["暖かいとはいえ、北にある分、日がとても短いのが冬のヨーロッパです。12月下旬のロンドンは、午後4時前に日が沈みます。観光は午前中から動きましょう。", "雨や曇りの日が多いので、フード付きの防水ジャケットがあると便利です。"]},
+      {"t": "note", "x": "このページは、気象庁や研究論文、科学雑誌などの情報をもとに、2026年11月28日にまとめました。気温は30年間の平均の値で、年によって変わります。\nSeager ほか（ヨーロッパの冬が暖かい理由の研究）：https://academiccommons.columbia.edu/doi/10.7916/d8-50zs-1a51\nScientific American（海が熱をためる量・暖流をめぐる議論）：https://www.scientificamerican.com/article/new-simulations-question-gulf-stream-role-tempering-europes-winters/\nLive Science（ロンドンの1月の気温と緯度）：https://www.livescience.com/planet-earth/weather/why-do-european-cities-have-milder-winters-than-those-in-north-america-despite-being-at-the-same-latitude\n気象庁（札幌の1月の平年値）：https://ds.data.jma.go.jp/stats/stat/202501/rank_202501.html\nweather.time-j.net（札幌の最高気温の平年値）：https://weather.time-j.net/climate/chart/sapporo\n気象庁（日本の冬の季節風）：https://www.jma.go.jp/jma/kishou/know/kisetsu_riyou/tenkou/gaisetu.html\ntimeanddate.com（ロンドンの日の入り）：https://timeanddate.com/sun/@2648147?month=12"}
+    ],
   }
 ];
 
