@@ -1,5 +1,6 @@
-import { himaHtml, initHima } from "./hima3d.js?v=202611281930";
-import { euHtml, initEu } from "./eurowind.js?v=202611281930";
+import { himaHtml, initHima } from "./hima3d.js?v=202611281945";
+import { euHtml, initEu } from "./eurowind.js?v=202611281945";
+import { hasTerrain, terrainHtml, initTerrain } from "./terrain3d.js?v=202611281945";
 // 旅の掲示板（旅と地理）の記事の中に入れる、手で動かせるモデル
 // いまあるもの：hadley＝大気大循環の地球儀（月のスライダーで、太陽と、雨の帯・乾きやすい帯が南北に動く。指で地球を回せる）
 //             patagonia＝アンデス山脈の断面（スライダーで風を西から東へ進めると、雨や雪を降らせて乾いていく）
@@ -12,7 +13,7 @@ import { euHtml, initEu } from "./eurowind.js?v=202611281930";
 //             aurora＝オーロラが光るまで（ステップで進む断面）
 //             himalaya＝ヒマラヤができるまで（立体の地図。hima3d.js。指で向きを変えられる）
 //             europe＝ヨーロッパの冬が暖かい理由（風が流れる地図。eurowind.js）
-//             fjord＝フィヨルドができるまで（谷の断面。スライダーで「川の谷→氷河でけずる→海水が入る」と進む）
+//             fjord＝フィヨルドができるまで（立体の地形。terrain3d.js。「川の谷→氷河でけずる→海水が入る」と進む）
 // 本物の気候を、ごく簡単にしたモデルです（目安）。
 
 const MONTHS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
@@ -112,7 +113,7 @@ function result(m) {
 
 // 記事の中に出す（b = { t: "model", k: "hadley", m: 最初の月, cap: 説明 }）
 export function modelHtml(b) {
-  if (b.k === "fjord") return fjordHtml(b);
+  if (hasTerrain(b.k)) return terrainHtml(b);   // 立体の地形モデル（terrain3d.js）：fjord
   if (b.k === "patagonia") return patHtml(b);
   if (b.k === "rift") return riftHtml(b);
   if (b.k === "circ") return circHtml(b);
@@ -130,71 +131,6 @@ export function modelHtml(b) {
     <label class="mdl-sl"><span>月</span><input type="range" class="mdl-m" min="1" max="12" step="1" value="${m}" aria-label="月"><b>${MONTHS[m - 1]}</b></label>
     <p class="mdl-lg"><i class="g"></i>雨の帯（雲ができやすい）　<i class="o"></i>乾きやすい帯（空気が下りてくる）</p>
   </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
-}
-
-
-// ---- フィヨルドができるまで ----
-const FJ_STEPS = [
-  { t: "①川が、V字の谷をつくる", d: "山から流れる川が、谷を少しずつ削っていく。ただし、川が削れるのは海面の高さまで。" },
-  { t: "②氷河が、谷を深いU字に削る", d: "氷河期、谷は重い氷河で埋まる。氷は谷底も横もまとめて削り、海面より下まで深くえぐっていく。点線は、もとのV字の谷。" },
-  { t: "③氷がとけて、海水が入る", d: "氷河期が終わって氷がとけると、海面より深い谷に海水が流れこむ。これがフィヨルド。" },
-];
-function fjordSvg(stage) {
-  const INK = "#1b2330";
-  const X = (x) => (180 + x * 160).toFixed(1), Y = (e) => (150 - e * 110).toFixed(1);
-  const prof = (st) => { const floor = st === 0 ? 0 : -0.4, p = st === 0 ? 1.15 : 3.6; return (x) => floor + (1 - floor) * Math.pow(Math.abs(x), p); };
-  const e = prof(stage);
-  const pts = []; for (let i = -50; i <= 50; i++) { const x = i / 50; pts.push([x, e(x)]); }
-  const path = (q) => q.map(([x, v], i) => `${i ? "L" : "M"}${X(x)} ${Y(v)}`).join(" ");
-  const land = path(pts) + ` L${X(1)} 214 L${X(-1)} 214 Z`;
-  const cut = (top) => { const q = pts.filter(([, v]) => v <= top); if (!q.length) return ""; return `${path(q)} L${X(q[q.length - 1][0])} ${Y(top)} L${X(q[0][0])} ${Y(top)} Z`; };
-  const arrow = (x1, y1, x2, y2, c) => { const a = Math.atan2(y2 - y1, x2 - x1), h = 7; return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="2.4" stroke-linecap="round"/><path d="M${(x2 - h * Math.cos(a - 0.5)).toFixed(1)} ${(y2 - h * Math.sin(a - 0.5)).toFixed(1)} L${x2} ${y2} L${(x2 - h * Math.cos(a + 0.5)).toFixed(1)} ${(y2 - h * Math.sin(a + 0.5)).toFixed(1)}" fill="none" stroke="${c}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`; };
-  const tag = (t, x, y, c = INK, al = "middle") => `<text x="${x}" y="${y}" font-size="11" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="#fbf9f4" stroke-width="3">${t}</text>`;
-  let over = "";
-  if (stage === 0) {
-    over = `<path d="${cut(0.05)}" fill="#3b82a0"/>` + tag("川", 180, 136) + tag("川はここより下を削れない", 180, 176, INK) + arrow(180, 166, 180, 154, INK);
-  }
-  if (stage >= 1) {
-    const v = prof(0), q = []; for (let i = -50; i <= 50; i++) { const x = i / 50; q.push([x, v(x)]); }
-    over += `<path d="${path(q)}" fill="none" stroke="${INK}" stroke-width="1.5" stroke-dasharray="4 4" opacity=".5"/>`;
-  }
-  if (stage === 1) {
-    over += `<path d="${cut(0.62)}" fill="#eef6fa" stroke="${INK}" stroke-width="2"/>` + tag("氷河", 180, 96)
-      + arrow(180, 160, 180, 182, "#1f6f5b") + arrow(112, 120, 92, 132, "#1f6f5b") + arrow(248, 120, 268, 132, "#1f6f5b") + tag("重い氷が、底と横を削る", 180, 128, "#175243");
-  }
-  if (stage === 2) {
-    over += `<path d="${cut(0)}" fill="#3b82a0" opacity=".9"/>` + tag("海水", 150, 176, "#fff").replace('stroke="#fbf9f4"', 'stroke="#3b82a0"')
-      + arrow(232, 154, 232, 189, INK) + arrow(232, 189, 232, 154, INK) + tag("海面より深い", 240, 176, INK, "start");
-  }
-  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="谷の断面">
-    <rect x="0" y="0" width="360" height="220" fill="#fbf9f4"/>
-    <path d="${land}" fill="#d8cba5" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M20 40 L36 40 L28 32 Z M324 40 L340 40 L332 32 Z" fill="#fff" opacity="0"/>
-    ${over}
-    <line x1="10" y1="${Y(0)}" x2="350" y2="${Y(0)}" stroke="${INK}" stroke-width="1.5" stroke-dasharray="5 4"/>
-    ${tag("海面", 348, +Y(0) - 6, INK, "end")}
-  </svg>`;
-}
-function fjordHtml(b) {
-  const st = Math.min(2, Math.max(0, (+b.m || 1) - 1));
-  return `<figure class="bfig"><div class="mdl" data-mdl="fjord" data-st="${st}">
-    <p class="mdl-h">手で動かしてみよう</p>
-    <div class="mdl-fj">${fjordSvg(st)}</div>
-    <div class="mdl-res"><span class="fj-n">${FJ_STEPS[st].t}</span><b class="fj-d">${FJ_STEPS[st].d}</b></div>
-    <label class="mdl-sl"><span>ステップ</span><input type="range" class="mdl-m" min="1" max="3" step="1" value="${st + 1}" aria-label="ステップ"><b>${st + 1} / 3</b></label>
-  </div>${b.cap ? `<figcaption>${String(b.cap).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</figcaption>` : ""}</figure>`;
-}
-function initFjord(root) {
-  const r = root.querySelector(".mdl-m");
-  if (!r || r.dataset.on) return;
-  r.dataset.on = "1";
-  r.addEventListener("input", () => {
-    const st = +r.value - 1;
-    root.querySelector(".mdl-fj").innerHTML = fjordSvg(st);
-    root.querySelector(".fj-n").textContent = FJ_STEPS[st].t;
-    root.querySelector(".fj-d").textContent = FJ_STEPS[st].d;
-    root.querySelector(".mdl-sl b").textContent = `${st + 1} / 3`;
-  });
 }
 
 
@@ -719,7 +655,7 @@ function initStep(root) {
 // 画面に出てきたモデルを、動くようにする（画面全体で、1回だけつなぐ）
 let wired = false;
 function init(root) {
-  if (root.dataset.mdl === "fjord") return initFjord(root);
+  if (root.dataset.mdl === "t3d") return initTerrain(root);
   if (root.dataset.mdl === "patagonia") return initPat(root);
   if (root.dataset.mdl === "rift") return initRift(root);
   if (root.dataset.mdl === "circ") return initCirc(root);

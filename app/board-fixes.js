@@ -2,7 +2,7 @@
 // 管理者が掲示板を開いたとき、Firestore の boards にまだ反映されていなければ、1回だけ置きかえる（app/board-edit.js の applyTextFixes）。
 // each：記事ごとの [直す前, 直した後]。all：すべての記事に共通の置きかえ。
 // 反映した記事には textFix: TEXT_FIX_V が付く。新しい直しを足すときは TEXT_FIX_V を上げる。
-export const TEXT_FIX_V = 1;
+export const TEXT_FIX_V = 2;
 export const TEXT_FIXES = {
  "each": {
   "country-cambodia": [
@@ -138,6 +138,10 @@ export const TEXT_FIXES = {
    ]
   ],
   "geo-fjord": [
+   [
+    "谷の断面を単純にしたモデルです。スライダーを動かすと、川がつくった谷が氷河に削られ、海水が入るまでの流れを見られます。",
+    "谷を立体で単純にしたモデルです。スライダーを動かすと、川がつくった谷が氷河に削られ、海水が入るまでの流れを見られます。手前の切り口で、谷の形の変わり方がわかります。"
+   ],
    [
     "トロルトゥンガ（トロルの舌）は、ふもとから約10時間かけて登ります。",
     "トロルトゥンガ（トロルの舌）は、往復で10〜12時間ほど歩きます。"
