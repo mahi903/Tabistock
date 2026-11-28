@@ -7,6 +7,7 @@
 //             pinnacle＝ピナクルズ（砂丘→石灰岩→雨で溶ける→柱が現れる）
 //             butte＝モニュメント・バレー（台地→メサ→ビュート→細い塔）／karst＝ハロン湾（海の底→持ち上がる→雨で溶ける→海に沈む）
 //             rift＝プレートが離れる断面（スライダーで「離れる→割れ目→マグマ→新しい大地」と進む）
+//             aurora＝オーロラが光るまで／himalaya＝ヒマラヤができるまで（どちらもステップで進む断面）
 //             fjord＝フィヨルドができるまで（谷の断面。スライダーで「川の谷→氷河でけずる→海水が入る」と進む）
 // 本物の気候を、ごく簡単にしたモデルです（目安）。
 
@@ -505,6 +506,18 @@ const STEP_TXT = {
     ["③海から来る風、大陸から来る風", "ヨーロッパに届くのは、冬も冷えにくい大西洋を渡ってきた風。日本には、シベリアで冷えきった空気が北西の季節風になって吹いてくる。"],
     ["④暖流も、海を温める", "メキシコ湾流から続く北大西洋海流が、海をさらに温める。どれくらい効いているかは研究者のあいだでも議論が続く。"],
   ],
+  aurora: [
+    ["①太陽から、電気を帯びた粒が飛んでくる", "太陽からは、電気を帯びた小さな粒（太陽風）が、いつも吹き出している。"],
+    ["②地球の磁場が、粒をはね返す", "地球は大きな磁石のようなもの。磁場が太陽風の多くをはね返し、地球を守っている。"],
+    ["③一部の粒が、極のほうへ流れこむ", "はね返されなかった粒は、磁力の線にそって、北と南の極のほうへ流れこむ。"],
+    ["④空の上で、空気とぶつかって光る", "粒が地上100km以上の空で酸素などにぶつかり、光を出す。光るのは、磁極を囲む輪のような地域の空。"],
+  ],
+  himalaya: [
+    ["①インドが北へ動いていく", "大昔、インドは南の大陸から分かれて北へ。アジアとのあいだには、テチス海が広がっていた。"],
+    ["②海が閉じ、大陸どうしがぶつかる", "5,000万〜6,000万年前、テチス海が閉じて、インドがアジアにぶつかった。"],
+    ["③海の底の地層が、押し上げられる", "陸どうしはどちらも下にもぐりこめず、ぶつかったところが押し上げられて山脈に。エベレストの山頂は、海の底でできた石灰岩。"],
+    ["④山脈が、湿った風をさえぎる", "南からの湿った風が山にぶつかり、南側に大雨を降らせる。山をこえた北側のチベット高原は乾いている。"],
+  ],
 };
 function cappaSvg(st) {
   const INK = "#1b2330", tag = (t, x, y, al = "middle") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${INK}" font-weight="700" paint-order="stroke" stroke="#fbf6ee" stroke-width="3">${t}</text>`;
@@ -691,7 +704,50 @@ function europeSvg(st) {
   if (st === 3) g += `<path d="M20 96 Q110 96 190 70" fill="none" stroke="#c2552f" stroke-width="2.4" stroke-dasharray="6 4"/><path d="M182 68 L190 70 L186 78" fill="none" stroke="#c2552f" stroke-width="2.4"/>` + tag("北大西洋海流（暖流）", 100, 110, "middle", "#c2552f");
   return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ヨーロッパの冬が暖かい理由"><rect width="360" height="220" fill="#fbf6ee"/>${g}</svg>`;
 }
-const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg, cappa: cappaSvg, iguazu: iguSvg, canyon: canyonSvg, flat: flatSvg, uluru: uluruSvg, europe: europeSvg };
+function auroraSvg(st) {
+  const INK = "#1b2330", tag = (t, x, y, al = "middle", c = INK, sc = "#fbf6ee") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="${sc}" stroke-width="3">${t}</text>`;
+  const ex = 250, ey = 110, R = 34;
+  let g = `<rect width="360" height="220" fill="#1b2330"/>`;
+  g += `<circle cx="-30" cy="110" r="70" fill="#f2c14e" stroke="#e2683b" stroke-width="3"/>` + tag("太陽", 22, 114, "middle", INK, "#f2c14e");
+  // 磁力線（地球のまわりのだ円）
+  if (st >= 1) g += [52, 76, 100].map((w, i) => `<path d="M${ex} ${ey - R} C ${ex - w} ${ey - R - w * 0.9}, ${ex - w * 1.2} ${ey + R + w * 0.9}, ${ex} ${ey + R} M${ex} ${ey - R} C ${ex + w * 1.6} ${ey - R - w * 0.9}, ${ex + w * 1.8} ${ey + R + w * 0.9}, ${ex} ${ey + R}" fill="none" stroke="#9bb8c9" stroke-width="1.4" opacity="${0.8 - i * 0.2}"/>`).join("");
+  // 太陽風の粒
+  const dots = st === 0 ? [[70, 70], [100, 120], [130, 90], [160, 140], [110, 160], [150, 60], [185, 105]] : [[70, 70], [100, 120], [130, 90], [110, 160], [150, 60]];
+  g += dots.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.2" fill="#f2c14e"/><path d="M${x - 14} ${y} H${x - 5}" stroke="#f2c14e" stroke-width="1.6" stroke-linecap="round"/>`).join("");
+  if (st === 1) g += `<path d="M178 78 Q190 60 168 50 M178 142 Q190 160 168 170" fill="none" stroke="#f2c14e" stroke-width="2" stroke-linecap="round"/>` + tag("はね返す", 172, 40, "middle", "#fbf6ee", INK);
+  if (st >= 2) g += `<path d="M190 70 C 215 40, 240 50, ${ex - 6} ${ey - R + 2}" fill="none" stroke="#f2c14e" stroke-width="2" stroke-dasharray="4 4"/><path d="M190 150 C 215 180, 240 170, ${ex - 6} ${ey + R - 2}" fill="none" stroke="#f2c14e" stroke-width="2" stroke-dasharray="4 4"/>`;
+  // 地球
+  g += `<circle cx="${ex}" cy="${ey}" r="${R}" fill="#3b82a0" stroke="#fbf6ee" stroke-width="2"/><path d="M${ex - 18} ${ey - 10} q10 -8 20 0 q8 8 -4 16 q-12 4 -16 -16z M${ex + 6} ${ey + 8} q8 -4 12 4 q-2 10 -12 6z" fill="#1f6f5b"/>`;
+  if (st === 3) g += `<ellipse cx="${ex}" cy="${ey - R + 3}" rx="16" ry="5" fill="none" stroke="#7fe3a6" stroke-width="4" opacity=".95"/><ellipse cx="${ex}" cy="${ey + R - 3}" rx="16" ry="5" fill="none" stroke="#7fe3a6" stroke-width="4" opacity=".95"/>` + tag("オーロラの輪（オーバル）", ex, ey - R - 14, "middle", "#7fe3a6", INK) + tag("南にも輪ができる", ex, ey + R + 22, "middle", "#7fe3a6", INK);
+  g += st === 0 ? tag("太陽風（電気を帯びた粒）", 130, 30, "middle", "#fbf6ee", INK) : st === 2 ? tag("極のほうへ流れこむ", 300, 30, "middle", "#fbf6ee", INK) : "";
+  if (st >= 1) g += tag("地球の磁場", 330, 200, "end", "#9bb8c9", INK);
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="オーロラが光るまで">${g}</svg>`;
+}
+function himaSvg(st) {
+  const INK = "#1b2330", tag = (t, x, y, al = "middle", c = INK) => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="#fbf6ee" stroke-width="3">${t}</text>`;
+  const ir = [90, 160, 200, 200][st];   // インドの右はし（ここまで動いてくる）
+  let g = `<rect width="360" height="220" fill="#fbf6ee"/>`;
+  if (st < 2) g += `<rect x="${ir}" y="150" width="${200 - ir}" height="40" fill="#9fc9dd" stroke="${INK}" stroke-width="1.5"/>` + tag("テチス海", (ir + 200) / 2, 142, "middle", "#2f6f9a");
+  g += `<rect x="-4" y="150" width="${ir + 4}" height="40" fill="#d8b98a" stroke="${INK}" stroke-width="2"/>` + tag("インド", Math.min(ir - 45, 80), 174);
+  g += `<rect x="200" y="150" width="164" height="40" fill="#b9a58a" stroke="${INK}" stroke-width="2"/>` + tag("アジア", 290, 174);
+  if (st < 2) g += `<path d="M${ir - 70} 128 H${ir - 30}" stroke="${INK}" stroke-width="2.4"/><path d="M${ir - 38} 122 L${ir - 30} 128 L${ir - 38} 134" fill="none" stroke="${INK}" stroke-width="2.4"/>` + tag("北へ動く", ir - 50, 116);
+  if (st >= 2) {
+    const h = st === 2 ? 80 : 110;
+    g += `<path d="M150 150 L182 ${150 - h * 0.5} L200 ${150 - h} L216 ${150 - h * 0.6} L250 150 Z" fill="#c9b6a0" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
+    g += `<path d="M190 ${150 - h * 0.62} L200 ${150 - h} L210 ${150 - h * 0.66} Z" fill="#fff" stroke="${INK}" stroke-width="1.4"/>`;
+    g += `<path d="M170 ${150 - h * 0.25} Q200 ${150 - h * 0.42} 232 ${150 - h * 0.2}" fill="none" stroke="#3b82a0" stroke-width="3"/>`;
+    g += tag(st === 2 ? "押し上げられる" : "ヒマラヤ山脈", 200, 150 - h - 10);
+    if (st === 2) g += tag("海の底の地層", 290, 150 - h * 0.3, "middle", "#2f6f9a") + `<path d="M252 ${150 - h * 0.32} L228 ${150 - h * 0.24}" stroke="#2f6f9a" stroke-width="1.4"/>`;
+  }
+  if (st === 3) {
+    const y = 150 - 110 * 0.55;
+    g += `<path d="M20 64 C 80 64, 130 72, 172 ${y}" fill="none" stroke="#3b82a0" stroke-width="2.6"/><path d="M163 ${y - 6} L172 ${y} L163 ${y + 5}" fill="none" stroke="#3b82a0" stroke-width="2.6"/>` + tag("南からの湿った風", 70, 52, "middle", "#2f6f9a");
+    g += [0, 1, 2, 3].map((i) => `<line x1="${120 + i * 11}" y1="${92 + i * 5}" x2="${116 + i * 11}" y2="${106 + i * 5}" stroke="#3b82a0" stroke-width="2.2" stroke-linecap="round"/>`).join("") + tag("南側に大雨", 70, 128, "middle", "#2f6f9a");
+    g += tag("北側は乾いた高原", 300, 100, "middle", "#c2552f") + tag("（チベット）", 300, 114, "middle", "#c2552f");
+  }
+  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ヒマラヤができるまで">${g}</svg>`;
+}
+const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg, cappa: cappaSvg, iguazu: iguSvg, canyon: canyonSvg, flat: flatSvg, uluru: uluruSvg, europe: europeSvg, aurora: auroraSvg, himalaya: himaSvg };
 function stepRes(k, st) { const [t, d] = STEP_TXT[k][st]; return `<span>${t}</span><b>${d}</b>`; }
 function stepHtml(b) {
   const k = b.k, n = STEP_TXT[k].length;
