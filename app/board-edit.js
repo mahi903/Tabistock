@@ -4,7 +4,7 @@
 import { db, storage } from "../firebase-config.js";
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611281516";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs } from "./board.js?v=202611281700";
 
 // ブロックの種類（追加ボタンの並び順）
 const KINDS = [
@@ -63,6 +63,32 @@ export async function refreshSeedDrafts(list) {
   });
   await batch.commit();
   return todo.length;
+}
+
+// ---- 文章の直し（app/board-fixes.js）を、Firestore の記事に1回だけ反映する。直した記事の数を返す ----
+// 表示用の形（normBoard）ではなく、保存されている形をそのまま読み直して置きかえる（facts や手順の形を崩さないため）
+export async function applyTextFixes() {
+  const { TEXT_FIXES, TEXT_FIX_V } = await import("./board-fixes.js?v=202611281700");
+  const FIELDS = ["title", "lead", "facts", "blocks", "how", "after", "text"];
+  const fix = (o, pairs) => {
+    if (typeof o === "string") return pairs.reduce((s, [a, b]) => (s.includes(a) ? s.split(a).join(b) : s), o);
+    if (Array.isArray(o)) return o.map((x) => fix(x, pairs));
+    if (o && typeof o === "object" && !(o instanceof Date) && typeof o.toDate !== "function") return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, fix(v, pairs)]));
+    return o;
+  };
+  const batch = writeBatch(db);
+  let n = 0;
+  (await getDocs(collection(db, "boards"))).forEach((s) => {
+    const d = s.data();
+    if ((d.textFix || 0) >= TEXT_FIX_V) return;
+    const pairs = [...(TEXT_FIXES.each[s.id] || []), ...TEXT_FIXES.all];
+    const up = {};
+    FIELDS.forEach((f) => { if (d[f] !== undefined) { const v = fix(d[f], pairs); if (JSON.stringify(v) !== JSON.stringify(d[f])) up[f] = v; } });
+    batch.update(doc(db, "boards", s.id), { ...up, textFix: TEXT_FIX_V, ...(Object.keys(up).length ? { updatedAt: serverTimestamp() } : {}) });
+    if (Object.keys(up).length) n++;
+  });
+  await batch.commit();
+  return n;
 }
 
 // ---- 事件簿（board.js の JIKEN）を Firestore にコピー。boards に jiken: true で入れる。すでにあるものは上書きしない ----
