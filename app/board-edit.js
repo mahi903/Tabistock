@@ -4,7 +4,7 @@
 import { db, storage } from "../firebase-config.js";
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs, BOARD_GROUPS, groupOf } from "./board.js?v=202611281945";
+import { ILL, BOARD_CATS, BOARD_SEED, JIKEN, toFs, BOARD_GROUPS, groupOf } from "./board.js?v=202611282030";
 
 // ブロックの種類（追加ボタンの並び順）
 const KINDS = [
@@ -68,7 +68,7 @@ export async function refreshSeedDrafts(list) {
 // ---- 文章の直し（app/board-fixes.js）を、Firestore の記事に1回だけ反映する。直した記事の数を返す ----
 // 表示用の形（normBoard）ではなく、保存されている形をそのまま読み直して置きかえる（facts や手順の形を崩さないため）
 export async function applyTextFixes() {
-  const { TEXT_FIXES, TEXT_FIX_V } = await import("./board-fixes.js?v=202611281945");
+  const { TEXT_FIXES, TEXT_FIX_V } = await import("./board-fixes.js?v=202611282030");
   const FIELDS = ["title", "lead", "facts", "blocks", "how", "after", "text"];
   const fix = (o, pairs) => {
     if (typeof o === "string") return pairs.reduce((s, [a, b]) => (s.includes(a) ? s.split(a).join(b) : s), o);
