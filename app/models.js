@@ -1,4 +1,5 @@
-import { himaHtml, initHima } from "./hima3d.js?v=202611281915";
+import { himaHtml, initHima } from "./hima3d.js?v=202611281930";
+import { euHtml, initEu } from "./eurowind.js?v=202611281930";
 // 旅の掲示板（旅と地理）の記事の中に入れる、手で動かせるモデル
 // いまあるもの：hadley＝大気大循環の地球儀（月のスライダーで、太陽と、雨の帯・乾きやすい帯が南北に動く。指で地球を回せる）
 //             patagonia＝アンデス山脈の断面（スライダーで風を西から東へ進めると、雨や雪を降らせて乾いていく）
@@ -10,6 +11,7 @@ import { himaHtml, initHima } from "./hima3d.js?v=202611281915";
 //             rift＝プレートが離れる断面（スライダーで「離れる→割れ目→マグマ→新しい大地」と進む）
 //             aurora＝オーロラが光るまで（ステップで進む断面）
 //             himalaya＝ヒマラヤができるまで（立体の地図。hima3d.js。指で向きを変えられる）
+//             europe＝ヨーロッパの冬が暖かい理由（風が流れる地図。eurowind.js）
 //             fjord＝フィヨルドができるまで（谷の断面。スライダーで「川の谷→氷河でけずる→海水が入る」と進む）
 // 本物の気候を、ごく簡単にしたモデルです（目安）。
 
@@ -116,6 +118,7 @@ export function modelHtml(b) {
   if (b.k === "circ") return circHtml(b);
   if (b.k === "uyuni") return uyHtml(b);
   if (b.k === "himalaya") return himaHtml(b);   // ヒマラヤは立体の地図（hima3d.js）
+  if (b.k === "europe") return euHtml(b);       // ヨーロッパの冬は、風が流れる地図（eurowind.js）
   if (STEP_TXT[b.k]) return stepHtml(b);
   if (b.k !== "hadley") return "";
   const m = Math.min(12, Math.max(1, +b.m || 1));
@@ -503,12 +506,6 @@ const STEP_TXT = {
     ["③地層が立ち上がる", "約4億〜3億年前、大地が横から押されて地層が折れ曲がった。ウルルの地層は、ほぼ垂直に。"],
     ["④まわりが削られ、ウルルだけが残る", "3億年ほどかけて、まわりのやわらかい岩が削られ、かたいウルルが平原に残った。赤いのは、岩にふくまれる鉄がさびた色。"],
   ],
-  europe: [
-    ["①同じ緯度で比べてみる", "ロンドンは札幌より900km以上も北。それでも1月の最高気温は、ロンドンが平均8℃ほど、札幌が-0.4℃。"],
-    ["②中緯度では、西風が吹く", "どちらの上空でも、西から東へ強い風（偏西風）が吹いている。"],
-    ["③海から来る風、大陸から来る風", "ヨーロッパに届くのは、冬も冷えにくい大西洋を渡ってきた風。日本には、シベリアで冷えきった空気が北西の季節風になって吹いてくる。"],
-    ["④暖流も、海を温める", "メキシコ湾流から続く北大西洋海流が、海をさらに温める。どれくらい効いているかは研究者のあいだでも議論が続く。"],
-  ],
   aurora: [
     ["①太陽から、電気を帯びた粒が飛んでくる", "太陽からは、電気を帯びた小さな粒（太陽風）が、いつも吹き出している。"],
     ["②地球の磁場が、粒をはね返す", "地球は大きな磁石のようなもの。磁場が太陽風の多くをはね返し、地球を守っている。"],
@@ -677,30 +674,6 @@ function uluruSvg(st) {
   }
   return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ウルルができるまで"><rect width="360" height="220" fill="#fbf6ee"/>${g}${st < 3 ? `<rect x="0" y="190" width="360" height="30" fill="#e7d8bd"/><line x1="0" y1="190" x2="360" y2="190" stroke="${INK}" stroke-width="2"/>` : ""}</svg>`;
 }
-function europeSvg(st) {
-  const INK = "#1b2330", tag = (t, x, y, al = "middle", c = INK, sc = "#fbf6ee") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="${sc}" stroke-width="3">${t}</text>`;
-  const SEA = "#9cc6d8", LAND = "#d8c9a6", COLD = "#e6edf2";
-  const arrow = (x1, y, x2, col) => `<line x1="${x1}" y1="${y}" x2="${x2 - 6}" y2="${y}" stroke="${col}" stroke-width="3" stroke-linecap="round"/><path d="M${x2 - 9} ${y - 6} L${x2} ${y} L${x2 - 9} ${y + 6}" fill="none" stroke="${col}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
-  let g = "";
-  // Europe row (top): ocean on the west, land on the east
-  g += `<rect x="0" y="22" width="200" height="78" fill="${SEA}"/><path d="M200 22 Q192 60 204 100 L360 100 L360 22 Z" fill="${LAND}" stroke="${INK}" stroke-width="1.6"/>`;
-  g += tag("大西洋", 60, 92) + `<circle cx="236" cy="62" r="5" fill="${INK}"/>` + tag("ロンドン 北緯51.5度", 246, 52, "start");
-  // Japan row (bottom): continent on the west, sea, Japan on the east
-  g += `<rect x="0" y="122" width="360" height="78" fill="${SEA}"/><path d="M0 122 L230 122 Q238 160 226 200 L0 200 Z" fill="${st >= 2 ? COLD : LAND}" stroke="${INK}" stroke-width="1.6"/><path d="M300 136 Q316 150 312 172 Q306 190 296 196 L288 190 Q300 170 292 146 Z" fill="${LAND}" stroke="${INK}" stroke-width="1.6"/>`;
-  g += tag(st >= 2 ? "シベリア（冬は冷えきる）" : "ユーラシア大陸", 100, 190) + `<circle cx="300" cy="150" r="5" fill="${INK}"/>` + tag("札幌 北緯43度", 352, 132, "end");
-  g += tag("ヨーロッパ", 8, 16, "start") + tag("日本", 8, 116, "start");
-  if (st === 0) g += tag("1月の最高気温 8℃ほど", 300, 86, "middle", "#c2552f") + tag("1月の最高気温 -0.4℃", 262, 214, "middle", "#2f6f9a");
-  if (st >= 1) {
-    const cw = st === 1 ? "#6b7280" : null;
-    g += arrow(20, 44, 120, cw || "#e2683b") + arrow(60, 70, 170, cw || "#e2683b") + arrow(150, 56, 225, cw || "#e2683b");
-    g += arrow(130, 140, 210, cw || "#3b82a0") + arrow(180, 160, 285, cw || "#3b82a0");
-    g += tag(st === 1 ? "偏西風（西から東へ）" : "海を渡った、暖かく湿った風", 110, 36, "middle", st === 1 ? INK : "#c2552f");
-    if (st >= 2) g += tag("大陸で冷えた北西の風", 205, 214, "middle", "#2f6f9a");
-    else g += tag("偏西風（西から東へ）", 205, 214);
-  }
-  if (st === 3) g += `<path d="M20 96 Q110 96 190 70" fill="none" stroke="#c2552f" stroke-width="2.4" stroke-dasharray="6 4"/><path d="M182 68 L190 70 L186 78" fill="none" stroke="#c2552f" stroke-width="2.4"/>` + tag("北大西洋海流（暖流）", 100, 110, "middle", "#c2552f");
-  return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ヨーロッパの冬が暖かい理由"><rect width="360" height="220" fill="#fbf6ee"/>${g}</svg>`;
-}
 function auroraSvg(st) {
   const INK = "#1b2330", tag = (t, x, y, al = "middle", c = INK, sc = "#fbf6ee") => `<text x="${x}" y="${y}" font-size="10.5" text-anchor="${al}" fill="${c}" font-weight="700" paint-order="stroke" stroke="${sc}" stroke-width="3">${t}</text>`;
   const ex = 250, ey = 110, R = 34;
@@ -720,7 +693,7 @@ function auroraSvg(st) {
   if (st >= 1) g += tag("地球の磁場", 330, 200, "end", "#9bb8c9", INK);
   return `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="オーロラが光るまで">${g}</svg>`;
 }
-const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg, cappa: cappaSvg, iguazu: iguSvg, canyon: canyonSvg, flat: flatSvg, uluru: uluruSvg, europe: europeSvg, aurora: auroraSvg };
+const STEP_SVG = { butte: butteSvg, karst: karstSvg, pinnacle: pinnSvg, cappa: cappaSvg, iguazu: iguSvg, canyon: canyonSvg, flat: flatSvg, uluru: uluruSvg, aurora: auroraSvg };
 function stepRes(k, st) { const [t, d] = STEP_TXT[k][st]; return `<span>${t}</span><b>${d}</b>`; }
 function stepHtml(b) {
   const k = b.k, n = STEP_TXT[k].length;
@@ -752,6 +725,7 @@ function init(root) {
   if (root.dataset.mdl === "circ") return initCirc(root);
   if (root.dataset.mdl === "uyuni") return initUy(root);
   if (root.dataset.mdl === "hima3d") return initHima(root);
+  if (root.dataset.mdl === "euwind") return initEu(root);
   if (STEP_TXT[root.dataset.mdl]) return initStep(root);
   const cv = root.querySelector("canvas");
   if (!cv || cv.dataset.on) return;
